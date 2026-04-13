@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/ソリューション項目/">
+    <File Path=".editorconfig.txt" />
+  </Folder>
+  <Project Path="CG2/CG2.vcxproj" />
+</Solution>
