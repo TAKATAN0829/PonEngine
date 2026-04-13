@@ -54,7 +54,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		nullptr,               // 親ウィンドウハンドル
 		nullptr,               // メニューハンドル
 		wc.hInstance,          // インスタンスハンドル
-		nullptr,               // オプション
+		nullptr                // オプション
 	);
 
 	// ウィンドウを表示する
