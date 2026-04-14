@@ -18,72 +18,72 @@
 #include <strsafe.h>
 
 // ウィンドウプロシージャ
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+LRESULT CALLBACK WindowProc (HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	// メッセージに応じてゲーム固有の処理を行う
 	switch (msg) {
 		// ウィンドウが破棄された
 	case WM_DESTROY:
-		// OSに対して、アプリの終了を伝える
-		PostQuitMessage(0);
-		return 0;
+	// OSに対して、アプリの終了を伝える
+	PostQuitMessage (0);
+	return 0;
 	}
 
 	// 標準のメッセージ処理を行う
-	return DefWindowProc(hwnd, msg, wparam, lparam);
+	return DefWindowProc (hwnd, msg, wparam, lparam);
 }
 
 // 出力ウィンドウに文字を出す
-void Log(const std::string& message) {
-	OutputDebugStringA(message.c_str());
+void Log (const std::string& message) {
+	OutputDebugStringA (message.c_str ());
 	// ログのディレクトリを表示
-	std::filesystem::create_directory("logs");
+	std::filesystem::create_directory ("logs");
 	// 現在時刻を取得（UTC時刻）
-	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now ();
 	// ログファイルの名前にコンマ何秒はいらないので、削って秒にする
 	std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
-	nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+		nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
 	// 日本時間（PCの設定時刻）に変換
-	std::chrono::zoned_time localTime{ std::chrono::current_zone(),nowSeconds };
+	std::chrono::zoned_time localTime{ std::chrono::current_zone (),nowSeconds };
 	// formatを使って年月日_時分秒の文字列に変換
-	std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
+	std::string dateString = std::format ("{:%Y%m%d_%H%M%S}", localTime);
 	// 時刻を使ってファイル名を決定
-	std::string logFilePath = std::string("logs/") + dateString + ".log";
+	std::string logFilePath = std::string ("logs/") + dateString + ".log";
 	// ファイルを作って書き込み準備
-	std::ofstream logStream(logFilePath);
+	std::ofstream logStream (logFilePath);
 }
 
-void Log(std::ostream& os, const std::string& message) {
+void Log (std::ostream& os, const std::string& message) {
 	os << message << std::endl;
-	OutputDebugStringA(message.c_str());
+	OutputDebugStringA (message.c_str ());
 }
 
 // string->wstring
-std::wstring ConvertString(const std::string& str) {
-	if (str.empty()) {
-		return std::wstring();
+std::wstring ConvertString (const std::string& str) {
+	if (str.empty ()) {
+		return std::wstring ();
 	}
 
-	auto sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), NULL, 0);
+	auto sizeNeeded = MultiByteToWideChar (CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size ()), NULL, 0);
 	if (sizeNeeded == 0) {
-		return std::wstring();
+		return std::wstring ();
 	}
-	std::wstring result(sizeNeeded, 0);
-	MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), &result[0], sizeNeeded);
+	std::wstring result (sizeNeeded, 0);
+	MultiByteToWideChar (CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size ()), &result[0], sizeNeeded);
 	return result;
 }
 
 // wstring->string
-std::string ConvertString(const std::wstring& str) {
-	if (str.empty()) {
-		return std::string();
+std::string ConvertString (const std::wstring& str) {
+	if (str.empty ()) {
+		return std::string ();
 	}
 
-	auto sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), NULL, 0, NULL, NULL);
+	auto sizeNeeded = WideCharToMultiByte (CP_UTF8, 0, str.data (), static_cast<int>(str.size ()), NULL, 0, NULL, NULL);
 	if (sizeNeeded == 0) {
-		return std::string();
+		return std::string ();
 	}
-	std::string result(sizeNeeded, 0);
-	WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), sizeNeeded, NULL, NULL);
+	std::string result (sizeNeeded, 0);
+	WideCharToMultiByte (CP_UTF8, 0, str.data (), static_cast<int>(str.size ()), result.data (), sizeNeeded, NULL, NULL);
 	return result;
 }
 
@@ -111,7 +111,11 @@ static LONG WINAPI ExportDump (EXCEPTION_POINTERS* exception) {
 }
 
 // Windowsアプリでのエントリーポイント（main関数）
-int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
+int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
+
+	// 誰も捕捉しなかった場合に（Unhandled）、補足する関数を登録
+	// main関数始まってすぐに登録するとよい
+	SetUnhandledExceptionFilter (ExportDump);
 
 	WNDCLASS wc{};
 	// ウィンドウプロシージャ
@@ -119,12 +123,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// ウィンドウクラス名
 	wc.lpszClassName = L"CG2WindowClass";
 	// インスタンスハンドル
-	wc.hInstance = GetModuleHandle(nullptr);
+	wc.hInstance = GetModuleHandle (nullptr);
 	// カーソル
-	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wc.hCursor = LoadCursor (nullptr, IDC_ARROW);
 
 	// ウィンドウクラスを登録する
-	RegisterClass(&wc);
+	RegisterClass (&wc);
 
 	// クライアント領域のサイズ
 	const int32_t kClientWidth = 1280;
@@ -134,10 +138,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	RECT wrc = { 0,0,kClientWidth,kClientHeight };
 
 	// クライアント領域を元に実際のサイズにwrcを変更してもらう
-	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
+	AdjustWindowRect (&wrc, WS_OVERLAPPEDWINDOW, false);
 
 	// ウィンドウの生成
-	HWND hwnd = CreateWindow(
+	HWND hwnd = CreateWindow (
 		wc.lpszClassName,      // 利用するクラス名
 		L"CG2",                // タイトルバーの文字
 		WS_OVERLAPPEDWINDOW,   // よく見るウィンドウスタイル
@@ -152,7 +156,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	);
 
 	// ウィンドウを表示する
-	ShowWindow(hwnd, SW_SHOW);
+	ShowWindow (hwnd, SW_SHOW);
 
 	// DXGIファクトリーの生成
 	IDXGIFactory7* dxgiFactory = nullptr;
@@ -175,7 +179,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		// ソフトウェアアダプタでなければ採用！
 		if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE)) {
 			// 採用したアダプタの情報をログに出力。wstringのほうなので注意
-			Log (ConvertString(std::format (L"Use Adapter:{}\n", adapterDesc.Description)));
+			Log (ConvertString (std::format (L"Use Adapter:{}\n", adapterDesc.Description)));
 			break;
 		}
 		useAdapter = nullptr; // ソフトウェアアダプタの場合は見なかったことにする
@@ -204,19 +208,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	assert (device != nullptr);
 	Log ("Complete create D3D12Device!!!\n");// 初期化完了のログを出す
 
-	uint32_t* p = nullptr;
-	*p = 100;
+	//uint32_t* p = nullptr;
+	//*p = 100;
 
 	MSG msg{};
 	// ウィンドウのxボタンが押されるまでループ
 	while (msg.message != WM_QUIT) {
-		// 誰も捕捉しなかった場合に（Unhandled）、補足する関数を登録
-		// main関数始まってすぐに登録するとよい
-		SetUnhandledExceptionFilter (ExportDump);
 		// Windowにメッセージが来てたら最優先で処理させる
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+		if (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE)) {
+			TranslateMessage (&msg);
+			DispatchMessage (&msg);
 		} else {
 			// ゲームの処理
 		}
