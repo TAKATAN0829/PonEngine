@@ -18,6 +18,8 @@
 #include <strsafe.h>
 #include <dxgidebug.h>
 #pragma comment(lib,"dxguid.lib")
+#include <dxcapi.h>
+#pragma comment(lib,"dxcompiler.lib")
 
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -111,6 +113,60 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
 	// ほかに関連付けられているSEH例外ハンドラがあれば実行。通常はプロセスを終了する
 	return EXCEPTION_EXECUTE_HANDLER;
 }
+
+// CompileShader関数
+IDxcBlob* CompileShader(
+	// CompilerするShaderファイルへのパス
+	const std::wstring& filePath,
+	// Compilerに使用するProfile
+	const wchar_t* profile,
+	// 初期化で生成したものを3つ
+	IDxcUtils* dxcUtils,
+	IDxcCompiler3* dxCompiler,
+	IDxcIncludeHandler* includeHandler) {
+
+	//===========================================//
+	// 1.hlslファイルを読む
+	
+	//これからシェーダーをコンパイルする旨をログに出す
+	Log(ConvertString(std::format(L"Begin CompileShader, path:{}, profile:{}\n", filePath, profile)));
+	// hlslファイルを読む
+	IDxcBlobEncoding* shaderSource = nullptr;
+	HRESULT hr = dxcUtils->LoadFile(filePath.c_str(), nullptr, &shaderSource);
+	// 読めなかったら止める
+	assert(SUCCEEDED(hr));
+	// 読み込んファイルの内容を設定する
+	DxcBuffer shaderSourceBuffer;
+	shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
+	shaderSourceBuffer.Size = shaderSource->GetBufferSize();
+	shaderSourceBuffer.Encoding = DXC_CP_UTF8; // UTF8の文字コードであることを通知
+	//===========================================//
+
+	//===========================================//
+	// 2.Compileする
+	
+	LPCWSTR arguments[] = {
+		filePath.c_str(), // コンパイル対象のhlslファイル名
+		L"-E",L"main", // エントリーポイントの指定。基本的にmain以外にしない
+		L"-T",profile, // ShaderProfileの設定
+		L"-Zi",L"-Qembed_debug",	// デバッグ用の情報を埋め込む
+		L"-0d",		// 最適化を外しておく
+		L"-zpr",	// メモリレイアウトを行優先
+	};
+	// 実際にShaderをコンパイルする
+	IDxcResult* shaderResult = nullptr;
+	hr = dxCompiler->Compile(
+		&shaderSourceBuffer,	// 読み込んだファイル
+		arguments,				// コンパイルオプション
+		_countof(arguments),	// コンパイルオプションの数
+		includeHandler,			// includeが含まれた諸々
+		IID_PPV_ARGS(&shaderResult)	// コンパイル結果
+	);
+	// コンパイルエラーではなくdxcが起動できないなど致命的な状況
+	assert(SUCCEEDED(hr));
+	//===========================================//
+}
+	
 
 // Windowsアプリでのエントリーポイント（main関数）
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
@@ -233,7 +289,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	assert(device != nullptr);
 	Log("Complete create D3D12Device!!!\n");// 初期化完了のログを出す
 	//=============================================================================================//
-	
+
 
 	//=============================================================================================//
 	// エラー・警告、すなわち停止
@@ -273,7 +329,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 指定したメッセージの表示を抑制する
 	infoQueue->PushStorageFilter(&filter);
 	//=============================================================================================//
-	
+
 
 	//=============================================================================================//
 	// コマンドキューを生成する
@@ -385,6 +441,24 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	assert(fenceEvent != nullptr);
 	//=============================================================================================//
 
+
+	//=============================================================================================//
+	// DXCの初期化
+
+	//dxCompilerを初期化
+	IDxcUtils* dxcUtils = nullptr;
+	IDxcCompiler3* dxcCompiler = nullptr;
+	hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
+	assert(SUCCEEDED(hr));
+	hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
+	assert(SUCCEEDED(hr));
+
+	// 現時点でincludeはしないが、includeに対応するための設定を行っておく
+	IDxcIncludeHandler* includeHandler = nullptr;
+	hr = dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
+	assert(SUCCEEDED(hr));
+	//=============================================================================================//
+
 	//-------------
 	// メインループ
 	//------------/
@@ -469,7 +543,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			//==========//
 			// Fenceの値を確認してGPUを待つ
-			
+
 			// Fenceの値が指定したSignal値にたどり着いているか確認する
 			//GetCompletedValueの初期値はFence作成時に渡した初期値
 			if (fence->GetCompletedValue() < fenceValue) {
@@ -495,7 +569,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//=============================================================================================//
 	// DX12のオブジェクトを解放
 	// ReportLiveObjects
-	
+
 	// 解放処理
 	CloseHandle(fenceEvent);
 	fence->Release();
