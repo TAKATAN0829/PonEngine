@@ -114,6 +114,7 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
+//=================================================================================================//
 // CompileShader関数                                               <-CG2_02_00
 IDxcBlob* CompileShader(
 	// CompilerするShaderファイルへのパス
@@ -195,7 +196,7 @@ IDxcBlob* CompileShader(
 	return shaderBlob;
 	//===========================================//	
 }
-
+//=================================================================================================//
 
 // Windowsアプリでのエントリーポイント（main関数）
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
@@ -204,14 +205,14 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// main関数始まってすぐに登録するとよい
 	SetUnhandledExceptionFilter(ExportDump);
 
-	//=================================================================================================//
+	//=============================================================================================//
 	// ディレクトリを掘る
 
 	std::filesystem::create_directory("logs");
-	//=================================================================================================//
+	//=============================================================================================//
 
 
-	//=================================================================================================//
+	//=============================================================================================//
 	// 現在時刻でログファイルを生成する
 
 	// 現在時刻を取得（UTC時刻）
@@ -227,7 +228,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	std::string logFilePath = std::string("logs/") + dateString + ".log";
 	// ファイルを作って書き込み準備
 	std::ofstream logStream(logFilePath);
-	//=================================================================================================//
+	//=============================================================================================//
 
 
 	//=============================================================================================//
@@ -586,11 +587,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// ShaderをCompileする 
 
 	// Shaderをコンパイルする
-	IDxcBlob* vertexShaderBlob = CompileShader(L"Object3D.VS.hlsl",
+	IDxcBlob* vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl",
 		L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(vertexShaderBlob != nullptr);
 
-	IDxcBlob* pixelShaderBlob = CompileShader(L"Object3D.PS.hlsl",
+	IDxcBlob* pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl",
 		L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(pixelShaderBlob != nullptr);
 	//===========================================//
