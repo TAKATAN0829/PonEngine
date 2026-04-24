@@ -44,7 +44,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
-
 // 出力ウィンドウに文字を出す
 void Log(const std::string& message) {
 	OutputDebugStringA(message.c_str());
@@ -151,8 +150,8 @@ IDxcBlob* CompileShader(
 		L"-E",L"main", // エントリーポイントの指定。基本的にmain以外にしない
 		L"-T",profile, // ShaderProfileの設定
 		L"-Zi",L"-Qembed_debug",	// デバッグ用の情報を埋め込む
-		L"-0d",		// 最適化を外しておく
-		L"-zpr",	// メモリレイアウトを行優先
+		L"-Od",		// 最適化を外しておく
+		L"-Zpr",	// メモリレイアウトを行優先
 	};
 	// 実際にShaderをコンパイルする
 	IDxcResult* shaderResult = nullptr;
@@ -701,6 +700,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	scissorRect.bottom = kClientHeight;
 	//=============================================================================================//
 
+	Log(logStream, "メインループに入りますよ");
 
 	//-------------
 	// メインループ
