@@ -1,3 +1,6 @@
+#pragma warning(push)
+// C4023の警告をみなかったことにする
+#pragma warning(disable:4023)
 #include <Windows.h>
 #include <cstdint>
 #include <string>
@@ -20,6 +23,8 @@
 #pragma comment(lib,"dxguid.lib")
 #include <dxcapi.h>
 #pragma comment(lib,"dxcompiler.lib")
+#pragma warning(pop)
+#include "Vector4.h"
 
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -36,24 +41,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
+
 // 出力ウィンドウに文字を出す
 void Log(const std::string& message) {
 	OutputDebugStringA(message.c_str());
-	// ログのディレクトリを表示
-	std::filesystem::create_directory("logs");
-	// 現在時刻を取得（UTC時刻）
-	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-	// ログファイルの名前にコンマ何秒はいらないので、削って秒にする
-	std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
-		nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-	// 日本時間（PCの設定時刻）に変換
-	std::chrono::zoned_time localTime{ std::chrono::current_zone(),nowSeconds };
-	// formatを使って年月日_時分秒の文字列に変換
-	std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
-	// 時刻を使ってファイル名を決定
-	std::string logFilePath = std::string("logs/") + dateString + ".log";
-	// ファイルを作って書き込み準備
-	std::ofstream logStream(logFilePath);
 }
 
 void Log(std::ostream& os, const std::string& message) {
@@ -89,6 +80,12 @@ std::string ConvertString(const std::wstring& str) {
 	std::string result(sizeNeeded, 0);
 	WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), sizeNeeded, NULL, NULL);
 	return result;
+}
+
+void Log(const std::wstring& message) {
+	// wstring->stringへ変換して
+	// stringの方のLog関数を呼ぶ
+	Log(ConvertString(message));
 }
 
 // SEHに対して関数を作成し、登録する
@@ -203,6 +200,32 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 誰も捕捉しなかった場合に（Unhandled）、補足する関数を登録
 	// main関数始まってすぐに登録するとよい
 	SetUnhandledExceptionFilter(ExportDump);
+
+	//=================================================================================================//
+	// ディレクトリを掘る
+
+	std::filesystem::create_directory("logs");
+	//=================================================================================================//
+
+
+	//=================================================================================================//
+	// 現在時刻でログファイルを生成する
+
+	// 現在時刻を取得（UTC時刻）
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+	// ログファイルの名前にコンマ何秒はいらないので、削って秒にする
+	std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
+		nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+	// 日本時間（PCの設定時刻）に変換
+	std::chrono::zoned_time localTime{ std::chrono::current_zone(),nowSeconds };
+	// formatを使って年月日_時分秒の文字列に変換
+	std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
+	// 時刻を使ってファイル名を決定
+	std::string logFilePath = std::string("logs/") + dateString + ".log";
+	// ファイルを作って書き込み準備
+	std::ofstream logStream(logFilePath);
+	//=================================================================================================//
+
 
 	//=============================================================================================//
 	// ウィンドウ作成
@@ -560,9 +583,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// ShaderをCompileする 
 
 	// Shaderをコンパイルする
-	IDxcBlob* VertexShaderBlob = CompileShader(L"Object3D.VS.hlsl",
+	IDxcBlob* vertexShaderBlob = CompileShader(L"Object3D.VS.hlsl",
 		L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
-	assert(VertexShaderBlob != nullptr);
+	assert(vertexShaderBlob != nullptr);
 
 	IDxcBlob* pixelShaderBlob = CompileShader(L"Object3D.PS.hlsl",
 		L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
@@ -572,8 +595,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 	graphicsPipelineStateDesc.pRootSignature = rootSignature;// RootSignature
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;// InputLayout
-	graphicsPipelineStateDesc.VS = { VertexShaderBlob->GetBufferPointer(),
-	VertexShaderBlob->GetBufferSize() };// VertexShader
+	graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(),
+	vertexShaderBlob->GetBufferSize() };// VertexShader
 	graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(),
 	pixelShaderBlob->GetBufferSize() };// PixelShader
 	graphicsPipelineStateDesc.BlendState = blendDesc;// BlendState
@@ -608,9 +631,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	vertexResourceDesc.Width = sizeof(Vector4) * 3;// リソースのサイズ
 	// バッファのサイズの場合はこれらは1にする決まり
 	vertexResourceDesc.Height = 1;
-	vertexResourceDesc.DepthOrArraySize = 1.;
+	vertexResourceDesc.DepthOrArraySize = 1;
 	vertexResourceDesc.MipLevels = 1;
-	vertexResourceDesc.SampleDesc = 1;
+	vertexResourceDesc.SampleDesc.Count = 1;
 	// バッファの場合はこれにする決まり
 	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	// 実際に頂点リソースを作る
@@ -722,7 +745,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			//===================================//
 			// コマンドを積む
-			
+
 			commandList->RSSetViewports(1, &viewport);	// viewportを設定
 			commandList->RSSetScissorRects(1, &scissorRect);	// Scissorを設定
 			// RootSignatureを設定。PS0に設定しているけど別途設定が必要
