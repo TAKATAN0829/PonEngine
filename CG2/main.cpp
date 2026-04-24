@@ -1,6 +1,7 @@
 #pragma warning(push)
 // C4023の警告をみなかったことにする
 #pragma warning(disable:4023)
+
 #include <Windows.h>
 #include <cstdint>
 #include <string>
@@ -23,7 +24,9 @@
 #pragma comment(lib,"dxguid.lib")
 #include <dxcapi.h>
 #pragma comment(lib,"dxcompiler.lib")
+
 #pragma warning(pop)
+
 #include "Vector4.h"
 
 // ウィンドウプロシージャ
