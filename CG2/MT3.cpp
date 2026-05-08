@@ -5,7 +5,7 @@
 // Vector3
 
 // 加算
-Vector3 Add(const Vector3& v1, const Vector3& v2) {
+Vector3 MT3::Add(const Vector3& v1, const Vector3& v2) {
 	Vector3 result{};
 
 	result.x = v1.x + v2.x;
@@ -16,7 +16,7 @@ Vector3 Add(const Vector3& v1, const Vector3& v2) {
 }
 
 // 減算
-Vector3 Subtract(const Vector3& v1, const Vector3& v2) {
+Vector3 MT3::Subtract(const Vector3& v1, const Vector3& v2) {
 	Vector3 result{};
 
 	result.x = v1.x - v2.x;
@@ -27,7 +27,7 @@ Vector3 Subtract(const Vector3& v1, const Vector3& v2) {
 }
 
 // スカラー倍
-Vector3 Multiply(float scalar, const Vector3& v) {
+Vector3 MT3::Multiply(float scalar, const Vector3& v) {
 	Vector3 result{};
 
 	result.x = scalar * v.x;
@@ -38,7 +38,7 @@ Vector3 Multiply(float scalar, const Vector3& v) {
 }
 
 // 内積
-float Dot(const Vector3& v1, const Vector3& v2) {
+float MT3::Dot(const Vector3& v1, const Vector3& v2) {
 	float result = 0.0f;
 
 	result = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
@@ -47,7 +47,7 @@ float Dot(const Vector3& v1, const Vector3& v2) {
 }
 
 // 長さ
-float Length(const Vector3& v) {
+float MT3::Length(const Vector3& v) {
 	float result = 0.0f;
 
 	result = std::sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
@@ -56,7 +56,7 @@ float Length(const Vector3& v) {
 }
 
 // 正規化
-Vector3 Normalize(const Vector3& v) {
+Vector3 MT3::Normalize(const Vector3& v) {
 	Vector3 result{};
 	float length = Length(v);
 
@@ -72,7 +72,7 @@ Vector3 Normalize(const Vector3& v) {
 }
 
 // 座標変換
-Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix) {
+Vector3 MT3::Transform(const Vector3& vector, const Matrix4x4& matrix) {
 	Vector3 result{};
 
 	result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0] + vector.z * matrix.m[2][0] + matrix.m[3][0];
@@ -97,7 +97,7 @@ Vector3 Transform(const Vector3& vector, const Matrix4x4& matrix) {
 // Matrix4x4
 
 // 加算
-Matrix4x4 Add(const Matrix4x4& m1, const Matrix4x4& m2) {
+Matrix4x4 MT3::Add(const Matrix4x4& m1, const Matrix4x4& m2) {
 	Matrix4x4 resultMatrix{};
 
 	for (int row = 0; row < 4; ++row) {
@@ -110,7 +110,7 @@ Matrix4x4 Add(const Matrix4x4& m1, const Matrix4x4& m2) {
 }
 
 // 減算
-Matrix4x4 Subtruct(const Matrix4x4& m1, const Matrix4x4& m2) {
+Matrix4x4 MT3::Subtruct(const Matrix4x4& m1, const Matrix4x4& m2) {
 	Matrix4x4 resultMatrix{};
 
 	for (int row = 0; row < 4; ++row) {
@@ -123,7 +123,7 @@ Matrix4x4 Subtruct(const Matrix4x4& m1, const Matrix4x4& m2) {
 }
 
 // 行列の積
-Matrix4x4 Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
+Matrix4x4 MT3::Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
 	Matrix4x4 resultMatrix{};
 
 	for (int row = 0; row < 4; ++row) {
@@ -140,7 +140,7 @@ Matrix4x4 Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
 }
 
 // 逆行列
-Matrix4x4 Inverse(const Matrix4x4& m) {
+Matrix4x4 MT3::Inverse(const Matrix4x4& m) {
 	float a =
 		m.m[0][0] * m.m[1][1] * m.m[2][2] * m.m[3][3]
 		- m.m[0][0] * m.m[1][1] * m.m[2][3] * m.m[3][2]
@@ -301,7 +301,7 @@ Matrix4x4 Inverse(const Matrix4x4& m) {
 }
 
 // 転置行列
-Matrix4x4 Transpose(const Matrix4x4& m) {
+Matrix4x4 MT3::Transpose(const Matrix4x4& m) {
 	Matrix4x4 resultMatrix{};
 
 	for (int row = 0; row < 4; ++row) {
@@ -314,7 +314,7 @@ Matrix4x4 Transpose(const Matrix4x4& m) {
 }
 
 // 単位行列の作成
-Matrix4x4 MakeIdentity4x4() {
+Matrix4x4 MT3::MakeIdentity4x4() {
 	Matrix4x4 resultMatrix{};
 
 	for (int i = 0; i < 4; ++i) {
@@ -325,7 +325,7 @@ Matrix4x4 MakeIdentity4x4() {
 }
 
 // 平行移動行列
-Matrix4x4 MakeTranslateMatrix(const Vector3& translate) {
+Matrix4x4 MT3::MakeTranslateMatrix(const Vector3& translate) {
 	Matrix4x4 resultMatrix = MakeIdentity4x4();
 
 	resultMatrix.m[3][0] = translate.x;
@@ -336,7 +336,7 @@ Matrix4x4 MakeTranslateMatrix(const Vector3& translate) {
 }
 
 // 拡大縮小行列
-Matrix4x4 MakeScaleMatrix(const Vector3& scale) {
+Matrix4x4 MT3::MakeScaleMatrix(const Vector3& scale) {
 	Matrix4x4 resultMatrix{};
 
 	resultMatrix.m[0][0] = scale.x;
@@ -348,7 +348,7 @@ Matrix4x4 MakeScaleMatrix(const Vector3& scale) {
 }
 
 // X軸回転行列
-Matrix4x4 MakeRotateXMatrix(float radian) {
+Matrix4x4 MT3::MakeRotateXMatrix(float radian) {
 	Matrix4x4 resultMatrix = MakeIdentity4x4();
 
 	resultMatrix.m[1][1] = std::cos(radian);
@@ -361,7 +361,7 @@ Matrix4x4 MakeRotateXMatrix(float radian) {
 }
 
 // Y軸回転行列
-Matrix4x4 MakeRotateYMatrix(float radian) {
+Matrix4x4 MT3::MakeRotateYMatrix(float radian) {
 	Matrix4x4 resultMatrix = MakeIdentity4x4();
 
 	resultMatrix.m[0][0] = std::cos(radian);
@@ -374,7 +374,7 @@ Matrix4x4 MakeRotateYMatrix(float radian) {
 }
 
 // Z軸回転行列
-Matrix4x4 MakeRotateZMatrix(float radian) {
+Matrix4x4 MT3::MakeRotateZMatrix(float radian) {
 	Matrix4x4 resultMatrix = MakeIdentity4x4();
 
 	resultMatrix.m[0][0] = std::cos(radian);
@@ -387,7 +387,7 @@ Matrix4x4 MakeRotateZMatrix(float radian) {
 }
 
 // アフィン変換
-Matrix4x4  MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
+Matrix4x4  MT3::MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
 
 	// 拡大縮小行列
 	Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
@@ -411,7 +411,7 @@ Matrix4x4  MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const V
 }
 
 // 透視射影行列
-Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
+Matrix4x4 MT3::MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
 	Matrix4x4 resultMatrix{};
 	float f = 1.f / std::tanf(fovY / 2.f);
 	resultMatrix.m[0][0] = f / aspectRatio;
@@ -424,7 +424,7 @@ Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip
 }
 
 // 正射影行列
-Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip) {
+Matrix4x4 MT3::MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip) {
 	Matrix4x4 resultMatrix{};
 	resultMatrix.m[0][0] = 2.f / (right - left);
 	resultMatrix.m[1][1] = 2.f / (top - bottom);
@@ -438,7 +438,7 @@ Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float botto
 }
 
 // ビューポート行列
-Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth) {
+Matrix4x4 MT3::MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth) {
 	Matrix4x4 resultMatrix{};
 	resultMatrix.m[0][0] = width / 2.f;
 	resultMatrix.m[1][1] = -height / 2.f;

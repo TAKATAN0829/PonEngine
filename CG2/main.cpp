@@ -27,10 +27,18 @@
 
 #pragma warning(pop)
 
-//===================
+
 #include "MT3.h"
 #include "Vector4.h"
-//===================
+
+
+// Transform情報を作る
+struct Transform {
+	Vector3 scale;
+	Vector3 rotate;
+	Vector3 translate;
+};
+
 
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -318,6 +326,14 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 
 	//=============================================================================================//
+	// Transform変数
+
+	Transform transform{ {1.f,1.f,1.f},{0.f,0.f,0.f},{0.f,0.f,0.f} };
+	Transform cameraTransform{ {1.f,1.f,1.f},{0.f,0.f,0.f},{0.f,0.f,-5.f} };
+	//=============================================================================================//
+
+
+	//=============================================================================================//
 	// DebugLayer
 
 #ifdef _DEBUG
@@ -586,15 +602,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// PixelShaderで使う
 	rootParameters[0].Descriptor.ShaderRegister = 0;	// レジスタ番号0を使う
 	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;	// CBVを使う
-	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// VertecShaderで使う
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;	// VertexShaderで使う
 	rootParameters[1].Descriptor.ShaderRegister = 0;	// レジスタ番号0を使う
 	descriptionRootSignature.pParameters = rootParameters;	// ルートパラメータ配列へのポインタ
 	descriptionRootSignature.NumParameters = _countof(rootParameters);	// 配列の長さ
-
-	// registerの種類を設定
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // b0のbと一致する
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-	rootParameters[0].Descriptor.ShaderRegister = 0;	// b0の0と一致する。もしb11と紐づけたいなら11となる
 
 	// シリアライズしてバイナリにする
 	ID3DBlob* signatureBlob = nullptr;
@@ -739,8 +750,14 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//=============================================================================================//
 	// TransformationMatrix用のResourceを作る
 
-	// 
-
+	// WVP用のリソースを作る。Matrix4x4 1つ分のサイズを用意する
+	ID3D12Resource* wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
+	// データを書き込む
+	Matrix4x4* wvpData = nullptr;
+	// 書き込むためのアドレスを取得
+	wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
+	// 単位行列を書き込んでおく
+	*wvpData = MT3::MakeIdentity4x4();
 	//=============================================================================================//
 
 
@@ -798,6 +815,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			DispatchMessage(&msg);
 		} else {
 
+			transform.rotate.y += 0.03f;
+
+			Matrix4x4 worldMatrix = MT3::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+			Matrix4x4 cameraMatrix = MT3::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
+			Matrix4x4 viewMatrix = MT3::Inverse(cameraMatrix);
+			Matrix4x4 projectionMatrix = MT3::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.f);
+			Matrix4x4 worldViewProjectionMatrix = MT3::Multiply(worldMatrix, MT3::Multiply(viewMatrix, projectionMatrix));
+			
+			*wvpData = worldViewProjectionMatrix;
+
 			//=====================================================================================//
 			// これから書き込むバックバッファのインデックスを取得
 
@@ -844,6 +871,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			// マテリアルCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+			// wvp用のCBufferの場所を設定
+			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 			// 描画！（DrawCall/ドローコール）。3頂点で1つのインスタンス。インスタンスについては今後
 			commandList->DrawInstanced(3, 1, 0, 0);
 			//===================================//
@@ -900,8 +929,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			//==========//
 
 			//===================================//
-
-
+			
+			
 			// 次のフレーム用のコマンドリストを準備
 			hr = commandAllocator->Reset();
 			assert(SUCCEEDED(hr));
@@ -930,6 +959,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	dxgiFactory->Release();
 	vertexResource->Release();
 	materialResource->Release();
+	wvpResource->Release();
 	graphicPipelineState->Release();
 	signatureBlob->Release();
 	if (errorBlob) {
