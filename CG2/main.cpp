@@ -730,6 +730,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	vertexBufferView.SizeInBytes = sizeof(Vector4) * 3;
 	// 1頂点あたりのサイズ
 	vertexBufferView.StrideInBytes = sizeof(Vector4);
+	Log(logStream, "vertexBufferView作成！！");
 	//=============================================================================================//
 
 
@@ -744,6 +745,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
 	// 今回は赤を書き込んでみる
 	*materialData = Vector4(1.f, 0.f, 0.f, 1.f);
+	Log(logStream, "materialResource生成！！");
 	//=============================================================================================//
 
 
@@ -758,6 +760,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
 	// 単位行列を書き込んでおく
 	*wvpData = MT3::MakeIdentity4x4();
+	Log(logStream, "wvpResource生成！！");
 	//=============================================================================================//
 
 
@@ -971,8 +974,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 #ifdef _DEBUG
 	debugController->Release();
 #endif
-	CloseWindow(hwnd);
-
 	// リソースチェック
 	IDXGIDebug1* debug;
 	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
@@ -981,8 +982,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
 		debug->Release();
 	}
-	// 警告時に止まる
-	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+	
+	CloseWindow(hwnd);
 	//=============================================================================================//
 
 	return 0;
