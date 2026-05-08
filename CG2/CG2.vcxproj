@@ -47,7 +47,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -65,7 +65,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
@@ -88,6 +88,27 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\externals\imgui\imgui.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\externals\imgui\imgui_demo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\externals\imgui\imgui_draw.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\externals\imgui\imgui_impl_dx12.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\externals\imgui\imgui_impl_win32.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\externals\imgui\imgui_tables.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\externals\imgui\imgui_widgets.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MT3.cpp" />
   </ItemGroup>
@@ -106,11 +127,22 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\externals\imgui\imconfig.h" />
+    <ClInclude Include="..\externals\imgui\imgui.h" />
+    <ClInclude Include="..\externals\imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="..\externals\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="..\externals\imgui\imgui_internal.h" />
+    <ClInclude Include="..\externals\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\externals\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\externals\imgui\imstb_truetype.h" />
     <ClInclude Include="Matrix4x4.h" />
     <ClInclude Include="MT3.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="Vector4.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\externals\imgui\LICENSE.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
