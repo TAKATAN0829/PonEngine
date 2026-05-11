@@ -38,8 +38,6 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg
 
 
 #include "MT3.h"
-#include "Vector4.h"
-
 
 // Transform情報を作る
 struct Transform {
@@ -48,6 +46,11 @@ struct Transform {
 	Vector3 translate;
 };
 
+// 頂点データの拡張
+struct VertexData {
+	Vector4 position;
+	Vector2 texCoord;
+};
 
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -340,11 +343,31 @@ ID3D12Resource* CreateTextureResource(ID3D12Device* device, const DirectX::TexMe
 	assert(SUCCEEDED(hr));
 	return resource;
 	//==================//
+}
 
 //===============================================//
-// 3.DirectX12のTextureResourceを作る
+
 
 //===============================================//
+// 3.TextureResourceにデータを転送する
+
+void UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImages) {
+	// Meta情報を取得
+	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
+	// 全MipMapについて
+	for (size_t mipLevel = 0; mipLevel < metadata.mipLevels; ++mipLevel) {
+		// MipMapLevelを指定して各Imageを取得
+		const DirectX::Image* img = mipImages.GetImage(mipLevel, 0, 0);
+		// Textureに転送
+		HRESULT hr = texture->WriteToSubresource(
+			UINT(mipLevel),
+			nullptr,				// 全領域へコピー
+			img->pixels,			// 元データアドレス
+			UINT(img->rowPitch),	// 1ラインサイズ
+			UINT(img->slicePitch)	// 一枚サイズ
+		);
+		assert(SUCCEEDED(hr));
+	}
 }
 //===============================================//
 
@@ -713,7 +736,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Log(logStream, "ImGui初期化でけた！！");
 #endif
 	//=============================================================================================//
-
+	
 
 	//=============================================================================================//  <-CG2_02_00
 	// PSO
@@ -762,11 +785,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// InputLayout
 
 	//InputLayout
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
 	inputElementDescs[0].SemanticName = "POSITION";
 	inputElementDescs[0].SemanticIndex = 0;
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	inputElementDescs[1].SemanticName = "TEXCOORD";
+	inputElementDescs[1].SemanticIndex = 0;
+	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
 	inputLayoutDesc.NumElements = _countof(inputElementDescs);
@@ -896,16 +923,19 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// Resourceにデータを書き込む
 
 	// 頂点リソースにデータ書き込む
-	Vector4* vertexData = nullptr;
+	VertexData* vertexData = nullptr;
 	Log(logStream, "vertexData生成！！");
 	// 書き込むためのアドレスを取得
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 	// 左下
-	vertexData[0] = { -0.5f,-0.5f,0.0f,1.0f };
+	vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
+	vertexData[0].texCoord = { 0.f,1.f };
 	// 上
-	vertexData[1] = { 0.0f,0.5f,0.0f,1.0f };
+	vertexData[1].position = { 0.0f,0.5f,0.0f,1.0f };
+	vertexData[1].texCoord = { 0.5f,0.f };
 	// 右下
-	vertexData[2] = { 0.5f,-0.5f,0.0f,1.0f };
+	vertexData[2].position = { 0.5f,-0.5f,0.0f,1.0f };
+	vertexData[2].texCoord = { 1.f,1.f };
 	//=============================================================================================//
 
 
@@ -932,6 +962,33 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	scissorRect.bottom = kClientHeight;
 	//=============================================================================================//
 
+	// Textureを読んで転送する
+	DirectX::ScratchImage mipImages = LoadTexture("resource/uvChecker.png");
+	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
+	ID3D12Resource* textureResource = CreateTextureResource(device, metadata);
+	UploadTextureData(textureResource, mipImages);
+
+	//=============================================================================================//
+	// ShaderResourceViewを作る
+
+	// metaDataを基にSRVの設定
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = metadata.format;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;// 2Dテクスチャ
+	srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
+
+	// SRVを作成するDescriptorHeapの場所を決める
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	// 先頭はImGuiが使っているのでその次を使う
+	textureSrvHandleCPU.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	textureSrvHandleGPU.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	// SRVの生成
+	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
+
+	//=============================================================================================//
+
 	Log(logStream, "メインループに入れた！");
 	Log(std::format("ALL CLEAR!!!\n", hr));
 	//-------------
@@ -945,6 +1002,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		} else {
+
+
 #ifdef USE_IMGUI
 			// ImGui<<フレーム始まるよ
 			ImGui_ImplDX12_NewFrame();
@@ -953,7 +1012,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			ImGui::ShowDemoWindow();
 #endif
-			transform.rotate.y += 0.03f;
 
 			Matrix4x4 worldMatrix = MT3::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 			Matrix4x4 cameraMatrix = MT3::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
@@ -1114,6 +1172,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	vertexResource->Release();
 	materialResource->Release();
 	wvpResource->Release();
+	textureResource->Release();
 
 	// パイプライン系
 	graphicPipelineState->Release();
