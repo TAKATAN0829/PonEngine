@@ -60,6 +60,8 @@ struct VertexData {
 struct Material {
 	Vector4 color;
 	int32_t enableLighting;
+	float padding[3];
+	Matrix4x4 uvTransform;
 };
 
 // TransformationMatrixを拡張する
@@ -550,6 +552,11 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	Transform transform{ {1.f,1.f,1.f},{0.f,0.f,0.f},{0.f,0.f,0.f} };
 	Transform cameraTransform{ {1.f,1.f,1.f},{0.f,0.f,0.f},{0.f,0.f,-5.f} };
+	Transform uvTransformSprite{
+		{1.0f,1.0f,1.0f},
+		{0.0f,0.0f,0.0f},
+		{0.0f,0.0f,0.0f},
+	};
 	//=============================================================================================//
 
 
@@ -1063,7 +1070,9 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	materialData->color = Vector4 (1.f, 1.f, 1.f, 1.f);
 	// Lightingを有効化
 	materialData->enableLighting = true;
-
+	// UVTransform
+	materialData->uvTransform = MT3::MakeIdentity4x4 ();
+	
 	// Sprite用のMaterialを作成
 	ID3D12Resource* materialResourceSprite = CreateBufferResource (device, sizeof (Material), "materialResourceSprite");
 	// データ書き込み
@@ -1074,6 +1083,8 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	materialDataSprite->color = Vector4 (1.f, 1.f, 1.f, 1.f);
 	// Lightingを有効化
 	materialDataSprite->enableLighting = false;
+	// UVTransform
+	materialDataSprite->uvTransform = MT3::MakeIdentity4x4 ();
 	//=============================================================================================//
 
 
@@ -1204,7 +1215,7 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	ID3D12Resource* intermediateResource = UploadTextureData (textureResource, mipImages, device, commandList);
 	// 2枚目のTextureを読んで転送する
 	DirectX::ScratchImage mipImages2 = LoadTexture ("resource/white1x1.png");
-	const DirectX::TexMetadata& metadata2 = mipImages.GetMetadata ();
+	const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata ();
 	ID3D12Resource* textureResource2 = CreateTextureResource (device, metadata2);
 	ID3D12Resource* intermediateResource2 = UploadTextureData (textureResource2, mipImages2, device, commandList);
 	// コマンドリストを閉じる
@@ -1338,6 +1349,23 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			DispatchMessage (&msg);
 		} else {
 
+		#ifdef USE_IMGUI
+			// ImGui<<フレーム始まるよ
+			ImGui_ImplDX12_NewFrame ();
+			ImGui_ImplWin32_NewFrame ();
+			ImGui::NewFrame ();
+
+			ImGui::ShowDemoWindow ();
+
+			ImGui::Checkbox ("useWhite1x1", &useWhite1x1);
+
+			ImGui::DragFloat2 ("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.f, 10.f);
+			ImGui::DragFloat2 ("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.f, 10.f);
+			ImGui::SliderAngle ("UVRotate", &uvTransformSprite.rotate.z);
+
+			// ImGuiの内部コマンドを生成する
+			ImGui::Render ();
+		#endif
 
 			// 経度分割1つ分の角度
 			const float kLonEvery = std::numbers::pi_v<float> *2.f / float (kSubdivision);
@@ -1373,19 +1401,12 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			wvpData->World = worldMatrix;
 			wvpData->WVP = worldViewProjectionMatrix;
 
-		#ifdef USE_IMGUI
-			// ImGui<<フレーム始まるよ
-			ImGui_ImplDX12_NewFrame ();
-			ImGui_ImplWin32_NewFrame ();
-			ImGui::NewFrame ();
 
-			ImGui::ShowDemoWindow ();
+			Matrix4x4 uvTransformMatrix = MT3::MakeScaleMatrix (uvTransformSprite.scale);
+			uvTransformMatrix = MT3::Multiply (uvTransformMatrix, MT3::MakeRotateZMatrix (uvTransformSprite.rotate.z));
+			uvTransformMatrix = MT3::Multiply (uvTransformMatrix, MT3::MakeTranslateMatrix (uvTransformSprite.translate));
+			materialDataSprite->uvTransform = uvTransformMatrix;
 
-			ImGui::Checkbox ("useWhite1x1", &useWhite1x1);
-
-			// ImGuiの内部コマンドを生成する
-			ImGui::Render ();
-		#endif
 			//=====================================================================================//
 			// これから書き込むバックバッファのインデックスを取得
 
