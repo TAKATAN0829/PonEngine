@@ -109,8 +109,8 @@
     <ClCompile Include="..\externals\imgui\imgui_widgets.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="DebugCamera.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MT3.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.PS.hlsl">
@@ -135,8 +135,10 @@
     <ClInclude Include="..\externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\externals\imgui\imstb_textedit.h" />
     <ClInclude Include="..\externals\imgui\imstb_truetype.h" />
+    <ClInclude Include="DebugCamera.h" />
+    <ClInclude Include="Inpututility.h" />
+    <ClInclude Include="MathUtility.h" />
     <ClInclude Include="Matrix4x4.h" />
-    <ClInclude Include="MT3.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="Vector4.h" />

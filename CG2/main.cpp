@@ -48,10 +48,11 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg
 #pragma warning(pop)
 
 
-#include "MT3.h"
+#include "MathUtility.h"
+#include "Inpututility.h"
 
 // Transform情報を作る
-struct Transform {
+struct TransformData {
 	Vector3 scale;
 	Vector3 rotate;
 	Vector3 translate;
@@ -847,9 +848,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//=============================================================================================//
 	// Transform変数
 
-	Transform transform{ {1.f,1.f,1.f},{0.f,0.f,0.f},{0.f,0.f,0.f} };
-	Transform cameraTransform{ {1.f,1.f,1.f},{0.f,0.f,0.f},{0.f,0.f,-5.f} };
-	Transform uvTransformSprite{
+	TransformData transform{ {1.f,1.f,1.f},{0.f,0.f,0.f},{0.f,0.f,0.f} };
+	TransformData cameraTransform{ {1.f,1.f,1.f},{0.f,0.f,0.f},{0.f,0.f,-5.f} };
+	TransformData uvTransformSprite{
 		{1.0f,1.0f,1.0f},
 		{0.0f,0.0f,0.0f},
 		{0.0f,0.0f,0.0f},
@@ -1393,7 +1394,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// Lightingを有効化
 	materialData->enableLighting = true;
 	// UVTransform
-	materialData->uvTransform = MT3::MakeIdentity4x4();
+	materialData->uvTransform = MathUtility::MakeIdentity4x4();
 
 	// Sprite用のMaterialを作成
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSprite = CreateBufferResource(device, sizeof(Material), "materialResourceSprite");
@@ -1406,7 +1407,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// Lightingを有効化
 	materialDataSprite->enableLighting = false;
 	// UVTransform
-	materialDataSprite->uvTransform = MT3::MakeIdentity4x4();
+	materialDataSprite->uvTransform = MathUtility:: MakeIdentity4x4();
 	//=============================================================================================//
 
 
@@ -1436,8 +1437,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 書き込むためのアドレスを取得
 	wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
 	// 単位行列を書き込んでおく
-	wvpData->World = MT3::MakeIdentity4x4();
-	wvpData->WVP = MT3::MakeIdentity4x4();
+	wvpData->World = MathUtility::MakeIdentity4x4();
+	wvpData->WVP = MathUtility::MakeIdentity4x4();
 	//=============================================================================================//
 
 
@@ -1624,16 +1625,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 書き込むためのアドレスを取得
 	transformationMatrixResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataSprite));
 	// 単位行列を書き込んでおく
-	transformationMatrixDataSprite->World = MT3::MakeIdentity4x4();
-	transformationMatrixDataSprite->WVP = MT3::MakeIdentity4x4();
+	transformationMatrixDataSprite->World = MathUtility::MakeIdentity4x4();
+	transformationMatrixDataSprite->WVP = MathUtility::MakeIdentity4x4();
 	// CPUで動かす用のTransform
-	Transform transformSprite = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
+	TransformData transformSprite = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
 	// WVPMatrixを作って書き込む
-	Matrix4x4 worldMatrixSprite = MT3::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
-	Matrix4x4 viewMatrixSprite = MT3::MakeIdentity4x4();
-	Matrix4x4 projectionMatrixSprite = MT3::MakeOrthographicMatrix(0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
-	Matrix4x4 worldViewProjectionMatrixSprite = MT3::Multiply(worldMatrixSprite, MT3::Multiply(viewMatrixSprite, projectionMatrixSprite));
+	Matrix4x4 worldMatrixSprite = MathUtility::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
+	Matrix4x4 viewMatrixSprite = MathUtility::MakeIdentity4x4();
+	Matrix4x4 projectionMatrixSprite = MathUtility::MakeOrthographicMatrix(0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
+	Matrix4x4 worldViewProjectionMatrixSprite = MathUtility::Multiply(worldMatrixSprite, MathUtility::Multiply(viewMatrixSprite, projectionMatrixSprite));
 	transformationMatrixDataSprite->World = worldMatrixSprite;
 	transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
 	//=============================================================================================//
@@ -1707,19 +1708,19 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 #endif
 
 
-			Matrix4x4 worldMatrix = MT3::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-			Matrix4x4 cameraMatrix = MT3::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
-			Matrix4x4 viewMatrix = MT3::Inverse(cameraMatrix);
-			Matrix4x4 projectionMatrix = MT3::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.f);
-			Matrix4x4 worldViewProjectionMatrix = MT3::Multiply(worldMatrix, MT3::Multiply(viewMatrix, projectionMatrix));
+			Matrix4x4 worldMatrix = MathUtility::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+			Matrix4x4 cameraMatrix = MathUtility::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
+			Matrix4x4 viewMatrix = MathUtility::Inverse(cameraMatrix);
+			Matrix4x4 projectionMatrix = MathUtility::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.f);
+			Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply(worldMatrix, MathUtility::Multiply(viewMatrix, projectionMatrix));
 
 			wvpData->World = worldMatrix;
 			wvpData->WVP = worldViewProjectionMatrix;
 
 
-			Matrix4x4 uvTransformMatrix = MT3::MakeScaleMatrix(uvTransformSprite.scale);
-			uvTransformMatrix = MT3::Multiply(uvTransformMatrix, MT3::MakeRotateZMatrix(uvTransformSprite.rotate.z));
-			uvTransformMatrix = MT3::Multiply(uvTransformMatrix, MT3::MakeTranslateMatrix(uvTransformSprite.translate));
+			Matrix4x4 uvTransformMatrix = MathUtility::MakeScaleMatrix(uvTransformSprite.scale);
+			uvTransformMatrix = MathUtility::Multiply(uvTransformMatrix, MathUtility::MakeRotateZMatrix(uvTransformSprite.rotate.z));
+			uvTransformMatrix = MathUtility::Multiply(uvTransformMatrix, MathUtility::MakeTranslateMatrix(uvTransformSprite.translate));
 			materialDataSprite->uvTransform = uvTransformMatrix;
 
 			//=====================================================================================//
