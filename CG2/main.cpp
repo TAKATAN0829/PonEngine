@@ -596,8 +596,6 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 // Windowsアプリでのエントリーポイント（main関数）
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	D3DResourceLeakChecker leakChecker;
-	Microsoft::WRL::ComPtr<IDXGIFactory7>dxgiFactrory;
-	Microsoft::WRL::ComPtr<ID3D12Device> device;
 	// COMの初期化
 	CoInitializeEx(0, COINIT_MULTITHREADED);
 
@@ -1360,10 +1358,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	commandList->Reset(commandAllocator.Get(), nullptr);
 	assert(SUCCEEDED(hr));
 
-	// 転送用リソースはもう不要
-	intermediateResource.Reset();
-	intermediateResource2.Reset();
-
 	//=============================================================================================//
 	// ShaderResourceViewを作る
 
@@ -1680,68 +1674,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//=============================================================================================//
 	// DX12のオブジェクトを解放
-
-	vertexResource.Reset();
-	vertexResourceSprite.Reset();
-	materialResource.Reset();
-	materialResourceSprite.Reset();
-	wvpResource.Reset();
-	textureResource.Reset();
-	textureResource2.Reset();
-	depthStencilResource.Reset();
-	transformationMatrixResourceSprite.Reset();
-	directionalLightResource.Reset();
-	indexResource.Reset();
-	indexResourceSprite.Reset();
-
-	graphicPipelineState.Reset();
-	rootSignature.Reset();
-
-	vertexShaderBlob.Reset();
-	pixelShaderBlob.Reset();
-	signatureBlob.Reset();
-	errorBlob.Reset();
-
-	includeHandler.Reset();
-	dxcCompiler.Reset();
-	dxcUtils.Reset();
-
-	swapChainResources[0].Reset();
-	swapChainResources[1].Reset();
-	swapChain.Reset();
-
-	rtvDescriptorHeap.Reset();
-	srvDescriptorHeap.Reset();
-	dsvDescriptorHeap.Reset();
-
-	fence.Reset();
+	
 	CloseHandle(fenceEvent);
-
-	commandList.Reset();
-	commandAllocator.Reset();
-	commandQueue.Reset();
-
-	useAdapter.Reset();
-	dxgiFactory.Reset();
-
-#ifdef _DEBUG
-	infoQueue.Reset();
-	debugController.Reset();
-#endif
-
-	device.Reset();
-
-	// リソースチェック
-	Microsoft::WRL::ComPtr<IDXGIDebug1> debug = nullptr;
-	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
-		debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
-		debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
-		debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
-	}
-
-	// COMの終了処理
 	CoUninitialize();
-
 	CloseWindow(hwnd);
 
 	//=============================================================================================//
