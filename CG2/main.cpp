@@ -30,6 +30,12 @@
 #include <xaudio2.h>
 #pragma comment(lib,"xaudio2.lib")
 #include <fstream>
+#define DIRECTINPUT_VERSION 0x0800	// DirectInputのバージョン指定
+#include <dinput.h>
+
+#pragma comment(lib,"dinput8.lib")
+#pragma comment(lib,"dxguid.lib")
+
 
 // ImGui
 #ifdef USE_IMGUI
@@ -728,15 +734,33 @@ void SoundPlayWave(IXAudio2* xAudio2, const SoundData& soundData) {
 //=================================================================================================//
 
 
+bool IsPressKey(BYTE key[256], uint8_t keyNumber) {
+	return key[keyNumber] != 0;
+}
+
+bool IsReleaseKey(BYTE key[256], uint8_t keyNumber) {
+	return key[keyNumber] == 0;
+}
+
+bool IsTriggerKey(BYTE key[256], BYTE preKey[256], uint8_t keyNumber) {
+	return preKey[keyNumber] == 0 && key[keyNumber] != 0;
+}
+
+bool IsReleaseTriggerKey(BYTE key[256], BYTE preKey[256], uint8_t keyNumber) {
+	return preKey[keyNumber] != 0 && key[keyNumber] == 0;
+}
+
+
 //===================================================================================================================================================//
 // Windowsアプリでのエントリーポイント（main関数）
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
-	
+
 	D3DResourceLeakChecker leakChecker;
 
 
 	Microsoft::WRL::ComPtr<IXAudio2> xAudio2;
 	IXAudio2MasteringVoice* masterVoice;
+	
 
 	// COMの初期化
 	CoInitializeEx(0, COINIT_MULTITHREADED);
@@ -774,6 +798,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//=============================================================================================//
 	// ウィンドウ作成
+
 
 	WNDCLASS wc{};
 	// ウィンドウプロシージャ
@@ -898,10 +923,29 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	}
 	// デバイスの生成がうまくいかなかったので起動できない
 	assert(device != nullptr);
+	
 	// XAudioエンジンのインスタンスを生成
 	hr = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
 	// マスターボイスを生成
 	hr = xAudio2->CreateMasteringVoice(&masterVoice);
+	
+	// DirectInputの初期化
+	IDirectInput8* directInput = nullptr;
+	hr = DirectInput8Create(
+		wc.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
+		(void**)&directInput, nullptr);
+	assert(SUCCEEDED(hr));
+	// キーボードデバイスの生成
+	IDirectInputDevice8* keyboard = nullptr;
+	hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	assert(SUCCEEDED(hr));
+	// 入力データ形式のセット
+	hr = keyboard->SetDataFormat(&c_dfDIKeyboard); // 標準形式
+	assert(SUCCEEDED(hr));
+	// 排他制御レベルのセット
+	hr = keyboard->SetCooperativeLevel(
+		hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	assert(SUCCEEDED(hr));
 	Log("Complete create D3D12Device!!!\n");// 初期化完了のログを出す
 	Log(logStream, "DX12初期化完了！！");
 	//=============================================================================================//
@@ -1594,16 +1638,17 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
 	//=============================================================================================//
 
-	// 音声読み込み
-	SoundData soundData1 = SoundLoadWave("resources/sound.wav");
-	// 音声再生
-	SoundPlayWave(xAudio2.Get(), soundData1);
 
+	
 
 	bool useWhite1x1 = true;
 
 	Log(logStream, "メインループに入れた！");
 	Log(std::format("ALL CLEAR!!!\n", hr));
+
+
+	BYTE preKey[256] = {};
+
 	//-------------
 	// メインループ
 	//------------/
@@ -1615,6 +1660,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		} else {
+
+			// キーボード情報の取得開始
+			keyboard->Acquire();
+			// 全キーの入力状態を取得する
+			BYTE key[256] = {};
+			keyboard->GetDeviceState(sizeof(key), key);
 
 #ifdef USE_IMGUI
 			// ImGui<<フレーム始まるよ
@@ -1811,6 +1862,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			hr = commandList->Reset(commandAllocator.Get(), nullptr);
 			assert(SUCCEEDED(hr));
 			//=====================================================================================//
+
+			memcpy(preKey, key, sizeof(key));
 		}
 	}
 
@@ -1828,8 +1881,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 音声データの解放
 
 	//XAudio2
-	xAudio2.Reset();
-	SoundUnload(&soundData1);
+	
 	//=============================================================================================//
 
 
