@@ -112,10 +112,14 @@
     <ClCompile Include="DebugCamera.cpp" />
     <ClCompile Include="DescriptorHeapManager.cpp" />
     <ClCompile Include="DirectXCommon.cpp" />
+    <ClCompile Include="GraphicsSystem.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="LogSystem.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PipelineManager.cpp" />
+    <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="ShaderCompiler.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="WinApp.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -144,11 +148,15 @@
     <ClInclude Include="DebugCamera.h" />
     <ClInclude Include="DescriptorHeapManager.h" />
     <ClInclude Include="DirectXCommon.h" />
+    <ClInclude Include="GraphicsSystem.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="LogSystem.h" />
     <ClInclude Include="MathUtility.h" />
     <ClInclude Include="Matrix4x4.h" />
+    <ClInclude Include="PipelineManager.h" />
+    <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="ShaderCompiler.h" />
+    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="Vector4.h" />
