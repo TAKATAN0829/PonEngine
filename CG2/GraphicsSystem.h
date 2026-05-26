@@ -1,7 +1,16 @@
 #pragma once
+// WRL
+#include <wrl.h>
 
 // DirectX
 #include <d3d12.h>
+
+// DXC
+#include <dxcapi.h>
+
+// C++
+#include <string>
+#include <cstdint>
 
 // 自作
 #include "DescriptorHeapManager.h"
@@ -49,6 +58,39 @@ public:
 
 	PipelineManager* GetPipelineManager ();
 
+	//=============================================================================================//
+	// RootSignature取得
+
+	ID3D12RootSignature* GetRootSignature ();
+
+	//=============================================================================================//
+	// GraphicsPipelineState取得
+
+	ID3D12PipelineState* GetGraphicsPipelineState ();
+
+	//=============================================================================================//
+	// GraphicsPipeline生成
+
+	void CreateGraphicsPipeline (
+		ID3D12Device* device);
+
+	//=============================================================================================//
+	// Texture生成
+
+	void CreateTexture (
+		ID3D12Device* device,
+		ID3D12GraphicsCommandList* commandList,
+		const std::string& filePath,
+		uint32_t descriptorIndex);
+
+	//=============================================================================================//
+	// 描画前設定
+
+	void PreDraw (
+		ID3D12GraphicsCommandList* commandList,
+		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
+		D3D12_INDEX_BUFFER_VIEW* indexBufferView);
+
 private:
 
 	//=============================================================================================//
@@ -75,4 +117,26 @@ private:
 	// PipelineManager
 
 	PipelineManager* pipelineManager_ = nullptr;
+
+	//=============================================================================================//
+	// RootSignature
+
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
+
+	//=============================================================================================//
+	// GraphicsPipelineState
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
+
+	//=============================================================================================//
+	// TextureResource
+
+	Microsoft::WRL::ComPtr<ID3D12Resource>
+		textureResource_ = nullptr;
+
+	//=============================================================================================//
+	// IntermediateResource
+
+	Microsoft::WRL::ComPtr<ID3D12Resource>
+		intermediateResource_ = nullptr;
 };

@@ -39,8 +39,7 @@ PipelineManager::CreateRootSignature (
 	//=============================================================================================//
 	// RootSignature生成
 
-	Microsoft::WRL::ComPtr<ID3D12RootSignature>
-		rootSignature = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature>	rootSignature = nullptr;
 
 	hr = device->CreateRootSignature (
 		0,
@@ -64,44 +63,36 @@ PipelineManager::CreateInputLayout () {
 
 	inputElementDescs_[0].SemanticName = "POSITION";
 	inputElementDescs_[0].SemanticIndex = 0;
-	inputElementDescs_[0].Format =
-		DXGI_FORMAT_R32G32B32A32_FLOAT;
+	inputElementDescs_[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 
-	inputElementDescs_[0].AlignedByteOffset =
-		D3D12_APPEND_ALIGNED_ELEMENT;
+	inputElementDescs_[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	//=============================================================================================//
 	// TEXCOORD
 
 	inputElementDescs_[1].SemanticName = "TEXCOORD";
 	inputElementDescs_[1].SemanticIndex = 0;
-	inputElementDescs_[1].Format =
-		DXGI_FORMAT_R32G32_FLOAT;
+	inputElementDescs_[1].Format = DXGI_FORMAT_R32G32_FLOAT;
 
-	inputElementDescs_[1].AlignedByteOffset =
-		D3D12_APPEND_ALIGNED_ELEMENT;
+	inputElementDescs_[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	//=============================================================================================//
 	// NORMAL
 
 	inputElementDescs_[2].SemanticName = "NORMAL";
 	inputElementDescs_[2].SemanticIndex = 0;
-	inputElementDescs_[2].Format =
-		DXGI_FORMAT_R32G32B32_FLOAT;
+	inputElementDescs_[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
 
-	inputElementDescs_[2].AlignedByteOffset =
-		D3D12_APPEND_ALIGNED_ELEMENT;
+	inputElementDescs_[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	//=============================================================================================//
 	// InputLayoutDesc
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 
-	inputLayoutDesc.pInputElementDescs =
-		inputElementDescs_;
+	inputLayoutDesc.pInputElementDescs = inputElementDescs_;
 
-	inputLayoutDesc.NumElements =
-		_countof (inputElementDescs_);
+	inputLayoutDesc.NumElements = _countof (inputElementDescs_);
 
 	return inputLayoutDesc;
 }
@@ -114,8 +105,7 @@ PipelineManager::CreateBlendState () {
 
 	D3D12_BLEND_DESC blendDesc{};
 
-	blendDesc.RenderTarget[0].RenderTargetWriteMask =
-		D3D12_COLOR_WRITE_ENABLE_ALL;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
 	return blendDesc;
 }
@@ -128,11 +118,9 @@ PipelineManager::CreateRasterizerState () {
 
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
 
-	rasterizerDesc.CullMode =
-		D3D12_CULL_MODE_BACK;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
-	rasterizerDesc.FillMode =
-		D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	return rasterizerDesc;
 }
@@ -143,16 +131,13 @@ PipelineManager::CreateRasterizerState () {
 D3D12_DEPTH_STENCIL_DESC
 PipelineManager::CreateDepthStencilState () {
 
-	D3D12_DEPTH_STENCIL_DESC
-		depthStencilDesc{};
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
 
 	depthStencilDesc.DepthEnable = true;
 
-	depthStencilDesc.DepthWriteMask =
-		D3D12_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 
-	depthStencilDesc.DepthFunc =
-		D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
 	return depthStencilDesc;
 }
@@ -177,11 +162,9 @@ PipelineManager::CreateGraphicsPipelineState (
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC
 		graphicsPipelineStateDesc{};
 
-	graphicsPipelineStateDesc.pRootSignature =
-		rootSignature;
+	graphicsPipelineStateDesc.pRootSignature = rootSignature;
 
-	graphicsPipelineStateDesc.InputLayout =
-		inputLayoutDesc;
+	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
 
 	graphicsPipelineStateDesc.VS = {
 		vertexShaderBlob->GetBufferPointer (),
@@ -193,22 +176,17 @@ PipelineManager::CreateGraphicsPipelineState (
 		pixelShaderBlob->GetBufferSize ()
 	};
 
-	graphicsPipelineStateDesc.BlendState =
-		blendDesc;
+	graphicsPipelineStateDesc.BlendState = blendDesc;
 
-	graphicsPipelineStateDesc.RasterizerState =
-		rasterizerDesc;
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
 
-	graphicsPipelineStateDesc.DepthStencilState =
-		depthStencilDesc;
+	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
 
 	graphicsPipelineStateDesc.NumRenderTargets = 1;
 
-	graphicsPipelineStateDesc.RTVFormats[0] =
-		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
-	graphicsPipelineStateDesc.PrimitiveTopologyType =
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
 	graphicsPipelineStateDesc.SampleDesc.Count = 1;
 
@@ -221,8 +199,7 @@ PipelineManager::CreateGraphicsPipelineState (
 	//=============================================================================================//
 	// PSO生成
 
-	Microsoft::WRL::ComPtr<ID3D12PipelineState>
-		graphicsPipelineState = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState>	graphicsPipelineState = nullptr;
 
 	HRESULT hr =
 		device->CreateGraphicsPipelineState (

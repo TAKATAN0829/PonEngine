@@ -17,8 +17,7 @@ DirectX::ScratchImage TextureManager::LoadTexture (
 
 	DirectX::ScratchImage image{};
 
-	std::wstring filePathW =
-		LogSystem::ConvertString (filePath);
+	std::wstring filePathW = LogSystem::ConvertString (filePath);
 
 	HRESULT hr = DirectX::LoadFromWICFile (
 		filePathW.c_str (),

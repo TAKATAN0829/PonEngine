@@ -9,9 +9,7 @@
 //=============================================================================================//
 // 初期化
 
-void Input::Initialize(
-	HINSTANCE hInstance,
-	HWND hwnd) {
+void Input::Initialize(HINSTANCE hInstance,	HWND hwnd) {
 
 	HRESULT hr;
 
@@ -34,8 +32,7 @@ void Input::Initialize(
 	assert(SUCCEEDED(hr));
 
 	// 入力データ形式セット
-	hr = keyboard_->SetDataFormat(
-		&c_dfDIKeyboard);
+	hr = keyboard_->SetDataFormat(&c_dfDIKeyboard);
 
 	assert(SUCCEEDED(hr));
 

@@ -4,7 +4,7 @@
 #include "../externals/imgui/imgui.h"
 #include "../externals/imgui/imgui_impl_win32.h"
 
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler (
 	HWND hwnd,
 	UINT msg,
 	WPARAM wParam,
@@ -14,33 +14,28 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
 //=============================================================================================//
 // 初期化
 
-void WinApp::Initialize() {
+void WinApp::Initialize () {
 
 	// WindowClass設定
 	wc_.lpfnWndProc = WindowProc;
 	wc_.lpszClassName = L"CG2WindowClass";
-	wc_.hInstance = GetModuleHandle(nullptr);
-	wc_.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wc_.hInstance = GetModuleHandle (nullptr);
+	wc_.hCursor = LoadCursor (nullptr, IDC_ARROW);
 
 	// WindowClass登録
-	RegisterClass(&wc_);
+	RegisterClass (&wc_);
 
 	// WindowSize設定
-	RECT wrc = {
-		0,
-		0,
-		kClientWidth_,
-		kClientHeight_
-	};
+	RECT wrc = { 0,	0,	kClientWidth_,	kClientHeight_ };
 
 	// ClientSizeからWindowSizeへ変換
-	AdjustWindowRect(
+	AdjustWindowRect (
 		&wrc,
 		WS_OVERLAPPEDWINDOW,
 		false);
 
 	// Window生成
-	hwnd_ = CreateWindow(
+	hwnd_ = CreateWindow (
 		wc_.lpszClassName,
 		L"CG2",
 		WS_OVERLAPPEDWINDOW,
@@ -54,23 +49,18 @@ void WinApp::Initialize() {
 		nullptr);
 
 	// Window表示
-	ShowWindow(hwnd_, SW_SHOW);
+	ShowWindow (hwnd_, SW_SHOW);
 }
 
 //=============================================================================================//
 // メッセージ処理
 
-bool WinApp::ProcessMessage() {
+bool WinApp::ProcessMessage () {
 
-	if (PeekMessage(
-		&msg_,
-		NULL,
-		0,
-		0,
-		PM_REMOVE)) {
+	if (PeekMessage (&msg_, NULL, 0, 0, PM_REMOVE)) {
 
-		TranslateMessage(&msg_);
-		DispatchMessage(&msg_);
+		TranslateMessage (&msg_);
+		DispatchMessage (&msg_);
 	}
 
 	if (msg_.message == WM_QUIT) {
@@ -83,10 +73,10 @@ bool WinApp::ProcessMessage() {
 //=============================================================================================//
 // 終了処理
 
-void WinApp::Finalize() {
+void WinApp::Finalize () {
 
 	// Windowを閉じる
-	CloseWindow(hwnd_);
+	CloseWindow (hwnd_);
 
 	hwnd_ = nullptr;
 }
@@ -94,18 +84,10 @@ void WinApp::Finalize() {
 //=============================================================================================//
 // ウィンドウプロシージャ
 
-LRESULT CALLBACK WinApp::WindowProc(
-	HWND hwnd,
-	UINT msg,
-	WPARAM wParam,
-	LPARAM lParam) {
+LRESULT CALLBACK WinApp::WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 #ifdef USE_IMGUI
-	if (ImGui_ImplWin32_WndProcHandler(
-		hwnd,
-		msg,
-		wParam,
-		lParam)) {
+	if (ImGui_ImplWin32_WndProcHandler (hwnd, msg, wParam, lParam)) {
 
 		return true;
 	}
@@ -114,15 +96,11 @@ LRESULT CALLBACK WinApp::WindowProc(
 	switch (msg) {
 	case WM_DESTROY:
 
-		// OSに終了を通知
-		PostQuitMessage(0);
+	// OSに終了を通知
+	PostQuitMessage (0);
 
-		return 0;
+	return 0;
 	}
 
-	return DefWindowProc(
-		hwnd,
-		msg,
-		wParam,
-		lParam);
+	return DefWindowProc (hwnd, msg, wParam, lParam);
 }

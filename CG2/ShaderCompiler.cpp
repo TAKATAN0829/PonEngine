@@ -20,26 +20,21 @@ void ShaderCompiler::Initialize () {
 	//=============================================================================================//
 	// DxcUtils生成
 
-	hr = DxcCreateInstance (
-		CLSID_DxcUtils,
-		IID_PPV_ARGS (&dxcUtils_));
+	hr = DxcCreateInstance (CLSID_DxcUtils,IID_PPV_ARGS (&dxcUtils_));
 
 	assert (SUCCEEDED (hr));
 
 	//=============================================================================================//
 	// DxcCompiler生成
 
-	hr = DxcCreateInstance (
-		CLSID_DxcCompiler,
-		IID_PPV_ARGS (&dxcCompiler_));
+	hr = DxcCreateInstance (CLSID_DxcCompiler,	IID_PPV_ARGS (&dxcCompiler_));
 
 	assert (SUCCEEDED (hr));
 
 	//=============================================================================================//
 	// IncludeHandler生成
 
-	hr = dxcUtils_->CreateDefaultIncludeHandler (
-		&includeHandler_);
+	hr = dxcUtils_->CreateDefaultIncludeHandler (&includeHandler_);
 
 	assert (SUCCEEDED (hr));
 }
@@ -78,14 +73,11 @@ IDxcBlob* ShaderCompiler::Compile (
 
 	DxcBuffer shaderSourceBuffer{};
 
-	shaderSourceBuffer.Ptr =
-		shaderSource->GetBufferPointer ();
+	shaderSourceBuffer.Ptr =shaderSource->GetBufferPointer ();
 
-	shaderSourceBuffer.Size =
-		shaderSource->GetBufferSize ();
+	shaderSourceBuffer.Size =shaderSource->GetBufferSize ();
 
-	shaderSourceBuffer.Encoding =
-		DXC_CP_UTF8;
+	shaderSourceBuffer.Encoding =DXC_CP_UTF8;
 
 	//=============================================================================================//
 	// Compile設定
@@ -126,8 +118,7 @@ IDxcBlob* ShaderCompiler::Compile (
 	if (shaderError != nullptr &&
 		shaderError->GetStringLength () != 0) {
 
-		LogSystem::Log (
-			shaderError->GetStringPointer ());
+		LogSystem::Log (shaderError->GetStringPointer ());
 
 		assert (false);
 	}

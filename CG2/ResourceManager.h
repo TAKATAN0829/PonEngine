@@ -33,5 +33,15 @@ public:
 		ID3D12Device* device,
 		const DirectX::TexMetadata& metadata);
 
+	//=============================================================================================//
+	// TextureResourceにデータを転送
+
+	[[nodiscard]]
+	Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData (
+		const Microsoft::WRL::ComPtr<ID3D12Resource>& texture,
+		const DirectX::ScratchImage& mipImages,
+		ID3D12Device* device,
+		ID3D12GraphicsCommandList* commandList);
+
 private:
 };
