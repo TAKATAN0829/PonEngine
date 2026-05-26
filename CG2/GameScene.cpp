@@ -13,9 +13,16 @@ void GameScene::Initialize () {
 	objectManager_->Initialize (device_, resourceManager_);
 
 	//=============================================================================================//
+	// Camera初期化
+
+	camera_ = new Camera ();
+
+	camera_->Initialize (clientWidth_, clientHeight_);
+
+	//=============================================================================================//
 	// Object生成
 
-	Object3d* objectA =	objectManager_->CreateObject ();
+	Object3d* objectA = objectManager_->CreateObject (MeshType::kSphere);
 
 	TransformData transformA{
 		{1.0f,1.0f,1.0f},
@@ -27,7 +34,7 @@ void GameScene::Initialize () {
 
 	objectA->SetTextureIndex (0);
 
-	Object3d* objectB =	objectManager_->CreateObject ();
+	Object3d* objectB = objectManager_->CreateObject (MeshType::kSphere);
 
 	TransformData transformB{
 		{1.0f,1.0f,1.0f},
@@ -38,15 +45,6 @@ void GameScene::Initialize () {
 	objectB->SetTransform (transformB);
 
 	objectB->SetTextureIndex (0);
-
-	//=============================================================================================//
-	// CameraTransform
-
-	cameraTransform_ = {
-		{1.0f,1.0f,1.0f},
-		{0.0f,0.0f,0.0f},
-		{0.0f,0.0f,-5.0f}
-	};
 }
 
 //=================================================================================================//
@@ -57,12 +55,14 @@ void GameScene::Update (Input* input) {
 	input;
 
 	//=============================================================================================//
+	// Camera更新
+
+	camera_->Update ();
+
+	//=============================================================================================//
 	// ObjectManager更新
 
-	objectManager_->Update (
-		cameraTransform_,
-		clientWidth_,
-		clientHeight_);
+	objectManager_->Update (camera_->GetViewProjectionMatrix ());
 }
 
 //=================================================================================================//
@@ -92,6 +92,16 @@ void GameScene::Finalize () {
 
 		objectManager_ = nullptr;
 	}
+
+	//=============================================================================================//
+	// Camera解放
+
+	if (camera_ != nullptr) {
+
+		delete camera_;
+
+		camera_ = nullptr;
+	}
 }
 
 //=================================================================================================//
@@ -115,9 +125,9 @@ void GameScene::SetDevice (ID3D12Device* device) {
 
 void GameScene::SetWindowSize (int32_t width, int32_t height) {
 
-	clientWidth_ =	width;
+	clientWidth_ = width;
 
-	clientHeight_ =	height;
+	clientHeight_ = height;
 }
 
 //=================================================================================================//

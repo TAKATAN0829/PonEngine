@@ -110,7 +110,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="AudioSystem.cpp" />
-    <ClCompile Include="DebugCamera.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DescriptorHeapManager.cpp" />
     <ClCompile Include="DirectXCommon.cpp" />
     <ClCompile Include="Engine.cpp" />
@@ -155,7 +155,7 @@
     <ClInclude Include="..\externals\imgui\imstb_textedit.h" />
     <ClInclude Include="..\externals\imgui\imstb_truetype.h" />
     <ClInclude Include="AudioSystem.h" />
-    <ClInclude Include="DebugCamera.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="DescriptorHeapManager.h" />
     <ClInclude Include="DirectXCommon.h" />
     <ClInclude Include="Engine.h" />

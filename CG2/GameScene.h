@@ -5,6 +5,7 @@
 #include "ObjectManager.h"
 #include "EngineStructs.h"
 #include "ResourceManager.h"
+#include "Camera.h"
 
 class GameScene : public IScene {
 public:
@@ -17,15 +18,12 @@ public:
 	//=============================================================================================//
 	// 更新処理
 
-	void Update (
-		Input* input) override;
+	void Update (Input* input) override;
 
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw (
-		ID3D12GraphicsCommandList* commandList,
-		GraphicsSystem* graphicsSystem) override;
+	void Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) override;
 
 	//=============================================================================================//
 	// 終了処理
@@ -35,21 +33,17 @@ public:
 	//=============================================================================================//
 	// ResourceManager設定
 
-	void SetResourceManager (
-		ResourceManager* resourceManager);
+	void SetResourceManager (ResourceManager* resourceManager);
 
 	//=============================================================================================//
 	// Device設定
 
-	void SetDevice (
-		ID3D12Device* device);
+	void SetDevice (ID3D12Device* device);
 
 	//=============================================================================================//
 	// 画面サイズ設定
 
-	void SetWindowSize (
-		int32_t width,
-		int32_t height);
+	void SetWindowSize (int32_t width, int32_t height);
 
 	//=============================================================================================//
 	// 終了判定
@@ -74,9 +68,9 @@ private:
 	ObjectManager* objectManager_ = nullptr;
 
 	//=============================================================================================//
-	// CameraTransform
+	// Camera
 
-	TransformData cameraTransform_{};
+	Camera* camera_ = nullptr;
 
 	//=============================================================================================//
 	// 画面幅

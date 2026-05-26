@@ -3,9 +3,7 @@
 //=================================================================================================//
 // 初期化処理
 
-void Object3d::Initialize (
-	ID3D12Device* device,
-	ResourceManager* resourceManager) {
+void Object3d::Initialize (ID3D12Device* device, ResourceManager* resourceManager, MeshType meshType) {
 
 	//=============================================================================================//
 	// Transform初期値
@@ -21,96 +19,53 @@ void Object3d::Initialize (
 
 	mesh_ = new Mesh ();
 
-	mesh_->InitializeSphere (
-		device,
-		resourceManager);
+	mesh_->Initialize (device, resourceManager, meshType);
 
 	//=============================================================================================//
 	// MaterialResource生成
 
 	materialResource_ =
-		resourceManager->CreateBufferResource (
-			device,
-			sizeof (Material),
-			"materialResource");
+		resourceManager->CreateBufferResource (device, sizeof (Material), "materialResource");
 
-	//=============================================================================================//
-	// MaterialDataを書き込む
+	materialResource_->Map (0, nullptr, reinterpret_cast<void**>(&materialData_));
 
-	materialResource_->Map (
-		0,
-		nullptr,
-		reinterpret_cast<void**>(&materialData_));
+	materialData_->color = { 1.0f,1.0f,1.0f,1.0f };
 
-	materialData_->color =
-	{ 1.0f,1.0f,1.0f,1.0f };
+	materialData_->enableLighting = true;
 
-	materialData_->enableLighting =
-		true;
-
-	materialData_->uvTransform =
-		MathUtility::MakeIdentity4x4 ();
+	materialData_->uvTransform = MathUtility::MakeIdentity4x4 ();
 
 	//=============================================================================================//
 	// WVPResource生成
 
 	wvpResource_ =
-		resourceManager->CreateBufferResource (
-			device,
-			sizeof (TransformationMatrix),
-			"wvpResource");
+		resourceManager->CreateBufferResource (device, sizeof (TransformationMatrix), "wvpResource");
 
-	//=============================================================================================//
-	// WVPDataを書き込む
+	wvpResource_->Map (0, nullptr, reinterpret_cast<void**>(&wvpData_));
 
-	wvpResource_->Map (
-		0,
-		nullptr,
-		reinterpret_cast<void**>(&wvpData_));
+	wvpData_->WVP = MathUtility::MakeIdentity4x4 ();
 
-	wvpData_->WVP =
-		MathUtility::MakeIdentity4x4 ();
-
-	wvpData_->World =
-		MathUtility::MakeIdentity4x4 ();
+	wvpData_->World = MathUtility::MakeIdentity4x4 ();
 
 	//=============================================================================================//
 	// DirectionalLightResource生成
 
 	directionalLightResource_ =
-		resourceManager->CreateBufferResource (
-			device,
-			sizeof (DirectionalLight),
-			"directionalLightResource");
+		resourceManager->CreateBufferResource (device, sizeof (DirectionalLight), "directionalLightResource");
 
-	//=============================================================================================//
-	// DirectionalLightDataを書き込む
+	directionalLightResource_->Map (0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
 
-	directionalLightResource_->Map (
-		0,
-		nullptr,
-		reinterpret_cast<void**>(&directionalLightData_));
+	directionalLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
 
-	directionalLightData_->color =
-	{ 1.0f,1.0f,1.0f,1.0f };
+	directionalLightData_->direction = { 0.0f,-1.0f,0.0f };
 
-	directionalLightData_->direction =
-	{ 0.0f,-1.0f,0.0f };
-
-	directionalLightData_->intensity =
-		1.0f;
+	directionalLightData_->intensity = 1.0f;
 }
 
 //=================================================================================================//
 // 更新処理
 
-void Object3d::Update (
-	const TransformData& cameraTransform,
-	int32_t clientWidth,
-	int32_t clientHeight) {
-
-	//=============================================================================================//
-	// WVPMatrix作成
+void Object3d::Update (const Matrix4x4& viewProjectionMatrix) {
 
 	Matrix4x4 worldMatrix =
 		MathUtility::MakeAffineMatrix (
@@ -118,35 +73,14 @@ void Object3d::Update (
 			transform_.rotate,
 			transform_.translate);
 
-	Matrix4x4 cameraMatrix =
-		MathUtility::MakeAffineMatrix (
-			cameraTransform.scale,
-			cameraTransform.rotate,
-			cameraTransform.translate);
-
-	Matrix4x4 viewMatrix =
-		MathUtility::Inverse (
-			cameraMatrix);
-
-	Matrix4x4 projectionMatrix =
-		MathUtility::MakePerspectiveFovMatrix (
-			0.45f,
-			float (clientWidth) / float (clientHeight),
-			0.1f,
-			100.0f);
-
 	Matrix4x4 worldViewProjectionMatrix =
 		MathUtility::Multiply (
 			worldMatrix,
-			MathUtility::Multiply (
-				viewMatrix,
-				projectionMatrix));
+			viewProjectionMatrix);
 
-	wvpData_->WVP =
-		worldViewProjectionMatrix;
+	wvpData_->WVP = worldViewProjectionMatrix;
 
-	wvpData_->World =
-		worldMatrix;
+	wvpData_->World = worldMatrix;
 }
 
 //=================================================================================================//
@@ -166,39 +100,40 @@ void Object3d::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* gra
 	// Material設定
 
 	commandList->SetGraphicsRootConstantBufferView (
-		0, materialResource_->GetGPUVirtualAddress ());
+		0,
+		materialResource_->GetGPUVirtualAddress ());
 
 	//=============================================================================================//
 	// WVP設定
 
 	commandList->SetGraphicsRootConstantBufferView (
-		1, wvpResource_->GetGPUVirtualAddress ());
+		1,
+		wvpResource_->GetGPUVirtualAddress ());
 
 	//=============================================================================================//
 	// Texture設定
 
 	commandList->SetGraphicsRootDescriptorTable (
-		2, graphicsSystem->GetSRVDescriptorHeap ()->GetGPUDescriptorHandle (textureIndex_));
+		2,
+		graphicsSystem->GetSRVDescriptorHeap ()->GetGPUDescriptorHandle (textureIndex_));
 
 	//=============================================================================================//
 	// DirectionalLight設定
 
 	commandList->SetGraphicsRootConstantBufferView (
-		3, directionalLightResource_->GetGPUVirtualAddress ());
+		3,
+		directionalLightResource_->GetGPUVirtualAddress ());
 
 	//=============================================================================================//
-	// DrawCall
+	// Mesh描画
 
-	commandList->DrawIndexedInstanced (mesh_->GetIndexCount (), 1, 0, 0, 0);
+	mesh_->Draw (commandList);
 }
 
 //=================================================================================================//
 // 終了処理
 
 void Object3d::Finalize () {
-
-	//=============================================================================================//
-	// Mesh解放
 
 	if (mesh_ != nullptr) {
 
@@ -211,11 +146,9 @@ void Object3d::Finalize () {
 //=================================================================================================//
 // Transform設定
 
-void Object3d::SetTransform (
-	const TransformData& transform) {
+void Object3d::SetTransform (const TransformData& transform) {
 
-	transform_ =
-		transform;
+	transform_ = transform;
 }
 
 //=================================================================================================//

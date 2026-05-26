@@ -3,15 +3,11 @@
 //=================================================================================================//
 // 初期化処理
 
-void ObjectManager::Initialize (
-	ID3D12Device* device,
-	ResourceManager* resourceManager) {
+void ObjectManager::Initialize (ID3D12Device* device, ResourceManager* resourceManager) {
 
-	device_ =
-		device;
+	device_ = device;
 
-	resourceManager_ =
-		resourceManager;
+	resourceManager_ = resourceManager;
 }
 
 //=================================================================================================//
@@ -39,16 +35,13 @@ void ObjectManager::Finalize () {
 //=================================================================================================//
 // Object追加
 
-Object3d* ObjectManager::CreateObject () {
+Object3d* ObjectManager::CreateObject (MeshType meshType) {
 
 	Object3d* object = new Object3d ();
 
-	object->Initialize (
-		device_,
-		resourceManager_);
+	object->Initialize (device_, resourceManager_, meshType);
 
-	objects_.push_back (
-		object);
+	objects_.push_back (object);
 
 	return object;
 }
@@ -56,31 +49,21 @@ Object3d* ObjectManager::CreateObject () {
 //=================================================================================================//
 // 更新処理
 
-void ObjectManager::Update (
-	const TransformData& cameraTransform,
-	int32_t clientWidth,
-	int32_t clientHeight) {
+void ObjectManager::Update (const Matrix4x4& viewProjectionMatrix) {
 
 	for (Object3d* object : objects_) {
 
-		object->Update (
-			cameraTransform,
-			clientWidth,
-			clientHeight);
+		object->Update (viewProjectionMatrix);
 	}
 }
 
 //=================================================================================================//
 // 描画処理
 
-void ObjectManager::Draw (
-	ID3D12GraphicsCommandList* commandList,
-	GraphicsSystem* graphicsSystem) {
+void ObjectManager::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
 
 	for (Object3d* object : objects_) {
 
-		object->Draw (
-			commandList,
-			graphicsSystem);
+		object->Draw (commandList, graphicsSystem);
 	}
 }

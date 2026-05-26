@@ -1,39 +1,23 @@
 #pragma once
 
-// DirectX
-#include <d3d12.h>
-
-// WRL
-#include <wrl.h>
+// C++
+#include <cstdint>
 
 // 自作
 #include "EngineStructs.h"
-#include "ResourceManager.h"
-#include "GraphicsSystem.h"
-#include "Mesh.h"
 
-class Object3d {
+class Camera {
 public:
 
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize (ID3D12Device* device, ResourceManager* resourceManager, MeshType meshType);
+	void Initialize (int32_t clientWidth, int32_t clientHeight);
 
 	//=============================================================================================//
 	// 更新処理
 
-	void Update (const Matrix4x4& viewProjectionMatrix);
-
-	//=============================================================================================//
-	// 描画処理
-
-	void Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem);
-
-	//=============================================================================================//
-	// 終了処理
-
-	void Finalize ();
+	void Update ();
 
 	//=============================================================================================//
 	// Transform設定
@@ -43,24 +27,24 @@ public:
 	//=============================================================================================//
 	// Transform取得
 
-	TransformData GetTransform ();
+	TransformData GetTransform () const;
 
 	//=============================================================================================//
-	// 色設定
+	// ViewMatrix取得
 
-	void SetColor (const Vector4& color);
+	const Matrix4x4& GetViewMatrix () const;
 
 	//=============================================================================================//
-	// Texture番号設定
+	// ProjectionMatrix取得
 
-	void SetTextureIndex (uint32_t textureIndex);
+	const Matrix4x4& GetProjectionMatrix () const;
+
+	//=============================================================================================//
+	// ViewProjectionMatrix取得
+
+	const Matrix4x4& GetViewProjectionMatrix () const;
 
 private:
-
-	//=============================================================================================//
-	// Mesh
-
-	Mesh* mesh_ = nullptr;
 
 	//=============================================================================================//
 	// Transform
@@ -68,37 +52,27 @@ private:
 	TransformData transform_{};
 
 	//=============================================================================================//
-	// MaterialResource
+	// ViewMatrix
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_ = nullptr;
-
-	//=============================================================================================//
-	// MaterialData
-
-	Material* materialData_ = nullptr;
+	Matrix4x4 viewMatrix_{};
 
 	//=============================================================================================//
-	// WVPResource
+	// ProjectionMatrix
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> wvpResource_ = nullptr;
-
-	//=============================================================================================//
-	// WVPData
-
-	TransformationMatrix* wvpData_ = nullptr;
+	Matrix4x4 projectionMatrix_{};
 
 	//=============================================================================================//
-	// DirectionalLightResource
+	// ViewProjectionMatrix
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_ = nullptr;
-
-	//=============================================================================================//
-	// DirectionalLightData
-
-	DirectionalLight* directionalLightData_ = nullptr;
+	Matrix4x4 viewProjectionMatrix_{};
 
 	//=============================================================================================//
-	// Texture番号
+	// 画面幅
 
-	uint32_t textureIndex_ = 0;
+	int32_t clientWidth_ = 0;
+
+	//=============================================================================================//
+	// 画面高さ
+
+	int32_t clientHeight_ = 0;
 };
