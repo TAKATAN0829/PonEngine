@@ -670,8 +670,7 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// Texture読み込み
 
 	DirectX::ScratchImage mipImages =
-		textureManager->LoadTexture (
-			"./Resources/uvChecker.png");
+		textureManager->LoadTexture ("./Resources/uvChecker.png");
 
 	const DirectX::TexMetadata& metadata = mipImages.GetMetadata ();
 
