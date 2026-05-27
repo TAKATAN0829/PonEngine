@@ -40,7 +40,9 @@ void TitleScene::Initialize() {
 
 	backGroundSprite_->SetPosition({ 640.0f,360.0f });
 
-	backGroundSprite_->SetSize({ 1280.0f,720.0f });
+	backGroundSprite_->SetSize({ 512.0f,512.0f });
+
+	backGroundSprite_->SetEnableLighting(false);
 }
 
 //=================================================================================================//

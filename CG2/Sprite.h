@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 
 // DirectX
 #include <d3d12.h>
