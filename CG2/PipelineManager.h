@@ -14,6 +14,9 @@
 // C++
 #include <cstdint>
 
+// 自作
+#include "ShaderCompiler.h"
+
 class PipelineManager {
 public:
 
@@ -59,10 +62,35 @@ public:
 			IDxcBlob* vertexShaderBlob,
 			IDxcBlob* pixelShaderBlob);
 
+	//=============================================================================================//
+	// SpritePipeline生成
+
+	void CreateSpritePipeline(ID3D12Device* device, ShaderCompiler* shaderCompiler);
+
+	//=============================================================================================//
+	// SpriteRootSignature取得
+
+	ID3D12RootSignature* GetSpriteRootSignature();
+
+	//=============================================================================================//
+	// SpritePipelineState取得
+
+	ID3D12PipelineState* GetSpritePipelineState();
+
 private:
 
 	//=============================================================================================//
 	// InputElementDesc
 
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs_[3]{};
+
+	//=============================================================================================//
+	// SpriteRootSignature
+
+	Microsoft::WRL::ComPtr<ID3D12RootSignature>	spriteRootSignature_ = nullptr;
+
+	//=============================================================================================//
+	// SpritePipelineState
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState>	spritePipelineState_ = nullptr;
 };

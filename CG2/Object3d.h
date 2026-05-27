@@ -11,6 +11,7 @@
 #include "ResourceManager.h"
 #include "GraphicsSystem.h"
 #include "Mesh.h"
+#include "Material.h"
 
 class Object3d {
 public:
@@ -68,16 +69,6 @@ private:
 	TransformData transform_{};
 
 	//=============================================================================================//
-	// MaterialResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_ = nullptr;
-
-	//=============================================================================================//
-	// MaterialData
-
-	Material* materialData_ = nullptr;
-
-	//=============================================================================================//
 	// WVPResource
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> wvpResource_ = nullptr;
@@ -88,17 +79,6 @@ private:
 	TransformationMatrix* wvpData_ = nullptr;
 
 	//=============================================================================================//
-	// DirectionalLightResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_ = nullptr;
-
-	//=============================================================================================//
-	// DirectionalLightData
-
-	DirectionalLight* directionalLightData_ = nullptr;
-
-	//=============================================================================================//
-	// Texture番号
-
-	uint32_t textureIndex_ = 0;
+	// Material
+	Material* material_ = nullptr;
 };

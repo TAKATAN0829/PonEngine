@@ -42,7 +42,7 @@ void ShaderCompiler::Initialize () {
 //=============================================================================================//
 // ShaderCompile
 
-IDxcBlob* ShaderCompiler::Compile (
+IDxcBlob* ShaderCompiler::CompileShader (
 	const std::wstring& filePath,
 	const wchar_t* profile) {
 

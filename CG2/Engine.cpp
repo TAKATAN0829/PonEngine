@@ -44,12 +44,12 @@ void Engine::Initialize () {
 	graphicsSystem_->Initialize (dxCommon_->GetDevice ());
 
 	graphicsSystem_->CreateGraphicsPipeline (dxCommon_->GetDevice ());
+	graphicsSystem_->CreateSpritePipeline(dxCommon_->GetDevice());
 
 	graphicsSystem_->CreateTexture (
 		dxCommon_->GetDevice (),
 		dxCommon_->GetCommandList (),
-		"./Resources/uvChecker.png",
-		0);
+		"./Resources/uvChecker.png");
 
 	//=============================================================================================//
 	// SceneManager初期化

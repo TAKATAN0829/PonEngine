@@ -1,103 +1,109 @@
 #pragma once
 
+// DirectX
+#include <d3d12.h>
+
+// WRL
+#include <wrl.h>
+
 // 自作
-#include "IScene.h"
-#include "ObjectManager.h"
 #include "EngineStructs.h"
 #include "ResourceManager.h"
-#include "Camera.h"
-#include "Sprite.h"
-#include "SpriteManager.h"
+#include "GraphicsSystem.h"
+#include "Mesh.h"
+#include "Material.h"
 
-class GameScene : public IScene {
+class Sprite {
 public:
 
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize () override;
+	void Initialize(
+		ID3D12Device* device,
+		ResourceManager* resourceManager,
+		int32_t clientWidth,
+		int32_t clientHeight);
 
 	//=============================================================================================//
 	// 更新処理
 
-	void Update (Input* input) override;
+	void Update();
 
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) override;
+	void Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem);
 
 	//=============================================================================================//
 	// 終了処理
 
-	void Finalize () override;
+	void Finalize();
 
 	//=============================================================================================//
-	// ResourceManager設定
+	// Position設定
 
-	void SetResourceManager (ResourceManager* resourceManager);
-
-	//=============================================================================================//
-	// Device設定
-
-	void SetDevice (ID3D12Device* device);
+	void SetPosition(const Vector2& position);
 
 	//=============================================================================================//
-	// 画面サイズ設定
+	// Size設定
 
-	void SetWindowSize (int32_t width, int32_t height);
+	void SetSize(const Vector2& size);
 
 	//=============================================================================================//
-	// 終了判定
+	// Texture番号設定
 
-	bool IsFinished () override;
+	void SetTextureIndex(uint32_t textureIndex);
 
-	void SetContext(const SceneContext& sceneContext) override;
+	//=============================================================================================//
+	// 色設定
+
+	void SetColor(const Vector4& color);
+
+	//=============================================================================================//
+	// Lighting有効設定
+
+	void SetEnableLighting(bool enableLighting);
 
 private:
 
 	//=============================================================================================//
-	// Device
+	// Mesh
 
-	ID3D12Device* device_ = nullptr;
-
-	//=============================================================================================//
-	// ResourceManager
-
-	ResourceManager* resourceManager_ = nullptr;
+	Mesh* mesh_ = nullptr;
 
 	//=============================================================================================//
-	// ObjectManager
+	// Material
 
-	ObjectManager* objectManager_ = nullptr;
-
-	//=============================================================================================//
-	// Camera
-
-	Camera* camera_ = nullptr;
+	Material* material_ = nullptr;
 
 	//=============================================================================================//
-	// 画面幅
+	// Position
+
+	Vector2 position_ = { 0.0f,0.0f };
+
+	//=============================================================================================//
+	// Size
+
+	Vector2 size_ = { 100.0f,100.0f };
+
+	//=============================================================================================//
+	// WVPResource
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> wvpResource_ = nullptr;
+
+	//=============================================================================================//
+	// WVPData
+
+	TransformationMatrix* wvpData_ = nullptr;
+
+	//=============================================================================================//
+	// ClientWidth
 
 	int32_t clientWidth_ = 0;
 
 	//=============================================================================================//
-	// 画面高さ
+	// ClientHeight
 
 	int32_t clientHeight_ = 0;
-
-	//=============================================================================================//
-	// 終了フラグ
-
-	bool isFinished_ = false;
-	
-	//=============================================================================================//
-	// Sprite
-
-	Sprite* sprite_ = nullptr;
-
-	//=============================================================================================//
-	// SpriteManager
-
-	SpriteManager* spriteManager_ =	nullptr;
 };

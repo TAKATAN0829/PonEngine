@@ -45,6 +45,34 @@ void GameScene::Initialize () {
 	objectB->SetTransform (transformB);
 
 	objectB->SetTextureIndex (0);
+
+	//=============================================================================================//
+	// Sprite生成
+
+	sprite_ =new Sprite();
+
+	sprite_->Initialize(
+		device_,
+		resourceManager_,
+		clientWidth_,
+		clientHeight_);
+
+	sprite_->SetTextureIndex(0);
+
+	sprite_->SetPosition({ 640.0f,360.0f });
+
+	sprite_->SetSize({ 200.0f,200.0f });
+
+	//=============================================================================================//
+	// SpriteManager生成
+
+	spriteManager_ = new SpriteManager();
+
+	spriteManager_->Initialize(
+		device_,
+		resourceManager_,
+		clientWidth_,
+		clientHeight_);
 }
 
 //=================================================================================================//
@@ -63,6 +91,11 @@ void GameScene::Update (Input* input) {
 	// ObjectManager更新
 
 	objectManager_->Update (camera_->GetViewProjectionMatrix ());
+
+	//=============================================================================================//
+	// Sprite更新
+
+	sprite_->Update();
 }
 
 //=================================================================================================//
@@ -74,6 +107,16 @@ void GameScene::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* gr
 	// ObjectManager描画
 
 	objectManager_->Draw (commandList, graphicsSystem);
+
+	//=============================================================================================//
+	// Sprite描画
+
+	sprite_->Draw(commandList, graphicsSystem);
+
+	//=============================================================================================//
+	// SpriteManager描画
+
+	spriteManager_->Draw(commandList, graphicsSystem);
 }
 
 //=================================================================================================//
@@ -91,6 +134,28 @@ void GameScene::Finalize () {
 		delete objectManager_;
 
 		objectManager_ = nullptr;
+	}
+
+	//=============================================================================================//
+	// Sprite解放
+
+	if (sprite_ != nullptr) {
+
+		delete sprite_;
+
+		sprite_ = nullptr;
+	}
+
+	//=============================================================================================//
+	// SpriteManager解放
+
+	if (spriteManager_ != nullptr) {
+
+		spriteManager_->Finalize();
+
+		delete spriteManager_;
+
+		spriteManager_ = nullptr;
 	}
 
 	//=============================================================================================//
@@ -136,4 +201,18 @@ void GameScene::SetWindowSize (int32_t width, int32_t height) {
 bool GameScene::IsFinished () {
 
 	return isFinished_;
+}
+
+//=================================================================================================//
+// シーン共通情報
+
+void GameScene::SetContext(const SceneContext& sceneContext) {
+
+	device_ = sceneContext.device;
+
+	resourceManager_ = sceneContext.resourceManager;
+
+	clientWidth_ = sceneContext.clientWidth;
+
+	clientHeight_ = sceneContext.clientHeight;
 }

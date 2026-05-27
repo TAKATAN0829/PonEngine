@@ -3,73 +3,69 @@
 // DirectX
 #include <d3d12.h>
 
+// WRL
+#include <wrl.h>
+
 // C++
 #include <cstdint>
 
 // 自作
-#include "IScene.h"
-#include "TitleScene.h"
-#include "GameScene.h"
-#include "GraphicsSystem.h"
+#include "EngineStructs.h"
 #include "ResourceManager.h"
-#include "Input.h"
+#include "GraphicsSystem.h"
 
-class SceneManager {
+class Material {
 public:
 
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(
-		ID3D12Device* device,
-		ResourceManager* resourceManager,
-		int32_t clientWidth,
-		int32_t clientHeight);
+	void Initialize(ID3D12Device* device, ResourceManager* resourceManager);
 
 	//=============================================================================================//
-	// 更新処理
+	// RootParameter設定
 
-	void Update(Input* input);
-
-	//=============================================================================================//
-	// 描画処理
-
-	void Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem);
+	void Bind(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem);
 
 	//=============================================================================================//
-	// 終了処理
+	// 色設定
 
-	void Finalize();
+	void SetColor(const Vector4& color);
+
+	//=============================================================================================//
+	// Texture番号設定
+
+	void SetTextureIndex(uint32_t textureIndex);
+
+	//=============================================================================================//
+	// Lighting有効設定
+
+	void SetEnableLighting(bool enableLighting);
 
 private:
 
 	//=============================================================================================//
-	// CurrentScene
+	// MaterialResource
 
-	IScene* currentScene_ = nullptr;
-
-	//=============================================================================================//
-	// Device
-
-	ID3D12Device* device_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_ = nullptr;
 
 	//=============================================================================================//
-	// ResourceManager
+	// MaterialData
 
-	ResourceManager* resourceManager_ = nullptr;
-
-	//=============================================================================================//
-	// ClientWidth
-
-	int32_t clientWidth_ = 0;
+	MaterialData* materialData_ = nullptr;
 
 	//=============================================================================================//
-	// ClientHeight
+	// Texture番号
 
-	int32_t clientHeight_ = 0;
+	uint32_t textureIndex_ = 0;
 
 	//=============================================================================================//
-	// SceneContext
+	// DirectionalLightResource
 
-	SceneContext sceneContext_{};
+	Microsoft::WRL::ComPtr<ID3D12Resource>directionalLightResource_ = nullptr;
+
+	//=============================================================================================//
+	// DirectionalLightData
+
+	DirectionalLight* directionalLightData_ = nullptr;
 };

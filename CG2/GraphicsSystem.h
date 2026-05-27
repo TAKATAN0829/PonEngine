@@ -25,8 +25,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize (
-		ID3D12Device* device);
+	void Initialize (ID3D12Device* device);
 
 	//=============================================================================================//
 	// 終了処理
@@ -71,22 +70,33 @@ public:
 	//=============================================================================================//
 	// GraphicsPipeline生成
 
-	void CreateGraphicsPipeline (
-		ID3D12Device* device);
+	void CreateGraphicsPipeline (ID3D12Device* device);
+
+	//=============================================================================================//
+	// SpritePipeline生成
+
+	void CreateSpritePipeline(ID3D12Device* device);
 
 	//=============================================================================================//
 	// Texture生成
 
-	void CreateTexture (
+	uint32_t CreateTexture(
 		ID3D12Device* device,
 		ID3D12GraphicsCommandList* commandList,
-		const std::string& filePath,
-		uint32_t descriptorIndex);
+		const std::string& filePath);
 
 	//=============================================================================================//
 	// 描画前設定
 
 	void PreDraw (
+		ID3D12GraphicsCommandList* commandList,
+		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
+		D3D12_INDEX_BUFFER_VIEW* indexBufferView);
+
+	//=============================================================================================//
+	// Sprite描画前設定
+
+	void PreSpriteDraw(
 		ID3D12GraphicsCommandList* commandList,
 		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
 		D3D12_INDEX_BUFFER_VIEW* indexBufferView);
@@ -128,15 +138,4 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
 
-	//=============================================================================================//
-	// TextureResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource>
-		textureResource_ = nullptr;
-
-	//=============================================================================================//
-	// IntermediateResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource>
-		intermediateResource_ = nullptr;
 };

@@ -2,39 +2,80 @@
 
 // 自作
 #include "IScene.h"
+#include "SpriteManager.h"
 
 class TitleScene : public IScene {
 public:
 
 	//=============================================================================================//
+	// SceneContext設定
+
+	void SetContext(const SceneContext& sceneContext) override;
+
+	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize () override;
+	void Initialize() override;
 
 	//=============================================================================================//
 	// 更新処理
 
-	void Update (Input* input) override;
+	void Update(Input* input) override;
 
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw (ID3D12GraphicsCommandList* commandList,	GraphicsSystem* graphicsSystem) override;
+	void Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) override;
 
 	//=============================================================================================//
 	// 終了処理
 
-	void Finalize () override;
+	void Finalize() override;
 
 	//=============================================================================================//
 	// 終了判定
 
-	bool IsFinished () override;
+	bool IsFinished() override;
 
 private:
+
+	//=============================================================================================//
+	// Device
+
+	ID3D12Device* device_ = nullptr;
+
+	//=============================================================================================//
+	// ResourceManager
+
+	ResourceManager* resourceManager_ = nullptr;
+
+	//=============================================================================================//
+	// ClientWidth
+
+	int32_t clientWidth_ = 0;
+
+	//=============================================================================================//
+	// ClientHeight
+
+	int32_t clientHeight_ = 0;
+
+	//=============================================================================================//
+	// SpriteManager
+
+	SpriteManager* spriteManager_ = nullptr;
+
+	//=============================================================================================//
+	// BackGroundSprite
+
+	Sprite* backGroundSprite_ = nullptr;
 
 	//=============================================================================================//
 	// 終了フラグ
 
 	bool isFinished_ = false;
+
+	//=============================================================================================//
+	// Lighting有効
+
+	bool enableLighting_ = false;
 };

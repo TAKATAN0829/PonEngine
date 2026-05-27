@@ -3,44 +3,44 @@
 // Windows
 #include <Windows.h>
 
-// DXC
-#include <dxcapi.h>
+// DirectX
+#include <d3d12.h>
 
-// C++
-#include <string>
+// 自作
+#include "DescriptorHeapManager.h"
 
-class ShaderCompiler {
+class ImGuiSystem {
 public:
 
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize ();
+	void Initialize(
+		HWND hwnd,
+		ID3D12Device* device,
+		DescriptorHeapManager* srvDescriptorHeap,
+		uint32_t bufferCount,
+		uint32_t descriptorIndex);
 
 	//=============================================================================================//
-	// ShaderCompile
+	// 開始処理
 
-	IDxcBlob* CompileShader (const std::wstring& filePath, const wchar_t* profile);
+	void Begin();
+
+	//=============================================================================================//
+	// 描画処理
+
+	void Draw(ID3D12GraphicsCommandList* commandList);
 
 	//=============================================================================================//
 	// 終了処理
 
-	void Finalize ();
+	void Finalize();
 
 private:
 
 	//=============================================================================================//
-	// DxcUtils
+	// 初期化済みフラグ
 
-	IDxcUtils* dxcUtils_ = nullptr;
-
-	//=============================================================================================//
-	// DxcCompiler
-
-	IDxcCompiler3* dxcCompiler_ = nullptr;
-
-	//=============================================================================================//
-	// IncludeHandler
-
-	IDxcIncludeHandler* includeHandler_ = nullptr;
+	bool isInitialized_ = false;
 };

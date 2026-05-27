@@ -27,7 +27,7 @@ struct VertexData {
 //=================================================================================================//
 // マテリアル
 
-struct Material {
+struct MaterialData {
 	Vector4 color;
 	int32_t enableLighting;
 	float padding[3];

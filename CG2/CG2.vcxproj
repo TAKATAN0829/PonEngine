@@ -114,12 +114,13 @@
     <ClCompile Include="DescriptorHeapManager.cpp" />
     <ClCompile Include="DirectXCommon.cpp" />
     <ClCompile Include="Engine.cpp" />
-    <ClCompile Include="EngineStructs.cpp" />
     <ClCompile Include="GameScene.cpp" />
     <ClCompile Include="GraphicsSystem.cpp" />
+    <ClCompile Include="ImGuiSystem.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="LogSystem.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Object3d.cpp" />
     <ClCompile Include="ObjectManager.cpp" />
@@ -127,6 +128,8 @@
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="ShaderCompiler.cpp" />
+    <ClCompile Include="Sprite.cpp" />
+    <ClCompile Include="SpriteManager.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="TitleScene.cpp" />
     <ClCompile Include="WinApp.cpp" />
@@ -162,9 +165,11 @@
     <ClInclude Include="EngineStructs.h" />
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="GraphicsSystem.h" />
+    <ClInclude Include="ImGuiSystem.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="IScene.h" />
     <ClInclude Include="LogSystem.h" />
+    <ClInclude Include="Material.h" />
     <ClInclude Include="MathUtility.h" />
     <ClInclude Include="Matrix4x4.h" />
     <ClInclude Include="Mesh.h" />
@@ -174,6 +179,8 @@
     <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="ShaderCompiler.h" />
+    <ClInclude Include="Sprite.h" />
+    <ClInclude Include="SpriteManager.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="TitleScene.h" />
     <ClInclude Include="Vector2.h" />

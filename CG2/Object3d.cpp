@@ -22,18 +22,11 @@ void Object3d::Initialize (ID3D12Device* device, ResourceManager* resourceManage
 	mesh_->Initialize (device, resourceManager, meshType);
 
 	//=============================================================================================//
-	// MaterialResource生成
+    // Material生成
 
-	materialResource_ =
-		resourceManager->CreateBufferResource (device, sizeof (Material), "materialResource");
+	material_ = new Material();
 
-	materialResource_->Map (0, nullptr, reinterpret_cast<void**>(&materialData_));
-
-	materialData_->color = { 1.0f,1.0f,1.0f,1.0f };
-
-	materialData_->enableLighting = true;
-
-	materialData_->uvTransform = MathUtility::MakeIdentity4x4 ();
+	material_->Initialize(device, resourceManager);
 
 	//=============================================================================================//
 	// WVPResource生成
@@ -47,19 +40,6 @@ void Object3d::Initialize (ID3D12Device* device, ResourceManager* resourceManage
 
 	wvpData_->World = MathUtility::MakeIdentity4x4 ();
 
-	//=============================================================================================//
-	// DirectionalLightResource生成
-
-	directionalLightResource_ =
-		resourceManager->CreateBufferResource (device, sizeof (DirectionalLight), "directionalLightResource");
-
-	directionalLightResource_->Map (0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
-
-	directionalLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
-
-	directionalLightData_->direction = { 0.0f,-1.0f,0.0f };
-
-	directionalLightData_->intensity = 1.0f;
 }
 
 //=================================================================================================//
@@ -99,9 +79,7 @@ void Object3d::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* gra
 	//=============================================================================================//
 	// Material設定
 
-	commandList->SetGraphicsRootConstantBufferView (
-		0,
-		materialResource_->GetGPUVirtualAddress ());
+	material_->Bind(commandList, graphicsSystem);
 
 	//=============================================================================================//
 	// WVP設定
@@ -109,20 +87,6 @@ void Object3d::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* gra
 	commandList->SetGraphicsRootConstantBufferView (
 		1,
 		wvpResource_->GetGPUVirtualAddress ());
-
-	//=============================================================================================//
-	// Texture設定
-
-	commandList->SetGraphicsRootDescriptorTable (
-		2,
-		graphicsSystem->GetSRVDescriptorHeap ()->GetGPUDescriptorHandle (textureIndex_));
-
-	//=============================================================================================//
-	// DirectionalLight設定
-
-	commandList->SetGraphicsRootConstantBufferView (
-		3,
-		directionalLightResource_->GetGPUVirtualAddress ());
 
 	//=============================================================================================//
 	// Mesh描画
@@ -140,6 +104,13 @@ void Object3d::Finalize () {
 		delete mesh_;
 
 		mesh_ = nullptr;
+	}
+
+	if (material_ != nullptr) {
+
+		delete material_;
+
+		material_ = nullptr;
 	}
 }
 
@@ -164,13 +135,13 @@ TransformData Object3d::GetTransform () {
 
 void Object3d::SetColor (const Vector4& color) {
 
-	materialData_->color = color;
+	material_->SetColor(color);
 }
 
 //=================================================================================================//
 // Texture番号設定
 
-void Object3d::SetTextureIndex (uint32_t textureIndex) {
+void Object3d::SetTextureIndex(uint32_t textureIndex) {
 
-	textureIndex_ = textureIndex;
+	material_->SetTextureIndex(textureIndex);
 }

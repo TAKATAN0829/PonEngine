@@ -1,20 +1,17 @@
 #pragma once
 
+// C++
+#include <vector>
+
 // DirectX
 #include <d3d12.h>
 
-// C++
-#include <cstdint>
-
 // 自作
-#include "IScene.h"
-#include "TitleScene.h"
-#include "GameScene.h"
+#include "Sprite.h"
 #include "GraphicsSystem.h"
 #include "ResourceManager.h"
-#include "Input.h"
 
-class SceneManager {
+class SpriteManager {
 public:
 
 	//=============================================================================================//
@@ -29,7 +26,7 @@ public:
 	//=============================================================================================//
 	// 更新処理
 
-	void Update(Input* input);
+	void Update();
 
 	//=============================================================================================//
 	// 描画処理
@@ -41,17 +38,17 @@ public:
 
 	void Finalize();
 
-private:
-
 	//=============================================================================================//
-	// CurrentScene
+	// Sprite生成
 
-	IScene* currentScene_ = nullptr;
+	Sprite* CreateSprite();
+
+private:
 
 	//=============================================================================================//
 	// Device
 
-	ID3D12Device* device_ = nullptr;
+	ID3D12Device* device_ =	nullptr;
 
 	//=============================================================================================//
 	// ResourceManager
@@ -69,7 +66,7 @@ private:
 	int32_t clientHeight_ = 0;
 
 	//=============================================================================================//
-	// SceneContext
+	// Sprites
 
-	SceneContext sceneContext_{};
+	std::vector<Sprite*> sprites_;
 };

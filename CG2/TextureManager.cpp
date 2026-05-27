@@ -9,8 +9,7 @@
 //=================================================================================================//
 // Textureを読む
 
-DirectX::ScratchImage TextureManager::LoadTexture (
-	const std::string& filePath) {
+DirectX::ScratchImage TextureManager::LoadTexture (const std::string& filePath) {
 
 	//=============================================================================================//
 	// Textureファイルを読む
@@ -43,4 +42,67 @@ DirectX::ScratchImage TextureManager::LoadTexture (
 	assert (SUCCEEDED (hr));
 
 	return mipImages;
+}
+
+//=================================================================================================//
+// Texture生成
+
+uint32_t TextureManager::CreateTexture(
+	ID3D12Device* device,
+	ID3D12GraphicsCommandList* commandList,
+	ResourceManager* resourceManager,
+	DescriptorHeapManager* srvDescriptorHeap,
+	const std::string& filePath) {
+
+	//=============================================================================================//
+	// Texture番号
+
+	uint32_t textureIndex =	static_cast<uint32_t>(textureResources_.size());
+
+	//=============================================================================================//
+	// Texture読み込み
+
+	DirectX::ScratchImage mipImages = LoadTexture(filePath);
+
+	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
+
+	//=============================================================================================//
+	// TextureResource生成
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> textureResource =
+		resourceManager->CreateTextureResource(device, metadata);
+
+	//=============================================================================================//
+	// Texture転送
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource =
+		resourceManager->UploadTextureData(textureResource,	mipImages, device, commandList);
+
+	//=============================================================================================//
+	// SRV設定
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+
+	srvDesc.Format = metadata.format;
+
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	srvDesc.ViewDimension =	D3D12_SRV_DIMENSION_TEXTURE2D;
+
+	srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
+
+	//=============================================================================================//
+	// SRV生成
+
+	device->CreateShaderResourceView(
+		textureResource.Get(), &srvDesc, srvDescriptorHeap->GetCPUDescriptorHandle(textureIndex));
+
+	//=============================================================================================//
+	// Resource保存
+
+	textureResources_.push_back(textureResource);
+
+	intermediateResources_.push_back(intermediateResource);
+
+	return textureIndex;
 }
