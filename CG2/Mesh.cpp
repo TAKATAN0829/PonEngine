@@ -287,15 +287,10 @@ void Mesh::CreateSphere () {
 			uint32_t index = (latIndex * kSubdivision + lonIndex) * 6;
 
 			indexData_[index + 0] = start;
-
 			indexData_[index + 1] = start + kSubdivision + 1;
-
 			indexData_[index + 2] = start + 1;
-
 			indexData_[index + 3] = start + 1;
-
 			indexData_[index + 4] = start + kSubdivision + 1;
-
 			indexData_[index + 5] = start + kSubdivision + 2;
 		}
 	}
@@ -310,36 +305,28 @@ void Mesh::CreatePlane () {
 	// 左上
 
 	vertexData_[0].position = { -1.0f,1.0f,0.0f,1.0f };
-
-	vertexData_[0].texcoord = { 0.0f,0.0f };
-
+	vertexData_[0].texcoord = { 0.0f,1.0f };
 	vertexData_[0].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 右上
 
 	vertexData_[1].position = { 1.0f,1.0f,0.0f,1.0f };
-
-	vertexData_[1].texcoord = { 1.0f,0.0f };
-
+	vertexData_[1].texcoord = { 1.0f,1.0f };
 	vertexData_[1].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 左下
 
 	vertexData_[2].position = { -1.0f,-1.0f,0.0f,1.0f };
-
-	vertexData_[2].texcoord = { 0.0f,1.0f };
-
+	vertexData_[2].texcoord = { 0.0f,0.0f };
 	vertexData_[2].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 右下
 
 	vertexData_[3].position = { 1.0f,-1.0f,0.0f,1.0f };
-
-	vertexData_[3].texcoord = { 1.0f,1.0f };
-
+	vertexData_[3].texcoord = { 1.0f,0.0f };
 	vertexData_[3].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
@@ -363,27 +350,21 @@ void Mesh::CreateTriangle () {
 	// 上
 
 	vertexData_[0].position = { 0.0f,1.0f,0.0f,1.0f };
-
 	vertexData_[0].texcoord = { 0.5f,0.0f };
-
 	vertexData_[0].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 左下
 
 	vertexData_[1].position = { -1.0f,-1.0f,0.0f,1.0f };
-
 	vertexData_[1].texcoord = { 0.0f,1.0f };
-
 	vertexData_[1].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 右下
 
 	vertexData_[2].position = { 1.0f,-1.0f,0.0f,1.0f };
-
 	vertexData_[2].texcoord = { 1.0f,1.0f };
-
 	vertexData_[2].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
