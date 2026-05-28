@@ -1,13 +1,13 @@
 #include "GameScene.h"
 
+#ifdef USE_IMGUI
+#include "../externals/imgui/imgui.h"
+#endif
+
 //=================================================================================================//
 // 初期化処理
 
 void GameScene::Initialize () {
-
-	//=============================================================================================//
-	// ObjectManager初期化
-
 
 	//=============================================================================================//
 	// Camera初期化
@@ -17,19 +17,21 @@ void GameScene::Initialize () {
 	camera_->Initialize (clientWidth_, clientHeight_);
 
 	//=============================================================================================//
-	// Object生成
+	// 三角形初期化
 
+	triangle_ = new Object3d ();
 
+	triangle_->Initialize (device_, resourceManager_, MeshType::kTriangle);
 
-	//=============================================================================================//
-	// Sprite生成
+	triangleTransformData_.scale = { 1.0f,1.0f,1.0f };
 
-	
+	triangleTransformData_.rotate = { 0.0f,0.0f,0.0f };
 
-	//=============================================================================================//
-	// SpriteManager生成
+	triangleTransformData_.translate = { 0.0f,0.0f,5.0f };
 
+	triangle_->SetTransform (triangleTransformData_);
 
+	triangle_->SetColor ({ 1.0f,1.0f,1.0f,1.0f });
 }
 
 //=================================================================================================//
@@ -39,20 +41,30 @@ void GameScene::Update (Input* input) {
 
 	input;
 
+#ifdef USE_IMGUI
+
+	//=============================================================================================//
+	// ImGui
+
+	ImGui::Begin ("Triangle");
+
+	ImGui::DragFloat3 ("Rotate", &triangleTransformData_.rotate.x, 0.1f, -100.f, 100.f);
+
+	ImGui::End ();
+
+#endif
+
 	//=============================================================================================//
 	// Camera更新
 
 	camera_->Update ();
 
 	//=============================================================================================//
-	// ObjectManager更新
+	// 三角形更新
 
-	
+	triangle_->SetTransform (triangleTransformData_);
 
-	//=============================================================================================//
-	// Sprite更新
-
-
+	triangle_->Update (camera_->GetViewProjectionMatrix ());
 }
 
 //=================================================================================================//
@@ -61,19 +73,9 @@ void GameScene::Update (Input* input) {
 void GameScene::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
 
 	//=============================================================================================//
-	// ObjectManager描画
+	// 三角形描画
 
-	
-
-	//=============================================================================================//
-	// Sprite描画
-
-
-
-	//=============================================================================================//
-	// SpriteManager描画
-
-
+	triangle_->Draw (commandList, graphicsSystem);
 }
 
 //=================================================================================================//
@@ -82,18 +84,16 @@ void GameScene::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* gr
 void GameScene::Finalize () {
 
 	//=============================================================================================//
-	// ObjectManager解放
+	// 三角形解放
 
+	if (triangle_ != nullptr) {
 
+		triangle_->Finalize ();
 
-	//=============================================================================================//
-	// Sprite解放
+		delete triangle_;
 
-
-	//=============================================================================================//
-	// SpriteManager解放
-
-
+		triangle_ = nullptr;
+	}
 
 	//=============================================================================================//
 	// Camera解放
@@ -143,7 +143,7 @@ bool GameScene::IsFinished () {
 //=================================================================================================//
 // シーン共通情報
 
-void GameScene::SetContext(const SceneContext& sceneContext) {
+void GameScene::SetContext (const SceneContext& sceneContext) {
 
 	device_ = sceneContext.device;
 

@@ -7,6 +7,7 @@
 #include "GraphicsSystem.h"
 #include "AudioSystem.h"
 #include "SceneManager.h"
+#include "ImGuiSystem.h"
 
 class Engine {
 public:
@@ -52,6 +53,11 @@ private:
 	// AudioSystem
 
 	AudioSystem* audioSystem_ = nullptr;
+
+	//=============================================================================================//
+	// ImGuiSystem
+
+	ImGuiSystem* imGuiSystem_ = nullptr;
 
 	//=============================================================================================//
 	// SceneManager

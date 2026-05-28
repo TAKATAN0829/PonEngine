@@ -44,12 +44,25 @@ void Engine::Initialize () {
 	graphicsSystem_->Initialize (dxCommon_->GetDevice ());
 
 	graphicsSystem_->CreateGraphicsPipeline (dxCommon_->GetDevice ());
-	graphicsSystem_->CreateSpritePipeline(dxCommon_->GetDevice());
+
+	graphicsSystem_->CreateSpritePipeline (dxCommon_->GetDevice ());
 
 	graphicsSystem_->CreateTexture (
 		dxCommon_->GetDevice (),
 		dxCommon_->GetCommandList (),
 		"./Resources/uvChecker.png");
+
+	//=============================================================================================//
+	// ImGuiSystem初期化
+
+	imGuiSystem_ = new ImGuiSystem ();
+
+	imGuiSystem_->Initialize (
+		winApp_->GetHwnd (),
+		dxCommon_->GetDevice (),
+		graphicsSystem_->GetSRVDescriptorHeap (),
+		2,
+		1);
 
 	//=============================================================================================//
 	// SceneManager初期化
@@ -81,11 +94,24 @@ void Engine::Run () {
 		dxCommon_->BeginFrame ();
 
 		//=========================================================================================//
-		// シーン更新・描画
+		// ImGui開始
+
+		imGuiSystem_->Begin ();
+
+		//=========================================================================================//
+		// シーン更新
 
 		sceneManager_->Update (input_);
 
-		sceneManager_->Draw (dxCommon_->GetCommandList (),graphicsSystem_);
+		//=========================================================================================//
+		// シーン描画
+
+		sceneManager_->Draw (dxCommon_->GetCommandList (), graphicsSystem_);
+
+		//=========================================================================================//
+		// ImGui描画
+
+		imGuiSystem_->Draw (dxCommon_->GetCommandList ());
 
 		//=========================================================================================//
 		// Frame終了
@@ -99,17 +125,43 @@ void Engine::Run () {
 
 void Engine::Finalize () {
 
+	//=============================================================================================//
+	// SceneManager終了
+
 	sceneManager_->Finalize ();
+
+	//=============================================================================================//
+	// ImGuiSystem終了
+
+	imGuiSystem_->Finalize ();
+
+	//=============================================================================================//
+	// 各System終了
+
 	graphicsSystem_->Finalize ();
+
 	audioSystem_->Finalize ();
+
 	input_->Finalize ();
+
 	dxCommon_->Finalize ();
+
 	winApp_->Finalize ();
 
+	//=============================================================================================//
+	// 解放
+
 	delete sceneManager_;
+
+	delete imGuiSystem_;
+
 	delete graphicsSystem_;
+
 	delete audioSystem_;
+
 	delete input_;
+
 	delete dxCommon_;
+
 	delete winApp_;
 }
