@@ -29,7 +29,7 @@ void Material::Initialize(ID3D12Device* device, ResourceManager* resourceManager
 	materialData_->uvTransform = MathUtility::MakeIdentity4x4();
 
 	//=============================================================================================//
-// DirectionalLightResource生成
+	// DirectionalLightResource生成
 
 	directionalLightResource_ =
 		resourceManager->CreateBufferResource(

@@ -398,3 +398,4 @@ void GraphicsSystem::PreSpriteDraw(
 		1,
 		descriptorHeaps);
 }
+

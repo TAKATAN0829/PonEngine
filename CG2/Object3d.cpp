@@ -3,10 +3,12 @@
 //=================================================================================================//
 // 初期化処理
 
-void Object3d::Initialize (ID3D12Device* device, ResourceManager* resourceManager, MeshType meshType) {
+void Object3d::Initialize(MeshType meshType) {
 
-	//=============================================================================================//
-	// Transform初期値
+	Microsoft::WRL::ComPtr<ID3D12Device*> device = GraphicsSystem::GetDevice();
+
+	ResourceManager* resourceManager =
+		ResourceManager::GetInstance();
 
 	transform_ = {
 		{1.0f,1.0f,1.0f},
@@ -14,32 +16,35 @@ void Object3d::Initialize (ID3D12Device* device, ResourceManager* resourceManage
 		{0.0f,0.0f,0.0f}
 	};
 
-	//=============================================================================================//
-	// Mesh生成
+	mesh_ = new Mesh();
 
-	mesh_ = new Mesh ();
-
-	mesh_->Initialize (device, resourceManager, meshType);
-
-	//=============================================================================================//
-    // Material生成
+	mesh_->Initialize(
+		device,
+		resourceManager,
+		meshType);
 
 	material_ = new Material();
 
-	material_->Initialize(device, resourceManager);
-
-	//=============================================================================================//
-	// WVPResource生成
+	material_->Initialize(
+		device,
+		resourceManager);
 
 	wvpResource_ =
-		resourceManager->CreateBufferResource (device, sizeof (TransformationMatrix), "wvpResource");
+		resourceManager->CreateBufferResource(
+			device,
+			sizeof(TransformationMatrix),
+			"wvpResource");
 
-	wvpResource_->Map (0, nullptr, reinterpret_cast<void**>(&wvpData_));
+	wvpResource_->Map(
+		0,
+		nullptr,
+		reinterpret_cast<void**> (&wvpData_));
 
-	wvpData_->WVP = MathUtility::MakeIdentity4x4 ();
+	wvpData_->WVP =
+		MathUtility::MakeIdentity4x4();
 
-	wvpData_->World = MathUtility::MakeIdentity4x4 ();
-
+	wvpData_->World =
+		MathUtility::MakeIdentity4x4();
 }
 
 //=================================================================================================//

@@ -19,7 +19,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize (ID3D12Device* device, ResourceManager* resourceManager, MeshType meshType);
+	void Initialize (MeshType meshType);
 
 	//=============================================================================================//
 	// 更新処理

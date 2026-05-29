@@ -43,5 +43,17 @@ public:
 		ID3D12Device* device,
 		ID3D12GraphicsCommandList* commandList);
 
+	//=============================================================================================//
+	// 自身のインスタンス
+
+	static void SetInstance(ResourceManager* resourceManager) {
+		resourceManager = resourceManager_;
+	}
+
+	static ResourceManager* GetInstance() {
+		return resourceManager_;
+	}
+
 private:
+	inline static ResourceManager* resourceManager_ = nullptr;
 };

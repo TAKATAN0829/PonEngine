@@ -101,6 +101,17 @@ public:
 		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
 		D3D12_INDEX_BUFFER_VIEW* indexBufferView);
 
+	//=============================================================================================//
+	// device
+
+	static void SetDevice(Microsoft::WRL::ComPtr<ID3D12Device*> device) {
+		device_ = device;
+	}
+
+	static Microsoft::WRL::ComPtr<ID3D12Device*> GetDevice() {
+		return device_;
+	}
+	
 private:
 
 	//=============================================================================================//
@@ -137,5 +148,10 @@ private:
 	// GraphicsPipelineState
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
+
+	//=============================================================================================//
+	// device
+
+	inline static Microsoft::WRL::ComPtr<ID3D12Device*> device_ = nullptr;
 
 };

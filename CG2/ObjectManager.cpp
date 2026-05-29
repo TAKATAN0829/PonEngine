@@ -3,11 +3,8 @@
 //=================================================================================================//
 // 初期化処理
 
-void ObjectManager::Initialize (ID3D12Device* device, ResourceManager* resourceManager) {
+void ObjectManager::Initialize () {
 
-	device_ = device;
-
-	resourceManager_ = resourceManager;
 }
 
 //=================================================================================================//
@@ -27,9 +24,6 @@ void ObjectManager::Finalize () {
 
 	objects_.clear ();
 
-	device_ = nullptr;
-
-	resourceManager_ = nullptr;
 }
 
 //=================================================================================================//
@@ -39,7 +33,7 @@ Object3d* ObjectManager::CreateObject (MeshType meshType) {
 
 	Object3d* object = new Object3d ();
 
-	object->Initialize (device_, resourceManager_, meshType);
+	object->Initialize (meshType);
 
 	objects_.push_back (object);
 
