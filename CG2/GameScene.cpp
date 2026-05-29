@@ -7,92 +7,102 @@
 //=================================================================================================//
 // 初期化処理
 
-void GameScene::Initialize () {
+void GameScene::Initialize() {
 
 	//=============================================================================================//
 	// Camera初期化
 
-	camera_ = new Camera ();
-
-	camera_->Initialize (clientWidth_, clientHeight_);
+	camera_ = new Camera();
+	camera_->Initialize(clientWidth_, clientHeight_);
+	cameraTransform_ = camera_->GetTransform();
 
 	//=============================================================================================//
 	// 三角形初期化
 
-	triangle_ = new Object3d ();
+	for (int count = 0; count < kTriangleCounts_; ++count) {
 
-	triangle_->Initialize (device_, resourceManager_, MeshType::kTriangle);
+		Object3d* triangle = new Object3d();
 
-	triangleTransformData_.scale = { 1.0f,1.0f,1.0f };
+		triangle->Initialize(device_, resourceManager_, MeshType::kTriangle);
 
-	triangleTransformData_.rotate = { 0.0f,0.0f,0.0f };
+		TransformData transform{};
 
-	triangleTransformData_.translate = { 0.0f,0.0f,5.0f };
+		transform.scale = { 1.0f,1.0f,1.0f };
+		transform.rotate = { 0.0f,0.0f,0.0f };
+		transform.translate = { count * 2.5f,0.0f,5.0f };
 
-	triangle_->SetTransform (triangleTransformData_);
+		triangle->SetTransform(transform);
+		triangle->SetColor({ 1.0f,1.0f,1.0f,1.0f });
 
-	triangle_->SetColor ({ 1.0f,1.0f,1.0f,1.0f });
+		triangles_.push_back(triangle);
+		trianglesTransformData_.push_back(transform);
+	}
 }
 
 //=================================================================================================//
 // 更新処理
 
-void GameScene::Update (Input* input) {
+void GameScene::Update(Input* input) {
 
 	input;
+
+	//=============================================================================================//
+	// Camera更新
+
+	camera_->SetTransform(cameraTransform_);
+	camera_->Update();
+
+	//=============================================================================================//
+	// 三角形更新
+	for (int count = 0; count < triangleCounts_; ++count) {
+		triangles_[count]->SetTransform(trianglesTransformData_[count]);
+
+		triangles_[count]->Update(camera_->GetViewProjectionMatrix());
+	}
 
 #ifdef USE_IMGUI
 
 	//=============================================================================================//
 	// ImGui
 
-	ImGui::Begin ("Triangle");
+	ImGui::Begin("Triangle");
 
-	ImGui::DragFloat3 ("Rotate", &triangleTransformData_.rotate.x, 0.1f, -100.f, 100.f);
+	ImGui::DragFloat3("CameraTranslate", &cameraTransform_.translate.x, 0.1f, -100.f, 100.f);
+	ImGui::DragInt("TriangleCounts", &triangleCounts_, 1.f, 0, kTriangleCounts_);
 
-	ImGui::End ();
+	ImGui::End();
 
 #endif
-
-	//=============================================================================================//
-	// Camera更新
-
-	camera_->Update ();
-
-	//=============================================================================================//
-	// 三角形更新
-
-	triangle_->SetTransform (triangleTransformData_);
-
-	triangle_->Update (camera_->GetViewProjectionMatrix ());
 }
 
 //=================================================================================================//
 // 描画処理
 
-void GameScene::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
+void GameScene::Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
 
 	//=============================================================================================//
 	// 三角形描画
-
-	triangle_->Draw (commandList, graphicsSystem);
+	for (int count = 0; count < triangleCounts_; ++count) {
+		triangles_[count]->Draw(commandList, graphicsSystem);
+	}
 }
 
 //=================================================================================================//
 // 終了処理
 
-void GameScene::Finalize () {
+void GameScene::Finalize() {
 
 	//=============================================================================================//
 	// 三角形解放
+	for (int count = 0; count < static_cast<int>(triangles_.size()); ++count) {
+		if (triangles_[count] != nullptr) {
 
-	if (triangle_ != nullptr) {
+			triangles_[count]->Finalize();
 
-		triangle_->Finalize ();
+			delete triangles_[count];
 
-		delete triangle_;
-
-		triangle_ = nullptr;
+			triangles_[count] = nullptr;
+		}
 	}
 
 	//=============================================================================================//
@@ -109,7 +119,7 @@ void GameScene::Finalize () {
 //=================================================================================================//
 // ResourceManager設定
 
-void GameScene::SetResourceManager (ResourceManager* resourceManager) {
+void GameScene::SetResourceManager(ResourceManager* resourceManager) {
 
 	resourceManager_ = resourceManager;
 }
@@ -117,7 +127,7 @@ void GameScene::SetResourceManager (ResourceManager* resourceManager) {
 //=================================================================================================//
 // Device設定
 
-void GameScene::SetDevice (ID3D12Device* device) {
+void GameScene::SetDevice(ID3D12Device* device) {
 
 	device_ = device;
 }
@@ -125,7 +135,7 @@ void GameScene::SetDevice (ID3D12Device* device) {
 //=================================================================================================//
 // 画面サイズ設定
 
-void GameScene::SetWindowSize (int32_t width, int32_t height) {
+void GameScene::SetWindowSize(int32_t width, int32_t height) {
 
 	clientWidth_ = width;
 
@@ -135,7 +145,7 @@ void GameScene::SetWindowSize (int32_t width, int32_t height) {
 //=================================================================================================//
 // 終了判定
 
-bool GameScene::IsFinished () {
+bool GameScene::IsFinished() {
 
 	return isFinished_;
 }
@@ -143,7 +153,7 @@ bool GameScene::IsFinished () {
 //=================================================================================================//
 // シーン共通情報
 
-void GameScene::SetContext (const SceneContext& sceneContext) {
+void GameScene::SetContext(const SceneContext& sceneContext) {
 
 	device_ = sceneContext.device;
 

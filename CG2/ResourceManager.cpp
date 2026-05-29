@@ -78,8 +78,7 @@ ResourceManager::CreateTextureResource (
 	resourceDesc.DepthOrArraySize = UINT16 (metadata.arraySize);
 	resourceDesc.Format = metadata.format;
 	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.Dimension =
-		D3D12_RESOURCE_DIMENSION (metadata.dimension);
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION (metadata.dimension);
 
 	//=============================================================================================//
 	// Heap設定
@@ -164,23 +163,17 @@ ResourceManager::UploadTextureData (
 
 	D3D12_RESOURCE_BARRIER barrier{};
 
-	barrier.Type =
-		D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 
-	barrier.Flags =
-		D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Flags =	D3D12_RESOURCE_BARRIER_FLAG_NONE;
 
-	barrier.Transition.pResource =
-		texture.Get ();
+	barrier.Transition.pResource = texture.Get ();
 
-	barrier.Transition.Subresource =
-		D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
-	barrier.Transition.StateBefore =
-		D3D12_RESOURCE_STATE_COPY_DEST;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 
-	barrier.Transition.StateAfter =
-		D3D12_RESOURCE_STATE_GENERIC_READ;
+	barrier.Transition.StateAfter =	D3D12_RESOURCE_STATE_GENERIC_READ;
 
 	//=============================================================================================//
 	// ResourceBarrierを張る

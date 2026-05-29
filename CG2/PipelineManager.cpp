@@ -365,7 +365,7 @@ void PipelineManager::CreateSpritePipeline(ID3D12Device* device, ShaderCompiler*
 
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
 
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
@@ -415,8 +415,7 @@ void PipelineManager::CreateSpritePipeline(ID3D12Device* device, ShaderCompiler*
 
 	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 
-	graphicsPipelineStateDesc.DepthStencilState.DepthEnable =
-		false;
+	graphicsPipelineStateDesc.DepthStencilState.DepthEnable = false;
 
 	graphicsPipelineStateDesc.DepthStencilState.StencilEnable = false;
 

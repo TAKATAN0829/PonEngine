@@ -13,47 +13,47 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize () override;
+	void Initialize() override;
 
 	//=============================================================================================//
 	// 更新処理
 
-	void Update (Input* input) override;
+	void Update(Input* input) override;
 
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) override;
+	void Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) override;
 
 	//=============================================================================================//
 	// 終了処理
 
-	void Finalize () override;
+	void Finalize() override;
 
 	//=============================================================================================//
 	// ResourceManager設定
 
-	void SetResourceManager (ResourceManager* resourceManager);
+	void SetResourceManager(ResourceManager* resourceManager);
 
 	//=============================================================================================//
 	// Device設定
 
-	void SetDevice (ID3D12Device* device);
+	void SetDevice(ID3D12Device* device);
 
 	//=============================================================================================//
 	// 画面サイズ設定
 
-	void SetWindowSize (int32_t width, int32_t height);
+	void SetWindowSize(int32_t width, int32_t height);
 
 	//=============================================================================================//
 	// 終了判定
 
-	bool IsFinished () override;
+	bool IsFinished() override;
 
 	//=============================================================================================//
 	// シーン共通情報
 
-	void SetContext (const SceneContext& sceneContext) override;
+	void SetContext(const SceneContext& sceneContext) override;
 
 private:
 
@@ -71,6 +71,7 @@ private:
 	// Camera
 
 	Camera* camera_ = nullptr;
+	TransformData cameraTransform_ = {};
 
 	//=============================================================================================//
 	// 画面幅
@@ -90,11 +91,16 @@ private:
 	//=============================================================================================//
 	// 三角形
 
-	Object3d* triangle_ = nullptr;
+	std::vector<Object3d*> triangles_;
 
 	//=============================================================================================//
 	// 三角形のTransform情報
 
-	TransformData triangleTransformData_{};
+	std::vector<TransformData> trianglesTransformData_{};
 
+	//=================================================================================================//
+	// 三角形の個数
+
+	const int kTriangleCounts_ = 10;
+	int triangleCounts_ = 0;
 };

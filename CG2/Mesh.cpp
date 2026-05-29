@@ -126,7 +126,7 @@ void Mesh::InitializeTriangle (ID3D12Device* device, ResourceManager* resourceMa
 	//=============================================================================================//
 	// Index数設定
 
-	indexCount_ = 3;
+	indexCount_ = 6;
 
 	//=============================================================================================//
 	// VertexResource生成
@@ -370,7 +370,13 @@ void Mesh::CreateTriangle () {
 	//=============================================================================================//
 	// Index
 
+	// 表面
 	indexData_[0] = 0;
 	indexData_[1] = 1;
 	indexData_[2] = 2;
-}
+
+	// 裏面
+	indexData_[3] = 0;
+	indexData_[4] = 2;
+	indexData_[5] = 1;
+ }
