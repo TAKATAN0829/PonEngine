@@ -13,29 +13,43 @@ void GameScene::Initialize() {
 	// Camera初期化
 
 	camera_ = new Camera();
+
 	camera_->Initialize(clientWidth_, clientHeight_);
+
 	cameraTransform_ = camera_->GetTransform();
 
+	cameraTransform_.translate = { 0.f,0.f,-30.f };
 	//=============================================================================================//
 	// 三角形初期化
 
-	for (int count = 0; count < kTriangleCounts_; ++count) {
+	for (int countY = 0; countY < kTriangleCountsY_; ++countY) {
+		for (int countX = 0; countX < kTriangleCountsX_; ++countX) {
 
-		Object3d* triangle = new Object3d();
+			Object3d* triangle = new Object3d();
 
-		triangle->Initialize(device_, resourceManager_, MeshType::kTriangle);
+			triangle->Initialize(device_, resourceManager_, MeshType::kTriangle);
 
-		TransformData transform{};
+			TransformData transform{};
 
-		transform.scale = { 1.0f,1.0f,1.0f };
-		transform.rotate = { 0.0f,0.0f,0.0f };
-		transform.translate = { count * 2.5f,0.0f,5.0f };
+			transform.scale = { 1.0f,1.0f,1.0f };
 
-		triangle->SetTransform(transform);
-		triangle->SetColor({ 1.0f,1.0f,1.0f,1.0f });
+			transform.rotate = { 0.0f,0.0f,0.0f };
 
-		triangles_.push_back(triangle);
-		trianglesTransformData_.push_back(transform);
+			// 画面中央を基準に並べる
+			transform.translate = {
+				(countX - kTriangleCountsX_ / 2.0f) * 2.0f,
+				(countY - kTriangleCountsY_ / 2.0f) * 2.0f,
+				0.0f
+			};
+
+			triangle->SetTransform(transform);
+
+			triangle->SetColor({ 1.0f,1.0f,1.0f,1.0f });
+
+			triangles_.push_back(triangle);
+
+			trianglesTransformData_.push_back(transform);
+		}
 	}
 }
 
@@ -46,20 +60,6 @@ void GameScene::Update(Input* input) {
 
 	input;
 
-	//=============================================================================================//
-	// Camera更新
-
-	camera_->SetTransform(cameraTransform_);
-	camera_->Update();
-
-	//=============================================================================================//
-	// 三角形更新
-	for (int count = 0; count < triangleCounts_; ++count) {
-		triangles_[count]->SetTransform(trianglesTransformData_[count]);
-
-		triangles_[count]->Update(camera_->GetViewProjectionMatrix());
-	}
-
 #ifdef USE_IMGUI
 
 	//=============================================================================================//
@@ -67,12 +67,47 @@ void GameScene::Update(Input* input) {
 
 	ImGui::Begin("Triangle");
 
-	ImGui::DragFloat3("CameraTranslate", &cameraTransform_.translate.x, 0.1f, -100.f, 100.f);
-	ImGui::DragInt("TriangleCounts", &triangleCounts_, 1.f, 0, kTriangleCounts_);
+	ImGui::DragFloat3("CameraTranslate", &cameraTransform_.translate.x, 0.1f, -100.0f, 100.0f);
+
+	ImGui::DragInt("TriangleCountsX", &triangleCountsX_, 1.0f, 1, kTriangleCountsX_);
+
+	ImGui::DragInt("TriangleCountsY", &triangleCountsY_, 1.0f, 1, kTriangleCountsY_);
 
 	ImGui::End();
 
 #endif
+
+	//=============================================================================================//
+	// Camera更新
+
+	camera_->SetTransform(cameraTransform_);
+
+	camera_->Update();
+
+	//=============================================================================================//
+	// 三角形更新
+
+	for (int countY = 0; countY < triangleCountsY_; ++countY) {
+		for (int countX = 0; countX < triangleCountsX_; ++countX) {
+
+			int index = countY * kTriangleCountsX_ + countX;
+
+			TransformData transform{};
+
+			transform.scale = { 1.0f,1.0f,1.0f };
+			transform.rotate = { 0.0f,0.0f,0.0f };
+
+			transform.translate = {
+				(countX - (triangleCountsX_ - 1) * 0.5f) * 2.0f,
+				(countY - (triangleCountsY_ - 1) * 0.5f) * 2.0f,
+				0.0f
+			};
+
+			triangles_[index]->SetTransform(transform);
+
+			triangles_[index]->Update(camera_->GetViewProjectionMatrix());
+		}
+	}
 }
 
 //=================================================================================================//
@@ -82,8 +117,14 @@ void GameScene::Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* gra
 
 	//=============================================================================================//
 	// 三角形描画
-	for (int count = 0; count < triangleCounts_; ++count) {
-		triangles_[count]->Draw(commandList, graphicsSystem);
+
+	for (int countY = 0; countY < triangleCountsY_; ++countY) {
+		for (int countX = 0; countX < triangleCountsX_; ++countX) {
+
+			int index = countY * kTriangleCountsX_ + countX;
+
+			triangles_[index]->Draw(commandList, graphicsSystem);
+		}
 	}
 }
 
@@ -94,16 +135,20 @@ void GameScene::Finalize() {
 
 	//=============================================================================================//
 	// 三角形解放
-	for (int count = 0; count < static_cast<int>(triangles_.size()); ++count) {
-		if (triangles_[count] != nullptr) {
 
-			triangles_[count]->Finalize();
+	for (Object3d* triangle : triangles_) {
 
-			delete triangles_[count];
+		if (triangle != nullptr) {
 
-			triangles_[count] = nullptr;
+			triangle->Finalize();
+
+			delete triangle;
 		}
 	}
+
+	triangles_.clear();
+
+	trianglesTransformData_.clear();
 
 	//=============================================================================================//
 	// Camera解放
