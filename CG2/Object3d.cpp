@@ -17,11 +17,11 @@ void Object3d::Initialize(MeshType meshType) {
 
 	mesh_ = new Mesh();
 
-	mesh_->Initialize(device, resourceManager, meshType);
+	mesh_->Initialize(meshType);
 
 	material_ = new Material();
 
-	material_->Initialize(device, resourceManager);
+	material_->Initialize();
 
 	wvpResource_ =
 		resourceManager->CreateBufferResource(
@@ -78,7 +78,7 @@ void Object3d::Draw () {
 	//=============================================================================================//
 	// Material設定
 
-	material_->Bind(commandList, graphicsSystem);
+	material_->Bind();
 
 	//=============================================================================================//
 	// WVP設定
@@ -90,7 +90,7 @@ void Object3d::Draw () {
 	//=============================================================================================//
 	// Mesh描画
 
-	mesh_->Draw (commandList);
+	mesh_->Draw ();
 }
 
 //=================================================================================================//

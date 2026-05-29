@@ -24,14 +24,14 @@ void Sprite::Initialize(int32_t clientWidth,int32_t clientHeight) {
 
 	mesh_ = new Mesh();
 
-	mesh_->Initialize(device, resourceManager, MeshType::kPlane);
+	mesh_->Initialize(MeshType::kPlane);
 
 	//=============================================================================================//
 	// Material生成
 
 	material_ = new Material();
 
-	material_->Initialize(device, resourceManager);
+	material_->Initialize();
 
 	//=============================================================================================//
 	// WVPResource生成
@@ -99,15 +99,12 @@ void Sprite::Draw() {
 	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
 	GraphicsSystem* graphicsSystem = GraphicsSystem::GetGraphicsSystem();
 
-	graphicsSystem->PreSpriteDraw(
-		commandList,
-		mesh_->GetVertexBufferView(),
-		mesh_->GetIndexBufferView());
+	graphicsSystem->PreSpriteDraw(commandList, mesh_->GetVertexBufferView(), mesh_->GetIndexBufferView());
 
 	//=============================================================================================//
 	// Material設定
 
-	material_->Bind(commandList, graphicsSystem);
+	material_->Bind();
 
 	//=============================================================================================//
 	// WVP設定
@@ -119,7 +116,7 @@ void Sprite::Draw() {
 	//=============================================================================================//
 	// Mesh描画
 
-	mesh_->Draw(commandList);
+	mesh_->Draw();
 }
 
 //=================================================================================================//

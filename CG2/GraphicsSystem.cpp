@@ -300,12 +300,7 @@ void GraphicsSystem::CreateSpritePipeline(ID3D12Device* device) {
 
 uint32_t GraphicsSystem::CreateTexture(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const std::string& filePath) {
 
-	return textureManager_->CreateTexture(
-		device,
-		commandList,
-		resourceManager_,
-		srvDescriptorHeap_,
-		filePath);
+	return textureManager_->CreateTexture(srvDescriptorHeap_, filePath);
 }
 
 //=================================================================================================//

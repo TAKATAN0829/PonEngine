@@ -47,6 +47,8 @@ void Engine::Initialize() {
 
 	graphicsSystem_->SetDevice(dxCommon_->GetDevice());
 
+	GraphicsSystem::SetCommandList(dxCommon_->GetCommandList());
+
 	ResourceManager::SetInstance(graphicsSystem_->GetInstance());
 
 	graphicsSystem_->CreateGraphicsPipeline(dxCommon_->GetDevice());
