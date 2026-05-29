@@ -1,16 +1,13 @@
 #include "GameScene.h"
 
+#ifdef USE_IMGUI
+#include "../externals/imgui/imgui.h"
+#endif
+
 //=================================================================================================//
 // 初期化処理
 
 void GameScene::Initialize () {
-
-	//=============================================================================================//
-	// ObjectManager初期化
-
-	objectManager_ = new ObjectManager ();
-
-	objectManager_->Initialize (device_, resourceManager_);
 
 	//=============================================================================================//
 	// Camera初期化
@@ -20,59 +17,21 @@ void GameScene::Initialize () {
 	camera_->Initialize (clientWidth_, clientHeight_);
 
 	//=============================================================================================//
-	// Object生成
+	// 三角形初期化
 
-	Object3d* objectA = objectManager_->CreateObject (MeshType::kSphere);
+	triangle_ = new Object3d ();
 
-	TransformData transformA{
-		{1.0f,1.0f,1.0f},
-		{0.0f,0.0f,0.0f},
-		{-1.5f,0.0f,0.0f}
-	};
+	triangle_->Initialize (device_, resourceManager_, MeshType::kTriangle);
 
-	objectA->SetTransform (transformA);
+	triangleTransformData_.scale = { 1.0f,1.0f,1.0f };
 
-	objectA->SetTextureIndex (0);
+	triangleTransformData_.rotate = { 0.0f,0.0f,0.0f };
 
-	Object3d* objectB = objectManager_->CreateObject (MeshType::kSphere);
+	triangleTransformData_.translate = { 0.0f,0.0f,5.0f };
 
-	TransformData transformB{
-		{1.0f,1.0f,1.0f},
-		{0.0f,0.0f,0.0f},
-		{1.5f,0.0f,0.0f}
-	};
+	triangle_->SetTransform (triangleTransformData_);
 
-	objectB->SetTransform (transformB);
-
-	objectB->SetTextureIndex (0);
-
-	//=============================================================================================//
-	// Sprite生成
-
-	sprite_ =new Sprite();
-
-	sprite_->Initialize(
-		device_,
-		resourceManager_,
-		clientWidth_,
-		clientHeight_);
-
-	sprite_->SetTextureIndex(0);
-
-	sprite_->SetPosition({ 640.0f,360.0f });
-
-	sprite_->SetSize({ 200.0f,200.0f });
-
-	//=============================================================================================//
-	// SpriteManager生成
-
-	spriteManager_ = new SpriteManager();
-
-	spriteManager_->Initialize(
-		device_,
-		resourceManager_,
-		clientWidth_,
-		clientHeight_);
+	triangle_->SetColor ({ 1.0f,1.0f,1.0f,1.0f });
 }
 
 //=================================================================================================//
@@ -82,20 +41,30 @@ void GameScene::Update (Input* input) {
 
 	input;
 
+#ifdef USE_IMGUI
+
+	//=============================================================================================//
+	// ImGui
+
+	ImGui::Begin ("Triangle");
+
+	ImGui::DragFloat3 ("Rotate", &triangleTransformData_.rotate.x, 0.1f, -100.f, 100.f);
+
+	ImGui::End ();
+
+#endif
+
 	//=============================================================================================//
 	// Camera更新
 
 	camera_->Update ();
 
 	//=============================================================================================//
-	// ObjectManager更新
+	// 三角形更新
 
-	objectManager_->Update (camera_->GetViewProjectionMatrix ());
+	triangle_->SetTransform (triangleTransformData_);
 
-	//=============================================================================================//
-	// Sprite更新
-
-	sprite_->Update();
+	triangle_->Update (camera_->GetViewProjectionMatrix ());
 }
 
 //=================================================================================================//
@@ -104,19 +73,9 @@ void GameScene::Update (Input* input) {
 void GameScene::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
 
 	//=============================================================================================//
-	// ObjectManager描画
+	// 三角形描画
 
-	objectManager_->Draw (commandList, graphicsSystem);
-
-	//=============================================================================================//
-	// Sprite描画
-
-	sprite_->Draw(commandList, graphicsSystem);
-
-	//=============================================================================================//
-	// SpriteManager描画
-
-	spriteManager_->Draw(commandList, graphicsSystem);
+	triangle_->Draw (commandList, graphicsSystem);
 }
 
 //=================================================================================================//
@@ -125,37 +84,15 @@ void GameScene::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* gr
 void GameScene::Finalize () {
 
 	//=============================================================================================//
-	// ObjectManager解放
+	// 三角形解放
 
-	if (objectManager_ != nullptr) {
+	if (triangle_ != nullptr) {
 
-		objectManager_->Finalize ();
+		triangle_->Finalize ();
 
-		delete objectManager_;
+		delete triangle_;
 
-		objectManager_ = nullptr;
-	}
-
-	//=============================================================================================//
-	// Sprite解放
-
-	if (sprite_ != nullptr) {
-
-		delete sprite_;
-
-		sprite_ = nullptr;
-	}
-
-	//=============================================================================================//
-	// SpriteManager解放
-
-	if (spriteManager_ != nullptr) {
-
-		spriteManager_->Finalize();
-
-		delete spriteManager_;
-
-		spriteManager_ = nullptr;
+		triangle_ = nullptr;
 	}
 
 	//=============================================================================================//
@@ -206,7 +143,7 @@ bool GameScene::IsFinished () {
 //=================================================================================================//
 // シーン共通情報
 
-void GameScene::SetContext(const SceneContext& sceneContext) {
+void GameScene::SetContext (const SceneContext& sceneContext) {
 
 	device_ = sceneContext.device;
 

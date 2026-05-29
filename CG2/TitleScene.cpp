@@ -23,26 +23,11 @@ void TitleScene::Initialize() {
 	//=============================================================================================//
 	// SpriteManager生成
 
-	spriteManager_ = new SpriteManager();
-
-	spriteManager_->Initialize(
-		device_,
-		resourceManager_,
-		clientWidth_,
-		clientHeight_);
 
 	//=============================================================================================//
 	// BackGroundSprite生成
 
-	backGroundSprite_ =	spriteManager_->CreateSprite();
 
-	backGroundSprite_->SetTextureIndex(0);
-
-	backGroundSprite_->SetPosition({ 640.0f,360.0f });
-
-	backGroundSprite_->SetSize({ 512.0f,512.0f });
-
-	backGroundSprite_->SetEnableLighting(false);
 }
 
 //=================================================================================================//
@@ -61,7 +46,6 @@ void TitleScene::Update(Input* input) {
 	//=============================================================================================//
 	// SpriteManager更新
 
-	spriteManager_->Update();
 }
 
 //=================================================================================================//
@@ -72,7 +56,7 @@ void TitleScene::Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* gr
 	//=============================================================================================//
 	// SpriteManager描画
 
-	spriteManager_->Draw(commandList, graphicsSystem);
+
 }
 
 //=================================================================================================//
@@ -83,14 +67,7 @@ void TitleScene::Finalize() {
 	//=============================================================================================//
 	// SpriteManager解放
 
-	if (spriteManager_ != nullptr) {
-
-		spriteManager_->Finalize();
-
-		delete spriteManager_;
-
-		spriteManager_ = nullptr;
-	}
+	
 }
 
 //=================================================================================================//

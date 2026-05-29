@@ -2,12 +2,10 @@
 
 // 自作
 #include "IScene.h"
-#include "ObjectManager.h"
 #include "EngineStructs.h"
 #include "ResourceManager.h"
 #include "Camera.h"
-#include "Sprite.h"
-#include "SpriteManager.h"
+#include "Object3d.h"
 
 class GameScene : public IScene {
 public:
@@ -52,7 +50,10 @@ public:
 
 	bool IsFinished () override;
 
-	void SetContext(const SceneContext& sceneContext) override;
+	//=============================================================================================//
+	// シーン共通情報
+
+	void SetContext (const SceneContext& sceneContext) override;
 
 private:
 
@@ -65,11 +66,6 @@ private:
 	// ResourceManager
 
 	ResourceManager* resourceManager_ = nullptr;
-
-	//=============================================================================================//
-	// ObjectManager
-
-	ObjectManager* objectManager_ = nullptr;
 
 	//=============================================================================================//
 	// Camera
@@ -90,14 +86,15 @@ private:
 	// 終了フラグ
 
 	bool isFinished_ = false;
-	
-	//=============================================================================================//
-	// Sprite
-
-	Sprite* sprite_ = nullptr;
 
 	//=============================================================================================//
-	// SpriteManager
+	// 三角形
 
-	SpriteManager* spriteManager_ =	nullptr;
+	Object3d* triangle_ = nullptr;
+
+	//=============================================================================================//
+	// 三角形のTransform情報
+
+	TransformData triangleTransformData_{};
+
 };
