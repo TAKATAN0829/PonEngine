@@ -44,15 +44,12 @@ private:
 	std::vector<Object3d*> triangles_;
 	std::vector<TransformData> trianglesTransformData_;
 
-	//=============================================================================================//
-	// 三角形の最大生成数
-
-	const int kTriangleCountsX_ = 30;
-	const int kTriangleCountsY_ = 20;
+	std::vector<Object3d*> invTriangles_;
+	std::vector<TransformData> invTrianglesTransformData_;
 
 	//=============================================================================================//
-	// ImGuiで表示する三角形数
+	// 表示する三角形数
 
-	int triangleCountsX_ = 10;
-	int triangleCountsY_ = 6;
+	int triangleCountsX_ = 14;
+	int triangleCountsY_ = 8;
 };

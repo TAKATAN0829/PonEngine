@@ -50,7 +50,7 @@ void Engine::Initialize () {
 	graphicsSystem_->CreateTexture (
 		dxCommon_->GetDevice (),
 		dxCommon_->GetCommandList (),
-		"./Resources/uvChecker.png");
+		"./Resources/white1x1.png");
 
 	//=============================================================================================//
 	// ImGuiSystem初期化
