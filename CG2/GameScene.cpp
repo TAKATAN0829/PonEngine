@@ -34,7 +34,7 @@ void GameScene::Initialize() {
 			int index = countY * triangleCountsX_ + countX;
 
 			triangles_[index] = new Object3d();
-			triangles_[index]->Initialize(device_, resourceManager_, MeshType::kTriangle);
+			triangles_[index]->Initialize(MeshType::kTriangle);
 
 			trianglesTransformData_[index].scale = { 1.0f,1.0f,1.0f };
 			trianglesTransformData_[index].rotate = { 0.0f,0.0f,0.0f };
@@ -50,7 +50,7 @@ void GameScene::Initialize() {
 			triangles_[index]->SetColor({ 1.0f,1.0f,1.0f,1.0f });
 
 			invTriangles_[index] = new Object3d();
-			invTriangles_[index]->Initialize(device_, resourceManager_, MeshType::kTriangle);
+			invTriangles_[index]->Initialize(MeshType::kTriangle);
 
 			invTrianglesTransformData_[index].scale = { 1.0f,1.0f,1.0f };
 			invTrianglesTransformData_[index].rotate = { 0.f,0.f,-3.141592f };
@@ -117,7 +117,7 @@ void GameScene::Update(Input* input) {
 //=================================================================================================//
 // 描画処理
 
-void GameScene::Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
+void GameScene::Draw() {
 
 	//=============================================================================================//
 	// 三角形描画
@@ -127,8 +127,8 @@ void GameScene::Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* gra
 
 			int index = countY * triangleCountsX_ + countX;
 
-			triangles_[index]->Draw(commandList, graphicsSystem);
-			invTriangles_[index]->Draw(commandList, graphicsSystem);
+			triangles_[index]->Draw();
+			invTriangles_[index]->Draw();
 		}
 	}
 }
@@ -210,10 +210,6 @@ bool GameScene::IsFinished() {
 // シーン共通情報
 
 void GameScene::SetContext(const SceneContext& sceneContext) {
-
-	device_ = sceneContext.device;
-
-	resourceManager_ = sceneContext.resourceManager;
 
 	clientWidth_ = sceneContext.clientWidth;
 

@@ -3,11 +3,11 @@
 //=================================================================================================//
 // 初期化処理
 
-void Sprite::Initialize(
-	ID3D12Device* device,
-	ResourceManager* resourceManager,
-	int32_t clientWidth,
-	int32_t clientHeight) {
+void Sprite::Initialize(int32_t clientWidth,int32_t clientHeight) {
+
+	ID3D12Device* device = GraphicsSystem::GetDevice();
+
+	ResourceManager* resourceManager = ResourceManager::GetInstance();
 
 	//=============================================================================================//
 	// ClientWidth保存
@@ -91,10 +91,13 @@ void Sprite::Update() {
 //=================================================================================================//
 // 描画処理
 
-void Sprite::Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
+void Sprite::Draw() {
 
 	//=============================================================================================//
 	// 描画前設定
+
+	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
+	GraphicsSystem* graphicsSystem = GraphicsSystem::GetGraphicsSystem();
 
 	graphicsSystem->PreSpriteDraw(
 		commandList,

@@ -54,10 +54,10 @@ void ObjectManager::Update (const Matrix4x4& viewProjectionMatrix) {
 //=================================================================================================//
 // 描画処理
 
-void ObjectManager::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
+void ObjectManager::Draw () {
 
 	for (Object3d* object : objects_) {
 
-		object->Draw (commandList, graphicsSystem);
+		object->Draw ();
 	}
 }

@@ -41,6 +41,8 @@ void Engine::Initialize() {
 
 	graphicsSystem_ = new GraphicsSystem();
 
+	GraphicsSystem::SetGraphicsSystem(graphicsSystem_);
+
 	graphicsSystem_->Initialize(dxCommon_->GetDevice());
 
 	graphicsSystem_->SetDevice(dxCommon_->GetDevice());
@@ -73,11 +75,7 @@ void Engine::Initialize() {
 
 	sceneManager_ = new SceneManager();
 
-	sceneManager_->Initialize(
-		dxCommon_->GetDevice(),
-		graphicsSystem_->GetResourceManager(),
-		winApp_->GetClientWidth(),
-		winApp_->GetClientHeight());
+	sceneManager_->Initialize(winApp_->GetClientWidth(), winApp_->GetClientHeight());
 }
 
 //=================================================================================================//
@@ -98,6 +96,11 @@ void Engine::Run() {
 		dxCommon_->BeginFrame();
 
 		//=========================================================================================//
+		// コマンドリスト取得
+
+		GraphicsSystem::SetCommandList(dxCommon_->GetCommandList());
+
+		//=========================================================================================//
 		// ImGui開始
 
 		imGuiSystem_->Begin();
@@ -110,7 +113,7 @@ void Engine::Run() {
 		//=========================================================================================//
 		// シーン描画
 
-		sceneManager_->Draw(dxCommon_->GetCommandList(), graphicsSystem_);
+		sceneManager_->Draw();
 
 		//=========================================================================================//
 		// ImGui描画

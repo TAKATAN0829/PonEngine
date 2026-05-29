@@ -3,21 +3,7 @@
 //=================================================================================================//
 // 初期化処理
 
-void SpriteManager::Initialize(
-	ID3D12Device* device,
-	ResourceManager* resourceManager,
-	int32_t clientWidth,
-	int32_t clientHeight) {
-
-	//=============================================================================================//
-	// Device保存
-
-	device_ = device;
-
-	//=============================================================================================//
-	// ResourceManager保存
-
-	resourceManager_ = resourceManager;
+void SpriteManager::Initialize(int32_t clientWidth, int32_t clientHeight) {
 
 	//=============================================================================================//
 	// ClientWidth保存
@@ -27,7 +13,7 @@ void SpriteManager::Initialize(
 	//=============================================================================================//
 	// ClientHeight保存
 
-	clientHeight_ =	clientHeight;
+	clientHeight_ = clientHeight;
 }
 
 //=================================================================================================//
@@ -47,14 +33,16 @@ void SpriteManager::Update() {
 //=================================================================================================//
 // 描画処理
 
-void SpriteManager::Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
+void SpriteManager::Draw() {
 
 	//=============================================================================================//
 	// Sprite描画
+	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
+	GraphicsSystem* graphicsSystem = GraphicsSystem::GetGraphicsSystem();
 
 	for (Sprite* sprite : sprites_) {
 
-		sprite->Draw(commandList, graphicsSystem);
+		sprite->Draw();
 	}
 }
 
@@ -89,13 +77,9 @@ Sprite* SpriteManager::CreateSprite() {
 	//=============================================================================================//
 	// Sprite生成
 
-	Sprite* sprite =new Sprite();
+	Sprite* sprite = new Sprite();
 
-	sprite->Initialize(
-		device_,
-		resourceManager_,
-		clientWidth_,
-		clientHeight_);
+	sprite->Initialize(clientWidth_, clientHeight_);
 
 	//=============================================================================================//
 	// 配列追加

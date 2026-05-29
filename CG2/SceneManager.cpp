@@ -3,21 +3,8 @@
 //=================================================================================================//
 // 初期化処理
 
-void SceneManager::Initialize(
-	ID3D12Device* device,
-	ResourceManager* resourceManager,
-	int32_t clientWidth,
-	int32_t clientHeight) {
+void SceneManager::Initialize(int32_t clientWidth, int32_t clientHeight) {
 
-	//=============================================================================================//
-	// Device保存
-
-	device_ = device;
-
-	//=============================================================================================//
-	// ResourceManager保存
-
-	resourceManager_ = resourceManager;
 
 	//=============================================================================================//
 	// ClientWidth保存
@@ -31,10 +18,6 @@ void SceneManager::Initialize(
 
 	//=============================================================================================//
 	// SceneContext設定
-
-	sceneContext_.device = device_;
-
-	sceneContext_.resourceManager = resourceManager_;
 
 	sceneContext_.clientWidth = clientWidth_;
 
@@ -90,12 +73,12 @@ void SceneManager::Update(Input* input) {
 //=================================================================================================//
 // 描画処理
 
-void SceneManager::Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
+void SceneManager::Draw() {
 
 	//=============================================================================================//
 	// CurrentScene描画
 
-	currentScene_->Draw(commandList, graphicsSystem);
+	currentScene_->Draw();
 }
 
 //=================================================================================================//

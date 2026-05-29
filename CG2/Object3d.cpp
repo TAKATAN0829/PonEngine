@@ -5,10 +5,9 @@
 
 void Object3d::Initialize(MeshType meshType) {
 
-	Microsoft::WRL::ComPtr<ID3D12Device*> device = GraphicsSystem::GetDevice();
+	ID3D12Device* device = GraphicsSystem::GetDevice();
 
-	ResourceManager* resourceManager =
-		ResourceManager::GetInstance();
+	ResourceManager* resourceManager =	ResourceManager::GetInstance();
 
 	transform_ = {
 		{1.0f,1.0f,1.0f},
@@ -18,16 +17,11 @@ void Object3d::Initialize(MeshType meshType) {
 
 	mesh_ = new Mesh();
 
-	mesh_->Initialize(
-		device,
-		resourceManager,
-		meshType);
+	mesh_->Initialize(device, resourceManager, meshType);
 
 	material_ = new Material();
 
-	material_->Initialize(
-		device,
-		resourceManager);
+	material_->Initialize(device, resourceManager);
 
 	wvpResource_ =
 		resourceManager->CreateBufferResource(
@@ -40,11 +34,9 @@ void Object3d::Initialize(MeshType meshType) {
 		nullptr,
 		reinterpret_cast<void**> (&wvpData_));
 
-	wvpData_->WVP =
-		MathUtility::MakeIdentity4x4();
+	wvpData_->WVP =	MathUtility::MakeIdentity4x4();
 
-	wvpData_->World =
-		MathUtility::MakeIdentity4x4();
+	wvpData_->World = MathUtility::MakeIdentity4x4();
 }
 
 //=================================================================================================//
@@ -71,10 +63,12 @@ void Object3d::Update (const Matrix4x4& viewProjectionMatrix) {
 //=================================================================================================//
 // 描画処理
 
-void Object3d::Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
+void Object3d::Draw () {
 
 	//=============================================================================================//
 	// 描画前設定
+	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
+	GraphicsSystem* graphicsSystem = GraphicsSystem::GetGraphicsSystem();
 
 	graphicsSystem->PreDraw (
 		commandList,

@@ -39,7 +39,7 @@ public:
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw (ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem);
+	void Draw ();
 
 private:
 

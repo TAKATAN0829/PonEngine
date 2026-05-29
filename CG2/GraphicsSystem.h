@@ -25,52 +25,52 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize (ID3D12Device* device);
+	void Initialize(ID3D12Device* device);
 
 	//=============================================================================================//
 	// 終了処理
 
-	void Finalize ();
+	void Finalize();
 
 	//=============================================================================================//
 	// SRVDescriptorHeap取得
 
-	DescriptorHeapManager* GetSRVDescriptorHeap ();
+	DescriptorHeapManager* GetSRVDescriptorHeap();
 
 	//=============================================================================================//
 	// ShaderCompiler取得
 
-	ShaderCompiler* GetShaderCompiler ();
+	ShaderCompiler* GetShaderCompiler();
 
 	//=============================================================================================//
 	// TextureManager取得
 
-	TextureManager* GetTextureManager ();
+	TextureManager* GetTextureManager();
 
 	//=============================================================================================//
 	// ResourceManager取得
 
-	ResourceManager* GetResourceManager ();
+	ResourceManager* GetResourceManager();
 
 	//=============================================================================================//
 	// PipelineManager取得
 
-	PipelineManager* GetPipelineManager ();
+	PipelineManager* GetPipelineManager();
 
 	//=============================================================================================//
 	// RootSignature取得
 
-	ID3D12RootSignature* GetRootSignature ();
+	ID3D12RootSignature* GetRootSignature();
 
 	//=============================================================================================//
 	// GraphicsPipelineState取得
 
-	ID3D12PipelineState* GetGraphicsPipelineState ();
+	ID3D12PipelineState* GetGraphicsPipelineState();
 
 	//=============================================================================================//
 	// GraphicsPipeline生成
 
-	void CreateGraphicsPipeline (ID3D12Device* device);
+	void CreateGraphicsPipeline(ID3D12Device* device);
 
 	//=============================================================================================//
 	// SpritePipeline生成
@@ -88,7 +88,7 @@ public:
 	//=============================================================================================//
 	// 描画前設定
 
-	void PreDraw (
+	void PreDraw(
 		ID3D12GraphicsCommandList* commandList,
 		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
 		D3D12_INDEX_BUFFER_VIEW* indexBufferView);
@@ -104,14 +104,36 @@ public:
 	//=============================================================================================//
 	// device
 
-	static void SetDevice(Microsoft::WRL::ComPtr<ID3D12Device*> device) {
+	static void SetDevice(ID3D12Device* device) {
 		device_ = device;
 	}
 
-	static Microsoft::WRL::ComPtr<ID3D12Device*> GetDevice() {
+	static ID3D12Device* GetDevice() {
 		return device_;
 	}
-	
+
+	//=============================================================================================//
+	// commandList
+
+	static void SetCommandList(ID3D12GraphicsCommandList* commandList) {
+		commandList_ = commandList;
+	}
+
+	static ID3D12GraphicsCommandList* GetCommandList() {
+		return commandList_;
+	}
+
+	//=============================================================================================//
+	// GraphicsSystem
+
+	static void SetGraphicsSystem(GraphicsSystem* graphicsSystem) {
+		graphicsSystem_ = graphicsSystem;
+	}
+
+	static GraphicsSystem* GetGraphicsSystem() {
+		return graphicsSystem_;
+	}
+
 private:
 
 	//=============================================================================================//
@@ -152,6 +174,15 @@ private:
 	//=============================================================================================//
 	// device
 
-	inline static Microsoft::WRL::ComPtr<ID3D12Device*> device_ = nullptr;
+	inline static ID3D12Device* device_ = nullptr;
 
+	//=============================================================================================//
+	// commandList
+
+	inline static ID3D12GraphicsCommandList* commandList_ = nullptr;
+
+	//=============================================================================================//
+	// GraphicsSystem
+
+	inline static GraphicsSystem* graphicsSystem_ = nullptr;
 };

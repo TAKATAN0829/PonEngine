@@ -15,7 +15,7 @@ public:
 
 	void Initialize() override;
 	void Update(Input* input) override;
-	void Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) override;
+	void Draw() override;
 	void Finalize() override;
 
 	void SetResourceManager(ResourceManager* resourceManager);

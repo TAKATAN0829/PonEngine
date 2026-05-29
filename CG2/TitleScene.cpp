@@ -6,10 +6,6 @@
 
 void TitleScene::SetContext(const SceneContext& sceneContext) {
 
-	device_ = sceneContext.device;
-
-	resourceManager_ = sceneContext.resourceManager;
-
 	clientWidth_ = sceneContext.clientWidth;
 
 	clientHeight_ = sceneContext.clientHeight;
@@ -19,14 +15,6 @@ void TitleScene::SetContext(const SceneContext& sceneContext) {
 // 初期化処理
 
 void TitleScene::Initialize() {
-
-	//=============================================================================================//
-	// SpriteManager生成
-
-
-	//=============================================================================================//
-	// BackGroundSprite生成
-
 
 }
 
@@ -43,19 +31,12 @@ void TitleScene::Update(Input* input) {
 		isFinished_ = true;
 	}
 
-	//=============================================================================================//
-	// SpriteManager更新
-
 }
 
 //=================================================================================================//
 // 描画処理
 
-void TitleScene::Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
-
-	//=============================================================================================//
-	// SpriteManager描画
-
+void TitleScene::Draw() {
 
 }
 
@@ -63,9 +44,6 @@ void TitleScene::Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* gr
 // 終了処理
 
 void TitleScene::Finalize() {
-
-	//=============================================================================================//
-	// SpriteManager解放
 
 	
 }

@@ -18,8 +18,6 @@ public:
 	// 初期化処理
 
 	void Initialize(
-		ID3D12Device* device,
-		ResourceManager* resourceManager,
 		int32_t clientWidth,
 		int32_t clientHeight);
 
@@ -31,7 +29,7 @@ public:
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem);
+	void Draw();
 
 	//=============================================================================================//
 	// 終了処理
