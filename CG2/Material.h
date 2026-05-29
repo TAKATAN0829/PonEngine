@@ -20,12 +20,12 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(ID3D12Device* device, ResourceManager* resourceManager);
+	void Initialize();
 
 	//=============================================================================================//
 	// RootParameter設定
 
-	void Bind(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem);
+	void Bind();
 
 	//=============================================================================================//
 	// 色設定

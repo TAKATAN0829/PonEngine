@@ -6,6 +6,9 @@
 // C++
 #include <cassert>
 
+// 自作
+#include "GraphicsSystem.h"
+
 //=================================================================================================//
 // Textureを読む
 
@@ -47,12 +50,13 @@ DirectX::ScratchImage TextureManager::LoadTexture (const std::string& filePath) 
 //=================================================================================================//
 // Texture生成
 
-uint32_t TextureManager::CreateTexture(
-	ID3D12Device* device,
-	ID3D12GraphicsCommandList* commandList,
-	ResourceManager* resourceManager,
-	DescriptorHeapManager* srvDescriptorHeap,
-	const std::string& filePath) {
+uint32_t TextureManager::CreateTexture(DescriptorHeapManager* srvDescriptorHeap,const std::string& filePath) {
+
+	ResourceManager* resourceManager = ResourceManager::GetInstance();
+
+	ID3D12Device* device = GraphicsSystem::GetDevice();
+
+	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
 
 	//=============================================================================================//
 	// Texture番号

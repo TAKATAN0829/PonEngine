@@ -1,9 +1,15 @@
 #include "Material.h"
 
+// 自作
+#include "GraphicsSystem.h"
+
 //=================================================================================================//
 // 初期化処理
 
-void Material::Initialize(ID3D12Device* device, ResourceManager* resourceManager) {
+void Material::Initialize() {
+
+	ID3D12Device* device = GraphicsSystem::GetDevice();
+	ResourceManager* resourceManager = ResourceManager::GetInstance();
 
 	//=============================================================================================//
 	// MaterialResource生成
@@ -55,7 +61,10 @@ void Material::Initialize(ID3D12Device* device, ResourceManager* resourceManager
 //=================================================================================================//
 // RootParameter設定
 
-void Material::Bind(ID3D12GraphicsCommandList* commandList, GraphicsSystem* graphicsSystem) {
+void Material::Bind() {
+	
+	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
+	GraphicsSystem* graphicsSystem = GraphicsSystem::GetGraphicsSystem();
 
 	//=============================================================================================//
 	// Material設定

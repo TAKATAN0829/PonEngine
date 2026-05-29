@@ -24,12 +24,12 @@ public:
 	//=============================================================================================//
 	// 初期化
 
-	void Initialize (ID3D12Device* device, ResourceManager* resourceManager, MeshType meshType);
+	void Initialize (MeshType meshType);
 
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw (ID3D12GraphicsCommandList* commandList);
+	void Draw ();
 
 	//=============================================================================================//
 	// 頂点BufferView取得
@@ -51,27 +51,27 @@ private:
 	//=============================================================================================//
 	// Sphere初期化
 
-	void InitializeSphere (ID3D12Device* device, ResourceManager* resourceManager);
+	void InitializeSphere ();
 
 	//=============================================================================================//
 	// Plane初期化
 
-	void InitializePlane (ID3D12Device* device, ResourceManager* resourceManager);
+	void InitializePlane ();
 
 	//=============================================================================================//
 	// Triangle初期化
 
-	void InitializeTriangle (ID3D12Device* device, ResourceManager* resourceManager);
+	void InitializeTriangle ();
 
 	//=============================================================================================//
 	// 頂点Resource生成
 
-	void CreateVertexResource (ID3D12Device* device, ResourceManager* resourceManager);
+	void CreateVertexResource ();
 
 	//=============================================================================================//
 	// IndexResource生成
 
-	void CreateIndexResource (ID3D12Device* device,	ResourceManager* resourceManager);
+	void CreateIndexResource ();
 
 	//=============================================================================================//
 	// Sphere生成

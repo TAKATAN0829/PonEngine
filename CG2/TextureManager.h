@@ -31,12 +31,7 @@ public:
 	//=============================================================================================//
 	// Texture生成
 
-	uint32_t CreateTexture(
-		ID3D12Device* device,
-		ID3D12GraphicsCommandList* commandList,
-		ResourceManager* resourceManager,
-		DescriptorHeapManager* srvDescriptorHeap,
-		const std::string& filePath);
+	uint32_t CreateTexture(DescriptorHeapManager* srvDescriptorHeap,const std::string& filePath);
 
 private:
 	//=============================================================================================//

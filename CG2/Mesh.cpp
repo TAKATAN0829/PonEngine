@@ -4,27 +4,30 @@
 #include <numbers>
 #include <cmath>
 
+// 自作
+#include "GraphicsSystem.h"
+
 //=================================================================================================//
 // 初期化処理
 
-void Mesh::Initialize (ID3D12Device* device, ResourceManager* resourceManager, MeshType meshType) {
+void Mesh::Initialize (MeshType meshType) {
 
 	switch (meshType) {
 	case MeshType::kSphere:
 
-	InitializeSphere (device, resourceManager);
+	InitializeSphere ();
 
 	break;
 
 	case MeshType::kPlane:
 
-	InitializePlane (device, resourceManager);
+	InitializePlane ();
 
 	break;
 
 	case MeshType::kTriangle:
 
-	InitializeTriangle (device,	resourceManager);
+	InitializeTriangle ();
 
 	break;
 	}
@@ -33,7 +36,9 @@ void Mesh::Initialize (ID3D12Device* device, ResourceManager* resourceManager, M
 //=================================================================================================//
 // 描画処理
 
-void Mesh::Draw (ID3D12GraphicsCommandList* commandList) {
+void Mesh::Draw () {
+
+	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
 
 	//=============================================================================================//
 	// VBV設定
@@ -54,7 +59,7 @@ void Mesh::Draw (ID3D12GraphicsCommandList* commandList) {
 //=================================================================================================//
 // Sphere初期化
 
-void Mesh::InitializeSphere (ID3D12Device* device, ResourceManager* resourceManager) {
+void Mesh::InitializeSphere () {
 
 	//=============================================================================================//
 	// Vertex数設定
@@ -69,12 +74,12 @@ void Mesh::InitializeSphere (ID3D12Device* device, ResourceManager* resourceMana
 	//=============================================================================================//
 	// VertexResource生成
 
-	CreateVertexResource (device, resourceManager);
+	CreateVertexResource ();
 
 	//=============================================================================================//
 	// IndexResource生成
 
-	CreateIndexResource (device, resourceManager);
+	CreateIndexResource ();
 
 	//=============================================================================================//
 	// Sphere生成
@@ -85,7 +90,7 @@ void Mesh::InitializeSphere (ID3D12Device* device, ResourceManager* resourceMana
 //=================================================================================================//
 // Plane初期化
 
-void Mesh::InitializePlane (ID3D12Device* device, ResourceManager* resourceManager) {
+void Mesh::InitializePlane () {
 
 	//=============================================================================================//
 	// Vertex数設定
@@ -100,12 +105,12 @@ void Mesh::InitializePlane (ID3D12Device* device, ResourceManager* resourceManag
 	//=============================================================================================//
 	// VertexResource生成
 
-	CreateVertexResource (device, resourceManager);
+	CreateVertexResource ();
 
 	//=============================================================================================//
 	// IndexResource生成
 
-	CreateIndexResource (device, resourceManager);
+	CreateIndexResource ();
 
 	//=============================================================================================//
 	// Plane生成
@@ -116,7 +121,7 @@ void Mesh::InitializePlane (ID3D12Device* device, ResourceManager* resourceManag
 //=================================================================================================//
 // Triangle初期化
 
-void Mesh::InitializeTriangle (ID3D12Device* device, ResourceManager* resourceManager) {
+void Mesh::InitializeTriangle () {
 
 	//=============================================================================================//
 	// Vertex数設定
@@ -131,12 +136,12 @@ void Mesh::InitializeTriangle (ID3D12Device* device, ResourceManager* resourceMa
 	//=============================================================================================//
 	// VertexResource生成
 
-	CreateVertexResource (device, resourceManager);
+	CreateVertexResource ();
 
 	//=============================================================================================//
 	// IndexResource生成
 
-	CreateIndexResource (device, resourceManager);
+	CreateIndexResource ();
 
 	//=============================================================================================//
 	// Triangle生成
@@ -171,10 +176,13 @@ uint32_t Mesh::GetIndexCount () {
 //=================================================================================================//
 // 頂点Resource生成
 
-void Mesh::CreateVertexResource (ID3D12Device* device, ResourceManager* resourceManager) {
+void Mesh::CreateVertexResource () {
 
 	//=============================================================================================//
 	// VertexResource生成
+
+	ID3D12Device* device = GraphicsSystem::GetDevice();
+	ResourceManager* resourceManager = ResourceManager::GetInstance();
 
 	vertexResource_ =
 		resourceManager->CreateBufferResource (
@@ -200,10 +208,13 @@ void Mesh::CreateVertexResource (ID3D12Device* device, ResourceManager* resource
 //=================================================================================================//
 // IndexResource生成
 
-void Mesh::CreateIndexResource (ID3D12Device* device, ResourceManager* resourceManager) {
+void Mesh::CreateIndexResource () {
 
 	//=============================================================================================//
 	// IndexResource生成
+
+	ID3D12Device* device = GraphicsSystem::GetDevice();
+	ResourceManager* resourceManager = ResourceManager::GetInstance();
 
 	indexResource_ =
 		resourceManager->CreateBufferResource (

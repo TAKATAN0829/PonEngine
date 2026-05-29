@@ -65,12 +65,10 @@ DescriptorHeapManager::GetCPUDescriptorHandle(
 // GPUHandle取得
 
 D3D12_GPU_DESCRIPTOR_HANDLE
-DescriptorHeapManager::GetGPUDescriptorHandle(
-	uint32_t index) {
+DescriptorHeapManager::GetGPUDescriptorHandle(uint32_t index) {
 
 	D3D12_GPU_DESCRIPTOR_HANDLE handle =
-		descriptorHeap_->
-		GetGPUDescriptorHandleForHeapStart();
+		descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
 
 	handle.ptr += descriptorSize_ * index;
 
