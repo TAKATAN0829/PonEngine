@@ -32,12 +32,12 @@ void DescriptorHeapManager::Initialize(
 	}
 
 	// Heap生成
-	HRESULT hr = device_->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap_));
+	HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap_));
 
 	assert(SUCCEEDED(hr));
 
 	// DescriptorSize取得
-	descriptorSize_ = device_->GetDescriptorHandleIncrementSize(heapType);
+	descriptorSize_ = device->GetDescriptorHandleIncrementSize(heapType);
 }
 
 //=============================================================================================//

@@ -32,11 +32,6 @@ public:
 private:
 
 	//=============================================================================================//
-	// Device
-
-	ID3D12Device* device_ = nullptr;
-
-	//=============================================================================================//
 	// DescriptorHeap
 
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap_;
