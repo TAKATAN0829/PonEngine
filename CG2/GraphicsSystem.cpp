@@ -13,11 +13,7 @@ void GraphicsSystem::Initialize(ID3D12Device* device) {
 
 	srvDescriptorHeap_ = new DescriptorHeapManager();
 
-	srvDescriptorHeap_->Initialize(
-		device,
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		128,
-		true);
+	srvDescriptorHeap_->Initialize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,128,true);
 
 	//=============================================================================================//
 	// ShaderCompiler生成
@@ -300,12 +296,7 @@ void GraphicsSystem::CreateSpritePipeline(ID3D12Device* device) {
 
 uint32_t GraphicsSystem::CreateTexture(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const std::string& filePath) {
 
-	return textureManager_->CreateTexture(
-		device,
-		commandList,
-		resourceManager_,
-		srvDescriptorHeap_,
-		filePath);
+	return textureManager_->CreateTexture(srvDescriptorHeap_, filePath);
 }
 
 //=================================================================================================//
