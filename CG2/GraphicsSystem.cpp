@@ -123,7 +123,7 @@ TextureManager* GraphicsSystem::GetTextureManager() {
 //=================================================================================================//
 // ResourceManager取得
 
-ResourceManager* GraphicsSystem::GetInstance() {
+ResourceManager* GraphicsSystem::GetResourceManager() {
 
 	return resourceManager_;
 }

@@ -32,8 +32,7 @@ void DescriptorHeapManager::Initialize(
 	}
 
 	// Heap生成
-	HRESULT hr =
-		device_->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap_));
+	HRESULT hr = device_->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap_));
 
 	assert(SUCCEEDED(hr));
 
