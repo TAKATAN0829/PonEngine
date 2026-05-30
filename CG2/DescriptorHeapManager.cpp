@@ -1,53 +1,60 @@
 #include "DescriptorHeapManager.h"
 
-// C#
 #include <cassert>
-
-// 自作
-#include "GraphicsSystem.h"
 
 //=============================================================================================//
 // 初期化
 
-void DescriptorHeapManager::Initialize(
+void DescriptorHeapManager::Initialize (
+	ID3D12Device* device,
 	D3D12_DESCRIPTOR_HEAP_TYPE heapType,
 	uint32_t descriptorCount,
 	bool shaderVisible) {
 
-	ID3D12Device* device = GraphicsSystem::GetDevice ();
+	device_ = device;
 
 	// Heap設定
 	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{};
 
 	descriptorHeapDesc.Type = heapType;
 
-	descriptorHeapDesc.NumDescriptors =	descriptorCount;
+	descriptorHeapDesc.NumDescriptors =
+		descriptorCount;
 
 	if (shaderVisible) {
 
-		descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		descriptorHeapDesc.Flags =
+			D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	} else {
 
-		descriptorHeapDesc.Flags =D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		descriptorHeapDesc.Flags =
+			D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	}
 
 	// Heap生成
-	HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap_));
+	HRESULT hr =
+		device_->CreateDescriptorHeap (
+			&descriptorHeapDesc,
+			IID_PPV_ARGS (&descriptorHeap_));
 
-	assert(SUCCEEDED(hr));
+	assert (SUCCEEDED (hr));
 
 	// DescriptorSize取得
-	descriptorSize_ = device->GetDescriptorHandleIncrementSize(heapType);
+	descriptorSize_ =
+		device_->GetDescriptorHandleIncrementSize (
+			heapType);
 }
 
 //=============================================================================================//
 // CPUHandle取得
 
 D3D12_CPU_DESCRIPTOR_HANDLE
-DescriptorHeapManager::GetCPUDescriptorHandle(
+DescriptorHeapManager::GetCPUDescriptorHandle (
 	uint32_t index) {
 
-	D3D12_CPU_DESCRIPTOR_HANDLE handle = descriptorHeap_-> GetCPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE handle =
+		descriptorHeap_->
+		GetCPUDescriptorHandleForHeapStart ();
 
 	handle.ptr += descriptorSize_ * index;
 
@@ -58,9 +65,10 @@ DescriptorHeapManager::GetCPUDescriptorHandle(
 // GPUHandle取得
 
 D3D12_GPU_DESCRIPTOR_HANDLE
-DescriptorHeapManager::GetGPUDescriptorHandle(uint32_t index) {
+DescriptorHeapManager::GetGPUDescriptorHandle (uint32_t index) {
 
-	D3D12_GPU_DESCRIPTOR_HANDLE handle = descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
+	D3D12_GPU_DESCRIPTOR_HANDLE handle =
+		descriptorHeap_->GetGPUDescriptorHandleForHeapStart ();
 
 	handle.ptr += descriptorSize_ * index;
 

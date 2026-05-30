@@ -481,7 +481,7 @@ void DirectXCommon::Finalize () {
 void DirectXCommon::InitializeDepthStencilView () {
 
 	// DSVHeap生成
-	dsvHeap_.Initialize (D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+	dsvHeap_.Initialize (device_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 
 	// DepthStencilTexture設定
 	D3D12_RESOURCE_DESC resourceDesc{};

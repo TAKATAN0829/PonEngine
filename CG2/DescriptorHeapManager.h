@@ -10,7 +10,7 @@ public:
 	//=============================================================================================//
 	// 初期化
 
-	void Initialize (D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32_t descriptorCount, bool shaderVisible);
+	void Initialize (ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32_t descriptorCount, bool shaderVisible);
 
 	//=============================================================================================//
 	// CPUHandle取得
@@ -30,6 +30,10 @@ public:
 	}
 
 private:
+	//=============================================================================================//
+	// Device
+
+	Microsoft::WRL::ComPtr<ID3D12Device> device_;
 
 	//=============================================================================================//
 	// DescriptorHeap
