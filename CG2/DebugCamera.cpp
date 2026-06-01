@@ -18,41 +18,51 @@ void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight) {
 void DebugCamera::Update(Input* input) {
 	input_ = input;
 
-	// 移動
-	if (input_->IsPressKey(DIK_W)) {
-		transform_.translate.z += moveSpeed_;
-	}
-	if (input_->IsPressKey(DIK_A)) {
-		transform_.translate.x -= moveSpeed_;
-	}
-	if (input_->IsPressKey(DIK_S)) {
-		transform_.translate.z -= moveSpeed_;
-	}
-	if (input_->IsPressKey(DIK_D)) {
-		transform_.translate.x += moveSpeed_;
-	}
-	if (input_->IsPressKey(DIK_Q)) {
-		transform_.translate.y -= moveSpeed_;
-	}
-	if (input_->IsPressKey(DIK_E)) {
-		transform_.translate.y += moveSpeed_;
+	Vector3 move{ 0.0f, 0.0f, 0.0f };
+
+	if (input->IsPressKey(DIK_W)) {
+		move.z += 1.0f;
 	}
 
-	// 回転
-	if (input_->IsPressKey(DIK_UP)) {
-		transform_.rotate.x -= rotateSpeed_;
+	if (input->IsPressKey(DIK_S)) {
+		move.z -= 1.0f;
 	}
 
-	if (input_->IsPressKey(DIK_DOWN)) {
-		transform_.rotate.x += rotateSpeed_;
+	if (input->IsPressKey(DIK_A)) {
+		move.x -= 1.0f;
 	}
 
-	if (input_->IsPressKey(DIK_LEFT)) {
-		transform_.rotate.y -= rotateSpeed_;
+	if (input->IsPressKey(DIK_D)) {
+		move.x += 1.0f;
 	}
 
-	if (input_->IsPressKey(DIK_RIGHT)) {
-		transform_.rotate.y += rotateSpeed_;
+	if (input->IsPressKey(DIK_Q)) {
+		move.y -= 1.0f;
+	}
+
+	if (input->IsPressKey(DIK_E)) {
+		move.y += 1.0f;
+	}
+
+	//=============================================================================================//
+	// カメラの向きに合わせて移動
+
+	if (MathUtility::Length(move) != 0.0f) {
+
+		move = MathUtility::Normalize(move);
+
+		Matrix4x4 rotateMatrix =
+			MathUtility::Multiply(MathUtility::MakeRotateXMatrix(transform_.rotate.x),
+				MathUtility::Multiply(MathUtility::MakeRotateYMatrix(transform_.rotate.y), MathUtility::MakeRotateZMatrix(transform_.rotate.z))
+			);
+
+		Vector3 velocity = MathUtility::TransformNormal(move, rotateMatrix);
+
+		velocity.x *= moveSpeed_;
+		velocity.y *= moveSpeed_;
+		velocity.z *= moveSpeed_;
+
+		transform_.translate = MathUtility::Add(transform_.translate,velocity);
 	}
 
 #ifdef _DEBUG

@@ -22,8 +22,6 @@ void GameScene::Initialize() {
 
 	debugCamera_ = new DebugCamera();
 
-	debugCamera_->GetTransform();
-
 	debugCamera_->Initialize(clientWidth_, clientHeight_);
 	//=============================================================================================//
 	// 三角形初期化
@@ -98,12 +96,11 @@ void GameScene::Update(Input* input) {
 	// ImGui
 
 	ImGui::Begin("Triangle");
-
-	ImGui::DragFloat3("CameraTranslate", &cameraTransform_.translate.x, 0.1f, -30.0f, 30.0f);
-
 	ImGui::DragFloat3("TriangleScale", &triangleTransform_.scale.x, 0.1f, 0.f, 10.f);
 	ImGui::DragFloat3("TriangleRotate", &triangleTransform_.rotate.x, 0.1f, 0.f, 10.f);
 
+	ImGui::DragFloat3("InvTriangleScale", &invTriangleTransform_.scale.x, 0.1f, 0.f, 10.f);
+	ImGui::DragFloat3("InvTriangleRotate", &invTriangleTransform_.rotate.x, 0.1f, 0.f, 10.f);
 	ImGui::End();
 
 #endif
@@ -115,6 +112,7 @@ void GameScene::Update(Input* input) {
 
 	camera_->Update();
 
+	debugCamera_->Update(input);
 	//=============================================================================================//
 	// 三角形更新
 
@@ -126,16 +124,15 @@ void GameScene::Update(Input* input) {
 			trianglesTransformData_[index].rotate = triangleTransform_.rotate;
 
 			triangles_[index]->SetTransform(trianglesTransformData_[index]);
-			triangles_[index]->Update(camera_->GetViewProjectionMatrix());
+			triangles_[index]->Update(debugCamera_->GetViewProjectionMatrix());
 
 			invTriangles_[index]->SetTransform(invTrianglesTransformData_[index]);
-			invTriangles_[index]->Update(camera_->GetViewProjectionMatrix());
+			invTriangles_[index]->Update(debugCamera_->GetViewProjectionMatrix());
 
 		}
 	}
 
-	debugCamera_->Update(input);
-	
+
 }
 
 //=================================================================================================//
@@ -166,34 +163,23 @@ void GameScene::Finalize() {
 	// 三角形解放
 
 	for (Object3d* triangle : triangles_) {
+		triangle->Finalize();
 
-		if (triangle != nullptr) {
-
-			triangle->Finalize();
-
-			delete triangle;
-		}
+		delete triangle;
 	}
 
 	for (Object3d* invTriangle : invTriangles_) {
+		invTriangle->Finalize();
 
-		if (invTriangle != nullptr) {
-
-			invTriangle->Finalize();
-
-			delete invTriangle;
-		}
+		delete invTriangle;
 	}
 
 	//=============================================================================================//
 	// Camera解放
 
-	if (camera_ != nullptr) {
+	delete camera_;
+	delete debugCamera_;
 
-		delete camera_;
-
-		camera_ = nullptr;
-	}
 }
 
 //=================================================================================================//
