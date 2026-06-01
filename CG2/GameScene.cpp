@@ -20,6 +20,10 @@ void GameScene::Initialize() {
 
 	cameraTransform_.translate = { 0.f,0.f,-30.f };
 
+	debugCamera_ = new DebugCamera();
+
+	debugCamera_->GetTransform();
+
 	debugCamera_->Initialize(clientWidth_, clientHeight_);
 	//=============================================================================================//
 	// 三角形初期化
@@ -130,7 +134,7 @@ void GameScene::Update(Input* input) {
 		}
 	}
 
-	debugCamera_->Update();
+	debugCamera_->Update(input);
 	
 }
 

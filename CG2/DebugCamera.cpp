@@ -15,22 +15,21 @@ void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight) {
 	UpdateMatrix();
 }
 
-void DebugCamera::Update() {
-	if (input_ == nullptr) {
-		return;
-	}
+void DebugCamera::Update(Input* input) {
+	input_ = input;
+
 	// 移動
 	if (input_->IsPressKey(DIK_W)) {
 		transform_.translate.z += moveSpeed_;
 	}
 	if (input_->IsPressKey(DIK_A)) {
-		transform_.translate.x += moveSpeed_;
+		transform_.translate.x -= moveSpeed_;
 	}
 	if (input_->IsPressKey(DIK_S)) {
-		transform_.translate.z += moveSpeed_;
+		transform_.translate.z -= moveSpeed_;
 	}
 	if (input_->IsPressKey(DIK_D)) {
-		transform_.translate.z += moveSpeed_;
+		transform_.translate.x += moveSpeed_;
 	}
 	if (input_->IsPressKey(DIK_Q)) {
 		transform_.translate.y -= moveSpeed_;
