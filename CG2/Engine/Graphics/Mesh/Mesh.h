@@ -10,8 +10,8 @@
 #include <cstdint>
 
 // 自作
-#include "./Engine/EngineStructs.h"
-#include "./Engine/Graphics/ResourceManager.h"
+#include "EngineStructs.h"
+#include "ResourceManager.h"
 
 enum class MeshType {
 	kSphere,

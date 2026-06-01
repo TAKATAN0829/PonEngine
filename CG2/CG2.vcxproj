@@ -54,6 +54,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalIncludeDirectories>$(ProjectDir)Engine\AudioSystem;$(ProjectDir)Engine\Camera;$(ProjectDir)Engine;$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Graphics\Material;$(ProjectDir)Engine\Graphics\Mesh;$(ProjectDir)Engine\Graphics\Object;$(ProjectDir)Engine\Graphics\Sprite;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Scene;$(ProjectDir)externals\imgui;$(ProjectDir)externals\DirectXTex</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -109,31 +110,31 @@
     <ClCompile Include="..\externals\imgui\imgui_widgets.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="AudioSystem.cpp" />
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="DebugCamera.cpp" />
-    <ClCompile Include="DescriptorHeapManager.cpp" />
-    <ClCompile Include="DirectXCommon.cpp" />
-    <ClCompile Include="Engine.cpp" />
-    <ClCompile Include="GameScene.cpp" />
-    <ClCompile Include="GraphicsSystem.cpp" />
-    <ClCompile Include="ImGuiSystem.cpp" />
-    <ClCompile Include="Input.cpp" />
-    <ClCompile Include="LogSystem.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Material.cpp" />
-    <ClCompile Include="Mesh.cpp" />
-    <ClCompile Include="Object3d.cpp" />
-    <ClCompile Include="ObjectManager.cpp" />
-    <ClCompile Include="PipelineManager.cpp" />
-    <ClCompile Include="ResourceManager.cpp" />
-    <ClCompile Include="SceneManager.cpp" />
-    <ClCompile Include="ShaderCompiler.cpp" />
-    <ClCompile Include="Sprite.cpp" />
-    <ClCompile Include="SpriteManager.cpp" />
-    <ClCompile Include="TextureManager.cpp" />
-    <ClCompile Include="TitleScene.cpp" />
-    <ClCompile Include="WinApp.cpp" />
+    <ClCompile Include="Engine\AudioSystem\AudioSystem.cpp" />
+    <ClCompile Include="Engine\Camera\Camera.cpp" />
+    <ClCompile Include="Engine\Camera\DebugCamera.cpp" />
+    <ClCompile Include="Engine\Core\DirectXCommon.cpp" />
+    <ClCompile Include="Engine\Core\ImGuiSystem.cpp" />
+    <ClCompile Include="Engine\Core\Input.cpp" />
+    <ClCompile Include="Engine\Core\LogSystem.cpp" />
+    <ClCompile Include="Engine\Core\WinApp.cpp" />
+    <ClCompile Include="Engine\Engine.cpp" />
+    <ClCompile Include="Engine\Graphics\DescriptorHeapManager.cpp" />
+    <ClCompile Include="Engine\Graphics\GraphicsSystem.cpp" />
+    <ClCompile Include="Engine\Graphics\Material\Material.cpp" />
+    <ClCompile Include="Engine\Graphics\Mesh\Mesh.cpp" />
+    <ClCompile Include="Engine\Graphics\Object\Object3d.cpp" />
+    <ClCompile Include="Engine\Graphics\Object\ObjectManager.cpp" />
+    <ClCompile Include="Engine\Graphics\PipelineManager.cpp" />
+    <ClCompile Include="Engine\Graphics\ResourceManager.cpp" />
+    <ClCompile Include="Engine\Graphics\ShaderCompiler.cpp" />
+    <ClCompile Include="Engine\Graphics\Sprite\Sprite.cpp" />
+    <ClCompile Include="Engine\Graphics\Sprite\SpriteManager.cpp" />
+    <ClCompile Include="Engine\Graphics\TextureManager.cpp" />
+    <ClCompile Include="Engine\main.cpp" />
+    <ClCompile Include="Engine\Scene\GameScene.cpp" />
+    <ClCompile Include="Engine\Scene\SceneManager.cpp" />
+    <ClCompile Include="Engine\Scene\TitleScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.PS.hlsl">
@@ -158,37 +159,37 @@
     <ClInclude Include="..\externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\externals\imgui\imstb_textedit.h" />
     <ClInclude Include="..\externals\imgui\imstb_truetype.h" />
-    <ClInclude Include="AudioSystem.h" />
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="DebugCamera.h" />
-    <ClInclude Include="DescriptorHeapManager.h" />
-    <ClInclude Include="DirectXCommon.h" />
-    <ClInclude Include="Engine.h" />
-    <ClInclude Include="EngineStructs.h" />
-    <ClInclude Include="GameScene.h" />
-    <ClInclude Include="GraphicsSystem.h" />
-    <ClInclude Include="ImGuiSystem.h" />
-    <ClInclude Include="Input.h" />
-    <ClInclude Include="IScene.h" />
-    <ClInclude Include="LogSystem.h" />
-    <ClInclude Include="Material.h" />
-    <ClInclude Include="MathUtility.h" />
-    <ClInclude Include="Matrix4x4.h" />
-    <ClInclude Include="Mesh.h" />
-    <ClInclude Include="Object3d.h" />
-    <ClInclude Include="ObjectManager.h" />
-    <ClInclude Include="PipelineManager.h" />
-    <ClInclude Include="ResourceManager.h" />
-    <ClInclude Include="SceneManager.h" />
-    <ClInclude Include="ShaderCompiler.h" />
-    <ClInclude Include="Sprite.h" />
-    <ClInclude Include="SpriteManager.h" />
-    <ClInclude Include="TextureManager.h" />
-    <ClInclude Include="TitleScene.h" />
-    <ClInclude Include="Vector2.h" />
-    <ClInclude Include="Vector3.h" />
-    <ClInclude Include="Vector4.h" />
-    <ClInclude Include="WinApp.h" />
+    <ClInclude Include="Engine\AudioSystem\AudioSystem.h" />
+    <ClInclude Include="Engine\Camera\Camera.h" />
+    <ClInclude Include="Engine\Camera\DebugCamera.h" />
+    <ClInclude Include="Engine\Core\DirectXCommon.h" />
+    <ClInclude Include="Engine\Core\ImGuiSystem.h" />
+    <ClInclude Include="Engine\Core\Input.h" />
+    <ClInclude Include="Engine\Core\LogSystem.h" />
+    <ClInclude Include="Engine\Core\WinApp.h" />
+    <ClInclude Include="Engine\Engine.h" />
+    <ClInclude Include="Engine\EngineStructs.h" />
+    <ClInclude Include="Engine\Graphics\DescriptorHeapManager.h" />
+    <ClInclude Include="Engine\Graphics\GraphicsSystem.h" />
+    <ClInclude Include="Engine\Graphics\Material\Material.h" />
+    <ClInclude Include="Engine\Graphics\Mesh\Mesh.h" />
+    <ClInclude Include="Engine\Graphics\Object\Object3d.h" />
+    <ClInclude Include="Engine\Graphics\Object\ObjectManager.h" />
+    <ClInclude Include="Engine\Graphics\PipelineManager.h" />
+    <ClInclude Include="Engine\Graphics\ResourceManager.h" />
+    <ClInclude Include="Engine\Graphics\ShaderCompiler.h" />
+    <ClInclude Include="Engine\Graphics\Sprite\Sprite.h" />
+    <ClInclude Include="Engine\Graphics\Sprite\SpriteManager.h" />
+    <ClInclude Include="Engine\Graphics\TextureManager.h" />
+    <ClInclude Include="Engine\Math\MathUtility.h" />
+    <ClInclude Include="Engine\Math\Matrix4x4.h" />
+    <ClInclude Include="Engine\Math\Vector2.h" />
+    <ClInclude Include="Engine\Math\Vector3.h" />
+    <ClInclude Include="Engine\Math\Vector4.h" />
+    <ClInclude Include="Engine\Scene\GameScene.h" />
+    <ClInclude Include="Engine\Scene\IScene.h" />
+    <ClInclude Include="Engine\Scene\SceneManager.h" />
+    <ClInclude Include="Engine\Scene\TitleScene.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\externals\imgui\LICENSE.txt" />

@@ -10,7 +10,7 @@
 #include <d3d12.h>
 
 // DirectXTex
-#include "../externals/DirectXTex/DirectXTex.h"
+#include "../../../externals/DirectXTex/DirectXTex.h"
 
 // C++
 #include <string>

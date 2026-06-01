@@ -17,43 +17,37 @@
       <UniqueIdentifier>{df004b26-74a7-423e-b3a2-17219cebe432}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine">
-      <UniqueIdentifier>{40fe163c-f800-4ee2-81b9-50c95450f566}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\Core">
-      <UniqueIdentifier>{2e6ba37e-ac36-4f06-96e9-f3f87345f0b7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\Graphics">
-      <UniqueIdentifier>{4d735a6b-2c74-4ba6-b8ff-3113274b3a5b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\Camera">
-      <UniqueIdentifier>{1daa9508-e09a-4e6a-8169-23c4d2776fda}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\Graphics\Material">
-      <UniqueIdentifier>{7734c25c-d562-443b-8190-0b78b8e58639}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\Graphics\Pipeline">
-      <UniqueIdentifier>{793d7887-ba11-4bbf-bd80-24eddbbead98}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\Graphics\Object">
-      <UniqueIdentifier>{38d7500a-2336-4ae6-8adc-ee3780bfd2cf}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\Graphics\Sprite">
-      <UniqueIdentifier>{61276e89-3f27-4f6d-800a-eaaa4b157705}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\Scene">
-      <UniqueIdentifier>{f8891f06-67a6-470e-a707-d6f888c931c6}</UniqueIdentifier>
+      <UniqueIdentifier>{180e2326-1b4f-45d3-a077-c0772c9a802f}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\Audio">
-      <UniqueIdentifier>{064ff410-ecaa-44b0-9bb6-505743ae41df}</UniqueIdentifier>
+      <UniqueIdentifier>{1add21f5-1d68-46cb-8c1a-d2769be5789c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Graphics">
+      <UniqueIdentifier>{031780f5-1304-4995-8d12-afb35c17b2af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Camera">
+      <UniqueIdentifier>{199ae000-5e43-4ef4-8604-ec42f675d5c7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\Graphics\Mesh">
-      <UniqueIdentifier>{4bc6d9d8-1b03-4bb4-a263-996b6d2540f4}</UniqueIdentifier>
+      <UniqueIdentifier>{b1529bcc-4536-4d2e-a090-72cf6a3177ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Graphics\Material">
+      <UniqueIdentifier>{80999c3b-3a8d-4347-853a-63e62c635b6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Graphics\Object">
+      <UniqueIdentifier>{3793c1ee-9141-40d6-a24d-2f7957332710}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Scene">
+      <UniqueIdentifier>{c105e238-4412-4d4c-8ed7-4d2fc1ddb73d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Graphics\Material\Sprite">
+      <UniqueIdentifier>{fe48f3d5-ef69-4658-bd8c-5c8fdd70590a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Graphics\Object\Core">
+      <UniqueIdentifier>{6b8e758b-0a7e-4784-b967-244fb5819df1}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\Math">
-      <UniqueIdentifier>{43c98664-1c77-4e9d-a52a-f52ca1570d38}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Engine\Transform">
-      <UniqueIdentifier>{0b0eddf9-fb53-4f51-9c81-e583ab5136bc}</UniqueIdentifier>
+      <UniqueIdentifier>{e47b44b5-9bb2-4301-8bce-fef77128e1d8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -78,80 +72,80 @@
     <ClCompile Include="..\externals\imgui\imgui_tables.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="DirectXCommon.cpp">
-      <Filter>Engine\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="LogSystem.cpp">
-      <Filter>Engine\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="WinApp.cpp">
-      <Filter>Engine\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Input.cpp">
-      <Filter>Engine\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Sprite.cpp">
-      <Filter>Engine\Graphics\Sprite</Filter>
-    </ClCompile>
-    <ClCompile Include="SpriteManager.cpp">
-      <Filter>Engine\Graphics\Sprite</Filter>
-    </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>Engine\Graphics\Material</Filter>
-    </ClCompile>
-    <ClCompile Include="Object3d.cpp">
-      <Filter>Engine\Graphics\Object</Filter>
-    </ClCompile>
-    <ClCompile Include="ObjectManager.cpp">
-      <Filter>Engine\Graphics\Object</Filter>
-    </ClCompile>
-    <ClCompile Include="PipelineManager.cpp">
-      <Filter>Engine\Graphics\Pipeline</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine.cpp">
-      <Filter>Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="AudioSystem.cpp">
+    <ClCompile Include="Engine\AudioSystem\AudioSystem.cpp">
       <Filter>Engine\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
+    <ClCompile Include="Engine\Camera\Camera.cpp">
       <Filter>Engine\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="TitleScene.cpp">
+    <ClCompile Include="Engine\Camera\DebugCamera.cpp">
+      <Filter>Engine\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\DescriptorHeapManager.cpp">
+      <Filter>Engine\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\DirectXCommon.cpp">
+      <Filter>Engine\Graphics\Object\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Engine.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Scene\GameScene.cpp">
       <Filter>Engine\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="SceneManager.cpp">
-      <Filter>Engine\Scene</Filter>
+    <ClCompile Include="Engine\Graphics\GraphicsSystem.cpp">
+      <Filter>Engine\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="GameScene.cpp">
-      <Filter>Engine\Scene</Filter>
+    <ClCompile Include="Engine\Core\ImGuiSystem.cpp">
+      <Filter>Engine\Graphics\Object\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Mesh.cpp">
+    <ClCompile Include="Engine\Core\Input.cpp">
+      <Filter>Engine\Graphics\Object\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\LogSystem.cpp">
+      <Filter>Engine\Graphics\Object\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\main.cpp">
+      <Filter>Engine\Graphics\Object\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\Mesh\Mesh.cpp">
       <Filter>Engine\Graphics\Mesh</Filter>
     </ClCompile>
-    <ClCompile Include="TextureManager.cpp">
+    <ClCompile Include="Engine\Graphics\Material\Material.cpp">
+      <Filter>Engine\Graphics\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\Sprite\Sprite.cpp">
+      <Filter>Engine\Graphics\Material\Sprite</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\Sprite\SpriteManager.cpp">
+      <Filter>Engine\Graphics\Material\Sprite</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\Object\Object3d.cpp">
+      <Filter>Engine\Graphics\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\Object\ObjectManager.cpp">
+      <Filter>Engine\Graphics\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\PipelineManager.cpp">
       <Filter>Engine\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="ShaderCompiler.cpp">
+    <ClCompile Include="Engine\Graphics\ResourceManager.cpp">
       <Filter>Engine\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="ResourceManager.cpp">
+    <ClCompile Include="Engine\Graphics\ShaderCompiler.cpp">
       <Filter>Engine\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="GraphicsSystem.cpp">
+    <ClCompile Include="Engine\Graphics\TextureManager.cpp">
       <Filter>Engine\Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="DescriptorHeapManager.cpp">
-      <Filter>Engine\Graphics</Filter>
+    <ClCompile Include="Engine\Scene\TitleScene.cpp">
+      <Filter>Engine\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="ImGuiSystem.cpp">
-      <Filter>Engine\Core</Filter>
+    <ClCompile Include="Engine\Scene\SceneManager.cpp">
+      <Filter>Engine\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="DebugCamera.cpp">
-      <Filter>Engine\Camera</Filter>
+    <ClCompile Include="Engine\Core\WinApp.cpp">
+      <Filter>Engine\Graphics\Object\Core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -159,21 +153,6 @@
     <FxCompile Include="Object3d.VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Vector4.h">
-      <Filter>Engine\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Vector3.h">
-      <Filter>Engine\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Vector2.h">
-      <Filter>Engine\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Matrix4x4.h">
-      <Filter>Engine\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="MathUtility.h">
-      <Filter>Engine\Math</Filter>
-    </ClInclude>
     <ClInclude Include="..\externals\imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
@@ -198,83 +177,98 @@
     <ClInclude Include="..\externals\imgui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="WinApp.h">
-      <Filter>Engine\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Input.h">
-      <Filter>Engine\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXCommon.h">
-      <Filter>Engine\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="LogSystem.h">
-      <Filter>Engine\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Sprite.h">
-      <Filter>Engine\Graphics\Sprite</Filter>
-    </ClInclude>
-    <ClInclude Include="SpriteManager.h">
-      <Filter>Engine\Graphics\Sprite</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Engine\Graphics\Material</Filter>
-    </ClInclude>
-    <ClInclude Include="ObjectManager.h">
-      <Filter>Engine\Graphics\Object</Filter>
-    </ClInclude>
-    <ClInclude Include="Object3d.h">
-      <Filter>Engine\Graphics\Object</Filter>
-    </ClInclude>
-    <ClInclude Include="PipelineManager.h">
-      <Filter>Engine\Graphics\Pipeline</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine.h">
-      <Filter>Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="AudioSystem.h">
+    <ClInclude Include="Engine\AudioSystem\AudioSystem.h">
       <Filter>Engine\Audio</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
+    <ClInclude Include="Engine\Camera\Camera.h">
       <Filter>Engine\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="SceneManager.h">
+    <ClInclude Include="Engine\Camera\DebugCamera.h">
+      <Filter>Engine\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\DescriptorHeapManager.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\ResourceManager.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\PipelineManager.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\ShaderCompiler.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\TextureManager.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\GraphicsSystem.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Scene\IScene.h">
       <Filter>Engine\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="TitleScene.h">
+    <ClInclude Include="Engine\Scene\TitleScene.h">
       <Filter>Engine\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="GameScene.h">
+    <ClInclude Include="Engine\Scene\SceneManager.h">
       <Filter>Engine\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="Mesh.h">
+    <ClInclude Include="Engine\Scene\GameScene.h">
+      <Filter>Engine\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Sprite\Sprite.h">
+      <Filter>Engine\Graphics\Material\Sprite</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Sprite\SpriteManager.h">
+      <Filter>Engine\Graphics\Material\Sprite</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Material\Material.h">
+      <Filter>Engine\Graphics\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Engine.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\EngineStructs.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Mesh\Mesh.h">
       <Filter>Engine\Graphics\Mesh</Filter>
     </ClInclude>
-    <ClInclude Include="IScene.h">
-      <Filter>Engine\Scene</Filter>
+    <ClInclude Include="Engine\Core\Input.h">
+      <Filter>Engine\Graphics\Object\Core</Filter>
     </ClInclude>
-    <ClInclude Include="TextureManager.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Core\LogSystem.h">
+      <Filter>Engine\Graphics\Object\Core</Filter>
     </ClInclude>
-    <ClInclude Include="ShaderCompiler.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Core\DirectXCommon.h">
+      <Filter>Engine\Graphics\Object\Core</Filter>
     </ClInclude>
-    <ClInclude Include="ResourceManager.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Core\ImGuiSystem.h">
+      <Filter>Engine\Graphics\Object\Core</Filter>
     </ClInclude>
-    <ClInclude Include="GraphicsSystem.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Core\WinApp.h">
+      <Filter>Engine\Graphics\Object\Core</Filter>
     </ClInclude>
-    <ClInclude Include="DescriptorHeapManager.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Graphics\Object\Object3d.h">
+      <Filter>Engine\Graphics\Object</Filter>
     </ClInclude>
-    <ClInclude Include="ImGuiSystem.h">
-      <Filter>Engine\Core</Filter>
+    <ClInclude Include="Engine\Graphics\Object\ObjectManager.h">
+      <Filter>Engine\Graphics\Object</Filter>
     </ClInclude>
-    <ClInclude Include="DebugCamera.h">
-      <Filter>Engine\Camera</Filter>
+    <ClInclude Include="Engine\Math\MathUtility.h">
+      <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="EngineStructs.h">
-      <Filter>Engine</Filter>
+    <ClInclude Include="Engine\Math\Matrix4x4.h">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Vector2.h">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Vector3.h">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Vector4.h">
+      <Filter>Engine\Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
