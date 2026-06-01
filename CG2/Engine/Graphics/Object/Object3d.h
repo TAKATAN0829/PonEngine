@@ -8,10 +8,10 @@
 
 // 自作
 #include "EngineStructs.h"
-#include "ResourceManager.h"
-#include "GraphicsSystem.h"
 #include "Mesh.h"
 #include "Material.h"
+#include "Camera.h"
+#include "Transform.h"
 
 class Object3d {
 public:
@@ -19,42 +19,46 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize (MeshType meshType);
+	void Initialize(MeshType meshType);
 
 	//=============================================================================================//
 	// 更新処理
 
-	void Update (const Matrix4x4& viewProjectionMatrix);
+	void Update(const Matrix4x4& viewProjectionMatrix);
 
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw ();
+	void Draw();
 
 	//=============================================================================================//
 	// 終了処理
 
-	void Finalize ();
+	void Finalize();
 
 	//=============================================================================================//
 	// Transform設定
 
-	void SetTransform (const TransformData& transform);
+	void SetTransform(const TransformData& transform);
+
+	void SetParent(Transform* parent);
 
 	//=============================================================================================//
 	// Transform取得
 
-	TransformData GetTransform ();
+	TransformData GetTransform();
+
+	Transform* GetTransformAddress();
 
 	//=============================================================================================//
 	// 色設定
 
-	void SetColor (const Vector4& color);
+	void SetColor(const Vector4& color);
 
 	//=============================================================================================//
 	// Texture番号設定
 
-	void SetTextureIndex (uint32_t textureIndex);
+	void SetTextureIndex(uint32_t textureIndex);
 
 private:
 
@@ -66,7 +70,7 @@ private:
 	//=============================================================================================//
 	// Transform
 
-	TransformData transform_{};
+	Transform transform_;
 
 	//=============================================================================================//
 	// WVPResource
@@ -80,5 +84,6 @@ private:
 
 	//=============================================================================================//
 	// Material
+
 	Material* material_ = nullptr;
 };

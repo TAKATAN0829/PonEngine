@@ -24,6 +24,8 @@ public:
 
 	void SetTransform (const TransformData& transform);
 
+	void SetParent(Transform* parent);
+
 	//=============================================================================================//
 	// Transform取得
 

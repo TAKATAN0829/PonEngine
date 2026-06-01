@@ -147,6 +147,9 @@
     <ClCompile Include="Engine\Core\WinApp.cpp">
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Transform\Transform.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.PS.hlsl" />
@@ -269,6 +272,9 @@
     </ClInclude>
     <ClInclude Include="Engine\Math\Vector4.h">
       <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Transform\Transform.h">
+      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
