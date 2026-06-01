@@ -52,6 +52,9 @@
     <Filter Include="Engine\Math">
       <UniqueIdentifier>{43c98664-1c77-4e9d-a52a-f52ca1570d38}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\Transform">
+      <UniqueIdentifier>{0b0eddf9-fb53-4f51-9c81-e583ab5136bc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\externals\imgui\imgui_widgets.cpp">
