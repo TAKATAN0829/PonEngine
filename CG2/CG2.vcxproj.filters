@@ -148,7 +148,7 @@
       <Filter>Engine\Core</Filter>
     </ClCompile>
     <ClCompile Include="DebugCamera.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Engine\Camera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -261,9 +261,6 @@
     <ClInclude Include="GraphicsSystem.h">
       <Filter>Engine\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="EngineStructs.h">
-      <Filter>Engine\Graphics</Filter>
-    </ClInclude>
     <ClInclude Include="DescriptorHeapManager.h">
       <Filter>Engine\Graphics</Filter>
     </ClInclude>
@@ -271,7 +268,10 @@
       <Filter>Engine\Core</Filter>
     </ClInclude>
     <ClInclude Include="DebugCamera.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Engine\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineStructs.h">
+      <Filter>Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
