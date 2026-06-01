@@ -9,6 +9,7 @@
 #include "ResourceManager.h"
 #include "Camera.h"
 #include "Object3d.h"
+#include "DebugCamera.h"
 
 class GameScene : public IScene {
 public:
@@ -56,4 +57,9 @@ private:
 
 	int triangleCountsX_ = 14;
 	int triangleCountsY_ = 8;
+
+	//=============================================================================================//
+	// DebugCamera
+
+	DebugCamera *debugCamera_ = nullptr;
 };

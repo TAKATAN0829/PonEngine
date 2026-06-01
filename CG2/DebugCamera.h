@@ -6,7 +6,7 @@
 class DebugCamera
 {
 public:
-	void Initialize(int32_t clientWidth, int32_t clientHeight, Input* input);
+	void Initialize(int32_t clientWidth, int32_t clientHeight);
 	void Update();
 
 	const Matrix4x4& GetViewProjectionMatrix() const;

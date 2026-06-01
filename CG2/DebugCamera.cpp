@@ -1,8 +1,10 @@
 #include "DebugCamera.h"
 #include "../externals/imgui/imgui.h"
 
-void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight, Input* input) {
-	input_ = input;
+#include <dinput.h>
+
+void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight) {
+
 	clientWidth_ = clientWidth;
 	clientHeight_ = clientHeight;
 
@@ -68,22 +70,22 @@ void DebugCamera::Update() {
 
 void DebugCamera::UpdateMatrix() {
 
-	Matrix4x4 cameraMatrix = MakeAffineMatrix(
+	Matrix4x4 cameraMatrix = MathUtility::MakeAffineMatrix(
 		transform_.scale,
 		transform_.rotate,
 		transform_.translate
 	);
 
-	viewMatrix_ = Inverse(cameraMatrix);
+	viewMatrix_ = MathUtility::Inverse(cameraMatrix);
 
-	projectionMatrix_ = MakePerspectiveFovMatrix(
+	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix(
 		0.45f,
 		float(clientWidth_) / float(clientHeight_),
 		0.1f,
 		1000.0f
 	);
 
-	viewProjectionMatrix_ = Multiply(viewMatrix_, projectionMatrix_);
+	viewProjectionMatrix_ = MathUtility::Multiply(viewMatrix_, projectionMatrix_);
 }
 
 const Matrix4x4& DebugCamera::GetViewProjectionMatrix() const {
