@@ -43,13 +43,13 @@ void Engine::Initialize() {
 
 	GraphicsSystem::SetGraphicsSystem(graphicsSystem_);
 
+	GraphicsSystem::SetDevice(dxCommon_->GetDevice());
+
+	GraphicsSystem::SetCommandList (dxCommon_->GetCommandList ());
+
 	graphicsSystem_->Initialize(dxCommon_->GetDevice());
-
-	graphicsSystem_->SetDevice(dxCommon_->GetDevice());
-
-	GraphicsSystem::SetCommandList(dxCommon_->GetCommandList());
-
-	ResourceManager::SetInstance(graphicsSystem_->GetInstance());
+	
+	ResourceManager::SetInstance(graphicsSystem_->GetResourceManager());
 
 	graphicsSystem_->CreateGraphicsPipeline(dxCommon_->GetDevice());
 

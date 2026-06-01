@@ -6,46 +6,42 @@
 //=================================================================================================//
 // 初期化処理
 
-void GraphicsSystem::Initialize(ID3D12Device* device) {
+void GraphicsSystem::Initialize (ID3D12Device* device) {
 
 	//=============================================================================================//
 	// SRVDescriptorHeap生成
 
-	srvDescriptorHeap_ = new DescriptorHeapManager();
+	srvDescriptorHeap_ = new DescriptorHeapManager ();
 
-	srvDescriptorHeap_->Initialize(
-		device,
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		128,
-		true);
+	srvDescriptorHeap_->Initialize (device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
 	//=============================================================================================//
 	// ShaderCompiler生成
 
-	shaderCompiler_ = new ShaderCompiler();
+	shaderCompiler_ = new ShaderCompiler ();
 
-	shaderCompiler_->Initialize();
+	shaderCompiler_->Initialize ();
 
 	//=============================================================================================//
 	// TextureManager生成
 
-	textureManager_ = new TextureManager();
+	textureManager_ = new TextureManager ();
 
 	//=============================================================================================//
 	// ResourceManager生成
 
-	resourceManager_ = new ResourceManager();
+	resourceManager_ = new ResourceManager ();
 
 	//=============================================================================================//
 	// PipelineManager生成
 
-	pipelineManager_ = new PipelineManager();
+	pipelineManager_ = new PipelineManager ();
 }
 
 //=================================================================================================//
 // 終了処理
 
-void GraphicsSystem::Finalize() {
+void GraphicsSystem::Finalize () {
 
 	//=============================================================================================//
 	// SRVDescriptorHeap解放
@@ -62,7 +58,7 @@ void GraphicsSystem::Finalize() {
 
 	if (shaderCompiler_ != nullptr) {
 
-		shaderCompiler_->Finalize();
+		shaderCompiler_->Finalize ();
 
 		delete shaderCompiler_;
 
@@ -103,7 +99,7 @@ void GraphicsSystem::Finalize() {
 //=================================================================================================//
 // SRVDescriptorHeap取得
 
-DescriptorHeapManager* GraphicsSystem::GetSRVDescriptorHeap() {
+DescriptorHeapManager* GraphicsSystem::GetSRVDescriptorHeap () {
 
 	return srvDescriptorHeap_;
 }
@@ -111,7 +107,7 @@ DescriptorHeapManager* GraphicsSystem::GetSRVDescriptorHeap() {
 //=================================================================================================//
 // ShaderCompiler取得
 
-ShaderCompiler* GraphicsSystem::GetShaderCompiler() {
+ShaderCompiler* GraphicsSystem::GetShaderCompiler () {
 
 	return shaderCompiler_;
 }
@@ -119,7 +115,7 @@ ShaderCompiler* GraphicsSystem::GetShaderCompiler() {
 //=================================================================================================//
 // TextureManager取得
 
-TextureManager* GraphicsSystem::GetTextureManager() {
+TextureManager* GraphicsSystem::GetTextureManager () {
 
 	return textureManager_;
 }
@@ -127,7 +123,7 @@ TextureManager* GraphicsSystem::GetTextureManager() {
 //=================================================================================================//
 // ResourceManager取得
 
-ResourceManager* GraphicsSystem::GetInstance() {
+ResourceManager* GraphicsSystem::GetResourceManager () {
 
 	return resourceManager_;
 }
@@ -135,7 +131,7 @@ ResourceManager* GraphicsSystem::GetInstance() {
 //=================================================================================================//
 // PipelineManager取得
 
-PipelineManager* GraphicsSystem::GetPipelineManager() {
+PipelineManager* GraphicsSystem::GetPipelineManager () {
 
 	return pipelineManager_;
 }
@@ -143,34 +139,34 @@ PipelineManager* GraphicsSystem::GetPipelineManager() {
 //=================================================================================================//
 // RootSignature取得
 
-ID3D12RootSignature* GraphicsSystem::GetRootSignature() {
+ID3D12RootSignature* GraphicsSystem::GetRootSignature () {
 
-	return rootSignature_.Get();
+	return rootSignature_.Get ();
 }
 
 //=================================================================================================//
 // GraphicsPipelineState取得
 
-ID3D12PipelineState* GraphicsSystem::GetGraphicsPipelineState() {
+ID3D12PipelineState* GraphicsSystem::GetGraphicsPipelineState () {
 
-	return graphicsPipelineState_.Get();
+	return graphicsPipelineState_.Get ();
 }
 
 //=================================================================================================//
 // GraphicsPipeline生成
 
-void GraphicsSystem::CreateGraphicsPipeline(ID3D12Device* device) {
+void GraphicsSystem::CreateGraphicsPipeline (ID3D12Device* device) {
 
 	//=============================================================================================//
 	// ShaderCompile
 
 	IDxcBlob* vertexShaderBlob =
-		shaderCompiler_->CompileShader(
+		shaderCompiler_->CompileShader (
 			L"Object3d.VS.hlsl",
 			L"vs_6_0");
 
 	IDxcBlob* pixelShaderBlob =
-		shaderCompiler_->CompileShader(
+		shaderCompiler_->CompileShader (
 			L"Object3d.PS.hlsl",
 			L"ps_6_0");
 
@@ -219,7 +215,7 @@ void GraphicsSystem::CreateGraphicsPipeline(ID3D12Device* device) {
 
 	descriptionRootSignature.pParameters = rootParameters;
 
-	descriptionRootSignature.NumParameters = _countof(rootParameters);
+	descriptionRootSignature.NumParameters = _countof (rootParameters);
 
 	//=============================================================================================//
 	// Sampler設定
@@ -244,41 +240,41 @@ void GraphicsSystem::CreateGraphicsPipeline(ID3D12Device* device) {
 
 	descriptionRootSignature.pStaticSamplers = staticSamplers;
 
-	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
+	descriptionRootSignature.NumStaticSamplers = _countof (staticSamplers);
 
 	//=============================================================================================//
 	// RootSignature生成
 
 	rootSignature_ =
-		pipelineManager_->CreateRootSignature(device, descriptionRootSignature);
+		pipelineManager_->CreateRootSignature (device, descriptionRootSignature);
 
 	//=============================================================================================//
 	// InputLayout設定
 
-	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = pipelineManager_->CreateInputLayout();
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = pipelineManager_->CreateInputLayout ();
 
 	//=============================================================================================//
 	// BlendState設定
 
-	D3D12_BLEND_DESC blendDesc = pipelineManager_->CreateBlendState();
+	D3D12_BLEND_DESC blendDesc = pipelineManager_->CreateBlendState ();
 
 	//=============================================================================================//
 	// RasterizerState設定
 
-	D3D12_RASTERIZER_DESC rasterizerDesc = pipelineManager_->CreateRasterizerState();
+	D3D12_RASTERIZER_DESC rasterizerDesc = pipelineManager_->CreateRasterizerState ();
 
 	//=============================================================================================//
 	// DepthStencilState設定
 
-	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = pipelineManager_->CreateDepthStencilState();
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = pipelineManager_->CreateDepthStencilState ();
 
 	//=============================================================================================//
 	// PSO生成
 
 	graphicsPipelineState_ =
-		pipelineManager_->CreateGraphicsPipelineState(
+		pipelineManager_->CreateGraphicsPipelineState (
 			device,
-			rootSignature_.Get(),
+			rootSignature_.Get (),
 			inputLayoutDesc,
 			blendDesc,
 			rasterizerDesc,
@@ -290,23 +286,23 @@ void GraphicsSystem::CreateGraphicsPipeline(ID3D12Device* device) {
 //=================================================================================================//
 // SpritePipeline生成
 
-void GraphicsSystem::CreateSpritePipeline(ID3D12Device* device) {
+void GraphicsSystem::CreateSpritePipeline (ID3D12Device* device) {
 
-	pipelineManager_->CreateSpritePipeline(device, shaderCompiler_);
+	pipelineManager_->CreateSpritePipeline (device, shaderCompiler_);
 }
 
 //=================================================================================================//
 // Texture生成
 
-uint32_t GraphicsSystem::CreateTexture(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const std::string& filePath) {
+uint32_t GraphicsSystem::CreateTexture (ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const std::string& filePath) {
 
-	return textureManager_->CreateTexture(srvDescriptorHeap_, filePath);
+	return textureManager_->CreateTexture (srvDescriptorHeap_, filePath);
 }
 
 //=================================================================================================//
 // 描画前設定
 
-void GraphicsSystem::PreDraw(
+void GraphicsSystem::PreDraw (
 	ID3D12GraphicsCommandList* commandList,
 	D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
 	D3D12_INDEX_BUFFER_VIEW* indexBufferView) {
@@ -314,42 +310,42 @@ void GraphicsSystem::PreDraw(
 	//=============================================================================================//
 	// RootSignature設定
 
-	commandList->SetGraphicsRootSignature(rootSignature_.Get());
+	commandList->SetGraphicsRootSignature (rootSignature_.Get ());
 
 	//=============================================================================================//
 	// PipelineState設定
 
-	commandList->SetPipelineState(graphicsPipelineState_.Get());
+	commandList->SetPipelineState (graphicsPipelineState_.Get ());
 
 	//=============================================================================================//
 	// VertexBuffer設定
 
-	commandList->IASetVertexBuffers(0, 1, vertexBufferView);
+	commandList->IASetVertexBuffers (0, 1, vertexBufferView);
 
 	//=============================================================================================//
 	// IndexBuffer設定
 
-	commandList->IASetIndexBuffer(indexBufferView);
+	commandList->IASetIndexBuffer (indexBufferView);
 
 	//=============================================================================================//
 	// PrimitiveTopology設定
 
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->IASetPrimitiveTopology (D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	//=============================================================================================//
 	// DescriptorHeap設定
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = {
-		srvDescriptorHeap_->GetDescriptorHeap()
+		srvDescriptorHeap_->GetDescriptorHeap ()
 	};
 
-	commandList->SetDescriptorHeaps(1, descriptorHeaps);
+	commandList->SetDescriptorHeaps (1, descriptorHeaps);
 }
 
 //=================================================================================================//
 // Sprite描画前設定
 
-void GraphicsSystem::PreSpriteDraw(
+void GraphicsSystem::PreSpriteDraw (
 	ID3D12GraphicsCommandList* commandList,
 	D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
 	D3D12_INDEX_BUFFER_VIEW* indexBufferView) {
@@ -357,22 +353,22 @@ void GraphicsSystem::PreSpriteDraw(
 	//=============================================================================================//
 	// RootSignature設定
 
-	commandList->SetGraphicsRootSignature(pipelineManager_->GetSpriteRootSignature());
+	commandList->SetGraphicsRootSignature (pipelineManager_->GetSpriteRootSignature ());
 
 	//=============================================================================================//
 	// PipelineState設定
 
-	commandList->SetPipelineState(pipelineManager_->GetSpritePipelineState());
+	commandList->SetPipelineState (pipelineManager_->GetSpritePipelineState ());
 
 	//=============================================================================================//
 	// PrimitiveTopology設定
 
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->IASetPrimitiveTopology (D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	//=============================================================================================//
 	// VertexBuffer設定
 
-	commandList->IASetVertexBuffers(
+	commandList->IASetVertexBuffers (
 		0,
 		1,
 		vertexBufferView);
@@ -380,16 +376,16 @@ void GraphicsSystem::PreSpriteDraw(
 	//=============================================================================================//
 	// IndexBuffer設定
 
-	commandList->IASetIndexBuffer(indexBufferView);
+	commandList->IASetIndexBuffer (indexBufferView);
 
 	//=============================================================================================//
 	// DescriptorHeap設定
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = {
-		srvDescriptorHeap_->GetDescriptorHeap()
+		srvDescriptorHeap_->GetDescriptorHeap ()
 	};
 
-	commandList->SetDescriptorHeaps(
+	commandList->SetDescriptorHeaps (
 		1,
 		descriptorHeaps);
 }

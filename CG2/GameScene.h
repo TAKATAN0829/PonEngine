@@ -47,6 +47,10 @@ private:
 	std::vector<Object3d*> invTriangles_;
 	std::vector<TransformData> invTrianglesTransformData_;
 
+	// 三角形一個当たりのトランスフォームデータ
+	TransformData triangleTransform_;
+	TransformData invTriangleTransform_;
+
 	//=============================================================================================//
 	// 表示する三角形数
 

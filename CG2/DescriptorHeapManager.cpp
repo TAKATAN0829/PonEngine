@@ -5,7 +5,7 @@
 //=============================================================================================//
 // 初期化
 
-void DescriptorHeapManager::Initialize(
+void DescriptorHeapManager::Initialize (
 	ID3D12Device* device,
 	D3D12_DESCRIPTOR_HEAP_TYPE heapType,
 	uint32_t descriptorCount,
@@ -33,15 +33,15 @@ void DescriptorHeapManager::Initialize(
 
 	// Heap生成
 	HRESULT hr =
-		device_->CreateDescriptorHeap(
+		device_->CreateDescriptorHeap (
 			&descriptorHeapDesc,
-			IID_PPV_ARGS(&descriptorHeap_));
+			IID_PPV_ARGS (&descriptorHeap_));
 
-	assert(SUCCEEDED(hr));
+	assert (SUCCEEDED (hr));
 
 	// DescriptorSize取得
 	descriptorSize_ =
-		device_->GetDescriptorHandleIncrementSize(
+		device_->GetDescriptorHandleIncrementSize (
 			heapType);
 }
 
@@ -49,12 +49,12 @@ void DescriptorHeapManager::Initialize(
 // CPUHandle取得
 
 D3D12_CPU_DESCRIPTOR_HANDLE
-DescriptorHeapManager::GetCPUDescriptorHandle(
+DescriptorHeapManager::GetCPUDescriptorHandle (
 	uint32_t index) {
 
 	D3D12_CPU_DESCRIPTOR_HANDLE handle =
 		descriptorHeap_->
-		GetCPUDescriptorHandleForHeapStart();
+		GetCPUDescriptorHandleForHeapStart ();
 
 	handle.ptr += descriptorSize_ * index;
 
@@ -65,10 +65,10 @@ DescriptorHeapManager::GetCPUDescriptorHandle(
 // GPUHandle取得
 
 D3D12_GPU_DESCRIPTOR_HANDLE
-DescriptorHeapManager::GetGPUDescriptorHandle(uint32_t index) {
+DescriptorHeapManager::GetGPUDescriptorHandle (uint32_t index) {
 
 	D3D12_GPU_DESCRIPTOR_HANDLE handle =
-		descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
+		descriptorHeap_->GetGPUDescriptorHandleForHeapStart ();
 
 	handle.ptr += descriptorSize_ * index;
 

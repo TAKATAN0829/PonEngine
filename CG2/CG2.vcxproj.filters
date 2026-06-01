@@ -147,6 +147,9 @@
     <ClCompile Include="ImGuiSystem.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
+    <ClCompile Include="DebugCamera.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.PS.hlsl" />
@@ -266,6 +269,9 @@
     </ClInclude>
     <ClInclude Include="ImGuiSystem.h">
       <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugCamera.h">
+      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

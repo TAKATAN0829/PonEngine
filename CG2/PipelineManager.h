@@ -24,9 +24,7 @@ public:
 	// RootSignatureを作る
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>
-		CreateRootSignature (
-			ID3D12Device* device,
-			D3D12_ROOT_SIGNATURE_DESC& descriptionRootSignature);
+		CreateRootSignature (ID3D12Device* device, D3D12_ROOT_SIGNATURE_DESC& descriptionRootSignature);
 
 	//=============================================================================================//
 	// InputLayout設定
