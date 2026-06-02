@@ -5,6 +5,7 @@
 
 // 自作
 #include "EngineStructs.h"
+#include "../Transform/Transform.h"
 
 class Camera {
 public:
@@ -30,28 +31,23 @@ public:
 	// Transform取得
 
 	TransformData GetTransform () const;
-
-	//=============================================================================================//
-	// ViewMatrix取得
-
-	const Matrix4x4& GetViewMatrix () const;
-
-	//=============================================================================================//
-	// ProjectionMatrix取得
-
-	const Matrix4x4& GetProjectionMatrix () const;
+	Transform* GetTransformAddress ();
 
 	//=============================================================================================//
 	// ViewProjectionMatrix取得
 
 	const Matrix4x4& GetViewProjectionMatrix () const;
 
+	const Matrix4x4& GetViewMatrix () const;
+
+	const Matrix4x4& GetProjectionMatrix () const;
+
 private:
 
 	//=============================================================================================//
 	// Transform
 
-	TransformData transform_{};
+	Transform transform_{};
 
 	//=============================================================================================//
 	// ViewMatrix
@@ -69,12 +65,15 @@ private:
 	Matrix4x4 viewProjectionMatrix_{};
 
 	//=============================================================================================//
-	// 画面幅
+	// 画面サイズ
 
 	int32_t clientWidth_ = 0;
+	int32_t clientHeight_ = 0;
 
 	//=============================================================================================//
-	// 画面高さ
+	// Projection設定
 
-	int32_t clientHeight_ = 0;
+	float fovY_ = 0.45f;
+	float nearClip_ = 0.1f;
+	float farClip_ = 1000.0f;
 };

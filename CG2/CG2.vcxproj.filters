@@ -126,7 +126,7 @@
     <ClCompile Include="Engine\Graphics\Object\ObjectManager.cpp">
       <Filter>Engine\Graphics\Object</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Graphics\PipelineManager.cpp">
+    <ClCompile Include="Engine\Graphics\Pipeline\PipelineManager.cpp">
       <Filter>Engine\Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Graphics\ResourceManager.cpp">
@@ -148,6 +148,9 @@
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Transform\Transform.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Debug\DebugDraw.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -195,7 +198,7 @@
     <ClInclude Include="Engine\Graphics\ResourceManager.h">
       <Filter>Engine\Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\PipelineManager.h">
+    <ClInclude Include="Engine\Graphics\Pipeline\PipelineManager.h">
       <Filter>Engine\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\ShaderCompiler.h">
@@ -274,6 +277,9 @@
       <Filter>Engine\Math</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Transform\Transform.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Debug\DebugDraw.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

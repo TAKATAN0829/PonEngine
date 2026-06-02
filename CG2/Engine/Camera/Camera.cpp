@@ -9,17 +9,13 @@ void Camera::Initialize (int32_t clientWidth, int32_t clientHeight) {
 
 	clientHeight_ = clientHeight;
 
-	transform_ = {
+	transform_.local_ = {
 		{1.0f,1.0f,1.0f},
 		{0.0f,0.0f,0.0f},
-		{0.0f,0.0f,-5.0f}
+		{0.0f,0.0f,-30.0f}
 	};
 
-	viewMatrix_ = MathUtility::MakeIdentity4x4 ();
-
-	projectionMatrix_ = MathUtility::MakeIdentity4x4 ();
-
-	viewProjectionMatrix_ = MathUtility::MakeIdentity4x4 ();
+	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix (fovY_, float (clientWidth_) / float (clientHeight_), nearClip_, farClip_);
 
 	Update ();
 }
@@ -29,11 +25,14 @@ void Camera::Initialize (int32_t clientWidth, int32_t clientHeight) {
 
 void Camera::Update () {
 
-	Matrix4x4 cameraMatrix = MathUtility::MakeAffineMatrix (transform_.scale, transform_.rotate, transform_.translate);
 
-	viewMatrix_ =MathUtility::Inverse (cameraMatrix);
+	transform_.UpdateMatrix ();
 
-	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix (0.45f, float (clientWidth_) / float (clientHeight_), 0.1f, 100.0f);
+	Matrix4x4 worldMatrix = transform_.GetWorldMatrix ();
+
+	viewMatrix_ = MathUtility::Inverse (worldMatrix);
+
+	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix (fovY_, float (clientWidth_) / float (clientHeight_), nearClip_, farClip_);
 
 	viewProjectionMatrix_ = MathUtility::Multiply (viewMatrix_, projectionMatrix_);
 }
@@ -43,7 +42,12 @@ void Camera::Update () {
 
 void Camera::SetTransform (const TransformData& transform) {
 
-	transform_ = transform;
+	transform_.local_ = transform;
+}
+
+void Camera::SetParent (Transform* parent) {
+
+	transform_.SetParent (parent);
 }
 
 //=================================================================================================//
@@ -51,29 +55,24 @@ void Camera::SetTransform (const TransformData& transform) {
 
 TransformData Camera::GetTransform () const {
 
-	return transform_;
+	return transform_.local_;
 }
 
-//=================================================================================================//
-// ViewMatrix取得
+
+//=============================================================================================//
+// ViewProjectionMatrix取得
+
+const Matrix4x4& Camera::GetViewProjectionMatrix () const {
+
+	return viewProjectionMatrix_;
+}
 
 const Matrix4x4& Camera::GetViewMatrix () const {
 
 	return viewMatrix_;
 }
 
-//=================================================================================================//
-// ProjectionMatrix取得
-
 const Matrix4x4& Camera::GetProjectionMatrix () const {
 
 	return projectionMatrix_;
-}
-
-//=================================================================================================//
-// ViewProjectionMatrix取得
-
-const Matrix4x4& Camera::GetViewProjectionMatrix () const {
-
-	return viewProjectionMatrix_;
 }

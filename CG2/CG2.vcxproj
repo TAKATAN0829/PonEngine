@@ -54,7 +54,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Transform;$(ProjectDir)Engine\AudioSystem;$(ProjectDir)Engine\Camera;$(ProjectDir)Engine;$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Graphics\Material;$(ProjectDir)Engine\Graphics\Mesh;$(ProjectDir)Engine\Graphics\Object;$(ProjectDir)Engine\Graphics\Sprite;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Scene;$(ProjectDir)externals\imgui;$(ProjectDir)externals\DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Debug;$(ProjectDir)Engine\Graphics\Pipeline;$(ProjectDir)Engine\Transform;$(ProjectDir)Engine\AudioSystem;$(ProjectDir)Engine\Camera;$(ProjectDir)Engine;$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Graphics\Material;$(ProjectDir)Engine\Graphics\Mesh;$(ProjectDir)Engine\Graphics\Object;$(ProjectDir)Engine\Graphics\Sprite;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Scene;$(ProjectDir)externals\imgui;$(ProjectDir)externals\DirectXTex</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -110,6 +110,7 @@
     <ClCompile Include="..\externals\imgui\imgui_widgets.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Engine\Debug\DebugDraw.cpp" />
     <ClCompile Include="Engine\AudioSystem\AudioSystem.cpp" />
     <ClCompile Include="Engine\Camera\Camera.cpp" />
     <ClCompile Include="Engine\Camera\DebugCamera.cpp" />
@@ -125,7 +126,7 @@
     <ClCompile Include="Engine\Graphics\Mesh\Mesh.cpp" />
     <ClCompile Include="Engine\Graphics\Object\Object3d.cpp" />
     <ClCompile Include="Engine\Graphics\Object\ObjectManager.cpp" />
-    <ClCompile Include="Engine\Graphics\PipelineManager.cpp" />
+    <ClCompile Include="Engine\Graphics\Pipeline\PipelineManager.cpp" />
     <ClCompile Include="Engine\Graphics\ResourceManager.cpp" />
     <ClCompile Include="Engine\Graphics\ShaderCompiler.cpp" />
     <ClCompile Include="Engine\Graphics\Sprite\Sprite.cpp" />
@@ -160,6 +161,9 @@
     <ClInclude Include="..\externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\externals\imgui\imstb_textedit.h" />
     <ClInclude Include="..\externals\imgui\imstb_truetype.h" />
+    <ClInclude Include="Engine\Debug\DebugDraw.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Engine\AudioSystem\AudioSystem.h" />
     <ClInclude Include="Engine\Camera\Camera.h" />
     <ClInclude Include="Engine\Camera\DebugCamera.h" />
@@ -176,7 +180,7 @@
     <ClInclude Include="Engine\Graphics\Mesh\Mesh.h" />
     <ClInclude Include="Engine\Graphics\Object\Object3d.h" />
     <ClInclude Include="Engine\Graphics\Object\ObjectManager.h" />
-    <ClInclude Include="Engine\Graphics\PipelineManager.h" />
+    <ClInclude Include="Engine\Graphics\Pipeline\PipelineManager.h" />
     <ClInclude Include="Engine\Graphics\ResourceManager.h" />
     <ClInclude Include="Engine\Graphics\ShaderCompiler.h" />
     <ClInclude Include="Engine\Graphics\Sprite\Sprite.h" />
