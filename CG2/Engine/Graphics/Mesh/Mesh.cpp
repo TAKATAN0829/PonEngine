@@ -182,7 +182,7 @@ void Mesh::CreateVertexResource () {
 	// VertexResource生成
 
 	ID3D12Device* device = GraphicsSystem::GetDevice();
-	ResourceManager* resourceManager = ResourceManager::GetInstance();
+	ResourceManager* resourceManager = GraphicsSystem::GetGraphicsSystem ()->GetResourceManager ();
 
 	vertexResource_ =
 		resourceManager->CreateBufferResource (
@@ -214,7 +214,7 @@ void Mesh::CreateIndexResource () {
 	// IndexResource生成
 
 	ID3D12Device* device = GraphicsSystem::GetDevice();
-	ResourceManager* resourceManager = ResourceManager::GetInstance();
+	ResourceManager* resourceManager = GraphicsSystem::GetGraphicsSystem ()->GetResourceManager ();
 
 	indexResource_ =
 		resourceManager->CreateBufferResource (

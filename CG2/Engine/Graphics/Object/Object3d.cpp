@@ -38,6 +38,8 @@ void Object3d::Initialize(MeshType meshType) {
 
 void Object3d::Update(const Matrix4x4& viewProjectionMatrix) {
 
+	transform_.UpdateMatrix ();
+
 	Matrix4x4 worldMatrix = transform_.GetWorldMatrix();
 
 	Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply(worldMatrix, viewProjectionMatrix);

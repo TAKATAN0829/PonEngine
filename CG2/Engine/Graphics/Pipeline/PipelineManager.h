@@ -63,17 +63,20 @@ public:
 	//=============================================================================================//
 	// SpritePipeline生成
 
-	void CreateSpritePipeline(ID3D12Device* device, ShaderCompiler* shaderCompiler);
+	void CreateSpritePipeline (ID3D12Device* device, ShaderCompiler* shaderCompiler);
+
+	ID3D12RootSignature* GetSpriteRootSignature ();
+
+	ID3D12PipelineState* GetSpritePipelineState ();
 
 	//=============================================================================================//
-	// SpriteRootSignature取得
+	// DebugLinePipeline生成
 
-	ID3D12RootSignature* GetSpriteRootSignature();
+	void CreateDebugLinePipeline (ID3D12Device* device, ShaderCompiler* shaderCompiler);
 
-	//=============================================================================================//
-	// SpritePipelineState取得
+	ID3D12PipelineState* GetDebugLinePipelineState ();
 
-	ID3D12PipelineState* GetSpritePipelineState();
+	ID3D12RootSignature* GetDebugLineRootSignature ();
 
 private:
 
@@ -85,10 +88,20 @@ private:
 	//=============================================================================================//
 	// SpriteRootSignature
 
-	Microsoft::WRL::ComPtr<ID3D12RootSignature>	spriteRootSignature_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> spriteRootSignature_ = nullptr;
 
 	//=============================================================================================//
 	// SpritePipelineState
 
-	Microsoft::WRL::ComPtr<ID3D12PipelineState>	spritePipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> spritePipelineState_ = nullptr;
+
+	//=============================================================================================//
+	// DebugLineRootSignature
+
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> debugLineRootSignature_ = nullptr;
+
+	//=============================================================================================//
+	// DebugLinePipelineState
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> debugLinePipelineState_ = nullptr;
 };

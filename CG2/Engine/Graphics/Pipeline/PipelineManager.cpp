@@ -10,28 +10,25 @@
 // RootSignatureを作る
 
 Microsoft::WRL::ComPtr<ID3D12RootSignature>
-PipelineManager::CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_DESC& descriptionRootSignature) {
+PipelineManager::CreateRootSignature (ID3D12Device* device, D3D12_ROOT_SIGNATURE_DESC& descriptionRootSignature) {
 
 	//=============================================================================================//
 	// RootSignatureSerialize
 
-	ID3DBlob* signatureBlob = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 
-	ID3DBlob* errorBlob = nullptr;
-
-	HRESULT hr = D3D12SerializeRootSignature(
+	HRESULT hr = D3D12SerializeRootSignature (
 		&descriptionRootSignature,
 		D3D_ROOT_SIGNATURE_VERSION_1,
-		&signatureBlob,
-		&errorBlob);
+		signatureBlob.GetAddressOf (),
+		errorBlob.GetAddressOf ());
 
-	if (FAILED(hr)) {
+	if (FAILED (hr)) {
 
-		LogSystem::Log(
-			reinterpret_cast<char*>(
-				errorBlob->GetBufferPointer()));
+		LogSystem::Log (reinterpret_cast<char*>(errorBlob->GetBufferPointer ()));
 
-		assert(false);
+		assert (false);
 	}
 
 	//=============================================================================================//
@@ -39,13 +36,13 @@ PipelineManager::CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>	rootSignature = nullptr;
 
-	hr = device->CreateRootSignature(
+	hr = device->CreateRootSignature (
 		0,
-		signatureBlob->GetBufferPointer(),
-		signatureBlob->GetBufferSize(),
-		IID_PPV_ARGS(&rootSignature));
+		signatureBlob->GetBufferPointer (),
+		signatureBlob->GetBufferSize (),
+		IID_PPV_ARGS (&rootSignature));
 
-	assert(SUCCEEDED(hr));
+	assert (SUCCEEDED (hr));
 
 	return rootSignature;
 }
@@ -54,7 +51,7 @@ PipelineManager::CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_
 // InputLayout設定
 
 D3D12_INPUT_LAYOUT_DESC
-PipelineManager::CreateInputLayout() {
+PipelineManager::CreateInputLayout () {
 
 	//=============================================================================================//
 	// POSITION
@@ -62,7 +59,6 @@ PipelineManager::CreateInputLayout() {
 	inputElementDescs_[0].SemanticName = "POSITION";
 	inputElementDescs_[0].SemanticIndex = 0;
 	inputElementDescs_[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-
 	inputElementDescs_[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	//=============================================================================================//
@@ -71,7 +67,6 @@ PipelineManager::CreateInputLayout() {
 	inputElementDescs_[1].SemanticName = "TEXCOORD";
 	inputElementDescs_[1].SemanticIndex = 0;
 	inputElementDescs_[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-
 	inputElementDescs_[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	//=============================================================================================//
@@ -80,7 +75,6 @@ PipelineManager::CreateInputLayout() {
 	inputElementDescs_[2].SemanticName = "NORMAL";
 	inputElementDescs_[2].SemanticIndex = 0;
 	inputElementDescs_[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-
 	inputElementDescs_[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	//=============================================================================================//
@@ -90,7 +84,7 @@ PipelineManager::CreateInputLayout() {
 
 	inputLayoutDesc.pInputElementDescs = inputElementDescs_;
 
-	inputLayoutDesc.NumElements = _countof(inputElementDescs_);
+	inputLayoutDesc.NumElements = _countof (inputElementDescs_);
 
 	return inputLayoutDesc;
 }
@@ -99,7 +93,7 @@ PipelineManager::CreateInputLayout() {
 // BlendState設定
 
 D3D12_BLEND_DESC
-PipelineManager::CreateBlendState() {
+PipelineManager::CreateBlendState () {
 
 	D3D12_BLEND_DESC blendDesc{};
 
@@ -112,7 +106,7 @@ PipelineManager::CreateBlendState() {
 // RasterizerState設定
 
 D3D12_RASTERIZER_DESC
-PipelineManager::CreateRasterizerState() {
+PipelineManager::CreateRasterizerState () {
 
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
 
@@ -127,7 +121,7 @@ PipelineManager::CreateRasterizerState() {
 // DepthStencilState設定
 
 D3D12_DEPTH_STENCIL_DESC
-PipelineManager::CreateDepthStencilState() {
+PipelineManager::CreateDepthStencilState () {
 
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
 
@@ -144,7 +138,7 @@ PipelineManager::CreateDepthStencilState() {
 // GraphicsPipelineStateを作る
 
 Microsoft::WRL::ComPtr<ID3D12PipelineState>
-PipelineManager::CreateGraphicsPipelineState(
+PipelineManager::CreateGraphicsPipelineState (
 	ID3D12Device* device,
 	ID3D12RootSignature* rootSignature,
 	D3D12_INPUT_LAYOUT_DESC& inputLayoutDesc,
@@ -164,13 +158,13 @@ PipelineManager::CreateGraphicsPipelineState(
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
 
 	graphicsPipelineStateDesc.VS = {
-		vertexShaderBlob->GetBufferPointer(),
-		vertexShaderBlob->GetBufferSize()
+		vertexShaderBlob->GetBufferPointer (),
+		vertexShaderBlob->GetBufferSize ()
 	};
 
 	graphicsPipelineStateDesc.PS = {
-		pixelShaderBlob->GetBufferPointer(),
-		pixelShaderBlob->GetBufferSize()
+		pixelShaderBlob->GetBufferPointer (),
+		pixelShaderBlob->GetBufferSize ()
 	};
 
 	graphicsPipelineStateDesc.BlendState = blendDesc;
@@ -197,11 +191,11 @@ PipelineManager::CreateGraphicsPipelineState(
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>	graphicsPipelineState = nullptr;
 
 	HRESULT hr =
-		device->CreateGraphicsPipelineState(
+		device->CreateGraphicsPipelineState (
 			&graphicsPipelineStateDesc,
-			IID_PPV_ARGS(&graphicsPipelineState));
+			IID_PPV_ARGS (&graphicsPipelineState));
 
-	assert(SUCCEEDED(hr));
+	assert (SUCCEEDED (hr));
 
 	return graphicsPipelineState;
 }
@@ -209,7 +203,7 @@ PipelineManager::CreateGraphicsPipelineState(
 //=================================================================================================//
 // SpritePipeline生成
 
-void PipelineManager::CreateSpritePipeline(ID3D12Device* device, ShaderCompiler* shaderCompiler) {
+void PipelineManager::CreateSpritePipeline (ID3D12Device* device, ShaderCompiler* shaderCompiler) {
 
 	//=============================================================================================//
 	// RootSignature作成
@@ -259,7 +253,7 @@ void PipelineManager::CreateSpritePipeline(ID3D12Device* device, ShaderCompiler*
 
 	descriptionRootSignature.pParameters = rootParameters;
 
-	descriptionRootSignature.NumParameters = _countof(rootParameters);
+	descriptionRootSignature.NumParameters = _countof (rootParameters);
 
 	//=============================================================================================//
 	// Sampler作成
@@ -294,24 +288,24 @@ void PipelineManager::CreateSpritePipeline(ID3D12Device* device, ShaderCompiler*
 	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 
 	HRESULT hr =
-		D3D12SerializeRootSignature(
+		D3D12SerializeRootSignature (
 			&descriptionRootSignature,
 			D3D_ROOT_SIGNATURE_VERSION_1,
 			&signatureBlob,
 			&errorBlob);
 
-	assert(SUCCEEDED(hr));
+	assert (SUCCEEDED (hr));
 
 	//=============================================================================================//
 	// RootSignature生成
 
-	hr = device->CreateRootSignature(
+	hr = device->CreateRootSignature (
 		0,
-		signatureBlob->GetBufferPointer(),
-		signatureBlob->GetBufferSize(),
-		IID_PPV_ARGS(&spriteRootSignature_));
+		signatureBlob->GetBufferPointer (),
+		signatureBlob->GetBufferSize (),
+		IID_PPV_ARGS (&spriteRootSignature_));
 
-	assert(SUCCEEDED(hr));
+	assert (SUCCEEDED (hr));
 
 	//=============================================================================================//
 	// InputLayout設定
@@ -337,7 +331,7 @@ void PipelineManager::CreateSpritePipeline(ID3D12Device* device, ShaderCompiler*
 
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
 
-	inputLayoutDesc.NumElements = _countof(inputElementDescs);
+	inputLayoutDesc.NumElements = _countof (inputElementDescs);
 
 	//=============================================================================================//
 	// BlendState設定
@@ -373,12 +367,12 @@ void PipelineManager::CreateSpritePipeline(ID3D12Device* device, ShaderCompiler*
 	// Shaderコンパイル
 
 	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob =
-		shaderCompiler->CompileShader(
+		shaderCompiler->CompileShader (
 			L"Object3d.VS.hlsl",
 			L"vs_6_0");
 
 	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob =
-		shaderCompiler->CompileShader(
+		shaderCompiler->CompileShader (
 			L"Object3d.PS.hlsl",
 			L"ps_6_0");
 
@@ -387,18 +381,18 @@ void PipelineManager::CreateSpritePipeline(ID3D12Device* device, ShaderCompiler*
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 
-	graphicsPipelineStateDesc.pRootSignature = spriteRootSignature_.Get();
+	graphicsPipelineStateDesc.pRootSignature = spriteRootSignature_.Get ();
 
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
 
 	graphicsPipelineStateDesc.VS = {
-		vertexShaderBlob->GetBufferPointer(),
-		vertexShaderBlob->GetBufferSize()
+		vertexShaderBlob->GetBufferPointer (),
+		vertexShaderBlob->GetBufferSize ()
 	};
 
 	graphicsPipelineStateDesc.PS = {
-		pixelShaderBlob->GetBufferPointer(),
-		pixelShaderBlob->GetBufferSize()
+		pixelShaderBlob->GetBufferPointer (),
+		pixelShaderBlob->GetBufferSize ()
 	};
 
 	graphicsPipelineStateDesc.BlendState = blendDesc;
@@ -424,25 +418,174 @@ void PipelineManager::CreateSpritePipeline(ID3D12Device* device, ShaderCompiler*
 	//=============================================================================================//
 	// PipelineState生成
 
-	hr = device->CreateGraphicsPipelineState(
+	hr = device->CreateGraphicsPipelineState (
 		&graphicsPipelineStateDesc,
-		IID_PPV_ARGS(&spritePipelineState_));
+		IID_PPV_ARGS (&spritePipelineState_));
 
-	assert(SUCCEEDED(hr));
+	assert (SUCCEEDED (hr));
 }
 
 //=================================================================================================//
 // SpriteRootSignature取得
 
-ID3D12RootSignature* PipelineManager::GetSpriteRootSignature() {
+ID3D12RootSignature* PipelineManager::GetSpriteRootSignature () {
 
-	return spriteRootSignature_.Get();
+	return spriteRootSignature_.Get ();
 }
 
 //=================================================================================================//
 // SpritePipelineState取得
 
-ID3D12PipelineState* PipelineManager::GetSpritePipelineState() {
+ID3D12PipelineState* PipelineManager::GetSpritePipelineState () {
 
-	return spritePipelineState_.Get();
+	return spritePipelineState_.Get ();
+}
+
+
+//=================================================================================================//
+// DebugLinePipeline
+
+void PipelineManager::CreateDebugLinePipeline (ID3D12Device* device, ShaderCompiler* shaderCompiler) {
+
+	//=============================================================================================//
+	// RootSignature設定
+
+	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
+
+	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	//=============================================================================================//
+	// RootParameter
+
+	D3D12_ROOT_PARAMETER rootParameters[1] = {};
+
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+	rootParameters[0].Descriptor.ShaderRegister = 0;
+
+	descriptionRootSignature.pParameters = rootParameters;
+
+	descriptionRootSignature.NumParameters = _countof (rootParameters);
+
+	//=============================================================================================//
+	// RootSignature生成
+
+	debugLineRootSignature_ = CreateRootSignature (device, descriptionRootSignature);
+
+	//=============================================================================================//
+	// InputLayout
+
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
+
+	// POSITION
+
+	inputElementDescs[0].SemanticName = "POSITION";
+	inputElementDescs[0].SemanticIndex = 0;
+	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	// COLOR
+
+	inputElementDescs[1].SemanticName = "COLOR";
+	inputElementDescs[1].SemanticIndex = 0;
+	inputElementDescs[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
+
+	inputLayoutDesc.pInputElementDescs = inputElementDescs;
+
+	inputLayoutDesc.NumElements = _countof (inputElementDescs);
+
+	//=============================================================================================//
+	// BlendState
+
+	D3D12_BLEND_DESC blendDesc = CreateBlendState ();
+
+	//=============================================================================================//
+	// RasterizerState
+
+	D3D12_RASTERIZER_DESC rasterizerDesc = CreateRasterizerState ();
+
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+
+	//=============================================================================================//
+	// DepthStencilState
+
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CreateDepthStencilState ();
+
+	//=============================================================================================//
+	// Shaderコンパイル
+
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = shaderCompiler->CompileShader (L"DebugLine.VS.hlsl", L"vs_6_0");
+
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = shaderCompiler->CompileShader (L"DebugLine.PS.hlsl", L"ps_6_0");
+
+	//=============================================================================================//
+	// PSO設定
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC	graphicsPipelineStateDesc{};
+
+	graphicsPipelineStateDesc.pRootSignature = debugLineRootSignature_.Get ();
+
+	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
+
+	graphicsPipelineStateDesc.VS = {
+		vertexShaderBlob->GetBufferPointer (),
+		vertexShaderBlob->GetBufferSize ()
+	};
+
+	graphicsPipelineStateDesc.PS = {
+		pixelShaderBlob->GetBufferPointer (),
+		pixelShaderBlob->GetBufferSize ()
+	};
+
+	graphicsPipelineStateDesc.BlendState = blendDesc;
+
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+
+	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+
+	graphicsPipelineStateDesc.NumRenderTargets = 1;
+
+	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
+	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+
+	graphicsPipelineStateDesc.SampleDesc.Count = 1;
+
+	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+	//=============================================================================================//
+	// PipelineState生成
+
+	HRESULT hr =
+		device->CreateGraphicsPipelineState (
+			&graphicsPipelineStateDesc,
+			IID_PPV_ARGS (&debugLinePipelineState_)
+		);
+
+	assert (SUCCEEDED (hr));
+}
+
+//=================================================================================================//
+// DebugLineRootSignature取得
+
+ID3D12RootSignature*
+PipelineManager::GetDebugLineRootSignature () {
+
+	return debugLineRootSignature_.Get ();
+}
+
+//=================================================================================================//
+//　DebugLinePipeline取得
+
+ID3D12PipelineState*
+PipelineManager::GetDebugLinePipelineState () {
+
+	return debugLinePipelineState_.Get ();
 }

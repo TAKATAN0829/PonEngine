@@ -151,6 +151,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="DebugLine.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\externals\imgui\imconfig.h" />
@@ -201,6 +205,7 @@
     <Text Include="..\externals\imgui\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="DebugLine.VS.hlsl" />
     <None Include="Object3d.hlsli" />
   </ItemGroup>
   <ItemGroup>

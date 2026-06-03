@@ -14,17 +14,21 @@
 class GameScene : public IScene {
 public:
 
-	void Initialize() override;
-	void Update(Input* input) override;
-	void Draw() override;
-	void Finalize() override;
+	void Initialize () override;
+	void Update (Input* input) override;
+	void Draw () override;
+	void Finalize () override;
 
-	void SetResourceManager(ResourceManager* resourceManager);
-	void SetDevice(ID3D12Device* device);
-	void SetWindowSize(int32_t width, int32_t height);
+	void SetResourceManager (ResourceManager* resourceManager);
+	void SetDevice (ID3D12Device* device);
+	void SetWindowSize (int32_t width, int32_t height);
 
-	bool IsFinished() override;
-	void SetContext(const SceneContext& sceneContext) override;
+	bool IsFinished () override;
+	void SetContext (const SceneContext& sceneContext) override;
+
+	void UpdateCamera (Input* input);
+	void UpdateObject ();
+
 
 private:
 
@@ -61,5 +65,5 @@ private:
 	//=============================================================================================//
 	// DebugCamera
 
-	DebugCamera *debugCamera_ = nullptr;
+	DebugCamera* debugCamera_ = nullptr;
 };
