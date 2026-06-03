@@ -1,13 +1,13 @@
 struct VertexShaderInput
 {
-	float4 position : POSITION0;
-	float4 color : COLOR0;
+	float32_t4 position : POSITION0;
+    float32_t4 color : COLOR0;
 };
 
 struct VertexShaderOutput
 {
-	float4 position : SV_POSITION;
-	float4 color : COLOR0;
+    float32_t4 position : SV_POSITION;
+    float32_t4 color : COLOR0;
 };
 
 struct Camera
@@ -21,8 +21,7 @@ VertexShaderOutput main(VertexShaderInput input)
 {
 	VertexShaderOutput output;
 
-	output.position =
-        mul(input.position, gCamera.viewProjection);
+	output.position = mul(input.position, gCamera.viewProjection);
 
 	output.color = input.color;
 

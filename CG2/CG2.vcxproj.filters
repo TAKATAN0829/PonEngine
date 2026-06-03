@@ -170,6 +170,7 @@
     <FxCompile Include="Object3d.PS.hlsl" />
     <FxCompile Include="Object3d.VS.hlsl" />
     <FxCompile Include="DebugLine.PS.hlsl" />
+    <FxCompile Include="DebugLine.VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\externals\imgui\imstb_truetype.h">
@@ -316,7 +317,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Object3d.hlsli" />
-    <None Include="DebugLine.VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\externals\imgui\LICENSE.txt">
