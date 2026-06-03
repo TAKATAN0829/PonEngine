@@ -6,6 +6,9 @@
 // WRL
 #include <wrl.h>
 
+// C++
+#include <string.h>
+
 // 自作
 #include "EngineStructs.h"
 #include "Mesh.h"
@@ -59,6 +62,26 @@ public:
 	// Texture番号設定
 
 	void SetTextureIndex(uint32_t textureIndex);
+
+	//=============================================================================================//
+	// Lighting設定
+
+	void SetEnableLighting (bool enableLighting);
+
+	//=============================================================================================//
+	// UVTransform設定
+
+	void SetUVTransform (const Matrix4x4& uvTransform);
+
+	//=============================================================================================//
+	// DirectionalLight設定
+
+	void SetDirectionalLight (const Vector4& color,	const Vector3& direction, float intensity);
+
+	//=============================================================================================//
+	// Texture設定
+
+	void SetTexture (const std::string& textureName);
 
 private:
 

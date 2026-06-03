@@ -140,6 +140,16 @@ public:
 		return graphicsSystem_;
 	}
 
+	//=============================================================================================//
+	// Texture読み込み
+
+	uint32_t LoadTexture (const std::string& name, const std::string& filePath);
+
+	//=============================================================================================//
+	// Texture番号取得
+
+	uint32_t GetTextureIndex (const std::string& name);
+
 private:
 
 	DescriptorHeapManager* srvDescriptorHeap_ = nullptr;
@@ -161,4 +171,6 @@ private:
 	inline static ID3D12GraphicsCommandList* commandList_ = nullptr;
 
 	inline static GraphicsSystem* graphicsSystem_ = nullptr;
+
+	std::unordered_map<std::string, uint32_t> textureIndexMap_;
 };

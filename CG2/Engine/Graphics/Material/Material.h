@@ -42,6 +42,16 @@ public:
 
 	void SetEnableLighting(bool enableLighting);
 
+	//=============================================================================================//
+	// UVTransform設定
+
+	void SetUVTransform (const Matrix4x4& uvTransform);
+
+	//=============================================================================================//
+	// DirectionalLight設定
+
+	void SetDirectionalLight (const Vector4& color,	const Vector3& direction, float intensity);
+
 private:
 
 	//=============================================================================================//

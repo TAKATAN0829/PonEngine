@@ -1,5 +1,6 @@
 #include "Object3d.h"
 
+
 //=================================================================================================//
 // 初期化処理
 
@@ -33,6 +34,7 @@ void Object3d::Initialize(MeshType meshType) {
 	wvpData_->World = MathUtility::MakeIdentity4x4();
 }
 
+
 //=================================================================================================//
 // 更新処理
 
@@ -48,6 +50,7 @@ void Object3d::Update(const Matrix4x4& viewProjectionMatrix) {
 
 	wvpData_->World = worldMatrix;
 }
+
 
 //=================================================================================================//
 // 描画処理
@@ -82,6 +85,7 @@ void Object3d::Draw() {
 	mesh_->Draw();
 }
 
+
 //=================================================================================================//
 // 終了処理
 
@@ -91,6 +95,7 @@ void Object3d::Finalize() {
 
 }
 
+
 //=================================================================================================//
 // Transform設定
 
@@ -98,6 +103,7 @@ void Object3d::SetTransform(const TransformData& transform) {
 
 	transform_.local_ = transform;
 }
+
 
 //=================================================================================================//
 // Transform取得
@@ -107,6 +113,7 @@ TransformData Object3d::GetTransform() {
 	return transform_.local_;
 }
 
+
 //=================================================================================================//
 // 色設定
 
@@ -114,6 +121,34 @@ void Object3d::SetColor(const Vector4& color) {
 
 	material_->SetColor(color);
 }
+
+
+//=================================================================================================//
+// Lighting設定
+
+void Object3d::SetEnableLighting (bool enableLighting) {
+
+	material_->SetEnableLighting (enableLighting);
+}
+
+
+//=================================================================================================//
+// UVTransform設定
+
+void Object3d::SetUVTransform (const Matrix4x4& uvTransform) {
+
+	material_->SetUVTransform (uvTransform);
+}
+
+
+//=================================================================================================//
+// DirectionalLight設定
+
+void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity) {
+
+	material_->SetDirectionalLight (color, direction, intensity);
+}
+
 
 //=================================================================================================//
 // Texture番号設定
@@ -123,6 +158,7 @@ void Object3d::SetTextureIndex(uint32_t textureIndex) {
 	material_->SetTextureIndex(textureIndex);
 }
 
+
 //=============================================================================================//
 // Transformアドレス取得
 
@@ -131,10 +167,22 @@ Transform* Object3d::GetTransformAddress() {
 	return &transform_;
 }
 
+
 //=============================================================================================//
 // 親設定
 
 void Object3d::SetParent(Transform* parent) {
 
 	transform_.SetParent(parent);
+}
+
+
+//=============================================================================================//
+// Texture設定
+
+void Object3d::SetTexture (const std::string& textureName) {
+
+	uint32_t textureIndex =	GraphicsSystem::GetGraphicsSystem ()->GetTextureIndex (textureName);
+
+	SetTextureIndex (textureIndex);
 }

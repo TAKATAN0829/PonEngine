@@ -111,3 +111,23 @@ void Material::SetEnableLighting(bool enableLighting) {
 
 	materialData_->enableLighting =	enableLighting;
 }
+
+//=============================================================================================//
+// UVTransform設定
+
+void Material::SetUVTransform (const Matrix4x4& uvTransform) {
+
+	materialData_->uvTransform = uvTransform;
+}
+
+//=============================================================================================//
+// DirectionalLight設定
+
+void Material::SetDirectionalLight (const Vector4& color, const Vector3& direction,	float intensity) {
+
+	directionalLightData_->color = color;
+
+	directionalLightData_->direction = MathUtility::Normalize (direction);
+
+	directionalLightData_->intensity = intensity;
+}

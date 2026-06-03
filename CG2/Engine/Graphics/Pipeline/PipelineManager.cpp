@@ -47,6 +47,7 @@ PipelineManager::CreateRootSignature (ID3D12Device* device, D3D12_ROOT_SIGNATURE
 	return rootSignature;
 }
 
+
 //=================================================================================================//
 // InputLayout設定
 
@@ -89,6 +90,7 @@ PipelineManager::CreateInputLayout () {
 	return inputLayoutDesc;
 }
 
+
 //=================================================================================================//
 // BlendState設定
 
@@ -101,6 +103,7 @@ PipelineManager::CreateBlendState () {
 
 	return blendDesc;
 }
+
 
 //=================================================================================================//
 // RasterizerState設定
@@ -116,6 +119,7 @@ PipelineManager::CreateRasterizerState () {
 
 	return rasterizerDesc;
 }
+
 
 //=================================================================================================//
 // DepthStencilState設定
@@ -133,6 +137,7 @@ PipelineManager::CreateDepthStencilState () {
 
 	return depthStencilDesc;
 }
+
 
 //=================================================================================================//
 // GraphicsPipelineStateを作る
@@ -199,6 +204,7 @@ PipelineManager::CreateGraphicsPipelineState (
 
 	return graphicsPipelineState;
 }
+
 
 //=================================================================================================//
 // SpritePipeline生成
@@ -425,6 +431,7 @@ void PipelineManager::CreateSpritePipeline (ID3D12Device* device, ShaderCompiler
 	assert (SUCCEEDED (hr));
 }
 
+
 //=================================================================================================//
 // SpriteRootSignature取得
 
@@ -432,6 +439,7 @@ ID3D12RootSignature* PipelineManager::GetSpriteRootSignature () {
 
 	return spriteRootSignature_.Get ();
 }
+
 
 //=================================================================================================//
 // SpritePipelineState取得
@@ -572,6 +580,7 @@ void PipelineManager::CreateDebugLinePipeline (ID3D12Device* device, ShaderCompi
 	assert (SUCCEEDED (hr));
 }
 
+
 //=================================================================================================//
 // DebugLineRootSignature取得
 
@@ -580,6 +589,7 @@ PipelineManager::GetDebugLineRootSignature () {
 
 	return debugLineRootSignature_.Get ();
 }
+
 
 //=================================================================================================//
 //　DebugLinePipeline取得

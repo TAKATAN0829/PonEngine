@@ -14,7 +14,7 @@ void GraphicsSystem::Initialize (ID3D12Device* device) {
 
 	srvDescriptorHeap_ = new DescriptorHeapManager ();
 
-	srvDescriptorHeap_->Initialize (device,	D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,	128,true);
+	srvDescriptorHeap_->Initialize (device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
 	shaderCompiler_ = new ShaderCompiler ();
 
@@ -135,15 +135,9 @@ ID3D12PipelineState* GraphicsSystem::GetGraphicsPipelineState () {
 
 void GraphicsSystem::CreateGraphicsPipeline (ID3D12Device* device) {
 
-	IDxcBlob* vertexShaderBlob =
-		shaderCompiler_->CompileShader (
-			L"Object3d.VS.hlsl",
-			L"vs_6_0");
+	IDxcBlob* vertexShaderBlob = shaderCompiler_->CompileShader (L"Object3d.VS.hlsl", L"vs_6_0");
 
-	IDxcBlob* pixelShaderBlob =
-		shaderCompiler_->CompileShader (
-			L"Object3d.PS.hlsl",
-			L"ps_6_0");
+	IDxcBlob* pixelShaderBlob =	shaderCompiler_->CompileShader (L"Object3d.PS.hlsl", L"ps_6_0");
 
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 
@@ -154,8 +148,7 @@ void GraphicsSystem::CreateGraphicsPipeline (ID3D12Device* device) {
 	descriptorRange[0].BaseShaderRegister = 0;
 	descriptorRange[0].NumDescriptors = 1;
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-	descriptorRange[0].OffsetInDescriptorsFromTableStart =
-		D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 	D3D12_ROOT_PARAMETER rootParameters[4]{};
 
@@ -195,15 +188,15 @@ void GraphicsSystem::CreateGraphicsPipeline (ID3D12Device* device) {
 
 	descriptionRootSignature.NumStaticSamplers = _countof (staticSamplers);
 
-	rootSignature_ =pipelineManager_->CreateRootSignature (	device,	descriptionRootSignature);
+	rootSignature_ = pipelineManager_->CreateRootSignature (device, descriptionRootSignature);
 
-	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc =	pipelineManager_->CreateInputLayout ();
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = pipelineManager_->CreateInputLayout ();
 
-	D3D12_BLEND_DESC blendDesc =pipelineManager_->CreateBlendState ();
+	D3D12_BLEND_DESC blendDesc = pipelineManager_->CreateBlendState ();
 
-	D3D12_RASTERIZER_DESC rasterizerDesc =	pipelineManager_->CreateRasterizerState ();
+	D3D12_RASTERIZER_DESC rasterizerDesc = pipelineManager_->CreateRasterizerState ();
 
-	D3D12_DEPTH_STENCIL_DESC depthStencilDesc =	pipelineManager_->CreateDepthStencilState ();
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = pipelineManager_->CreateDepthStencilState ();
 
 	graphicsPipelineState_ =
 		pipelineManager_->CreateGraphicsPipelineState (
@@ -217,21 +210,24 @@ void GraphicsSystem::CreateGraphicsPipeline (ID3D12Device* device) {
 			pixelShaderBlob);
 }
 
+
 //=================================================================================================//
 // SpritePipeline生成
 
 void GraphicsSystem::CreateSpritePipeline (ID3D12Device* device) {
 
-	pipelineManager_->CreateSpritePipeline (device,	shaderCompiler_);
+	pipelineManager_->CreateSpritePipeline (device, shaderCompiler_);
 }
+
 
 //=================================================================================================//
 // DebugLinePipeline生成
 
 void GraphicsSystem::CreateDebugLinePipeline (ID3D12Device* device) {
 
-	pipelineManager_->CreateDebugLinePipeline (device,	shaderCompiler_);
+	pipelineManager_->CreateDebugLinePipeline (device, shaderCompiler_);
 }
+
 
 //=================================================================================================//
 // Texture生成
@@ -241,8 +237,9 @@ uint32_t GraphicsSystem::CreateTexture (
 	ID3D12GraphicsCommandList* commandList,
 	const std::string& filePath) {
 
-	return textureManager_->CreateTexture (srvDescriptorHeap_,	filePath);
+	return textureManager_->CreateTexture (srvDescriptorHeap_, filePath);
 }
+
 
 //=================================================================================================//
 // 描画前設定
@@ -256,16 +253,17 @@ void GraphicsSystem::PreDraw (
 
 	commandList->SetPipelineState (graphicsPipelineState_.Get ());
 
-	commandList->IASetVertexBuffers (0,	1,	vertexBufferView);
+	commandList->IASetVertexBuffers (0, 1, vertexBufferView);
 
 	commandList->IASetIndexBuffer (indexBufferView);
 
 	commandList->IASetPrimitiveTopology (D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = {srvDescriptorHeap_->GetDescriptorHeap ()};
+	ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap_->GetDescriptorHeap () };
 
-	commandList->SetDescriptorHeaps (1,	descriptorHeaps);
+	commandList->SetDescriptorHeaps (1, descriptorHeaps);
 }
+
 
 //=================================================================================================//
 // Sprite描画前設定
@@ -281,11 +279,43 @@ void GraphicsSystem::PreSpriteDraw (
 
 	commandList->IASetPrimitiveTopology (D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	commandList->IASetVertexBuffers (0,1,vertexBufferView);
+	commandList->IASetVertexBuffers (0, 1, vertexBufferView);
 
 	commandList->IASetIndexBuffer (indexBufferView);
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = {srvDescriptorHeap_->GetDescriptorHeap ()};
+	ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap_->GetDescriptorHeap () };
 
-	commandList->SetDescriptorHeaps (1,	descriptorHeaps);
+	commandList->SetDescriptorHeaps (1, descriptorHeaps);
+}
+
+
+//=================================================================================================//
+// Texture読み込み
+
+uint32_t GraphicsSystem::LoadTexture (const std::string& name, const std::string& filePath) {
+
+	if (textureIndexMap_.find (name) != textureIndexMap_.end ()) {
+
+		return textureIndexMap_[name];
+	}
+
+	uint32_t textureIndex = textureManager_->CreateTexture (srvDescriptorHeap_, filePath);
+
+	textureIndexMap_[name] = textureIndex;
+
+	return textureIndex;
+}
+
+
+//=================================================================================================//
+// Texture番号取得
+
+uint32_t GraphicsSystem::GetTextureIndex (const std::string& name) {
+
+	if (textureIndexMap_.find (name) == textureIndexMap_.end ()) {
+
+		return 0;
+	}
+
+	return textureIndexMap_[name];
 }

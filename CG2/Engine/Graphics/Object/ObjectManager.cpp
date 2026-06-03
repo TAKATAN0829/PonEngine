@@ -7,6 +7,31 @@ void ObjectManager::Initialize () {
 
 }
 
+
+//=================================================================================================//
+// 更新処理
+
+void ObjectManager::Update (const Matrix4x4& viewProjectionMatrix) {
+
+	for (Object3d* object : objects_) {
+
+		object->Update (viewProjectionMatrix);
+	}
+}
+
+
+//=================================================================================================//
+// 描画処理
+
+void ObjectManager::Draw () {
+
+	for (Object3d* object : objects_) {
+
+		object->Draw ();
+	}
+}
+
+
 //=================================================================================================//
 // 終了処理
 
@@ -26,6 +51,7 @@ void ObjectManager::Finalize () {
 
 }
 
+
 //=================================================================================================//
 // Object追加
 
@@ -38,26 +64,4 @@ Object3d* ObjectManager::CreateObject (MeshType meshType) {
 	objects_.push_back (object);
 
 	return object;
-}
-
-//=================================================================================================//
-// 更新処理
-
-void ObjectManager::Update (const Matrix4x4& viewProjectionMatrix) {
-
-	for (Object3d* object : objects_) {
-
-		object->Update (viewProjectionMatrix);
-	}
-}
-
-//=================================================================================================//
-// 描画処理
-
-void ObjectManager::Draw () {
-
-	for (Object3d* object : objects_) {
-
-		object->Draw ();
-	}
 }
