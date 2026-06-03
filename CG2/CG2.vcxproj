@@ -54,7 +54,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Debug;$(ProjectDir)Engine\Graphics\Pipeline;$(ProjectDir)Engine\Transform;$(ProjectDir)Engine\AudioSystem;$(ProjectDir)Engine\Camera;$(ProjectDir)Engine;$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Graphics\Material;$(ProjectDir)Engine\Graphics\Mesh;$(ProjectDir)Engine\Graphics\Object;$(ProjectDir)Engine\Graphics\Sprite;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Scene;$(ProjectDir)externals\imgui;$(ProjectDir)externals\DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Core\GameObject;$(ProjectDir)Engine\Core\Input;$(ProjectDir)Engine\Graphics\Renderer;$(ProjectDir)Engine\Debug;$(ProjectDir)Engine\Graphics\Pipeline;$(ProjectDir)Engine\Transform;$(ProjectDir)Engine\AudioSystem;$(ProjectDir)Engine\Camera;$(ProjectDir)Engine;$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Graphics\Material;$(ProjectDir)Engine\Graphics\Mesh;$(ProjectDir)Engine\Graphics\Object;$(ProjectDir)Engine\Graphics\Sprite;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Scene;$(ProjectDir)externals\imgui;$(ProjectDir)externals\DirectXTex</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -116,7 +116,7 @@
     <ClCompile Include="Engine\Camera\DebugCamera.cpp" />
     <ClCompile Include="Engine\Core\DirectXCommon.cpp" />
     <ClCompile Include="Engine\Core\ImGuiSystem.cpp" />
-    <ClCompile Include="Engine\Core\Input.cpp" />
+    <ClCompile Include="Engine\Core\Input\Input.cpp" />
     <ClCompile Include="Engine\Core\LogSystem.cpp" />
     <ClCompile Include="Engine\Core\WinApp.cpp" />
     <ClCompile Include="Engine\Engine.cpp" />
@@ -137,6 +137,10 @@
     <ClCompile Include="Engine\Scene\SceneManager.cpp" />
     <ClCompile Include="Engine\Scene\TitleScene.cpp" />
     <ClCompile Include="Engine\Transform\Transform.cpp" />
+    <ClCompile Include="Engine\Core\Input\InputAction.cpp" />
+    <ClCompile Include="Engine\Core\GameObject\GameObject.cpp" />
+    <ClCompile Include="Engine\Graphics\Renderer\Renderer.cpp" />
+    <ClCompile Include="Engine\Scene\SceneFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.PS.hlsl">
@@ -165,6 +169,7 @@
     <ClInclude Include="..\externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\externals\imgui\imstb_textedit.h" />
     <ClInclude Include="..\externals\imgui\imstb_truetype.h" />
+    <ClInclude Include="Engine\Core\GameObject\Component.h" />
     <ClInclude Include="Engine\Debug\DebugDraw.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
@@ -173,7 +178,7 @@
     <ClInclude Include="Engine\Camera\DebugCamera.h" />
     <ClInclude Include="Engine\Core\DirectXCommon.h" />
     <ClInclude Include="Engine\Core\ImGuiSystem.h" />
-    <ClInclude Include="Engine\Core\Input.h" />
+    <ClInclude Include="Engine\Core\Input\Input.h" />
     <ClInclude Include="Engine\Core\LogSystem.h" />
     <ClInclude Include="Engine\Core\WinApp.h" />
     <ClInclude Include="Engine\Engine.h" />
@@ -185,6 +190,7 @@
     <ClInclude Include="Engine\Graphics\Object\Object3d.h" />
     <ClInclude Include="Engine\Graphics\Object\ObjectManager.h" />
     <ClInclude Include="Engine\Graphics\Pipeline\PipelineManager.h" />
+    <ClInclude Include="Engine\Graphics\Renderer\RenderItem.h" />
     <ClInclude Include="Engine\Graphics\ResourceManager.h" />
     <ClInclude Include="Engine\Graphics\ShaderCompiler.h" />
     <ClInclude Include="Engine\Graphics\Sprite\Sprite.h" />
@@ -200,6 +206,10 @@
     <ClInclude Include="Engine\Scene\SceneManager.h" />
     <ClInclude Include="Engine\Scene\TitleScene.h" />
     <ClInclude Include="Engine\Transform\Transform.h" />
+    <ClInclude Include="Engine\Core\Input\InputAction.h" />
+    <ClInclude Include="Engine\Core\GameObject\GameObject.h" />
+    <ClInclude Include="Engine\Graphics\Renderer\Renderer.h" />
+    <ClInclude Include="Engine\Scene\SceneFactory.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\externals\imgui\LICENSE.txt" />

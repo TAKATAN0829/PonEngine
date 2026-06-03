@@ -221,6 +221,9 @@ void GameScene::UpdateObject () {
 			trianglesTransformData_[index].scale = triangleTransform_.scale;
 			trianglesTransformData_[index].rotate = triangleTransform_.rotate;
 
+			invTrianglesTransformData_[index].scale = invTriangleTransform_.scale;
+			invTrianglesTransformData_[index].rotate = invTriangleTransform_.rotate;
+
 			triangles_[index]->SetTransform (trianglesTransformData_[index]);
 			triangles_[index]->Update (debugCamera_->GetViewProjectionMatrix ());
 

@@ -99,7 +99,7 @@
     <ClCompile Include="Engine\Core\ImGuiSystem.cpp">
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\Input.cpp">
+    <ClCompile Include="Engine\Core\Input\Input.cpp">
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Core\LogSystem.cpp">
@@ -151,6 +151,18 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Debug\DebugDraw.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\Input\InputAction.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\GameObject\GameObject.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\Renderer\Renderer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Scene\SceneFactory.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -241,7 +253,7 @@
     <ClInclude Include="Engine\Graphics\Mesh\Mesh.h">
       <Filter>Engine\Graphics\Mesh</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\Input.h">
+    <ClInclude Include="Engine\Core\Input\Input.h">
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\LogSystem.h">
@@ -281,6 +293,24 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Debug\DebugDraw.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Renderer\RenderItem.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Input\InputAction.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\GameObject\Component.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\GameObject\GameObject.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Renderer\Renderer.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Scene\SceneFactory.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
