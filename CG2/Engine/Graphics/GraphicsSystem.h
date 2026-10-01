@@ -66,7 +66,7 @@ public:
 	//=============================================================================================//
 	// GraphicsPipelineState取得
 
-	ID3D12PipelineState* GetGraphicsPipelineState ();
+	ID3D12PipelineState* GetGraphicsPipelineState (BlendMode blendMode);
 
 	//=============================================================================================//
 	// GraphicsPipeline生成
@@ -79,9 +79,9 @@ public:
 	void CreateSpritePipeline (ID3D12Device* device);
 
 	//=============================================================================================//
-	// DebugLinePipeline生成
+	// ParticlePipeline生成
 
-	void CreateDebugLinePipeline (ID3D12Device* device);
+	void CreateParticlePipeline (ID3D12Device* device);
 
 	//=============================================================================================//
 	// Texture生成
@@ -97,7 +97,8 @@ public:
 	void PreDraw (
 		ID3D12GraphicsCommandList* commandList,
 		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
-		D3D12_INDEX_BUFFER_VIEW* indexBufferView);
+		D3D12_INDEX_BUFFER_VIEW* indexBufferView,
+		BlendMode blendMode);
 
 	//=============================================================================================//
 	// Sprite描画前設定
@@ -106,6 +107,15 @@ public:
 		ID3D12GraphicsCommandList* commandList,
 		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
 		D3D12_INDEX_BUFFER_VIEW* indexBufferView);
+
+	//=============================================================================================//
+	// Particle描画前設定
+
+	void PreParticleDraw (
+		ID3D12GraphicsCommandList* commandList,
+		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
+		D3D12_INDEX_BUFFER_VIEW* indexBufferView,
+		BlendMode blendMode);
 
 	//=============================================================================================//
 	// device
@@ -164,7 +174,11 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineStates_[kCountOfBlendMode];
+
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> particleRootSignature_ = nullptr;
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> particlePipelineStates_[kCountOfBlendMode];
 
 	inline static ID3D12Device* device_ = nullptr;
 

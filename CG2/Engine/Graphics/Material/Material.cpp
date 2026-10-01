@@ -62,7 +62,27 @@ void Material::Initialize() {
 // RootParameter設定
 
 void Material::Bind() {
-	
+
+	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
+
+	//=============================================================================================//
+	// Material・Texture設定
+
+	BindWithoutLight();
+
+	//=============================================================================================//
+	// DirectionalLight設定
+
+	commandList->SetGraphicsRootConstantBufferView(
+		3,
+		directionalLightResource_->GetGPUVirtualAddress());
+}
+
+//=================================================================================================//
+// RootParameter設定（DirectionalLightなし、Particle用）
+
+void Material::BindWithoutLight() {
+
 	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
 	GraphicsSystem* graphicsSystem = GraphicsSystem::GetGraphicsSystem();
 
@@ -79,13 +99,6 @@ void Material::Bind() {
 	commandList->SetGraphicsRootDescriptorTable(
 		2,
 		graphicsSystem->GetSRVDescriptorHeap()->GetGPUDescriptorHandle(textureIndex_));
-
-	//=============================================================================================//
-	// DirectionalLight設定
-
-	commandList->SetGraphicsRootConstantBufferView(
-		3,
-		directionalLightResource_->GetGPUVirtualAddress());
 }
 
 //=================================================================================================//

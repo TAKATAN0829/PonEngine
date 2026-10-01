@@ -8,130 +8,101 @@
 
 // C++
 #include <cstdint>
+#include <string>
 
 // 自作
 #include "EngineStructs.h"
-#include "ResourceManager.h"
+#include "Mesh.h"
+#include "Material.h"
+#include "BlendMode.h"
 
-enum class MeshType {
-	kSphere,
-	kPlane,
-	kTriangle,
-};
-
-class Mesh {
+class Particle {
 public:
-	//=============================================================================================//
-	// 初期化
 
-	void Initialize (MeshType meshType);
+	//=============================================================================================//
+	// インスタンス数
+
+	static const uint32_t kNumInstance = 10;
+
+	//=============================================================================================//
+	// 初期化処理
+
+	void Initialize ();
+
+	//=============================================================================================//
+	// 更新処理
+
+	void Update (const Matrix4x4& viewProjectionMatrix);
 
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw (uint32_t instanceCount = 1);
+	void Draw ();
 
 	//=============================================================================================//
-	// 頂点BufferView取得
+	// 終了処理
 
-	D3D12_VERTEX_BUFFER_VIEW* GetVertexBufferView ();
-
-	//=============================================================================================//
-	// IndexBufferView取得
-
-	D3D12_INDEX_BUFFER_VIEW* GetIndexBufferView ();
+	void Finalize ();
 
 	//=============================================================================================//
-	// Index数取得
+	// 色設定
 
-	uint32_t GetIndexCount ();
+	void SetColor (const Vector4& color);
+
+	//=============================================================================================//
+	// Texture設定
+
+	void SetTexture (const std::string& textureName);
+
+	//=============================================================================================//
+	// BlendMode設定
+
+	void SetBlendMode (BlendMode blendMode);
 
 private:
 
 	//=============================================================================================//
-	// Sphere初期化
+	// Instancing用SRVを置くHeapの番号（Textureは0番から順に使うので、Heapの末尾を使う）
 
-	void InitializeSphere ();
-
-	//=============================================================================================//
-	// Plane初期化
-
-	void InitializePlane ();
+	static const uint32_t kInstancingSrvIndex = 127;
 
 	//=============================================================================================//
-	// Triangle初期化
+	// Mesh
 
-	void InitializeTriangle ();
-
-	//=============================================================================================//
-	// 頂点Resource生成
-
-	void CreateVertexResource ();
+	Mesh* mesh_ = nullptr;
 
 	//=============================================================================================//
-	// IndexResource生成
+	// Material
 
-	void CreateIndexResource ();
-
-	//=============================================================================================//
-	// Sphere生成
-
-	void CreateSphere ();
+	Material* material_ = nullptr;
 
 	//=============================================================================================//
-	// Plane生成
+	// Instancing用のTransformationMatrixリソース
 
-	void CreatePlane ();
-
-	//=============================================================================================//
-	// Triangle生成
-
-	void CreateTriangle ();
-
-private:
+	Microsoft::WRL::ComPtr<ID3D12Resource> instancingResource_ = nullptr;
 
 	//=============================================================================================//
-	// Sphere分割数
+	// 書き込むためのアドレス
 
-	static const uint32_t kSubdivision = 16;
-
-	//=============================================================================================//
-	// Vertex数
-
-	uint32_t vertexCount_ = 0;
+	TransformationMatrix* instancingData_ = nullptr;
 
 	//=============================================================================================//
-	// Index数
+	// Instancing用SRVのGPUHandle
 
-	uint32_t indexCount_ = 0;
-
-	//=============================================================================================//
-	// VertexResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_ = nullptr;
+	D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU_{};
 
 	//=============================================================================================//
-	// VertexBufferView
+	// Transform
 
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
-
-	//=============================================================================================//
-	// VertexData
-
-	VertexData* vertexData_ = nullptr;
+	TransformData transforms_[kNumInstance]{};
 
 	//=============================================================================================//
-	// IndexResource
+	// 描画するインスタンス数
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_ = nullptr;
-
-	//=============================================================================================//
-	// IndexBufferView
-
-	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
+	uint32_t numInstance_ = kNumInstance;
 
 	//=============================================================================================//
-	// IndexData
+	// BlendMode
 
-	uint32_t* indexData_ = nullptr;
+	BlendMode blendMode_ = kBlendModeNormal;
 };

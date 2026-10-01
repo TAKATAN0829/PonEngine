@@ -123,6 +123,9 @@
     <ClCompile Include="Engine\Graphics\Object\Object3d.cpp">
       <Filter>Engine\Graphics\Object</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Graphics\Particle\Particle.cpp">
+      <Filter>Engine\Graphics\Object</Filter>
+    </ClCompile>
     <ClCompile Include="Engine\Graphics\Object\ObjectManager.cpp">
       <Filter>Engine\Graphics\Object</Filter>
     </ClCompile>
@@ -150,13 +153,7 @@
     <ClCompile Include="Engine\Transform\Transform.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Debug\DebugDraw.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Core\Input\InputAction.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Core\GameObject\GameObject.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Graphics\Renderer\Renderer.cpp">
@@ -169,8 +166,8 @@
   <ItemGroup>
     <FxCompile Include="Object3d.PS.hlsl" />
     <FxCompile Include="Object3d.VS.hlsl" />
-    <FxCompile Include="DebugLine.PS.hlsl" />
-    <FxCompile Include="DebugLine.VS.hlsl" />
+    <FxCompile Include="Particle.PS.hlsl" />
+    <FxCompile Include="Particle.VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\externals\imgui\imstb_truetype.h">
@@ -210,6 +207,9 @@
       <Filter>Engine\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\ResourceManager.h">
+      <Filter>Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Pipeline\BlendMode.h">
       <Filter>Engine\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\Pipeline\PipelineManager.h">
@@ -272,6 +272,9 @@
     <ClInclude Include="Engine\Graphics\Object\Object3d.h">
       <Filter>Engine\Graphics\Object</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Graphics\Particle\Particle.h">
+      <Filter>Engine\Graphics\Object</Filter>
+    </ClInclude>
     <ClInclude Include="Engine\Graphics\Object\ObjectManager.h">
       <Filter>Engine\Graphics\Object</Filter>
     </ClInclude>
@@ -293,19 +296,10 @@
     <ClInclude Include="Engine\Transform\Transform.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Debug\DebugDraw.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Graphics\Renderer\RenderItem.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\Input\InputAction.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Core\GameObject\Component.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Core\GameObject\GameObject.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\Renderer\Renderer.h">
@@ -317,6 +311,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Object3d.hlsli" />
+    <None Include="Particle.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\externals\imgui\LICENSE.txt">

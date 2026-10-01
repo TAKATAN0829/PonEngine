@@ -95,11 +95,81 @@ PipelineManager::CreateInputLayout () {
 // BlendState設定
 
 D3D12_BLEND_DESC
-PipelineManager::CreateBlendState () {
+PipelineManager::CreateBlendState (BlendMode blendMode) {
 
 	D3D12_BLEND_DESC blendDesc{};
 
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	//=============================================================================================//
+	// ブレンドなし
+
+	if (blendMode == kBlendModeNone) {
+
+		return blendDesc;
+	}
+
+	blendDesc.RenderTarget[0].BlendEnable = true;
+
+	//=============================================================================================//
+	// α値の合成（全モード共通）
+
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+
+	//=============================================================================================//
+	// 色の合成
+
+	switch (blendMode) {
+
+	case kBlendModeNormal:
+
+		// Src * SrcA + Dest * (1 - SrcA)
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		break;
+
+	case kBlendModeAdd:
+
+		// Src * SrcA + Dest * 1
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+
+	case kBlendModeSubtract:
+
+		// Dest * 1 - Src * SrcA
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_REV_SUBTRACT;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+
+	case kBlendModeMultiply:
+
+		// Src * 0 + Dest * Src
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_SRC_COLOR;
+		break;
+
+	case kBlendModeScreen:
+
+		// Src * (1 - Dest) + Dest * 1
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+
+	default:
+
+		assert (false);
+		break;
+	}
 
 	return blendDesc;
 }
@@ -447,155 +517,4 @@ ID3D12RootSignature* PipelineManager::GetSpriteRootSignature () {
 ID3D12PipelineState* PipelineManager::GetSpritePipelineState () {
 
 	return spritePipelineState_.Get ();
-}
-
-
-//=================================================================================================//
-// DebugLinePipeline
-
-void PipelineManager::CreateDebugLinePipeline (ID3D12Device* device, ShaderCompiler* shaderCompiler) {
-
-	//=============================================================================================//
-	// RootSignature設定
-
-	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
-
-	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-	//=============================================================================================//
-	// RootParameter
-
-	D3D12_ROOT_PARAMETER rootParameters[1] = {};
-
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-
-	rootParameters[0].Descriptor.ShaderRegister = 0;
-
-	descriptionRootSignature.pParameters = rootParameters;
-
-	descriptionRootSignature.NumParameters = _countof (rootParameters);
-
-	//=============================================================================================//
-	// RootSignature生成
-
-	debugLineRootSignature_ = CreateRootSignature (device, descriptionRootSignature);
-
-	//=============================================================================================//
-	// InputLayout
-
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
-
-	// POSITION
-
-	inputElementDescs[0].SemanticName = "POSITION";
-	inputElementDescs[0].SemanticIndex = 0;
-	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-	// COLOR
-
-	inputElementDescs[1].SemanticName = "COLOR";
-	inputElementDescs[1].SemanticIndex = 0;
-	inputElementDescs[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-
-	inputLayoutDesc.pInputElementDescs = inputElementDescs;
-
-	inputLayoutDesc.NumElements = _countof (inputElementDescs);
-
-	//=============================================================================================//
-	// BlendState
-
-	D3D12_BLEND_DESC blendDesc = CreateBlendState ();
-
-	//=============================================================================================//
-	// RasterizerState
-
-	D3D12_RASTERIZER_DESC rasterizerDesc = CreateRasterizerState ();
-
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
-
-	//=============================================================================================//
-	// DepthStencilState
-
-	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = CreateDepthStencilState ();
-
-	//=============================================================================================//
-	// Shaderコンパイル
-
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = shaderCompiler->CompileShader (L"DebugLine.VS.hlsl", L"vs_6_0");
-
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = shaderCompiler->CompileShader (L"DebugLine.PS.hlsl", L"ps_6_0");
-
-	//=============================================================================================//
-	// PSO設定
-
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC	graphicsPipelineStateDesc{};
-
-	graphicsPipelineStateDesc.pRootSignature = debugLineRootSignature_.Get ();
-
-	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-
-	graphicsPipelineStateDesc.VS = {
-		vertexShaderBlob->GetBufferPointer (),
-		vertexShaderBlob->GetBufferSize ()
-	};
-
-	graphicsPipelineStateDesc.PS = {
-		pixelShaderBlob->GetBufferPointer (),
-		pixelShaderBlob->GetBufferSize ()
-	};
-
-	graphicsPipelineStateDesc.BlendState = blendDesc;
-
-	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-
-	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-
-	graphicsPipelineStateDesc.NumRenderTargets = 1;
-
-	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-
-	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-
-	graphicsPipelineStateDesc.SampleDesc.Count = 1;
-
-	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-
-	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-	//=============================================================================================//
-	// PipelineState生成
-
-	HRESULT hr =
-		device->CreateGraphicsPipelineState (
-			&graphicsPipelineStateDesc,
-			IID_PPV_ARGS (&debugLinePipelineState_)
-		);
-
-	assert (SUCCEEDED (hr));
-}
-
-
-//=================================================================================================//
-// DebugLineRootSignature取得
-
-ID3D12RootSignature*
-PipelineManager::GetDebugLineRootSignature () {
-
-	return debugLineRootSignature_.Get ();
-}
-
-
-//=================================================================================================//
-//　DebugLinePipeline取得
-
-ID3D12PipelineState*
-PipelineManager::GetDebugLinePipelineState () {
-
-	return debugLinePipelineState_.Get ();
 }

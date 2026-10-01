@@ -65,7 +65,8 @@ void Object3d::Draw() {
 	graphicsSystem->PreDraw(
 		commandList,
 		mesh_->GetVertexBufferView(),
-		mesh_->GetIndexBufferView());
+		mesh_->GetIndexBufferView(),
+		blendMode_);
 
 	//=============================================================================================//
 	// Material設定
@@ -185,4 +186,22 @@ void Object3d::SetTexture (const std::string& textureName) {
 	uint32_t textureIndex =	GraphicsSystem::GetGraphicsSystem ()->GetTextureIndex (textureName);
 
 	SetTextureIndex (textureIndex);
+}
+
+
+//=============================================================================================//
+// BlendMode設定
+
+void Object3d::SetBlendMode (BlendMode blendMode) {
+
+	blendMode_ = blendMode;
+}
+
+
+//=============================================================================================//
+// BlendMode取得
+
+BlendMode Object3d::GetBlendMode () const {
+
+	return blendMode_;
 }

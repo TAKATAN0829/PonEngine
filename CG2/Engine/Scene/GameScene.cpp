@@ -4,8 +4,6 @@
 #include "../../externals/imgui/imgui.h"
 #endif
 
-#include "../Debug/DebugDraw.h"
-
 //=================================================================================================//
 // 初期化処理
 
@@ -84,7 +82,12 @@ void GameScene::Initialize () {
 		}
 	}
 
+	//=============================================================================================//
+	// Particle初期化
 
+	particle_ = new Particle ();
+
+	particle_->Initialize ();
 }
 
 //=================================================================================================//
@@ -119,6 +122,11 @@ void GameScene::Draw () {
 		}
 	}
 
+	//=============================================================================================//
+	// Particle描画
+
+	particle_->Draw ();
+
 
 }
 
@@ -141,6 +149,13 @@ void GameScene::Finalize () {
 
 		delete invTriangle;
 	}
+
+	//=============================================================================================//
+	// Particle解放
+
+	particle_->Finalize ();
+
+	delete particle_;
 
 	//=============================================================================================//
 	// Camera解放
@@ -225,6 +240,8 @@ void GameScene::UpdateObject () {
 			invTrianglesTransformData_[index].rotate = invTriangleTransform_.rotate;
 
 			triangles_[index]->SetTransform (trianglesTransformData_[index]);
+			triangles_[index]->SetColor (triangleColor_);
+			triangles_[index]->SetBlendMode (triangleBlendMode_);
 			triangles_[index]->Update (debugCamera_->GetViewProjectionMatrix ());
 
 			invTriangles_[index]->SetTransform (invTrianglesTransformData_[index]);
@@ -232,6 +249,13 @@ void GameScene::UpdateObject () {
 
 		}
 	}
+
+	//=============================================================================================//
+	// Particle更新
+
+	particle_->SetColor (triangleColor_);
+	particle_->SetBlendMode (triangleBlendMode_);
+	particle_->Update (debugCamera_->GetViewProjectionMatrix ());
 
 #ifdef USE_IMGUI
 
@@ -244,6 +268,27 @@ void GameScene::UpdateObject () {
 
 	ImGui::DragFloat3 ("InvTriangleScale", &invTriangleTransform_.scale.x, 0.1f, 0.f, 10.f);
 	ImGui::DragFloat3 ("InvTriangleRotate", &invTriangleTransform_.rotate.x, 0.1f, 0.f, 10.f);
+	ImGui::End ();
+
+	ImGui::Begin ("Settings");
+	ImGui::ColorEdit4 ("color", &triangleColor_.x);
+
+	static const char* kBlendModeNames[kCountOfBlendMode] = {
+		"kBlendModeNone",
+		"kBlendModeNormal",
+		"kBlendModeAdd",
+		"kBlendModeSubtract",
+		"kBlendModeMultiply",
+		"kBlendModeScreen",
+	};
+
+	int blendMode = static_cast<int>(triangleBlendMode_);
+
+	if (ImGui::Combo ("Blend", &blendMode, kBlendModeNames, kCountOfBlendMode)) {
+
+		triangleBlendMode_ = static_cast<BlendMode>(blendMode);
+	}
+
 	ImGui::End ();
 
 #endif

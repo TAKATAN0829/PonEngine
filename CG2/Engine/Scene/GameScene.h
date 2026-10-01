@@ -9,6 +9,7 @@
 #include "ResourceManager.h"
 #include "Camera.h"
 #include "Object3d.h"
+#include "Particle.h"
 #include "DebugCamera.h"
 
 class GameScene : public IScene {
@@ -61,6 +62,18 @@ private:
 
 	int triangleCountsX_ = 14;
 	int triangleCountsY_ = 8;
+
+	//=============================================================================================//
+	// 三角形の色とBlendMode
+
+	Vector4 triangleColor_ = { 1.0f,1.0f,1.0f,1.0f };
+
+	BlendMode triangleBlendMode_ = kBlendModeNormal;
+
+	//=============================================================================================//
+	// Particle
+
+	Particle* particle_ = nullptr;
 
 	//=============================================================================================//
 	// DebugCamera

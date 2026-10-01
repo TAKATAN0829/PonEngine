@@ -36,7 +36,7 @@ void Mesh::Initialize (MeshType meshType) {
 //=================================================================================================//
 // 描画処理
 
-void Mesh::Draw () {
+void Mesh::Draw (uint32_t instanceCount) {
 
 	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
 
@@ -53,7 +53,7 @@ void Mesh::Draw () {
 	//=============================================================================================//
 	// 描画
 
-	commandList->DrawIndexedInstanced (indexCount_, 1, 0, 0, 0);
+	commandList->DrawIndexedInstanced (indexCount_, instanceCount, 0, 0, 0);
 }
 
 //=================================================================================================//

@@ -15,6 +15,7 @@
 #include "Material.h"
 #include "Camera.h"
 #include "Transform.h"
+#include "BlendMode.h"
 
 class Object3d {
 public:
@@ -83,6 +84,16 @@ public:
 
 	void SetTexture (const std::string& textureName);
 
+	//=============================================================================================//
+	// BlendMode設定
+
+	void SetBlendMode (BlendMode blendMode);
+
+	//=============================================================================================//
+	// BlendMode取得
+
+	BlendMode GetBlendMode () const;
+
 private:
 
 	//=============================================================================================//
@@ -109,4 +120,9 @@ private:
 	// Material
 
 	Material* material_ = nullptr;
+
+	//=============================================================================================//
+	// BlendMode
+
+	BlendMode blendMode_ = kBlendModeNormal;
 };

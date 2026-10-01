@@ -16,6 +16,7 @@
 
 // 自作
 #include "ShaderCompiler.h"
+#include "BlendMode.h"
 
 class PipelineManager {
 public:
@@ -34,7 +35,7 @@ public:
 	//=============================================================================================//
 	// BlendState設定
 
-	D3D12_BLEND_DESC CreateBlendState ();
+	D3D12_BLEND_DESC CreateBlendState (BlendMode blendMode);
 
 	//=============================================================================================//
 	// RasterizerState設定
@@ -69,15 +70,6 @@ public:
 
 	ID3D12PipelineState* GetSpritePipelineState ();
 
-	//=============================================================================================//
-	// DebugLinePipeline生成
-
-	void CreateDebugLinePipeline (ID3D12Device* device, ShaderCompiler* shaderCompiler);
-
-	ID3D12PipelineState* GetDebugLinePipelineState ();
-
-	ID3D12RootSignature* GetDebugLineRootSignature ();
-
 private:
 
 	//=============================================================================================//
@@ -94,14 +86,4 @@ private:
 	// SpritePipelineState
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> spritePipelineState_ = nullptr;
-
-	//=============================================================================================//
-	// DebugLineRootSignature
-
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> debugLineRootSignature_ = nullptr;
-
-	//=============================================================================================//
-	// DebugLinePipelineState
-
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> debugLinePipelineState_ = nullptr;
 };
