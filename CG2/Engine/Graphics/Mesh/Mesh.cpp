@@ -3,6 +3,10 @@
 // C++
 #include <numbers>
 #include <cmath>
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include <cassert>
 
 // 自作
 #include "GraphicsSystem.h"
@@ -30,6 +34,41 @@ void Mesh::Initialize (MeshType meshType) {
 	InitializeTriangle ();
 
 	break;
+	}
+}
+
+//=================================================================================================//
+// 初期化処理(OBJモデル)
+
+void Mesh::Initialize (const std::string& directoryPath, const std::string& filename) {
+
+	//=============================================================================================//
+	// OBJファイル読み込み
+
+	ModelData modelData = LoadObjFile (directoryPath, filename);
+
+	//=============================================================================================//
+	// Vertex数・Index数設定
+
+	vertexCount_ = static_cast<uint32_t>(modelData.vertices.size ());
+
+	indexCount_ = vertexCount_;
+
+	//=============================================================================================//
+	// VertexResource・IndexResource生成
+
+	CreateVertexResource ();
+
+	CreateIndexResource ();
+
+	//=============================================================================================//
+	// VertexData・IndexDataを書き込む
+
+	std::memcpy (vertexData_, modelData.vertices.data (), sizeof (VertexData) * vertexCount_);
+
+	for (uint32_t index = 0; index < indexCount_; ++index) {
+
+		indexData_[index] = index;
 	}
 }
 
@@ -391,3 +430,112 @@ void Mesh::CreateTriangle () {
 	indexData_[4] = 2;
 	indexData_[5] = 1;
  }
+
+//=================================================================================================//
+// OBJファイル読み込み
+
+ModelData Mesh::LoadObjFile (const std::string& directoryPath, const std::string& filename) {
+
+	ModelData modelData;
+
+	std::vector<Vector4> positions;
+	std::vector<Vector3> normals;
+	std::vector<Vector2> texcoords;
+
+	std::string line;
+
+	// ファイルを開く
+	std::ifstream file (directoryPath + "/" + filename);
+
+	assert (file.is_open ());
+
+	// ファイルを読む
+	while (std::getline (file, line)) {
+
+		std::string identifier;
+
+		std::istringstream s (line);
+
+		s >> identifier;
+
+		if (identifier == "v") {
+
+			Vector4 position{};
+
+			s >> position.x >> position.y >> position.z;
+
+			position.x *= -1.0f;
+			position.w = 1.0f;
+
+			positions.push_back (position);
+
+		} else if (identifier == "vt") {
+
+			Vector2 texcoord{};
+
+			s >> texcoord.x >> texcoord.y;
+
+			texcoord.y = 1.0f - texcoord.y;
+
+			texcoords.push_back (texcoord);
+
+		} else if (identifier == "vn") {
+
+			Vector3 normal{};
+
+			s >> normal.x >> normal.y >> normal.z;
+
+			normal.x *= -1.0f;
+
+			normals.push_back (normal);
+
+		} else if (identifier == "f") {
+
+			VertexData triangle[3]{};
+
+			for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
+
+				std::string vertexDefinition;
+
+				s >> vertexDefinition;
+
+				std::istringstream v (vertexDefinition);
+
+				// 位置/UV/法線のインデックス(省略されている要素は0)
+				uint32_t elementIndices[3]{};
+
+				for (int32_t element = 0; element < 3; ++element) {
+
+					std::string index;
+
+					std::getline (v, index, '/');
+
+					if (!index.empty ()) {
+
+						elementIndices[element] = std::stoi (index);
+					}
+				}
+
+				triangle[faceVertex].position = positions[elementIndices[0] - 1];
+
+				// UVが無いモデル(v//vn)は(0,0)のまま
+				if (elementIndices[1] != 0) {
+
+					triangle[faceVertex].texcoord = texcoords[elementIndices[1] - 1];
+				}
+
+				if (elementIndices[2] != 0) {
+
+					triangle[faceVertex].normal = normals[elementIndices[2] - 1];
+				}
+			}
+
+			// 頂点を逆順で登録して回り順を逆にする
+			modelData.vertices.push_back (triangle[2]);
+			modelData.vertices.push_back (triangle[1]);
+			modelData.vertices.push_back (triangle[0]);
+		}
+	}
+
+	return modelData;
+}

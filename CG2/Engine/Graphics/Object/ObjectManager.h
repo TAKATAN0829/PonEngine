@@ -32,6 +32,11 @@ public:
 	Object3d* CreateObject (MeshType meshType);
 
 	//=============================================================================================//
+	// Object追加(OBJモデル)
+
+	Object3d* CreateObject (const std::string& directoryPath, const std::string& filename);
+
+	//=============================================================================================//
 	// 更新処理
 
 	void Update (const Matrix4x4& viewProjectionMatrix);

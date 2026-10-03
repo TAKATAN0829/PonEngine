@@ -6,13 +6,35 @@
 
 void Object3d::Initialize(MeshType meshType) {
 
-	ID3D12Device* device = GraphicsSystem::GetDevice();
-
-	ResourceManager* resourceManager = ResourceManager::GetInstance();
-
 	mesh_ = new Mesh();
 
 	mesh_->Initialize(meshType);
+
+	InitializeResources();
+}
+
+
+//=================================================================================================//
+// 初期化処理(OBJモデル)
+
+void Object3d::Initialize(const std::string& directoryPath, const std::string& filename) {
+
+	mesh_ = new Mesh();
+
+	mesh_->Initialize(directoryPath, filename);
+
+	InitializeResources();
+}
+
+
+//=================================================================================================//
+// Material・WVPの初期化
+
+void Object3d::InitializeResources() {
+
+	ID3D12Device* device = GraphicsSystem::GetDevice();
+
+	ResourceManager* resourceManager = ResourceManager::GetInstance();
 
 	material_ = new Material();
 

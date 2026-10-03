@@ -26,6 +26,11 @@ public:
 	void Initialize(MeshType meshType);
 
 	//=============================================================================================//
+	// 初期化処理(OBJモデル)
+
+	void Initialize(const std::string& directoryPath, const std::string& filename);
+
+	//=============================================================================================//
 	// 更新処理
 
 	void Update(const Matrix4x4& viewProjectionMatrix);
@@ -93,6 +98,13 @@ public:
 	// BlendMode取得
 
 	BlendMode GetBlendMode () const;
+
+private:
+
+	//=============================================================================================//
+	// Material・WVPの初期化
+
+	void InitializeResources();
 
 private:
 

@@ -65,3 +65,17 @@ Object3d* ObjectManager::CreateObject (MeshType meshType) {
 
 	return object;
 }
+
+//=================================================================================================//
+// Object追加(OBJモデル)
+
+Object3d* ObjectManager::CreateObject (const std::string& directoryPath, const std::string& filename) {
+
+	Object3d* object = new Object3d ();
+
+	object->Initialize (directoryPath, filename);
+
+	objects_.push_back (object);
+
+	return object;
+}

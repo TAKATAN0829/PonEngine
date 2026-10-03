@@ -8,6 +8,7 @@
 
 // C++
 #include <cstdint>
+#include <string>
 
 // 自作
 #include "EngineStructs.h"
@@ -25,6 +26,11 @@ public:
 	// 初期化
 
 	void Initialize (MeshType meshType);
+
+	//=============================================================================================//
+	// 初期化(OBJモデル)
+
+	void Initialize (const std::string& directoryPath, const std::string& filename);
 
 	//=============================================================================================//
 	// 描画処理
@@ -87,6 +93,11 @@ private:
 	// Triangle生成
 
 	void CreateTriangle ();
+
+	//=============================================================================================//
+	// OBJファイル読み込み
+
+	static ModelData LoadObjFile (const std::string& directoryPath, const std::string& filename);
 
 private:
 
