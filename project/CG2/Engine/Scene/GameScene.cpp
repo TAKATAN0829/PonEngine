@@ -1,4 +1,5 @@
 #include "GameScene.h"
+#include "WinApp.h"
 
 #ifdef USE_IMGUI
 #include "../../externals/imgui/imgui.h"
@@ -14,7 +15,7 @@ void GameScene::Initialize () {
 
 	camera_ = new Camera ();
 
-	camera_->Initialize (clientWidth_, clientHeight_);
+	camera_->Initialize (WinApp::kClientWidth, WinApp::kClientHeight);
 
 	cameraTransform_ = camera_->GetTransform ();
 
@@ -22,7 +23,7 @@ void GameScene::Initialize () {
 
 	debugCamera_ = new DebugCamera ();
 
-	debugCamera_->Initialize (clientWidth_, clientHeight_);
+	debugCamera_->Initialize (WinApp::kClientWidth, WinApp::kClientHeight);
 	//=============================================================================================//
 	// 三角形初期化
 
@@ -163,50 +164,6 @@ void GameScene::Finalize () {
 	delete camera_;
 	delete debugCamera_;
 
-}
-
-//=================================================================================================//
-// ResourceManager設定
-
-void GameScene::SetResourceManager (ResourceManager* resourceManager) {
-
-	resourceManager_ = resourceManager;
-}
-
-//=================================================================================================//
-// Device設定
-
-void GameScene::SetDevice (ID3D12Device* device) {
-
-	device_ = device;
-}
-
-//=================================================================================================//
-// 画面サイズ設定
-
-void GameScene::SetWindowSize (int32_t width, int32_t height) {
-
-	clientWidth_ = width;
-
-	clientHeight_ = height;
-}
-
-//=================================================================================================//
-// 終了判定
-
-bool GameScene::IsFinished () {
-
-	return isFinished_;
-}
-
-//=================================================================================================//
-// シーン共通情報
-
-void GameScene::SetContext (const SceneContext& sceneContext) {
-
-	clientWidth_ = sceneContext.clientWidth;
-
-	clientHeight_ = sceneContext.clientHeight;
 }
 
 //=================================================================================================//

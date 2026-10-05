@@ -2,43 +2,43 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="engine">
-      <UniqueIdentifier>{d47cf46f-239f-4245-8661-fd0eb9b639f9}</UniqueIdentifier>
+      <UniqueIdentifier>{8ee2d531-d88e-4b71-8ec1-a8a792a83600}</UniqueIdentifier>
     </Filter>
     <Filter Include="engine\base">
-      <UniqueIdentifier>{fa76126b-ffa7-4a1f-92cf-eb024aa5a05a}</UniqueIdentifier>
+      <UniqueIdentifier>{a025bcd8-3fab-4a03-b071-96d0b49e6787}</UniqueIdentifier>
     </Filter>
     <Filter Include="engine\dx12">
-      <UniqueIdentifier>{1402ca89-e162-4c35-846a-49cc1563f02b}</UniqueIdentifier>
+      <UniqueIdentifier>{a4dcee6b-21fb-4659-8ac4-069f14a12744}</UniqueIdentifier>
     </Filter>
     <Filter Include="engine\2d">
-      <UniqueIdentifier>{d7611e15-0dbd-44ac-be6d-06195eef31b0}</UniqueIdentifier>
+      <UniqueIdentifier>{722183b3-9c72-42e5-a64e-a1428c2f1172}</UniqueIdentifier>
     </Filter>
     <Filter Include="engine\3d">
-      <UniqueIdentifier>{34869a9d-47a3-4720-913e-040c4edba249}</UniqueIdentifier>
+      <UniqueIdentifier>{df3330d8-18da-4beb-b8ea-d04c01bb80d9}</UniqueIdentifier>
     </Filter>
     <Filter Include="engine\math">
-      <UniqueIdentifier>{41158c11-618a-46a7-a719-60ff08987a6f}</UniqueIdentifier>
+      <UniqueIdentifier>{55a5cf7e-00ae-4beb-8d5c-d3cac5c71afb}</UniqueIdentifier>
     </Filter>
     <Filter Include="engine\io">
-      <UniqueIdentifier>{9691f3ef-dfe3-48f7-8bf6-aad79c02b01b}</UniqueIdentifier>
+      <UniqueIdentifier>{50f080f9-dc4f-49f9-b25d-fbab90321133}</UniqueIdentifier>
     </Filter>
     <Filter Include="engine\audio">
-      <UniqueIdentifier>{f5f850ed-5fa3-4448-931c-f5a590f0bc16}</UniqueIdentifier>
+      <UniqueIdentifier>{d93737ac-7083-4ba3-8bda-9903315a8b84}</UniqueIdentifier>
     </Filter>
     <Filter Include="engine\scene">
-      <UniqueIdentifier>{56b5ffdf-75e9-46ff-acb8-90296b4a5e6b}</UniqueIdentifier>
+      <UniqueIdentifier>{c6e565d4-2c83-4e51-86d1-5569a3c63559}</UniqueIdentifier>
     </Filter>
     <Filter Include="application">
-      <UniqueIdentifier>{1a621fed-d6bb-4bb3-bb51-09837a775b13}</UniqueIdentifier>
+      <UniqueIdentifier>{7a7a3de1-49e3-4959-a101-b95311d796c0}</UniqueIdentifier>
     </Filter>
     <Filter Include="shaders">
-      <UniqueIdentifier>{a6d91a55-3f98-4136-a99a-71d33d6c1131}</UniqueIdentifier>
+      <UniqueIdentifier>{f735ae40-12ea-4cab-ac7c-7952fb4071dc}</UniqueIdentifier>
     </Filter>
     <Filter Include="externals">
-      <UniqueIdentifier>{65a3169e-20c2-4ba7-8b30-3e44425aea55}</UniqueIdentifier>
+      <UniqueIdentifier>{edc9ba87-77e9-4ae2-b261-ce9472b85ce8}</UniqueIdentifier>
     </Filter>
     <Filter Include="externals\imgui">
-      <UniqueIdentifier>{dae249f2-0727-48d0-9af3-f0c60f21831d}</UniqueIdentifier>
+      <UniqueIdentifier>{ffa08897-12e0-4a91-9650-c8700617dcd2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -114,9 +114,6 @@
     <ClCompile Include="Engine\Graphics\Particle\Particle.cpp">
       <Filter>engine\3d</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Graphics\Object\ObjectManager.cpp">
-      <Filter>engine\3d</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Graphics\DX12\PipelineManager.cpp">
       <Filter>engine\dx12</Filter>
     </ClCompile>
@@ -129,9 +126,6 @@
     <ClCompile Include="Engine\Graphics\Sprite\Sprite.cpp">
       <Filter>engine\2d</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Graphics\Sprite\SpriteManager.cpp">
-      <Filter>engine\2d</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Graphics\DX12\TextureManager.cpp">
       <Filter>engine\dx12</Filter>
     </ClCompile>
@@ -142,16 +136,7 @@
     <ClCompile Include="Engine\Scene\SceneManager.cpp">
       <Filter>engine\scene</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Scene\TitleScene.cpp">
-      <Filter>application</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Transform\Transform.cpp">
-      <Filter>engine\3d</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Core\Input\InputAction.cpp">
-      <Filter>engine\io</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Graphics\Renderer\Renderer.cpp">
       <Filter>engine\3d</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Graphics\Renderer\Object3dRenderer.cpp">
@@ -162,9 +147,6 @@
     </ClCompile>
     <ClCompile Include="Engine\Graphics\Renderer\ParticleRenderer.cpp">
       <Filter>engine\3d</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Scene\SceneFactory.cpp">
-      <Filter>application</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -246,17 +228,11 @@
     <ClInclude Include="Engine\Graphics\Particle\Particle.h">
       <Filter>engine\3d</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\Object\ObjectManager.h">
-      <Filter>engine\3d</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Graphics\DX12\BlendMode.h">
       <Filter>engine\dx12</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\DX12\PipelineManager.h">
       <Filter>engine\dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Graphics\Renderer\RenderItem.h">
-      <Filter>engine\3d</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\DX12\ResourceManager.h">
       <Filter>engine\dx12</Filter>
@@ -265,9 +241,6 @@
       <Filter>engine\dx12</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\Sprite\Sprite.h">
-      <Filter>engine\2d</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Graphics\Sprite\SpriteManager.h">
       <Filter>engine\2d</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\DX12\TextureManager.h">
@@ -297,16 +270,7 @@
     <ClInclude Include="Engine\Scene\SceneManager.h">
       <Filter>engine\scene</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Scene\TitleScene.h">
-      <Filter>application</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Transform\Transform.h">
-      <Filter>engine\3d</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Core\Input\InputAction.h">
-      <Filter>engine\io</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Graphics\Renderer\Renderer.h">
       <Filter>engine\3d</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\Renderer\Object3dRenderer.h">
@@ -317,9 +281,6 @@
     </ClInclude>
     <ClInclude Include="Engine\Graphics\Renderer\ParticleRenderer.h">
       <Filter>engine\3d</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Scene\SceneFactory.h">
-      <Filter>application</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

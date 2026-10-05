@@ -1,34 +1,36 @@
 #pragma once
 
-// C++
-#include <vector>
-
 // 自作
-#include "Object3d.h"
-#include "Camera.h"
+#include "IScene.h"
+#include "Input.h"
 
-class Renderer {
+class SceneManager {
 public:
 
 	//=============================================================================================//
-	// 描画登録
+	// 初期化処理
 
-	void Add (Object3d* object);
+	void Initialize();
+
+	//=============================================================================================//
+	// 更新処理
+
+	void Update(Input* input);
 
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw (Camera* camera);
+	void Draw();
 
 	//=============================================================================================//
-	// リセット
+	// 終了処理
 
-	void Reset ();
+	void Finalize();
 
 private:
 
 	//=============================================================================================//
-	// Object配列
+	// CurrentScene
 
-	std::vector<Object3d*> objects_;
+	IScene* currentScene_ = nullptr;
 };

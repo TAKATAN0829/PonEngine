@@ -70,7 +70,7 @@ void Engine::Initialize() {
 
 	sceneManager_ = new SceneManager();
 
-	sceneManager_->Initialize(WinApp::kClientWidth, WinApp::kClientHeight);
+	sceneManager_->Initialize();
 }
 
 //=================================================================================================//

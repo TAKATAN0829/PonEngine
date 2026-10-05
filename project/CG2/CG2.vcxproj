@@ -57,6 +57,10 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)..\generated\outputs\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)..\generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -207,7 +211,6 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="Engine\Graphics\Mesh\Mesh.cpp" />
     <ClCompile Include="Engine\Graphics\Object\Object3d.cpp" />
     <ClCompile Include="Engine\Graphics\Particle\Particle.cpp" />
-    <ClCompile Include="Engine\Graphics\Object\ObjectManager.cpp" />
     <ClCompile Include="Engine\Graphics\DX12\PipelineManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
@@ -218,25 +221,18 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
     <ClCompile Include="Engine\Graphics\Sprite\Sprite.cpp" />
-    <ClCompile Include="Engine\Graphics\Sprite\SpriteManager.cpp" />
     <ClCompile Include="Engine\Graphics\DX12\TextureManager.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
     <ClCompile Include="Engine\main.cpp" />
     <ClCompile Include="Engine\Scene\GameScene.cpp" />
     <ClCompile Include="Engine\Scene\SceneManager.cpp" />
-    <ClCompile Include="Engine\Scene\TitleScene.cpp" />
     <ClCompile Include="Engine\Transform\Transform.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
-    <ClCompile Include="Engine\Core\Input\InputAction.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-    </ClCompile>
-    <ClCompile Include="Engine\Graphics\Renderer\Renderer.cpp" />
     <ClCompile Include="Engine\Graphics\Renderer\Object3dRenderer.cpp" />
     <ClCompile Include="Engine\Graphics\Renderer\SpriteRenderer.cpp" />
     <ClCompile Include="Engine\Graphics\Renderer\ParticleRenderer.cpp" />
-    <ClCompile Include="Engine\Scene\SceneFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -299,14 +295,11 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="Engine\Graphics\Mesh\Mesh.h" />
     <ClInclude Include="Engine\Graphics\Object\Object3d.h" />
     <ClInclude Include="Engine\Graphics\Particle\Particle.h" />
-    <ClInclude Include="Engine\Graphics\Object\ObjectManager.h" />
     <ClInclude Include="Engine\Graphics\DX12\BlendMode.h" />
     <ClInclude Include="Engine\Graphics\DX12\PipelineManager.h" />
-    <ClInclude Include="Engine\Graphics\Renderer\RenderItem.h" />
     <ClInclude Include="Engine\Graphics\DX12\ResourceManager.h" />
     <ClInclude Include="Engine\Graphics\DX12\ShaderCompiler.h" />
     <ClInclude Include="Engine\Graphics\Sprite\Sprite.h" />
-    <ClInclude Include="Engine\Graphics\Sprite\SpriteManager.h" />
     <ClInclude Include="Engine\Graphics\DX12\TextureManager.h" />
     <ClInclude Include="Engine\Utilities\Math\MathUtility.h" />
     <ClInclude Include="Engine\Utilities\Math\Matrix4x4.h" />
@@ -316,14 +309,10 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="Engine\Scene\GameScene.h" />
     <ClInclude Include="Engine\Scene\IScene.h" />
     <ClInclude Include="Engine\Scene\SceneManager.h" />
-    <ClInclude Include="Engine\Scene\TitleScene.h" />
     <ClInclude Include="Engine\Transform\Transform.h" />
-    <ClInclude Include="Engine\Core\Input\InputAction.h" />
-    <ClInclude Include="Engine\Graphics\Renderer\Renderer.h" />
     <ClInclude Include="Engine\Graphics\Renderer\Object3dRenderer.h" />
     <ClInclude Include="Engine\Graphics\Renderer\SpriteRenderer.h" />
     <ClInclude Include="Engine\Graphics\Renderer\ParticleRenderer.h" />
-    <ClInclude Include="Engine\Scene\SceneFactory.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\externals\imgui\LICENSE.txt" />
