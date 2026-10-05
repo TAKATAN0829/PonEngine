@@ -50,20 +50,33 @@ void WinApp::Initialize() {
 }
 
 //=============================================================================================//
-// 更新(メッセージ処理)
+// 更新
 
 void WinApp::Update() {
 
-	if (PeekMessage(&msg_, NULL, 0, 0, PM_REMOVE)) {
+	// ウィンドウ関連の毎フレーム処理を書く場所(今は無し)
+}
 
-		TranslateMessage(&msg_);
-		DispatchMessage(&msg_);
+//=============================================================================================//
+// メッセージの処理
+
+bool WinApp::ProcessMessage() {
+
+	MSG msg{};
+
+	// メッセージがあれば受け取って処理する
+	if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 
-	// ウィンドウが閉じられたら終了リクエストを立てる
-	if (msg_.message == WM_QUIT) {
-		isEndRequest_ = true;
+	// アプリ終了メッセージが来たらtrue
+	if (msg.message == WM_QUIT) {
+		return true;
 	}
+
+	return false;
 }
 
 //=============================================================================================//
