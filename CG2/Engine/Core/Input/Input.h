@@ -1,10 +1,10 @@
 ﻿#pragma once
 #include <wrl.h>
-#include <Windows.h>
-#include "WinApp.h"
 
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
+
+class WinApp;
 
 class Input {
 public:

@@ -1,4 +1,5 @@
 ﻿#include "Input.h"
+#include "WinApp.h"
 
 #include <cassert>
 #include <cstring>
@@ -70,13 +71,12 @@ void Input::Update() {
 
 void Input::Finalize() {
 
-	// 解放はComPtrが行うので、入力の取得だけ止める
 	if (keyboard_ != nullptr) {
 
 		keyboard_->Unacquire();
 	}
 
-	// 解放順を明示(Keyboard → DirectInput)
+
 	keyboard_.Reset();
 
 	directInput_.Reset();
