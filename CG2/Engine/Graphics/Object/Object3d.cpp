@@ -83,7 +83,7 @@ void Object3d::Draw() {
 	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
 	GraphicsSystem* graphicsSystem = GraphicsSystem::GetGraphicsSystem();
 
-	graphicsSystem->PreDraw(
+	graphicsSystem->GetObject3dRenderer()->PreDraw(
 		commandList,
 		mesh_->GetVertexBufferView(),
 		mesh_->GetIndexBufferView(),

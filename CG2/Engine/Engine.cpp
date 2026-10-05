@@ -48,10 +48,6 @@ void Engine::Initialize() {
 	
 	ResourceManager::SetInstance(graphicsSystem_->GetResourceManager());
 
-	graphicsSystem_->CreateGraphicsPipeline(dxCommon_->GetDevice());
-
-	graphicsSystem_->CreateSpritePipeline(dxCommon_->GetDevice());
-
 	graphicsSystem_->CreateTexture(
 		dxCommon_->GetDevice(),
 		dxCommon_->GetCommandList(),
@@ -102,9 +98,9 @@ void Engine::Run() {
 		input_->Update();
 
 		//=========================================================================================//
-		// Frame開始
+		// 描画前処理
 
-		dxCommon_->BeginFrame();
+		dxCommon_->PreDraw();
 
 		//=========================================================================================//
 		// コマンドリスト取得
@@ -132,9 +128,9 @@ void Engine::Run() {
 		imGuiSystem_->Draw(dxCommon_->GetCommandList());
 
 		//=========================================================================================//
-		// Frame終了
+		// 描画後処理
 
-		dxCommon_->EndFrame();
+		dxCommon_->PostDraw();
 	}
 }
 

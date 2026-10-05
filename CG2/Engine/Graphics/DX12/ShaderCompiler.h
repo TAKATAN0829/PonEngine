@@ -6,6 +6,9 @@
 // DXC
 #include <dxcapi.h>
 
+// WRL
+#include <wrl.h>
+
 // C++
 #include <string>
 
@@ -20,7 +23,7 @@ public:
 	//=============================================================================================//
 	// ShaderCompile
 
-	IDxcBlob* CompileShader (const std::wstring& filePath, const wchar_t* profile);
+	Microsoft::WRL::ComPtr<IDxcBlob> CompileShader (const std::wstring& filePath, const wchar_t* profile);
 
 	//=============================================================================================//
 	// 終了処理
@@ -32,15 +35,15 @@ private:
 	//=============================================================================================//
 	// DxcUtils
 
-	IDxcUtils* dxcUtils_ = nullptr;
+	Microsoft::WRL::ComPtr<IDxcUtils> dxcUtils_ = nullptr;
 
 	//=============================================================================================//
 	// DxcCompiler
 
-	IDxcCompiler3* dxcCompiler_ = nullptr;
+	Microsoft::WRL::ComPtr<IDxcCompiler3> dxcCompiler_ = nullptr;
 
 	//=============================================================================================//
 	// IncludeHandler
 
-	IDxcIncludeHandler* includeHandler_ = nullptr;
+	Microsoft::WRL::ComPtr<IDxcIncludeHandler> includeHandler_ = nullptr;
 };

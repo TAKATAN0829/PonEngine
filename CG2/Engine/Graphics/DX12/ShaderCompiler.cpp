@@ -43,7 +43,7 @@ void ShaderCompiler::Initialize () {
 //=============================================================================================//
 // ShaderCompile
 
-IDxcBlob* ShaderCompiler::CompileShader (const std::wstring& filePath, const wchar_t* profile) {
+Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstring& filePath, const wchar_t* profile) {
 
 	//=============================================================================================//
 	// Compile開始ログ
@@ -56,7 +56,7 @@ IDxcBlob* ShaderCompiler::CompileShader (const std::wstring& filePath, const wch
 	//=============================================================================================//
 	// Shaderファイル読み込み
 
-	IDxcBlobEncoding* shaderSource = nullptr;
+	Microsoft::WRL::ComPtr<IDxcBlobEncoding> shaderSource = nullptr;
 
 	HRESULT hr = dxcUtils_->LoadFile (
 		filePath.c_str (),
@@ -91,13 +91,13 @@ IDxcBlob* ShaderCompiler::CompileShader (const std::wstring& filePath, const wch
 	//=============================================================================================//
 	// ShaderCompile
 
-	IDxcResult* shaderResult = nullptr;
+	Microsoft::WRL::ComPtr<IDxcResult> shaderResult = nullptr;
 
 	hr = dxcCompiler_->Compile (
 		&shaderSourceBuffer,
 		arguments,
 		_countof (arguments),
-		includeHandler_,
+		includeHandler_.Get (),
 		IID_PPV_ARGS (&shaderResult));
 
 	assert (SUCCEEDED (hr));
@@ -105,7 +105,7 @@ IDxcBlob* ShaderCompiler::CompileShader (const std::wstring& filePath, const wch
 	//=============================================================================================//
 	// ShaderError確認
 
-	IDxcBlobUtf8* shaderError = nullptr;
+	Microsoft::WRL::ComPtr<IDxcBlobUtf8> shaderError = nullptr;
 
 	shaderResult->GetOutput (
 		DXC_OUT_ERRORS,
@@ -123,7 +123,7 @@ IDxcBlob* ShaderCompiler::CompileShader (const std::wstring& filePath, const wch
 	//=============================================================================================//
 	// ShaderBlob取得
 
-	IDxcBlob* shaderBlob = nullptr;
+	Microsoft::WRL::ComPtr<IDxcBlob> shaderBlob = nullptr;
 
 	hr = shaderResult->GetOutput (
 		DXC_OUT_OBJECT,
@@ -140,13 +140,6 @@ IDxcBlob* ShaderCompiler::CompileShader (const std::wstring& filePath, const wch
 		filePath,
 		profile)));
 
-	//=============================================================================================//
-	// 解放
-
-	shaderSource->Release ();
-
-	shaderResult->Release ();
-
 	return shaderBlob;
 }
 
@@ -155,33 +148,9 @@ IDxcBlob* ShaderCompiler::CompileShader (const std::wstring& filePath, const wch
 
 void ShaderCompiler::Finalize () {
 
-	//=============================================================================================//
-	// IncludeHandler解放
+	includeHandler_.Reset ();
 
-	if (includeHandler_ != nullptr) {
+	dxcCompiler_.Reset ();
 
-		includeHandler_->Release ();
-
-		includeHandler_ = nullptr;
-	}
-
-	//=============================================================================================//
-	// DxcCompiler解放
-
-	if (dxcCompiler_ != nullptr) {
-
-		dxcCompiler_->Release ();
-
-		dxcCompiler_ = nullptr;
-	}
-
-	//=============================================================================================//
-	// DxcUtils解放
-
-	if (dxcUtils_ != nullptr) {
-
-		dxcUtils_->Release ();
-
-		dxcUtils_ = nullptr;
-	}
+	dxcUtils_.Reset ();
 }

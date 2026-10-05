@@ -99,7 +99,7 @@ void Sprite::Draw() {
 	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
 	GraphicsSystem* graphicsSystem = GraphicsSystem::GetGraphicsSystem();
 
-	graphicsSystem->PreSpriteDraw(
+	graphicsSystem->GetSpriteRenderer()->PreDraw(
 		commandList,
 		mesh_->GetVertexBufferView(),
 		mesh_->GetIndexBufferView());

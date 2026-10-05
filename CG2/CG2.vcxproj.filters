@@ -46,11 +46,29 @@
     <Filter Include="Engine\Graphics\Object\Core">
       <UniqueIdentifier>{6b8e758b-0a7e-4784-b967-244fb5819df1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Math">
+    <Filter Include="Engine\Graphics\DX12">
+      <UniqueIdentifier>{a7a2ab09-c398-47a9-86ea-c1213954c2f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Graphics\Renderer">
+      <UniqueIdentifier>{7b86052a-fe1f-4cdc-b704-b2f171137366}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Utilities">
+      <UniqueIdentifier>{4a74e500-bdf1-4454-83c4-4170ffa8f5f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Utilities\Math">
       <UniqueIdentifier>{e47b44b5-9bb2-4301-8bce-fef77128e1d8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Engine\Graphics\Renderer\Object3dRenderer.cpp">
+      <Filter>Engine\Graphics\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\Renderer\SpriteRenderer.cpp">
+      <Filter>Engine\Graphics\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\Renderer\ParticleRenderer.cpp">
+      <Filter>Engine\Graphics\Renderer</Filter>
+    </ClCompile>
     <ClCompile Include="..\externals\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
@@ -81,11 +99,14 @@
     <ClCompile Include="Engine\Camera\DebugCamera.cpp">
       <Filter>Engine\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Graphics\DescriptorHeapManager.cpp">
-      <Filter>Engine\Graphics</Filter>
+    <ClCompile Include="Engine\Graphics\DX12\DescriptorHeapManager.cpp">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\DirectXCommon.cpp">
-      <Filter>Engine\Graphics\Object\Core</Filter>
+    <ClCompile Include="Engine\Graphics\DX12\D3DResourceLeakChecker.cpp">
+      <Filter>Engine\Graphics\DX12</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\DX12\DirectXCommon.cpp">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Engine.cpp">
       <Filter>Engine</Filter>
@@ -105,8 +126,8 @@
     <ClCompile Include="Engine\Core\LogSystem.cpp">
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\StringUtility.cpp">
-      <Filter>Engine\Graphics\Object\Core</Filter>
+    <ClCompile Include="Engine\Utilities\StringUtility.cpp">
+      <Filter>Engine\Utilities</Filter>
     </ClCompile>
     <ClCompile Include="Engine\main.cpp">
       <Filter>Engine\Graphics\Object\Core</Filter>
@@ -132,17 +153,17 @@
     <ClCompile Include="Engine\Graphics\Object\ObjectManager.cpp">
       <Filter>Engine\Graphics\Object</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Graphics\Pipeline\PipelineManager.cpp">
-      <Filter>Engine\Graphics</Filter>
+    <ClCompile Include="Engine\Graphics\DX12\PipelineManager.cpp">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Graphics\ResourceManager.cpp">
-      <Filter>Engine\Graphics</Filter>
+    <ClCompile Include="Engine\Graphics\DX12\ResourceManager.cpp">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Graphics\ShaderCompiler.cpp">
-      <Filter>Engine\Graphics</Filter>
+    <ClCompile Include="Engine\Graphics\DX12\ShaderCompiler.cpp">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Graphics\TextureManager.cpp">
-      <Filter>Engine\Graphics</Filter>
+    <ClCompile Include="Engine\Graphics\DX12\TextureManager.cpp">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Scene\TitleScene.cpp">
       <Filter>Engine\Scene</Filter>
@@ -160,19 +181,28 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Graphics\Renderer\Renderer.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>Engine\Graphics\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Scene\SceneFactory.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Object3d.PS.hlsl" />
-    <FxCompile Include="Object3d.VS.hlsl" />
-    <FxCompile Include="Particle.PS.hlsl" />
-    <FxCompile Include="Particle.VS.hlsl" />
+    <FxCompile Include="resources\shaders\Object3d.PS.hlsl" />
+    <FxCompile Include="resources\shaders\Object3d.VS.hlsl" />
+    <FxCompile Include="resources\shaders\Particle.PS.hlsl" />
+    <FxCompile Include="resources\shaders\Particle.VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Engine\Graphics\Renderer\Object3dRenderer.h">
+      <Filter>Engine\Graphics\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Renderer\SpriteRenderer.h">
+      <Filter>Engine\Graphics\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Renderer\ParticleRenderer.h">
+      <Filter>Engine\Graphics\Renderer</Filter>
+    </ClInclude>
     <ClInclude Include="..\externals\imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
@@ -206,23 +236,23 @@
     <ClInclude Include="Engine\Camera\DebugCamera.h">
       <Filter>Engine\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\DescriptorHeapManager.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Graphics\DX12\DescriptorHeapManager.h">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\ResourceManager.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Graphics\DX12\ResourceManager.h">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\Pipeline\BlendMode.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Graphics\DX12\BlendMode.h">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\Pipeline\PipelineManager.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Graphics\DX12\PipelineManager.h">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\ShaderCompiler.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Graphics\DX12\ShaderCompiler.h">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\TextureManager.h">
-      <Filter>Engine\Graphics</Filter>
+    <ClInclude Include="Engine\Graphics\DX12\TextureManager.h">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\GraphicsSystem.h">
       <Filter>Engine\Graphics</Filter>
@@ -263,11 +293,14 @@
     <ClInclude Include="Engine\Core\LogSystem.h">
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\StringUtility.h">
-      <Filter>Engine\Graphics\Object\Core</Filter>
+    <ClInclude Include="Engine\Utilities\StringUtility.h">
+      <Filter>Engine\Utilities</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\DirectXCommon.h">
-      <Filter>Engine\Graphics\Object\Core</Filter>
+    <ClInclude Include="Engine\Graphics\DX12\D3DResourceLeakChecker.h">
+      <Filter>Engine\Graphics\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\DX12\DirectXCommon.h">
+      <Filter>Engine\Graphics\DX12</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\ImGuiSystem.h">
       <Filter>Engine\Graphics\Object\Core</Filter>
@@ -284,40 +317,40 @@
     <ClInclude Include="Engine\Graphics\Object\ObjectManager.h">
       <Filter>Engine\Graphics\Object</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\MathUtility.h">
-      <Filter>Engine\Math</Filter>
+    <ClInclude Include="Engine\Utilities\Math\MathUtility.h">
+      <Filter>Engine\Utilities\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Matrix4x4.h">
-      <Filter>Engine\Math</Filter>
+    <ClInclude Include="Engine\Utilities\Math\Matrix4x4.h">
+      <Filter>Engine\Utilities\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Vector2.h">
-      <Filter>Engine\Math</Filter>
+    <ClInclude Include="Engine\Utilities\Math\Vector2.h">
+      <Filter>Engine\Utilities\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Vector3.h">
-      <Filter>Engine\Math</Filter>
+    <ClInclude Include="Engine\Utilities\Math\Vector3.h">
+      <Filter>Engine\Utilities\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Vector4.h">
-      <Filter>Engine\Math</Filter>
+    <ClInclude Include="Engine\Utilities\Math\Vector4.h">
+      <Filter>Engine\Utilities\Math</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Transform\Transform.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\Renderer\RenderItem.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Engine\Graphics\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\Input\InputAction.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\Renderer\Renderer.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>Engine\Graphics\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Scene\SceneFactory.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Object3d.hlsli" />
-    <None Include="Particle.hlsli" />
+    <None Include="resources\shaders\Object3d.hlsli" />
+    <None Include="resources\shaders\Particle.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\externals\imgui\LICENSE.txt">

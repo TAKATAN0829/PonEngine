@@ -7,7 +7,7 @@
 #include <cassert>
 #include <string>
 #include <vector>
-#include "../../../externals/DirectXTex/d3dx12.h"
+#include "../../../../externals/DirectXTex/d3dx12.h"
 
 //=================================================================================================//
 // BufferResourceを作る

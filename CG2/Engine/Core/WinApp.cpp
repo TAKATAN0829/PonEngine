@@ -1,5 +1,7 @@
 ﻿#include "WinApp.h"
 
+#pragma comment(lib, "winmm.lib")
+
 #ifdef USE_IMGUI
 #include "../../../externals/imgui/imgui.h"
 #include "../../../externals/imgui/imgui_impl_win32.h"
@@ -15,6 +17,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
 // 初期化
 
 void WinApp::Initialize() {
+
+	// システムタイマーの分解能を上げる
+	timeBeginPeriod(1);
 
 	// WindowClass設定
 	wc_.lpfnWndProc = WindowProc;

@@ -1,7 +1,9 @@
 #include <Windows.h>
+#include <cassert>
 
 #include "Engine.h"
 #include "LogSystem.h"
+#include "D3DResourceLeakChecker.h"
 
 //=================================================================================================//
 // エントリーポイント
@@ -13,9 +15,16 @@ int WINAPI WinMain (
 	_In_ int) {
 
 	//=============================================================================================//
+	// リークチェッカー
+
+	D3DResourceLeakChecker leakCheck;
+
+	//=============================================================================================//
 	// COM初期化
 
-	CoInitializeEx (0, COINIT_MULTITHREADED);
+	HRESULT hr = CoInitializeEx (0, COINIT_MULTITHREADED);
+
+	assert (SUCCEEDED (hr));
 
 	//=============================================================================================//
 	// LogSystem初期化

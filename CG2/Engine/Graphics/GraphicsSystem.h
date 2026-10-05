@@ -19,6 +19,9 @@
 #include "TextureManager.h"
 #include "ResourceManager.h"
 #include "PipelineManager.h"
+#include "Object3dRenderer.h"
+#include "SpriteRenderer.h"
+#include "ParticleRenderer.h"
 
 class GraphicsSystem {
 public:
@@ -59,29 +62,13 @@ public:
 	PipelineManager* GetPipelineManager ();
 
 	//=============================================================================================//
-	// RootSignature取得
+	// Renderer取得
 
-	ID3D12RootSignature* GetRootSignature ();
+	Object3dRenderer* GetObject3dRenderer () { return object3dRenderer_; }
 
-	//=============================================================================================//
-	// GraphicsPipelineState取得
+	SpriteRenderer* GetSpriteRenderer () { return spriteRenderer_; }
 
-	ID3D12PipelineState* GetGraphicsPipelineState (BlendMode blendMode);
-
-	//=============================================================================================//
-	// GraphicsPipeline生成
-
-	void CreateGraphicsPipeline (ID3D12Device* device);
-
-	//=============================================================================================//
-	// SpritePipeline生成
-
-	void CreateSpritePipeline (ID3D12Device* device);
-
-	//=============================================================================================//
-	// ParticlePipeline生成
-
-	void CreateParticlePipeline (ID3D12Device* device);
+	ParticleRenderer* GetParticleRenderer () { return particleRenderer_; }
 
 	//=============================================================================================//
 	// Texture生成
@@ -90,32 +77,6 @@ public:
 		ID3D12Device* device,
 		ID3D12GraphicsCommandList* commandList,
 		const std::string& filePath);
-
-	//=============================================================================================//
-	// 描画前設定
-
-	void PreDraw (
-		ID3D12GraphicsCommandList* commandList,
-		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
-		D3D12_INDEX_BUFFER_VIEW* indexBufferView,
-		BlendMode blendMode);
-
-	//=============================================================================================//
-	// Sprite描画前設定
-
-	void PreSpriteDraw (
-		ID3D12GraphicsCommandList* commandList,
-		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
-		D3D12_INDEX_BUFFER_VIEW* indexBufferView);
-
-	//=============================================================================================//
-	// Particle描画前設定
-
-	void PreParticleDraw (
-		ID3D12GraphicsCommandList* commandList,
-		D3D12_VERTEX_BUFFER_VIEW* vertexBufferView,
-		D3D12_INDEX_BUFFER_VIEW* indexBufferView,
-		BlendMode blendMode);
 
 	//=============================================================================================//
 	// device
@@ -166,13 +127,11 @@ private:
 
 	PipelineManager* pipelineManager_ = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
+	Object3dRenderer* object3dRenderer_ = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineStates_[kCountOfBlendMode];
+	SpriteRenderer* spriteRenderer_ = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> particleRootSignature_ = nullptr;
-
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> particlePipelineStates_[kCountOfBlendMode];
+	ParticleRenderer* particleRenderer_ = nullptr;
 
 	inline static ID3D12Device* device_ = nullptr;
 

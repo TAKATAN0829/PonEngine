@@ -128,7 +128,7 @@ void Particle::Draw () {
 	//=============================================================================================//
 	// 描画前設定
 
-	graphicsSystem->PreParticleDraw (
+	graphicsSystem->GetParticleRenderer()->PreDraw(
 		commandList,
 		mesh_->GetVertexBufferView (),
 		mesh_->GetIndexBufferView (),
