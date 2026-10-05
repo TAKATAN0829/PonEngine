@@ -27,13 +27,13 @@ public:
 	//=============================================================================================//
 	// キー入力
 
-	bool IsPressKey(uint8_t keyNumber) const;
+	bool IsPressKey(BYTE keyNumber) const;
 
-	bool IsReleaseKey(uint8_t keyNumber) const;
+	bool IsReleaseKey(BYTE keyNumber) const;
 
-	bool IsTriggerKey(uint8_t keyNumber) const;
+	bool IsTriggerKey(BYTE keyNumber) const;
 
-	bool IsReleaseTriggerKey(uint8_t keyNumber) const;
+	bool IsReleaseTriggerKey(BYTE keyNumber) const;
 
 	// namespace省略
 	template <class Type> using Comptr = Microsoft::WRL::ComPtr<Type>;

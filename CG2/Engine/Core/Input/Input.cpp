@@ -82,7 +82,7 @@ void Input::Finalize() {
 //=============================================================================================//
 // 押している
 
-bool Input::IsPressKey(uint8_t keyNumber) const {
+bool Input::IsPressKey(BYTE keyNumber) const {
 
 	return key_[keyNumber] != 0;
 }
@@ -90,7 +90,7 @@ bool Input::IsPressKey(uint8_t keyNumber) const {
 //=============================================================================================//
 // 離している
 
-bool Input::IsReleaseKey(uint8_t keyNumber) const {
+bool Input::IsReleaseKey(BYTE keyNumber) const {
 
 	return key_[keyNumber] == 0;
 }
@@ -98,7 +98,7 @@ bool Input::IsReleaseKey(uint8_t keyNumber) const {
 //=============================================================================================//
 // 押した瞬間
 
-bool Input::IsTriggerKey(uint8_t keyNumber) const {
+bool Input::IsTriggerKey(BYTE keyNumber) const {
 
 	return preKey_[keyNumber] == 0 &&
 		key_[keyNumber] != 0;
@@ -107,7 +107,7 @@ bool Input::IsTriggerKey(uint8_t keyNumber) const {
 //=============================================================================================//
 // 離した瞬間
 
-bool Input::IsReleaseTriggerKey(uint8_t keyNumber) const {
+bool Input::IsReleaseTriggerKey(BYTE keyNumber) const {
 
 	return preKey_[keyNumber] != 0 &&
 		key_[keyNumber] == 0;
