@@ -65,7 +65,7 @@ void DebugCamera::Update(Input* input) {
 		transform_.translate = MathUtility::Add(transform_.translate,velocity);
 	}
 
-#ifdef _DEBUG
+#ifdef USE_IMGUI
 	ImGui::Begin("DebugCamera");
 	ImGui::DragFloat3("Translate", &transform_.translate.x, 0.1f);
 	ImGui::DragFloat3("Rotate", &transform_.rotate.x, 0.01f);

@@ -63,7 +63,7 @@ void DirectXCommon::Initialize (
 
 void DirectXCommon::InitializeDebugLayer () {
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(_DEVELOPMENT)
 
 	Microsoft::WRL::ComPtr<ID3D12Debug1> debugController = nullptr;
 
@@ -72,8 +72,10 @@ void DirectXCommon::InitializeDebugLayer () {
 		// DebugLayerを有効化
 		debugController->EnableDebugLayer ();
 
-		// GPUValidation有効化
+#ifdef _DEBUG
+		// GPUValidation有効化(重いのでDebugのみ)
 		debugController->SetEnableGPUBasedValidation (TRUE);
+#endif
 	}
 
 #endif
