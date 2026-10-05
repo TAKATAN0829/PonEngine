@@ -5,7 +5,7 @@ on:
       -  master
 env:
   # リポジトリのルートディレクトリを基点としたソリューションファイルのパス
-  SOLUTION_FILE_PATH: project/PonEngine.sln
+  SOLUTION_FILE_PATH: project/PonEngine.slnx
   # Visual Studioの構成（Debug/Release）
   CONFIGURATION: Debug
 
