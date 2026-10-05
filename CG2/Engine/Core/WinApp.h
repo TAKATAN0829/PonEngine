@@ -1,7 +1,6 @@
-#pragma once
+﻿#pragma once
 
 #include <Windows.h>
-#include <fstream>
 #include <cstdint>
 
 class WinApp {
@@ -13,9 +12,14 @@ public:
 	void Initialize();
 
 	//=============================================================================================//
-	// メッセージ処理
+	// 更新
 
-	bool ProcessMessage();
+	void Update();
+
+	//=============================================================================================//
+	// 終了リクエストがあるか
+
+	bool IsEndRequest() const { return isEndRequest_; }
 
 	//=============================================================================================//
 	// 終了処理
@@ -25,28 +29,19 @@ public:
 	//=============================================================================================//
 	// Getter
 
-	HWND GetHwnd() const {
-		return hwnd_;
-	}
+	HWND GetHwnd() const { return hwnd_; }
 
-	int32_t GetClientWidth() const {
-		return kClientWidth_;
-	}
+	HINSTANCE GetHInstance() const { return wc_.hInstance; }
 
-	int32_t GetClientHeight() const {
-		return kClientHeight_;
-	}
+	int32_t GetClientWidth() const { return kClientWidth_; }
 
+	int32_t GetClientHeight() const { return kClientHeight_; }
 private:
 
 	//=============================================================================================//
 	// ウィンドウプロシージャ
 
-	static LRESULT CALLBACK WindowProc(
-		HWND hwnd,
-		UINT msg,
-		WPARAM wParam,
-		LPARAM lParam);
+	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 private:
 
@@ -70,4 +65,9 @@ private:
 	// Message
 
 	MSG msg_{};
+
+	//=============================================================================================//
+	// 終了リクエスト
+
+	bool isEndRequest_ = false;
 };

@@ -27,7 +27,7 @@ void Engine::Initialize() {
 
 	input_ = new Input();
 
-	input_->Initialize(GetModuleHandle(nullptr), winApp_->GetHwnd());
+	input_->Initialize(winApp_->GetHInstance(), winApp_->GetHwnd());
 
 	//=============================================================================================//
 	// AudioSystem初期化
@@ -85,7 +85,17 @@ void Engine::Initialize() {
 
 void Engine::Run() {
 
-	while (winApp_->ProcessMessage()) {
+	while (true) {
+
+		//=========================================================================================//
+		// Window更新
+
+		winApp_->Update();
+
+		// 終了リクエストが来たらループを抜ける
+		if (winApp_->IsEndRequest()) {
+			break;
+		}
 
 		//=========================================================================================//
 		// Input更新

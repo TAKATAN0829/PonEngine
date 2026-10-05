@@ -53,9 +53,9 @@ void WinApp::Initialize () {
 }
 
 //=============================================================================================//
-// メッセージ処理
+// 更新(メッセージ処理)
 
-bool WinApp::ProcessMessage () {
+void WinApp::Update () {
 
 	if (PeekMessage (&msg_, NULL, 0, 0, PM_REMOVE)) {
 
@@ -63,11 +63,10 @@ bool WinApp::ProcessMessage () {
 		DispatchMessage (&msg_);
 	}
 
+	// ウィンドウが閉じられたら終了リクエストを立てる
 	if (msg_.message == WM_QUIT) {
-		return false;
+		isEndRequest_ = true;
 	}
-
-	return true;
 }
 
 //=============================================================================================//
