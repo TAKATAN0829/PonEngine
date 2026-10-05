@@ -263,12 +263,4 @@
       <_ATGFXCPath />
     </PropertyGroup>
   </Target>
-  <Target Name="ATGDeleteShaders" AfterTargets="Clean">
-    <ItemGroup>
-      <_ATGShaderHeaders Include="$(ProjectDir)Shaders/Compiled/*.inc" />
-      <_ATGShaderSymbols Include="$(ProjectDir)Shaders/Compiled/*.pdb" />
-    </ItemGroup>
-    <Delete Files="@(_ATGShaderHeaders)" />
-    <Delete Files="@(_ATGShaderSymbols)" />
-  </Target>
 </Project>
