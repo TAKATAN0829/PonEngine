@@ -1,5 +1,5 @@
 ﻿#pragma once
-
+#include <wrl.h>
 #include <Windows.h>
 #include <cstdint>
 
@@ -35,17 +35,20 @@ public:
 
 	bool IsReleaseTriggerKey(uint8_t keyNumber) const;
 
+	// namespace省略
+	template <class Type> using Comptr = Microsoft::WRL::ComPtr<Type>;
+
 private:
 
 	//=============================================================================================//
 	// DirectInput
 
-	IDirectInput8* directInput_ = nullptr;
+	Microsoft::WRL::ComPtr<IDirectInput8> directInput_ = nullptr;
 
 	//=============================================================================================//
 	// Keyboard
 
-	IDirectInputDevice8* keyboard_ = nullptr;
+	Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard_ = nullptr;
 
 	//=============================================================================================//
 	// Key

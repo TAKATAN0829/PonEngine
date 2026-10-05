@@ -1,7 +1,4 @@
 ﻿#include "Input.h"
-#include <wrl.h>
-#define DIRECTINPUT_VERSION	0x0800;
-#include <dinput.h>
 
 #include <cassert>
 #include <cstring>
@@ -9,12 +6,11 @@
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
-using namespace Microsoft::WRL;
 
 //=============================================================================================//
 // 初期化
 
-void Input::Initialize(HINSTANCE hInstance,	HWND hwnd) {
+void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
 
 	HRESULT hr;
 
@@ -23,7 +19,7 @@ void Input::Initialize(HINSTANCE hInstance,	HWND hwnd) {
 		hInstance,
 		DIRECTINPUT_VERSION,
 		IID_IDirectInput8,
-		reinterpret_cast<void**>(&directInput_),
+		reinterpret_cast<void**>(directInput_.GetAddressOf ()),
 		nullptr);
 
 	assert(SUCCEEDED(hr));
@@ -31,7 +27,7 @@ void Input::Initialize(HINSTANCE hInstance,	HWND hwnd) {
 	// Keyboard生成
 	hr = directInput_->CreateDevice(
 		GUID_SysKeyboard,
-		&keyboard_,
+		keyboard_.GetAddressOf (),
 		NULL);
 
 	assert(SUCCEEDED(hr));
@@ -63,9 +59,7 @@ void Input::Update() {
 	keyboard_->Acquire();
 
 	// キー状態取得
-	keyboard_->GetDeviceState(
-		sizeof(key_),
-		key_);
+	keyboard_->GetDeviceState(sizeof(key_), key_);
 }
 
 //=============================================================================================//
@@ -73,21 +67,16 @@ void Input::Update() {
 
 void Input::Finalize() {
 
+	// 解放はComPtrが行うので、入力の取得だけ止める
 	if (keyboard_ != nullptr) {
 
 		keyboard_->Unacquire();
-
-		keyboard_->Release();
-
-		keyboard_ = nullptr;
 	}
 
-	if (directInput_ != nullptr) {
+	// 解放順を明示(Keyboard → DirectInput)
+	keyboard_.Reset();
 
-		directInput_->Release();
-
-		directInput_ = nullptr;
-	}
+	directInput_.Reset();
 }
 
 //=============================================================================================//
