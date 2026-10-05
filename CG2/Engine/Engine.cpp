@@ -27,7 +27,7 @@ void Engine::Initialize() {
 
 	input_ = new Input();
 
-	input_->Initialize(winApp_->GetHInstance(), winApp_->GetHwnd());
+	input_->Initialize(winApp_);
 
 	//=============================================================================================//
 	// AudioSystem初期化

@@ -70,11 +70,9 @@ void WinApp::Update() {
 // 終了処理
 
 void WinApp::Finalize() {
-
 	// Windowを閉じる
 	CloseWindow(hwnd_);
-
-	hwnd_ = nullptr;
+	CoUninitialize();
 }
 
 //=============================================================================================//

@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <wrl.h>
 #include <Windows.h>
-#include <cstdint>
+#include "WinApp.h"
 
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
@@ -12,7 +12,7 @@ public:
 	//=============================================================================================//
 	// 初期化
 
-	void Initialize(HINSTANCE hInstance, HWND hwnd);
+	void Initialize(WinApp* winApp);
 
 	//=============================================================================================//
 	// 更新
@@ -39,6 +39,11 @@ private:
 
 	// namespace省略
 	template <class Type> using ComPtr = Microsoft::WRL::ComPtr<Type>;
+
+	//=============================================================================================//
+	// WinApp(借りているだけなので解放しない)
+
+	WinApp* winApp_ = nullptr;
 
 	//=============================================================================================//
 	// DirectInput

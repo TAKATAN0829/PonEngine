@@ -10,13 +10,16 @@
 //=============================================================================================//
 // 初期化
 
-void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
+void Input::Initialize(WinApp* winApp) {
+
+	// WinAppを記録
+	winApp_ = winApp;
 
 	HRESULT hr;
 
 	// DirectInput初期化
 	hr = DirectInput8Create(
-		hInstance,
+		winApp_->GetHInstance(),
 		DIRECTINPUT_VERSION,
 		IID_IDirectInput8,
 		reinterpret_cast<void**>(directInput_.GetAddressOf ()),
@@ -39,7 +42,7 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
 
 	// 排他制御レベルセット
 	hr = keyboard_->SetCooperativeLevel(
-		hwnd,
+		winApp_->GetHwnd(),
 		DISCL_FOREGROUND |
 		DISCL_NONEXCLUSIVE |
 		DISCL_NOWINKEY);
