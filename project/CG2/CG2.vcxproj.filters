@@ -19,9 +19,6 @@
     <Filter Include="engine\math">
       <UniqueIdentifier>{55a5cf7e-00ae-4beb-8d5c-d3cac5c71afb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="engine\io">
-      <UniqueIdentifier>{50f080f9-dc4f-49f9-b25d-fbab90321133}</UniqueIdentifier>
-    </Filter>
     <Filter Include="engine\audio">
       <UniqueIdentifier>{d93737ac-7083-4ba3-8bda-9903315a8b84}</UniqueIdentifier>
     </Filter>
@@ -39,6 +36,9 @@
     </Filter>
     <Filter Include="externals\imgui">
       <UniqueIdentifier>{ffa08897-12e0-4a91-9650-c8700617dcd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine\input">
+      <UniqueIdentifier>{50f080f9-dc4f-49f9-b25d-fbab90321133}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -82,7 +82,7 @@
       <Filter>engine\base</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Core\Input\Input.cpp">
-      <Filter>engine\io</Filter>
+      <Filter>engine\input</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Core\LogSystem.cpp">
       <Filter>engine\base</Filter>
@@ -193,7 +193,7 @@
       <Filter>engine\base</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\Input\Input.h">
-      <Filter>engine\io</Filter>
+      <Filter>engine\input</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\LogSystem.h">
       <Filter>engine\base</Filter>
