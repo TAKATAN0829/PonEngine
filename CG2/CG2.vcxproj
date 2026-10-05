@@ -81,6 +81,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalIncludeDirectories>$(ProjectDir)Engine\Core\Input;$(ProjectDir)Engine\Graphics\Renderer;$(ProjectDir)Engine\Graphics\Pipeline;$(ProjectDir)Engine\Transform;$(ProjectDir)Engine\AudioSystem;$(ProjectDir)Engine\Camera;$(ProjectDir)Engine;$(ProjectDir)Engine\Core;$(ProjectDir)Engine\Graphics;$(ProjectDir)Engine\Graphics\Material;$(ProjectDir)Engine\Graphics\Mesh;$(ProjectDir)Engine\Graphics\Object;$(ProjectDir)Engine\Graphics\Particle;$(ProjectDir)Engine\Graphics\Sprite;$(ProjectDir)Engine\Math;$(ProjectDir)Engine\Scene;$(ProjectDir)externals\imgui;$(ProjectDir)externals\DirectXTex</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
