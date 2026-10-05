@@ -33,9 +33,12 @@ public:
 
 	HINSTANCE GetHInstance() const { return wc_.hInstance; }
 
-	int32_t GetClientWidth() const { return kClientWidth_; }
+	//=============================================================================================//
+	// WindowSize
 
-	int32_t GetClientHeight() const { return kClientHeight_; }
+	static const int32_t kClientWidth = 1280;
+	static const int32_t kClientHeight = 720;
+
 private:
 
 	//=============================================================================================//
@@ -44,13 +47,6 @@ private:
 	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 private:
-
-	//=============================================================================================//
-	// WindowSize
-
-	static const int32_t kClientWidth_ = 1280;
-	static const int32_t kClientHeight_ = 720;
-
 	//=============================================================================================//
 	// Window
 

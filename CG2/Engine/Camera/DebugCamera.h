@@ -23,8 +23,8 @@ private:
 	Matrix4x4 projectionMatrix_{};
 	Matrix4x4 viewProjectionMatrix_{};
 
-	int32_t clientWidth_ = 1280;
-	int32_t clientHeight_ = 720;
+	int32_t clientWidth_ = 0;
+	int32_t clientHeight_ = 0;
 
 	float moveSpeed_ = 0.2f;
 	float rotateSpeed_ = 0.01f;

@@ -26,10 +26,10 @@ void WinApp::Initialize() {
 	RegisterClass(&wc_);
 
 	// WindowSize設定
-	RECT wrc = { 0,	0,	kClientWidth_,	kClientHeight_ };
+	RECT wrc = { 0,	0,	kClientWidth,	kClientHeight };
 
 	// ClientSizeからWindowSizeへ変換
-	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
+	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW,false);
 
 	// Window生成
 	hwnd_ = CreateWindow(

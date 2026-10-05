@@ -19,8 +19,8 @@ void Engine::Initialize() {
 
 	dxCommon_->Initialize(
 		winApp_->GetHwnd(),
-		winApp_->GetClientWidth(),
-		winApp_->GetClientHeight());
+		WinApp::kClientWidth,
+		WinApp::kClientHeight);
 
 	//=============================================================================================//
 	// Input初期化
@@ -77,7 +77,7 @@ void Engine::Initialize() {
 
 	sceneManager_ = new SceneManager();
 
-	sceneManager_->Initialize(winApp_->GetClientWidth(), winApp_->GetClientHeight());
+	sceneManager_->Initialize(WinApp::kClientWidth, WinApp::kClientHeight);
 }
 
 //=================================================================================================//
