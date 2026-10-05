@@ -1,10 +1,15 @@
-#include "Input.h"
+﻿#include "Input.h"
+#include <wrl.h>
+#define DIRECTINPUT_VERSION	0x0800;
+#include <dinput.h>
 
 #include <cassert>
 #include <cstring>
 
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
+
+using namespace Microsoft::WRL;
 
 //=============================================================================================//
 // 初期化
