@@ -35,20 +35,20 @@ public:
 
 	bool IsReleaseTriggerKey(BYTE keyNumber) const;
 
-	// namespace省略
-	template <class Type> using Comptr = Microsoft::WRL::ComPtr<Type>;
-
 private:
+
+	// namespace省略
+	template <class Type> using ComPtr = Microsoft::WRL::ComPtr<Type>;
 
 	//=============================================================================================//
 	// DirectInput
 
-	Microsoft::WRL::ComPtr<IDirectInput8> directInput_ = nullptr;
+	ComPtr<IDirectInput8> directInput_ = nullptr;
 
 	//=============================================================================================//
 	// Keyboard
 
-	Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard_ = nullptr;
+	ComPtr<IDirectInputDevice8> keyboard_ = nullptr;
 
 	//=============================================================================================//
 	// Key
