@@ -41,7 +41,7 @@ private:
 	template <class Type> using ComPtr = Microsoft::WRL::ComPtr<Type>;
 
 	//=============================================================================================//
-	// WinApp(借りているだけなので解放しない)
+	// WinApp
 
 	WinApp* winApp_ = nullptr;
 

@@ -17,10 +17,7 @@ void Engine::Initialize() {
 
 	dxCommon_ = new DirectXCommon();
 
-	dxCommon_->Initialize(
-		winApp_->GetHwnd(),
-		WinApp::kClientWidth,
-		WinApp::kClientHeight);
+	dxCommon_->Initialize(winApp_);
 
 	//=============================================================================================//
 	// Input初期化
@@ -85,13 +82,12 @@ void Engine::Initialize() {
 
 void Engine::Run() {
 
-	while (true) { // ゲームループ
+	while (true) {
 
 		//=========================================================================================//
 		// Windowsのメッセージ処理
 
 		if (winApp_->ProcessMessage()) {
-			// ゲームループを抜ける
 			break;
 		}
 

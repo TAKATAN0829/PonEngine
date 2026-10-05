@@ -27,13 +27,6 @@ public:
 	static void Log(std::ostream& os, const std::string& message);
 
 	//=============================================================================================//
-	// 文字列変換
-
-	static std::wstring ConvertString(const std::string& str);
-
-	static std::string ConvertString(const std::wstring& str);
-
-	//=============================================================================================//
 	// Getter
 
 	static std::ofstream& GetLogStream();

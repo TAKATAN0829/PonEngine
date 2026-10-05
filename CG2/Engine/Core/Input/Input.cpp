@@ -42,11 +42,7 @@ void Input::Initialize(WinApp* winApp) {
 	assert(SUCCEEDED(hr));
 
 	// 排他制御レベルセット
-	hr = keyboard_->SetCooperativeLevel(
-		winApp_->GetHwnd(),
-		DISCL_FOREGROUND |
-		DISCL_NONEXCLUSIVE |
-		DISCL_NOWINKEY);
+	hr = keyboard_->SetCooperativeLevel(winApp_->GetHwnd(), DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 
 	assert(SUCCEEDED(hr));
 }
@@ -57,7 +53,10 @@ void Input::Initialize(WinApp* winApp) {
 void Input::Update() {
 
 	// 前フレームの入力を保存
-	memcpy(preKey_, key_, sizeof(key_));
+	memcpy(
+		preKey_,
+		key_,
+		sizeof(key_));
 
 	// キーボード取得開始
 	keyboard_->Acquire();

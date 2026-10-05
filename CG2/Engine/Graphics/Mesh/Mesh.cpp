@@ -64,7 +64,10 @@ void Mesh::Initialize (const std::string& directoryPath, const std::string& file
 	//=============================================================================================//
 	// VertexData・IndexDataを書き込む
 
-	std::memcpy (vertexData_, modelData.vertices.data (), sizeof (VertexData) * vertexCount_);
+	std::memcpy (
+		vertexData_,
+		modelData.vertices.data (),
+		sizeof (VertexData) * vertexCount_);
 
 	for (uint32_t index = 0; index < indexCount_; ++index) {
 
@@ -82,7 +85,10 @@ void Mesh::Draw (uint32_t instanceCount) {
 	//=============================================================================================//
 	// VBV設定
 
-	commandList->IASetVertexBuffers (0, 1, &vertexBufferView_);
+	commandList->IASetVertexBuffers (
+		0,
+		1,
+		&vertexBufferView_);
 
 	//=============================================================================================//
 	// IBV設定
@@ -92,7 +98,12 @@ void Mesh::Draw (uint32_t instanceCount) {
 	//=============================================================================================//
 	// 描画
 
-	commandList->DrawIndexedInstanced (indexCount_, instanceCount, 0, 0, 0);
+	commandList->DrawIndexedInstanced (
+		indexCount_,
+		instanceCount,
+		0,
+		0,
+		0);
 }
 
 //=================================================================================================//
@@ -223,11 +234,10 @@ void Mesh::CreateVertexResource () {
 	ID3D12Device* device = GraphicsSystem::GetDevice();
 	ResourceManager* resourceManager = GraphicsSystem::GetGraphicsSystem ()->GetResourceManager ();
 
-	vertexResource_ =
-		resourceManager->CreateBufferResource (
-			device,
-			sizeof (VertexData) * vertexCount_,
-			"vertexResource");
+	vertexResource_ = resourceManager->CreateBufferResource (
+		device,
+		sizeof (VertexData) * vertexCount_,
+		"vertexResource");
 
 	//=============================================================================================//
 	// VertexBufferView作成
@@ -241,7 +251,10 @@ void Mesh::CreateVertexResource () {
 	//=============================================================================================//
 	// VertexDataを書き込む
 
-	vertexResource_->Map (0, nullptr, reinterpret_cast<void**>(&vertexData_));
+	vertexResource_->Map (
+		0,
+		nullptr,
+		reinterpret_cast<void**>(&vertexData_));
 }
 
 //=================================================================================================//
@@ -255,11 +268,10 @@ void Mesh::CreateIndexResource () {
 	ID3D12Device* device = GraphicsSystem::GetDevice();
 	ResourceManager* resourceManager = GraphicsSystem::GetGraphicsSystem ()->GetResourceManager ();
 
-	indexResource_ =
-		resourceManager->CreateBufferResource (
-			device,
-			sizeof (uint32_t) * indexCount_,
-			"indexResource");
+	indexResource_ = resourceManager->CreateBufferResource (
+		device,
+		sizeof (uint32_t) * indexCount_,
+		"indexResource");
 
 	//=============================================================================================//
 	// IndexBufferView作成
@@ -273,7 +285,10 @@ void Mesh::CreateIndexResource () {
 	//=============================================================================================//
 	// IndexDataを書き込む
 
-	indexResource_->Map (0, nullptr, reinterpret_cast<void**>(&indexData_));
+	indexResource_->Map (
+		0,
+		nullptr,
+		reinterpret_cast<void**>(&indexData_));
 }
 
 //=================================================================================================//
@@ -501,14 +516,16 @@ ModelData Mesh::LoadObjFile (const std::string& directoryPath, const std::string
 
 				std::istringstream v (vertexDefinition);
 
-				// 位置/UV/法線のインデックス(省略されている要素は0)
 				uint32_t elementIndices[3]{};
 
 				for (int32_t element = 0; element < 3; ++element) {
 
 					std::string index;
 
-					std::getline (v, index, '/');
+					std::getline (
+						v,
+						index,
+						'/');
 
 					if (!index.empty ()) {
 
@@ -518,7 +535,6 @@ ModelData Mesh::LoadObjFile (const std::string& directoryPath, const std::string
 
 				triangle[faceVertex].position = positions[elementIndices[0] - 1];
 
-				// UVが無いモデル(v//vn)は(0,0)のまま
 				if (elementIndices[1] != 0) {
 
 					triangle[faceVertex].texcoord = texcoords[elementIndices[1] - 1];

@@ -124,9 +124,7 @@ public:
 		device_ = device;
 	}
 
-	static ID3D12Device* GetDevice () {
-		return device_;
-	}
+	static ID3D12Device* GetDevice () { return device_; }
 
 	//=============================================================================================//
 	// commandList
@@ -135,9 +133,7 @@ public:
 		commandList_ = commandList;
 	}
 
-	static ID3D12GraphicsCommandList* GetCommandList () {
-		return commandList_;
-	}
+	static ID3D12GraphicsCommandList* GetCommandList () { return commandList_; }
 
 	//=============================================================================================//
 	// GraphicsSystem
@@ -146,9 +142,7 @@ public:
 		graphicsSystem_ = graphicsSystem;
 	}
 
-	static GraphicsSystem* GetGraphicsSystem () {
-		return graphicsSystem_;
-	}
+	static GraphicsSystem* GetGraphicsSystem () { return graphicsSystem_; }
 
 	//=============================================================================================//
 	// Texture読み込み

@@ -5,6 +5,7 @@
 
 // C++
 #include <cstdint>
+#include <array>
 
 // DirectX
 #include <d3d12.h>
@@ -17,16 +18,15 @@
 // DescriptorHeap
 #include "DescriptorHeapManager.h"
 
+class WinApp;
+
 class DirectXCommon {
 public:
 
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(
-		HWND hwnd,
-		int32_t clientWidth,
-		int32_t clientHeight);
+	void Initialize(WinApp* winApp);
 
 	//=============================================================================================//
 	// フレーム開始
@@ -46,13 +46,9 @@ public:
 	//=============================================================================================//
 	// Getter
 
-	ID3D12Device* GetDevice() {
-		return device_.Get();
-	}
+	ID3D12Device* GetDevice() { return device_.Get(); }
 
-	ID3D12GraphicsCommandList* GetCommandList() {
-		return commandList_.Get();
-	}
+	ID3D12GraphicsCommandList* GetCommandList() { return commandList_.Get(); }
 
 private:
 
@@ -74,7 +70,7 @@ private:
 	//=============================================================================================//
 	// SwapChain初期化
 
-	void InitializeSwapChain(HWND hwnd);
+	void InitializeSwapChain();
 
 	//=============================================================================================//
 	// RTV初期化
@@ -91,13 +87,22 @@ private:
 
 	void InitializeDepthStencilView();
 
+	//=============================================================================================//
+	// Viewport矩形初期化
+
+	void InitializeViewport();
+
+	//=============================================================================================//
+	// ScissorRect初期化
+
+	void InitializeScissorRect();
+
 private:
 
 	//=============================================================================================//
-	// WindowSize
+	// WinApp
 
-	int32_t clientWidth_ = 0;
-	int32_t clientHeight_ = 0;
+	WinApp* winApp_ = nullptr;
 
 	//=============================================================================================//
 	// BackBufferIndex
@@ -159,7 +164,7 @@ private:
 	//=============================================================================================//
 	// BackBuffer
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources_[2];
+	std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, 2> swapChainResources_;
 
 	//=============================================================================================//
 	// RTVHeap

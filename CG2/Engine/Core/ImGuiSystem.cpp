@@ -5,7 +5,11 @@
 #include "../../externals/imgui/imgui.h"
 #include "../../externals/imgui/imgui_impl_dx12.h"
 #include "../../externals/imgui/imgui_impl_win32.h"
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
+	HWND hwnd,
+	UINT msg,
+	WPARAM wParam,
+	LPARAM lParam);
 #endif
 
 //=================================================================================================//
@@ -30,8 +34,7 @@ void ImGuiSystem::Initialize(
 	//=============================================================================================//
 	// Win32初期化
 
-	ImGui_ImplWin32_Init(
-		hwnd);
+	ImGui_ImplWin32_Init(hwnd);
 
 	//=============================================================================================//
 	// DX12初期化
@@ -41,10 +44,8 @@ void ImGuiSystem::Initialize(
 		static_cast<int>(bufferCount),
 		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
 		srvDescriptorHeap->GetDescriptorHeap(),
-		srvDescriptorHeap->GetCPUDescriptorHandle(
-			descriptorIndex),
-		srvDescriptorHeap->GetGPUDescriptorHandle(
-			descriptorIndex));
+		srvDescriptorHeap->GetCPUDescriptorHandle(descriptorIndex),
+		srvDescriptorHeap->GetGPUDescriptorHandle(descriptorIndex));
 
 	isInitialized_ = true;
 #endif

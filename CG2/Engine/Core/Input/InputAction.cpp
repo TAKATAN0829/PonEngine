@@ -15,9 +15,7 @@ void InputAction::Initialize (Input* input) {
 //=============================================================================================//
 // キー登録
 
-void InputAction::RegisterKey (
-	const std::string& actionName,
-	uint8_t key) {
+void InputAction::RegisterKey (const std::string& actionName, uint8_t key) {
 
 	keyMap_[actionName] = key;
 }

@@ -105,6 +105,9 @@
     <ClCompile Include="Engine\Core\LogSystem.cpp">
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Core\StringUtility.cpp">
+      <Filter>Engine\Graphics\Object\Core</Filter>
+    </ClCompile>
     <ClCompile Include="Engine\main.cpp">
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClCompile>
@@ -258,6 +261,9 @@
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\LogSystem.h">
+      <Filter>Engine\Graphics\Object\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\StringUtility.h">
       <Filter>Engine\Graphics\Object\Core</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Core\DirectXCommon.h">

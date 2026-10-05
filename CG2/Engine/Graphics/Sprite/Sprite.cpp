@@ -36,8 +36,10 @@ void Sprite::Initialize(int32_t clientWidth,int32_t clientHeight) {
 	//=============================================================================================//
 	// WVPResource生成
 
-	wvpResource_ =
-		resourceManager->CreateBufferResource(device, sizeof(TransformationMatrix), "spriteWVPResource");
+	wvpResource_ = resourceManager->CreateBufferResource(
+		device,
+		sizeof(TransformationMatrix),
+		"spriteWVPResource");
 
 	//=============================================================================================//
 	// WVPDataを書き込む
@@ -60,23 +62,21 @@ void Sprite::Update() {
 	//=============================================================================================//
 	// WorldMatrix作成
 
-	Matrix4x4 worldMatrix =
-		MathUtility::MakeAffineMatrix(
-			{ size_.x * 0.5f,size_.y * 0.5f,1.0f },
-			{ 0.0f,0.0f,0.0f },
-			{ position_.x, position_.y,0.0f });
+	Matrix4x4 worldMatrix = MathUtility::MakeAffineMatrix(
+		{ size_.x * 0.5f,size_.y * 0.5f,1.0f },
+		{ 0.0f,0.0f,0.0f },
+		{ position_.x, position_.y,0.0f });
 
 	//=============================================================================================//
 	// OrthographicMatrix作成
 
-	Matrix4x4 orthographicMatrix =
-		MathUtility::MakeOrthographicMatrix(
-			0.0f,
-			0.0f,
-			static_cast<float>(clientWidth_),
-			static_cast<float>(clientHeight_),
-			0.0f,
-			100.0f);
+	Matrix4x4 orthographicMatrix = MathUtility::MakeOrthographicMatrix(
+		0.0f,
+		0.0f,
+		static_cast<float>(clientWidth_),
+		static_cast<float>(clientHeight_),
+		0.0f,
+		100.0f);
 
 	//=============================================================================================//
 	// WVP作成
@@ -99,7 +99,10 @@ void Sprite::Draw() {
 	ID3D12GraphicsCommandList* commandList = GraphicsSystem::GetCommandList();
 	GraphicsSystem* graphicsSystem = GraphicsSystem::GetGraphicsSystem();
 
-	graphicsSystem->PreSpriteDraw(commandList, mesh_->GetVertexBufferView(), mesh_->GetIndexBufferView());
+	graphicsSystem->PreSpriteDraw(
+		commandList,
+		mesh_->GetVertexBufferView(),
+		mesh_->GetIndexBufferView());
 
 	//=============================================================================================//
 	// Material設定
@@ -109,9 +112,7 @@ void Sprite::Draw() {
 	//=============================================================================================//
 	// WVP設定
 
-	commandList->SetGraphicsRootConstantBufferView(
-		1,
-		wvpResource_->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(1, wvpResource_->GetGPUVirtualAddress());
 
 	//=============================================================================================//
 	// Mesh描画

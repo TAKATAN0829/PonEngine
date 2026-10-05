@@ -21,7 +21,10 @@ public:
 	//=============================================================================================//
 	// BufferResourceを作る
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource (ID3D12Device* device, size_t sizeInBytes, const char* resourceName);
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource (
+		ID3D12Device* device,
+		size_t sizeInBytes,
+		const char* resourceName);
 
 	//=============================================================================================//
 	// TextureResourceを作る
@@ -45,9 +48,7 @@ public:
 		resourceManager = resourceManager_;
 	}
 
-	static ResourceManager* GetInstance() {
-		return resourceManager_;
-	}
+	static ResourceManager* GetInstance() { return resourceManager_; }
 
 private:
 	inline static ResourceManager* resourceManager_ = nullptr;

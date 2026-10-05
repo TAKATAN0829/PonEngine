@@ -29,7 +29,10 @@ void WinApp::Initialize() {
 	RECT wrc = { 0,	0,	kClientWidth,	kClientHeight };
 
 	// ClientSizeからWindowSizeへ変換
-	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW,false);
+	AdjustWindowRect(
+		&wrc,
+		WS_OVERLAPPEDWINDOW,
+		false);
 
 	// Window生成
 	hwnd_ = CreateWindow(
@@ -54,7 +57,6 @@ void WinApp::Initialize() {
 
 void WinApp::Update() {
 
-	// ウィンドウ関連の毎フレーム処理を書く場所(今は無し)
 }
 
 //=============================================================================================//
@@ -64,14 +66,17 @@ bool WinApp::ProcessMessage() {
 
 	MSG msg{};
 
-	// メッセージがあれば受け取って処理する
-	if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+	if (PeekMessage(
+		&msg,
+		nullptr,
+		0,
+		0,
+		PM_REMOVE)) {
 
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
 
-	// アプリ終了メッセージが来たらtrue
 	if (msg.message == WM_QUIT) {
 		return true;
 	}
@@ -91,10 +96,18 @@ void WinApp::Finalize() {
 //=============================================================================================//
 // ウィンドウプロシージャ
 
-LRESULT CALLBACK WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK WinApp::WindowProc(
+	HWND hwnd,
+	UINT msg,
+	WPARAM wParam,
+	LPARAM lParam) {
 
 #ifdef USE_IMGUI
-	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam)) {
+	if (ImGui_ImplWin32_WndProcHandler(
+		hwnd,
+		msg,
+		wParam,
+		lParam)) {
 
 		return true;
 	}
@@ -109,5 +122,9 @@ LRESULT CALLBACK WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 		return 0;
 	}
 
-	return DefWindowProc(hwnd, msg, wParam, lParam);
+	return DefWindowProc(
+		hwnd,
+		msg,
+		wParam,
+		lParam);
 }

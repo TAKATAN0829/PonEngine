@@ -10,20 +10,17 @@ void AudioSystem::Initialize () {
 	//=============================================================================================//
 	// XAudio2生成
 
-	result =
-		XAudio2Create (
-			&xAudio2_,
-			0,
-			XAUDIO2_DEFAULT_PROCESSOR);
+	result = XAudio2Create (
+		&xAudio2_,
+		0,
+		XAUDIO2_DEFAULT_PROCESSOR);
 
 	assert (SUCCEEDED (result));
 
 	//=============================================================================================//
 	// MasterVoice生成
 
-	result =
-		xAudio2_->CreateMasteringVoice (
-			&masterVoice_);
+	result = xAudio2_->CreateMasteringVoice (&masterVoice_);
 
 	assert (SUCCEEDED (result));
 }
@@ -57,17 +54,14 @@ void AudioSystem::Finalize () {
 //=================================================================================================//
 // 音声読み込み
 
-SoundData AudioSystem::LoadWave (
-	const char* filename) {
+SoundData AudioSystem::LoadWave (const char* filename) {
 
 	//=============================================================================================//
 	// ファイルを開く
 
 	std::ifstream file;
 
-	file.open (
-		filename,
-		std::ios_base::binary);
+	file.open (filename, std::ios_base::binary);
 
 	assert (file.is_open ());
 
@@ -76,14 +70,15 @@ SoundData AudioSystem::LoadWave (
 
 	RiffHeader riff{};
 
-	file.read (
-		reinterpret_cast<char*>(&riff),
-		sizeof (riff));
+	file.read (reinterpret_cast<char*>(&riff), sizeof (riff));
 
 	//=============================================================================================//
 	// RIFFチェック
 
-	if (strncmp (riff.chunk.id, "RIFF", 4) != 0) {
+	if (strncmp (
+		riff.chunk.id,
+		"RIFF",
+		4) != 0) {
 
 		assert (0);
 	}
@@ -91,7 +86,10 @@ SoundData AudioSystem::LoadWave (
 	//=============================================================================================//
 	// WAVEチェック
 
-	if (strncmp (riff.type, "WAVE", 4) != 0) {
+	if (strncmp (
+		riff.type,
+		"WAVE",
+		4) != 0) {
 
 		assert (0);
 	}
@@ -101,48 +99,47 @@ SoundData AudioSystem::LoadWave (
 
 	FormatChunk format{};
 
-	file.read (
-		reinterpret_cast<char*>(&format),
-		sizeof (ChunkHeader));
+	file.read (reinterpret_cast<char*>(&format), sizeof (ChunkHeader));
 
-	if (strncmp (format.chunk.id, "fmt ", 4) != 0) {
+	if (strncmp (
+		format.chunk.id,
+		"fmt ",
+		4) != 0) {
 
 		assert (0);
 	}
 
 	assert (format.chunk.size <= sizeof (format.fmt));
 
-	file.read (
-		reinterpret_cast<char*>(&format.fmt),
-		format.chunk.size);
+	file.read (reinterpret_cast<char*>(&format.fmt), format.chunk.size);
 
 	//=============================================================================================//
 	// Dataチャンク読み込み
 
 	ChunkHeader data{};
 
-	file.read (
-		reinterpret_cast<char*>(&data),
-		sizeof (data));
+	file.read (reinterpret_cast<char*>(&data), sizeof (data));
 
 	//=============================================================================================//
 	// JUNKチャンク
 
-	if (strncmp (data.id, "JUNK", 4) == 0) {
+	if (strncmp (
+		data.id,
+		"JUNK",
+		4) == 0) {
 
-		file.seekg (
-			data.size,
-			std::ios_base::cur);
+		file.seekg (data.size, std::ios_base::cur);
 
-		file.read (
-			reinterpret_cast<char*>(&data),
-			sizeof (data));
+		file.read (reinterpret_cast<char*>(&data), sizeof (data));
 	}
 
 	//=============================================================================================//
 	// dataチェック
 
-	if (strncmp (data.id, "data", 4) != 0) {
+	if (strncmp (
+		data.id,
+		"data",
+		4) != 0) {
 
 		assert (0);
 	}
@@ -150,12 +147,9 @@ SoundData AudioSystem::LoadWave (
 	//=============================================================================================//
 	// 波形データ読み込み
 
-	char* pBuffer =
-		new char[data.size];
+	char* pBuffer = new char[data.size];
 
-	file.read (
-		pBuffer,
-		data.size);
+	file.read (pBuffer, data.size);
 
 	file.close ();
 
@@ -164,14 +158,11 @@ SoundData AudioSystem::LoadWave (
 
 	SoundData soundData{};
 
-	soundData.wfex =
-		format.fmt;
+	soundData.wfex = format.fmt;
 
-	soundData.pBuffer =
-		reinterpret_cast<BYTE*>(pBuffer);
+	soundData.pBuffer = reinterpret_cast<BYTE*>(pBuffer);
 
-	soundData.bufferSize =
-		data.size;
+	soundData.bufferSize = data.size;
 
 	return soundData;
 }
@@ -179,8 +170,7 @@ SoundData AudioSystem::LoadWave (
 //=================================================================================================//
 // 音声解放
 
-void AudioSystem::UnloadWave (
-	SoundData* soundData) {
+void AudioSystem::UnloadWave (SoundData* soundData) {
 
 	delete[] soundData->pBuffer;
 
@@ -194,21 +184,16 @@ void AudioSystem::UnloadWave (
 //=================================================================================================//
 // 音声再生
 
-void AudioSystem::PlayWave (
-	const SoundData& soundData) {
+void AudioSystem::PlayWave (const SoundData& soundData) {
 
 	HRESULT result;
 
 	//=============================================================================================//
 	// SourceVoice生成
 
-	IXAudio2SourceVoice* sourceVoice =
-		nullptr;
+	IXAudio2SourceVoice* sourceVoice = nullptr;
 
-	result =
-		xAudio2_->CreateSourceVoice (
-			&sourceVoice,
-			&soundData.wfex);
+	result = xAudio2_->CreateSourceVoice (&sourceVoice, &soundData.wfex);
 
 	assert (SUCCEEDED (result));
 
@@ -217,29 +202,23 @@ void AudioSystem::PlayWave (
 
 	XAUDIO2_BUFFER buffer{};
 
-	buffer.pAudioData =
-		soundData.pBuffer;
+	buffer.pAudioData = soundData.pBuffer;
 
-	buffer.AudioBytes =
-		soundData.bufferSize;
+	buffer.AudioBytes = soundData.bufferSize;
 
-	buffer.Flags =
-		XAUDIO2_END_OF_STREAM;
+	buffer.Flags = XAUDIO2_END_OF_STREAM;
 
 	//=============================================================================================//
 	// Buffer送信
 
-	result =
-		sourceVoice->SubmitSourceBuffer (
-			&buffer);
+	result = sourceVoice->SubmitSourceBuffer (&buffer);
 
 	assert (SUCCEEDED (result));
 
 	//=============================================================================================//
 	// 再生
 
-	result =
-		sourceVoice->Start ();
+	result = sourceVoice->Start ();
 
 	assert (SUCCEEDED (result));
 }

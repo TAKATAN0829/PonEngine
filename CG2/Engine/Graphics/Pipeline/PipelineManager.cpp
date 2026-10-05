@@ -265,10 +265,7 @@ PipelineManager::CreateGraphicsPipelineState (
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>	graphicsPipelineState = nullptr;
 
-	HRESULT hr =
-		device->CreateGraphicsPipelineState (
-			&graphicsPipelineStateDesc,
-			IID_PPV_ARGS (&graphicsPipelineState));
+	HRESULT hr = device->CreateGraphicsPipelineState (&graphicsPipelineStateDesc, IID_PPV_ARGS (&graphicsPipelineState));
 
 	assert (SUCCEEDED (hr));
 
@@ -363,12 +360,11 @@ void PipelineManager::CreateSpritePipeline (ID3D12Device* device, ShaderCompiler
 
 	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 
-	HRESULT hr =
-		D3D12SerializeRootSignature (
-			&descriptionRootSignature,
-			D3D_ROOT_SIGNATURE_VERSION_1,
-			&signatureBlob,
-			&errorBlob);
+	HRESULT hr = D3D12SerializeRootSignature (
+		&descriptionRootSignature,
+		D3D_ROOT_SIGNATURE_VERSION_1,
+		&signatureBlob,
+		&errorBlob);
 
 	assert (SUCCEEDED (hr));
 
@@ -442,15 +438,9 @@ void PipelineManager::CreateSpritePipeline (ID3D12Device* device, ShaderCompiler
 	//=============================================================================================//
 	// Shaderコンパイル
 
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob =
-		shaderCompiler->CompileShader (
-			L"Object3d.VS.hlsl",
-			L"vs_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = shaderCompiler->CompileShader (L"Object3d.VS.hlsl", L"vs_6_0");
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob =
-		shaderCompiler->CompileShader (
-			L"Object3d.PS.hlsl",
-			L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = shaderCompiler->CompileShader (L"Object3d.PS.hlsl", L"ps_6_0");
 
 	//=============================================================================================//
 	// PSO作成
@@ -494,9 +484,7 @@ void PipelineManager::CreateSpritePipeline (ID3D12Device* device, ShaderCompiler
 	//=============================================================================================//
 	// PipelineState生成
 
-	hr = device->CreateGraphicsPipelineState (
-		&graphicsPipelineStateDesc,
-		IID_PPV_ARGS (&spritePipelineState_));
+	hr = device->CreateGraphicsPipelineState (&graphicsPipelineStateDesc, IID_PPV_ARGS (&spritePipelineState_));
 
 	assert (SUCCEEDED (hr));
 }

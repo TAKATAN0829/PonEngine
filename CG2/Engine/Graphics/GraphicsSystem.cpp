@@ -14,7 +14,11 @@ void GraphicsSystem::Initialize (ID3D12Device* device) {
 
 	srvDescriptorHeap_ = new DescriptorHeapManager ();
 
-	srvDescriptorHeap_->Initialize (device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+	srvDescriptorHeap_->Initialize (
+		device,
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		128,
+		true);
 
 	shaderCompiler_ = new ShaderCompiler ();
 
@@ -201,16 +205,15 @@ void GraphicsSystem::CreateGraphicsPipeline (ID3D12Device* device) {
 
 		D3D12_BLEND_DESC blendDesc = pipelineManager_->CreateBlendState (static_cast<BlendMode>(blendMode));
 
-		graphicsPipelineStates_[blendMode] =
-			pipelineManager_->CreateGraphicsPipelineState (
-				device,
-				rootSignature_.Get (),
-				inputLayoutDesc,
-				blendDesc,
-				rasterizerDesc,
-				depthStencilDesc,
-				vertexShaderBlob,
-				pixelShaderBlob);
+		graphicsPipelineStates_[blendMode] = pipelineManager_->CreateGraphicsPipelineState (
+			device,
+			rootSignature_.Get (),
+			inputLayoutDesc,
+			blendDesc,
+			rasterizerDesc,
+			depthStencilDesc,
+			vertexShaderBlob,
+			pixelShaderBlob);
 	}
 }
 
@@ -308,16 +311,15 @@ void GraphicsSystem::CreateParticlePipeline (ID3D12Device* device) {
 
 		D3D12_BLEND_DESC blendDesc = pipelineManager_->CreateBlendState (static_cast<BlendMode>(blendMode));
 
-		particlePipelineStates_[blendMode] =
-			pipelineManager_->CreateGraphicsPipelineState (
-				device,
-				particleRootSignature_.Get (),
-				inputLayoutDesc,
-				blendDesc,
-				rasterizerDesc,
-				depthStencilDesc,
-				vertexShaderBlob,
-				pixelShaderBlob);
+		particlePipelineStates_[blendMode] = pipelineManager_->CreateGraphicsPipelineState (
+			device,
+			particleRootSignature_.Get (),
+			inputLayoutDesc,
+			blendDesc,
+			rasterizerDesc,
+			depthStencilDesc,
+			vertexShaderBlob,
+			pixelShaderBlob);
 	}
 }
 
@@ -347,7 +349,10 @@ void GraphicsSystem::PreDraw (
 
 	commandList->SetPipelineState (graphicsPipelineStates_[blendMode].Get ());
 
-	commandList->IASetVertexBuffers (0, 1, vertexBufferView);
+	commandList->IASetVertexBuffers (
+		0,
+		1,
+		vertexBufferView);
 
 	commandList->IASetIndexBuffer (indexBufferView);
 
@@ -373,7 +378,10 @@ void GraphicsSystem::PreSpriteDraw (
 
 	commandList->IASetPrimitiveTopology (D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	commandList->IASetVertexBuffers (0, 1, vertexBufferView);
+	commandList->IASetVertexBuffers (
+		0,
+		1,
+		vertexBufferView);
 
 	commandList->IASetIndexBuffer (indexBufferView);
 
@@ -396,7 +404,10 @@ void GraphicsSystem::PreParticleDraw (
 
 	commandList->SetPipelineState (particlePipelineStates_[blendMode].Get ());
 
-	commandList->IASetVertexBuffers (0, 1, vertexBufferView);
+	commandList->IASetVertexBuffers (
+		0,
+		1,
+		vertexBufferView);
 
 	commandList->IASetIndexBuffer (indexBufferView);
 

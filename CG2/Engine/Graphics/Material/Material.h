@@ -55,7 +55,10 @@ public:
 	//=============================================================================================//
 	// DirectionalLight設定
 
-	void SetDirectionalLight (const Vector4& color,	const Vector3& direction, float intensity);
+	void SetDirectionalLight (
+		const Vector4& color,
+		const Vector3& direction,
+		float intensity);
 
 private:
 

@@ -187,6 +187,9 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="Engine\Core\LogSystem.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
+    <ClCompile Include="Engine\Core\StringUtility.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
+    </ClCompile>
     <ClCompile Include="Engine\Core\WinApp.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
@@ -279,6 +282,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="Engine\Core\ImGuiSystem.h" />
     <ClInclude Include="Engine\Core\Input\Input.h" />
     <ClInclude Include="Engine\Core\LogSystem.h" />
+    <ClInclude Include="Engine\Core\StringUtility.h" />
     <ClInclude Include="Engine\Core\WinApp.h" />
     <ClInclude Include="Engine\Engine.h" />
     <ClInclude Include="Engine\EngineStructs.h" />

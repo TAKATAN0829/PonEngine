@@ -15,7 +15,11 @@ void Camera::Initialize (int32_t clientWidth, int32_t clientHeight) {
 		{0.0f,0.0f,-30.0f}
 	};
 
-	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix (fovY_, float (clientWidth_) / float (clientHeight_), nearClip_, farClip_);
+	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix (
+		fovY_,
+		float (clientWidth_) / float (clientHeight_),
+		nearClip_,
+		farClip_);
 
 	Update ();
 }
@@ -32,7 +36,11 @@ void Camera::Update () {
 
 	viewMatrix_ = MathUtility::Inverse (worldMatrix);
 
-	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix (fovY_, float (clientWidth_) / float (clientHeight_), nearClip_, farClip_);
+	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix (
+		fovY_,
+		float (clientWidth_) / float (clientHeight_),
+		nearClip_,
+		farClip_);
 
 	viewProjectionMatrix_ = MathUtility::Multiply (viewMatrix_, projectionMatrix_);
 }

@@ -263,11 +263,31 @@ void GameScene::UpdateObject () {
 	// ImGui
 
 	ImGui::Begin ("Triangle");
-	ImGui::DragFloat3 ("TriangleScale", &triangleTransform_.scale.x, 0.1f, 0.f, 10.f);
-	ImGui::DragFloat3 ("TriangleRotate", &triangleTransform_.rotate.x, 0.1f, 0.f, 10.f);
+	ImGui::DragFloat3 (
+		"TriangleScale",
+		&triangleTransform_.scale.x,
+		0.1f,
+		0.f,
+		10.f);
+	ImGui::DragFloat3 (
+		"TriangleRotate",
+		&triangleTransform_.rotate.x,
+		0.1f,
+		0.f,
+		10.f);
 
-	ImGui::DragFloat3 ("InvTriangleScale", &invTriangleTransform_.scale.x, 0.1f, 0.f, 10.f);
-	ImGui::DragFloat3 ("InvTriangleRotate", &invTriangleTransform_.rotate.x, 0.1f, 0.f, 10.f);
+	ImGui::DragFloat3 (
+		"InvTriangleScale",
+		&invTriangleTransform_.scale.x,
+		0.1f,
+		0.f,
+		10.f);
+	ImGui::DragFloat3 (
+		"InvTriangleRotate",
+		&invTriangleTransform_.rotate.x,
+		0.1f,
+		0.f,
+		10.f);
 	ImGui::End ();
 
 	ImGui::Begin ("Settings");
@@ -284,7 +304,11 @@ void GameScene::UpdateObject () {
 
 	int blendMode = static_cast<int>(triangleBlendMode_);
 
-	if (ImGui::Combo ("Blend", &blendMode, kBlendModeNames, kCountOfBlendMode)) {
+	if (ImGui::Combo (
+		"Blend",
+		&blendMode,
+		kBlendModeNames,
+		kCountOfBlendMode)) {
 
 		triangleBlendMode_ = static_cast<BlendMode>(blendMode);
 	}

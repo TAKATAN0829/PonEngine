@@ -1,4 +1,5 @@
 #include "LogSystem.h"
+#include "StringUtility.h"
 
 #include <Windows.h>
 #include <chrono>
@@ -76,7 +77,7 @@ void LogSystem::Log (const std::string& message) {
 void LogSystem::Log (const std::wstring& message) {
 
 	// wstring -> stringへ変換してLog
-	Log (ConvertString (message));
+	Log (StringUtility::ConvertString (message));
 }
 
 void LogSystem::Log (std::ostream& os, const std::string& message) {
@@ -86,80 +87,6 @@ void LogSystem::Log (std::ostream& os, const std::string& message) {
 
 	// 出力ウィンドウへも表示
 	OutputDebugStringA (message.c_str ());
-}
-
-//=============================================================================================//
-// 文字列変換 string -> wstring
-
-std::wstring LogSystem::ConvertString (const std::string& str) {
-
-	if (str.empty ()) {
-		return std::wstring ();
-	}
-
-	auto sizeNeeded =
-		MultiByteToWideChar (
-			CP_UTF8,
-			0,
-			reinterpret_cast<const char*>(&str[0]),
-			static_cast<int>(str.size ()),
-			NULL,
-			0);
-
-	if (sizeNeeded == 0) {
-		return std::wstring ();
-	}
-
-	std::wstring result (sizeNeeded, 0);
-
-	MultiByteToWideChar (
-		CP_UTF8,
-		0,
-		reinterpret_cast<const char*>(&str[0]),
-		static_cast<int>(str.size ()),
-		&result[0],
-		sizeNeeded);
-
-	return result;
-}
-
-//=============================================================================================//
-// 文字列変換 wstring -> string
-
-std::string LogSystem::ConvertString (const std::wstring& str) {
-
-	if (str.empty ()) {
-		return std::string ();
-	}
-
-	auto sizeNeeded =
-		WideCharToMultiByte (
-			CP_UTF8,
-			0,
-			str.data (),
-			static_cast<int>(str.size ()),
-			NULL,
-			0,
-			NULL,
-			NULL);
-
-	if (sizeNeeded == 0) {
-		return std::string ();
-	}
-
-	std::string result (sizeNeeded, 0);
-
-	WideCharToMultiByte (
-		CP_UTF8,
-		0,
-		str.data (),
-		static_cast<int>(str.size ()),
-		result.data (),
-		sizeNeeded,
-		NULL,
-		NULL);
-
-	return result;
 }
 
 //=============================================================================================//
@@ -195,15 +122,14 @@ LONG WINAPI LogSystem::ExportDump (EXCEPTION_POINTERS* exception) {
 		time.wMinute);
 
 	// DumpFile生成
-	HANDLE dumpFileHandle =
-		CreateFile (
-			filePath,
-			GENERIC_READ | GENERIC_WRITE,
-			FILE_SHARE_WRITE | FILE_SHARE_READ,
-			0,
-			CREATE_ALWAYS,
-			0,
-			0);
+	HANDLE dumpFileHandle = CreateFile (
+		filePath,
+		GENERIC_READ | GENERIC_WRITE,
+		FILE_SHARE_WRITE | FILE_SHARE_READ,
+		0,
+		CREATE_ALWAYS,
+		0,
+		0);
 
 	// Process情報取得
 	DWORD processId = GetCurrentProcessId ();

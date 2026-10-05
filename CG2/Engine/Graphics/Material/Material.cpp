@@ -14,11 +14,10 @@ void Material::Initialize() {
 	//=============================================================================================//
 	// MaterialResource生成
 
-	materialResource_ =
-		resourceManager->CreateBufferResource(
-			device,
-			sizeof(MaterialData),
-			"materialResource");
+	materialResource_ = resourceManager->CreateBufferResource(
+		device,
+		sizeof(MaterialData),
+		"materialResource");
 
 	//=============================================================================================//
 	// MaterialDataを書き込む
@@ -37,11 +36,10 @@ void Material::Initialize() {
 	//=============================================================================================//
 	// DirectionalLightResource生成
 
-	directionalLightResource_ =
-		resourceManager->CreateBufferResource(
-			device,
-			sizeof(DirectionalLight),
-			"directionalLightResource");
+	directionalLightResource_ = resourceManager->CreateBufferResource(
+		device,
+		sizeof(DirectionalLight),
+		"directionalLightResource");
 
 	//=============================================================================================//
 	// DirectionalLightDataを書き込む
@@ -73,9 +71,7 @@ void Material::Bind() {
 	//=============================================================================================//
 	// DirectionalLight設定
 
-	commandList->SetGraphicsRootConstantBufferView(
-		3,
-		directionalLightResource_->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
 }
 
 //=================================================================================================//
@@ -89,16 +85,12 @@ void Material::BindWithoutLight() {
 	//=============================================================================================//
 	// Material設定
 
-	commandList->SetGraphicsRootConstantBufferView(
-		0,
-		materialResource_->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
 	//=============================================================================================//
 	// Texture設定
 
-	commandList->SetGraphicsRootDescriptorTable(
-		2,
-		graphicsSystem->GetSRVDescriptorHeap()->GetGPUDescriptorHandle(textureIndex_));
+	commandList->SetGraphicsRootDescriptorTable(2, graphicsSystem->GetSRVDescriptorHeap()->GetGPUDescriptorHandle(textureIndex_));
 }
 
 //=================================================================================================//
@@ -136,7 +128,10 @@ void Material::SetUVTransform (const Matrix4x4& uvTransform) {
 //=============================================================================================//
 // DirectionalLight設定
 
-void Material::SetDirectionalLight (const Vector4& color, const Vector3& direction,	float intensity) {
+void Material::SetDirectionalLight (
+	const Vector4& color,
+	const Vector3& direction,
+	float intensity) {
 
 	directionalLightData_->color = color;
 

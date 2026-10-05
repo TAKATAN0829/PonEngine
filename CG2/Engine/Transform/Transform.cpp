@@ -8,8 +8,7 @@ void Transform::UpdateMatrix() {
 	Matrix4x4 localMatrix = MathUtility::MakeAffineMatrix(
 		local_.scale,
 		local_.rotate,
-		local_.translate
-	);
+		local_.translate);
 
 	if (parent_) {
 		worldMatrix_ = MathUtility::Multiply(localMatrix, parent_->worldMatrix_);

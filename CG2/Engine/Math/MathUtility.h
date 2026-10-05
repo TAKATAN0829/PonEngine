@@ -276,7 +276,10 @@ public:
 		return result;
 	}
 
-	static inline Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
+	static inline Matrix4x4 MakeAffineMatrix(
+		const Vector3& scale,
+		const Vector3& rotate,
+		const Vector3& translate) {
 		Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
 
 		Matrix4x4 rotateXMatrix = MakeRotateXMatrix(rotate.x);
@@ -292,7 +295,11 @@ public:
 		return srtMatrix;
 	}
 
-	static inline Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
+	static inline Matrix4x4 MakePerspectiveFovMatrix(
+		float fovY,
+		float aspectRatio,
+		float nearClip,
+		float farClip) {
 		Matrix4x4 result{};
 
 		float f = 1.0f / std::tanf(fovY / 2.0f);
@@ -306,7 +313,13 @@ public:
 		return result;
 	}
 
-	static inline Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip) {
+	static inline Matrix4x4 MakeOrthographicMatrix(
+		float left,
+		float top,
+		float right,
+		float bottom,
+		float nearClip,
+		float farClip) {
 		Matrix4x4 result{};
 
 		result.m[0][0] = 2.0f / (right - left);
@@ -320,7 +333,13 @@ public:
 		return result;
 	}
 
-	static inline Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth) {
+	static inline Matrix4x4 MakeViewportMatrix(
+		float left,
+		float top,
+		float width,
+		float height,
+		float minDepth,
+		float maxDepth) {
 		Matrix4x4 result{};
 
 		result.m[0][0] = width / 2.0f;

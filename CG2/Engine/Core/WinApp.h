@@ -18,7 +18,6 @@ public:
 
 	//=============================================================================================//
 	// メッセージの処理
-	// アプリ終了メッセージが来たらtrue、そうでなければfalseを返す
 
 	bool ProcessMessage();
 
@@ -45,7 +44,11 @@ private:
 	//=============================================================================================//
 	// ウィンドウプロシージャ
 
-	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static LRESULT CALLBACK WindowProc(
+		HWND hwnd,
+		UINT msg,
+		WPARAM wParam,
+		LPARAM lParam);
 
 private:
 	//=============================================================================================//

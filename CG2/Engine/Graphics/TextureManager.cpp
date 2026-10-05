@@ -1,7 +1,7 @@
 #include "TextureManager.h"
 
-// LogSystem
-#include "LogSystem.h"
+// StringUtility
+#include "StringUtility.h"
 
 // C++
 #include <cassert>
@@ -19,7 +19,7 @@ DirectX::ScratchImage TextureManager::LoadTexture (const std::string& filePath) 
 
 	DirectX::ScratchImage image{};
 
-	std::wstring filePathW = LogSystem::ConvertString (filePath);
+	std::wstring filePathW = StringUtility::ConvertString (filePath);
 
 	HRESULT hr = DirectX::LoadFromWICFile (
 		filePathW.c_str (),
@@ -73,14 +73,16 @@ uint32_t TextureManager::CreateTexture(DescriptorHeapManager* srvDescriptorHeap,
 	//=============================================================================================//
 	// TextureResource生成
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> textureResource =
-		resourceManager->CreateTextureResource(device, metadata);
+	Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = resourceManager->CreateTextureResource(device, metadata);
 
 	//=============================================================================================//
 	// Texture転送
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource =
-		resourceManager->UploadTextureData(textureResource,	mipImages, device, commandList);
+	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = resourceManager->UploadTextureData(
+		textureResource,
+		mipImages,
+		device,
+		commandList);
 
 	//=============================================================================================//
 	// SRV設定
@@ -99,7 +101,9 @@ uint32_t TextureManager::CreateTexture(DescriptorHeapManager* srvDescriptorHeap,
 	// SRV生成
 
 	device->CreateShaderResourceView(
-		textureResource.Get(), &srvDesc, srvDescriptorHeap->GetCPUDescriptorHandle(textureIndex));
+		textureResource.Get(),
+		&srvDesc,
+		srvDescriptorHeap->GetCPUDescriptorHandle(textureIndex));
 
 	//=============================================================================================//
 	// Resource保存

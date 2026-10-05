@@ -53,8 +53,7 @@ ResourceManager::CreateBufferResource (
 
 	assert (SUCCEEDED (hr));
 
-	LogSystem::Log (
-		std::string (resourceName) + " is Generated!!\n");
+	LogSystem::Log (std::string (resourceName) + " is Generated!!\n");
 
 	return resource;
 }
@@ -63,9 +62,7 @@ ResourceManager::CreateBufferResource (
 // TextureResourceを作る
 
 Microsoft::WRL::ComPtr<ID3D12Resource>
-ResourceManager::CreateTextureResource (
-	ID3D12Device* device,
-	const DirectX::TexMetadata& metadata) {
+ResourceManager::CreateTextureResource (ID3D12Device* device, const DirectX::TexMetadata& metadata) {
 
 	//=============================================================================================//
 	// Resource設定
@@ -131,20 +128,18 @@ ResourceManager::UploadTextureData (
 	//=============================================================================================//
 	// IntermediateResourceのサイズ取得
 
-	uint64_t intermediateSize =
-		GetRequiredIntermediateSize (
-			texture.Get (),
-			0,
-			UINT (subresources.size ()));
+	uint64_t intermediateSize = GetRequiredIntermediateSize (
+		texture.Get (),
+		0,
+		UINT (subresources.size ()));
 
 	//=============================================================================================//
 	// IntermediateResource生成
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource =
-		CreateBufferResource (
-			device,
-			intermediateSize,
-			"intermediateResource");
+	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = CreateBufferResource (
+		device,
+		intermediateSize,
+		"intermediateResource");
 
 	//=============================================================================================//
 	// Textureに転送

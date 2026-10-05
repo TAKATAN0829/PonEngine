@@ -59,20 +59,17 @@ public:
 	//=============================================================================================//
 	// 音声読み込み
 
-	SoundData LoadWave (
-		const char* filename);
+	SoundData LoadWave (const char* filename);
 
 	//=============================================================================================//
 	// 音声解放
 
-	void UnloadWave (
-		SoundData* soundData);
+	void UnloadWave (SoundData* soundData);
 
 	//=============================================================================================//
 	// 音声再生
 
-	void PlayWave (
-		const SoundData& soundData);
+	void PlayWave (const SoundData& soundData);
 
 private:
 

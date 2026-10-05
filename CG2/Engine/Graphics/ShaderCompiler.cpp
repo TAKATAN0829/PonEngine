@@ -9,6 +9,7 @@
 
 // LogSystem
 #include "LogSystem.h"
+#include "StringUtility.h"
 
 //=============================================================================================//
 // 初期化処理
@@ -42,19 +43,15 @@ void ShaderCompiler::Initialize () {
 //=============================================================================================//
 // ShaderCompile
 
-IDxcBlob* ShaderCompiler::CompileShader (
-	const std::wstring& filePath,
-	const wchar_t* profile) {
+IDxcBlob* ShaderCompiler::CompileShader (const std::wstring& filePath, const wchar_t* profile) {
 
 	//=============================================================================================//
 	// Compile開始ログ
 
-	LogSystem::Log (
-		LogSystem::ConvertString (
-			std::format (
-				L"Begin CompileShader, path:{}, profile:{}\n",
-				filePath,
-				profile)));
+	LogSystem::Log (StringUtility::ConvertString (std::format (
+		L"Begin CompileShader, path:{}, profile:{}\n",
+		filePath,
+		profile)));
 
 	//=============================================================================================//
 	// Shaderファイル読み込み
@@ -138,12 +135,10 @@ IDxcBlob* ShaderCompiler::CompileShader (
 	//=============================================================================================//
 	// Compile成功ログ
 
-	LogSystem::Log (
-		LogSystem::ConvertString (
-			std::format (
-				L"Compile Succeeded, path:{}, profile:{}\n",
-				filePath,
-				profile)));
+	LogSystem::Log (StringUtility::ConvertString (std::format (
+		L"Compile Succeeded, path:{}, profile:{}\n",
+		filePath,
+		profile)));
 
 	//=============================================================================================//
 	// 解放

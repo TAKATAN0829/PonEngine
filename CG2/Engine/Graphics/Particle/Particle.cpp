@@ -36,16 +36,18 @@ void Particle::Initialize () {
 	//=============================================================================================//
 	// Instancing用のTransformationMatrixリソースを作る
 
-	instancingResource_ =
-		resourceManager->CreateBufferResource (
-			device,
-			sizeof (TransformationMatrix) * kNumInstance,
-			"instancingResource");
+	instancingResource_ = resourceManager->CreateBufferResource (
+		device,
+		sizeof (TransformationMatrix) * kNumInstance,
+		"instancingResource");
 
 	//=============================================================================================//
 	// 書き込むためのアドレスを取得
 
-	instancingResource_->Map (0, nullptr, reinterpret_cast<void**>(&instancingData_));
+	instancingResource_->Map (
+		0,
+		nullptr,
+		reinterpret_cast<void**>(&instancingData_));
 
 	// 単位行列を書き込んでおく
 	for (uint32_t index = 0; index < kNumInstance; ++index) {
@@ -72,7 +74,10 @@ void Particle::Initialize () {
 
 	instancingSrvHandleGPU_ = srvDescriptorHeap->GetGPUDescriptorHandle (kInstancingSrvIndex);
 
-	device->CreateShaderResourceView (instancingResource_.Get (), &instancingSrvDesc, instancingSrvHandleCPU);
+	device->CreateShaderResourceView (
+		instancingResource_.Get (),
+		&instancingSrvDesc,
+		instancingSrvHandleCPU);
 
 	//=============================================================================================//
 	// Transform初期化（少しずつずらす）
@@ -95,8 +100,10 @@ void Particle::Update (const Matrix4x4& viewProjectionMatrix) {
 
 	for (uint32_t index = 0; index < kNumInstance; ++index) {
 
-		Matrix4x4 worldMatrix =
-			MathUtility::MakeAffineMatrix (transforms_[index].scale, transforms_[index].rotate, transforms_[index].translate);
+		Matrix4x4 worldMatrix = MathUtility::MakeAffineMatrix (
+			transforms_[index].scale,
+			transforms_[index].rotate,
+			transforms_[index].translate);
 
 		Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply (worldMatrix, viewProjectionMatrix);
 

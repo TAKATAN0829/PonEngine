@@ -40,11 +40,10 @@ void Object3d::InitializeResources() {
 
 	material_->Initialize();
 
-	wvpResource_ =
-		resourceManager->CreateBufferResource(
-			device,
-			sizeof(TransformationMatrix),
-			"wvpResource");
+	wvpResource_ = resourceManager->CreateBufferResource(
+		device,
+		sizeof(TransformationMatrix),
+		"wvpResource");
 
 	wvpResource_->Map(
 		0,
@@ -98,9 +97,7 @@ void Object3d::Draw() {
 	//=============================================================================================//
 	// WVP設定
 
-	commandList->SetGraphicsRootConstantBufferView(
-		1,
-		wvpResource_->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(1, wvpResource_->GetGPUVirtualAddress());
 
 	//=============================================================================================//
 	// Mesh描画
@@ -167,9 +164,15 @@ void Object3d::SetUVTransform (const Matrix4x4& uvTransform) {
 //=================================================================================================//
 // DirectionalLight設定
 
-void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity) {
+void Object3d::SetDirectionalLight (
+	const Vector4& color,
+	const Vector3& direction,
+	float intensity) {
 
-	material_->SetDirectionalLight (color, direction, intensity);
+	material_->SetDirectionalLight (
+		color,
+		direction,
+		intensity);
 }
 
 
