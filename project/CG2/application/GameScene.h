@@ -1,8 +1,5 @@
 #pragma once
 
-// C++
-#include <vector>
-
 // 自作
 #include "IScene.h"
 #include "EngineStructs.h"
@@ -28,35 +25,27 @@ private:
 	TransformData cameraTransform_{};
 
 	//=============================================================================================//
-	// 三角形
+	// 色とBlendMode
 
-	std::vector<Object3d*> triangles_;
-	std::vector<TransformData> trianglesTransformData_;
+	Vector4 color_ = { 1.0f,1.0f,1.0f,1.0f };
 
-	std::vector<Object3d*> invTriangles_;
-	std::vector<TransformData> invTrianglesTransformData_;
-
-	// 三角形一個当たりのトランスフォームデータ
-	TransformData triangleTransform_;
-	TransformData invTriangleTransform_;
-
-	//=============================================================================================//
-	// 表示する三角形数
-
-	int triangleCountsX_ = 14;
-	int triangleCountsY_ = 8;
-
-	//=============================================================================================//
-	// 三角形の色とBlendMode
-
-	Vector4 triangleColor_ = { 1.0f,1.0f,1.0f,1.0f };
-
-	BlendMode triangleBlendMode_ = kBlendModeNormal;
+	BlendMode blendMode_ = kBlendModeNormal;
 
 	//=============================================================================================//
 	// Particle
 
 	Particle* particle_ = nullptr;
+
+	//=============================================================================================//
+	// Fence
+
+	Object3d* fence_ = nullptr;
+
+	TransformData fenceTransform_ = {
+		{3.0f,3.0f,3.0f},
+		{0.0f,3.14159265f,0.0f},
+		{0.0f,0.0f,-15.0f}
+	};
 
 	//=============================================================================================//
 	// DebugCamera

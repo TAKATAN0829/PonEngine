@@ -165,6 +165,30 @@ PipelineManager::CreateBlendState (BlendMode blendMode) {
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
 		break;
 
+	case kBlendModeLighten:
+
+		// max(Src, Dest)
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_MAX;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+
+	case kBlendModeDarken:
+
+		// min(Src, Dest)
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_MIN;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+
+	case kBlendModeInvert:
+
+		// Src * (1 - Dest) + Dest * 0
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+		break;
+
 	default:
 
 		assert (false);

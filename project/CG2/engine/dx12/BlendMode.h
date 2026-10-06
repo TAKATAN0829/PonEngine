@@ -20,6 +20,15 @@ enum BlendMode {
 	//!< スクリーン。Src * (1 - Dest) + Dest * 1
 	kBlendModeScreen,
 
+	//!< 比較(明)。max(Src, Dest)
+	kBlendModeLighten,
+
+	//!< 比較(暗)。min(Src, Dest)
+	kBlendModeDarken,
+
+	//!< 反転。Src * (1 - Dest) + Dest * 0
+	kBlendModeInvert,
+
 	// 利用してはいけない
 	kCountOfBlendMode,
 };

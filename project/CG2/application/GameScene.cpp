@@ -1,4 +1,4 @@
-#include "GameScene.h"
+﻿#include "GameScene.h"
 #include "WinApp.h"
 
 #ifdef USE_IMGUI
@@ -24,64 +24,6 @@ void GameScene::Initialize (const SceneContext& context) {
 	debugCamera_ = new DebugCamera ();
 
 	debugCamera_->Initialize (WinApp::kClientWidth, WinApp::kClientHeight);
-	//=============================================================================================//
-	// 三角形初期化
-
-	triangles_.resize (triangleCountsX_ * triangleCountsY_);
-	trianglesTransformData_.resize (triangleCountsX_ * triangleCountsY_);
-
-	invTriangles_.resize (triangleCountsX_ * triangleCountsY_);
-	invTrianglesTransformData_.resize (triangleCountsX_ * triangleCountsY_);
-
-	// 三角形1個あたりのTransformData 
-	triangleTransform_ = {
-		{1.f,1.f,1.f},
-		{0.f,0.f,0.f},
-	};
-
-	invTriangleTransform_ = {
-		{1.f,1.f,1.f},
-		{0.f,0.f,-3.141529f},
-	};
-
-	for (int countY = 0; countY < triangleCountsY_; ++countY) {
-		for (int countX = 0; countX < triangleCountsX_; ++countX) {
-
-			int index = countY * triangleCountsX_ + countX;
-
-			triangles_[index] = new Object3d ();
-			triangles_[index]->Initialize (context.object3dRenderer, MeshType::kTriangle);
-
-			trianglesTransformData_[index].scale = { triangleTransform_.scale };
-			trianglesTransformData_[index].rotate = { triangleTransform_.rotate };
-
-			// 画面中央を基準に並べる
-			trianglesTransformData_[index].translate = {
-				(countX - triangleCountsX_ * 0.5f) * 2.0f,
-				(countY - triangleCountsY_ * 0.5f) * 2.0f,
-				0.0f
-			};
-
-			triangles_[index]->SetTransform (trianglesTransformData_[index]);
-			triangles_[index]->SetColor ({ 1.0f,1.0f,1.0f,1.0f });
-
-			invTriangles_[index] = new Object3d ();
-			invTriangles_[index]->Initialize (context.object3dRenderer, MeshType::kTriangle);
-
-			invTrianglesTransformData_[index].scale = { invTriangleTransform_.scale };
-			invTrianglesTransformData_[index].rotate = { invTriangleTransform_.rotate };
-
-			invTrianglesTransformData_[index].translate = {
-				(countX - triangleCountsX_ * 0.5f) * 2.0f + 1.0f,
-				(countY - triangleCountsY_ * 0.5f) * 2.0f + 2.0f,
-				0.0f
-			};
-
-			invTriangles_[index]->SetTransform (invTrianglesTransformData_[index]);
-			invTriangles_[index]->SetColor ({ 0.0f,0.0f,0.0f,1.0f });
-
-		}
-	}
 
 	//=============================================================================================//
 	// Particle初期化
@@ -89,6 +31,18 @@ void GameScene::Initialize (const SceneContext& context) {
 	particle_ = new Particle ();
 
 	particle_->Initialize (context.particleRenderer);
+
+	//=============================================================================================//
+	// Fence初期化
+
+	fence_ = new Object3d ();
+
+	fence_->Initialize (
+		context.object3dRenderer,
+		"resources/fence",
+		"fence.obj");
+
+	fence_->SetTexture ("resources/fence/fence.png");
 }
 
 //=================================================================================================//
@@ -111,24 +65,14 @@ void GameScene::Update (Input* input) {
 void GameScene::Draw () {
 
 	//=============================================================================================//
-	// 三角形描画
-
-	for (int countY = 0; countY < triangleCountsY_; ++countY) {
-		for (int countX = 0; countX < triangleCountsX_; ++countX) {
-
-			int index = countY * triangleCountsX_ + countX;
-
-			triangles_[index]->Draw ();
-			invTriangles_[index]->Draw ();
-		}
-	}
-
-	//=============================================================================================//
 	// Particle描画
 
 	particle_->Draw ();
 
+	//=============================================================================================//
+	// Fence描画
 
+	fence_->Draw ();
 }
 
 //=================================================================================================//
@@ -137,26 +81,18 @@ void GameScene::Draw () {
 void GameScene::Finalize () {
 
 	//=============================================================================================//
-	// 三角形解放
-
-	for (Object3d* triangle : triangles_) {
-		triangle->Finalize ();
-
-		delete triangle;
-	}
-
-	for (Object3d* invTriangle : invTriangles_) {
-		invTriangle->Finalize ();
-
-		delete invTriangle;
-	}
-
-	//=============================================================================================//
 	// Particle解放
 
 	particle_->Finalize ();
 
 	delete particle_;
+
+	//=============================================================================================//
+	// Fence解放
+
+	fence_->Finalize ();
+
+	delete fence_;
 
 	//=============================================================================================//
 	// Camera解放
@@ -184,71 +120,26 @@ void GameScene::UpdateCamera (Input* input) {
 void GameScene::UpdateObject () {
 
 	//=============================================================================================//
-	// 三角形更新
-
-	for (int countY = 0; countY < triangleCountsY_; ++countY) {
-		for (int countX = 0; countX < triangleCountsX_; ++countX) {
-
-			int index = countY * triangleCountsX_ + countX;
-			trianglesTransformData_[index].scale = triangleTransform_.scale;
-			trianglesTransformData_[index].rotate = triangleTransform_.rotate;
-
-			invTrianglesTransformData_[index].scale = invTriangleTransform_.scale;
-			invTrianglesTransformData_[index].rotate = invTriangleTransform_.rotate;
-
-			triangles_[index]->SetTransform (trianglesTransformData_[index]);
-			triangles_[index]->SetColor (triangleColor_);
-			triangles_[index]->SetBlendMode (triangleBlendMode_);
-			triangles_[index]->Update (debugCamera_->GetViewProjectionMatrix ());
-
-			invTriangles_[index]->SetTransform (invTrianglesTransformData_[index]);
-			invTriangles_[index]->Update (debugCamera_->GetViewProjectionMatrix ());
-
-		}
-	}
-
-	//=============================================================================================//
 	// Particle更新
 
-	particle_->SetColor (triangleColor_);
-	particle_->SetBlendMode (triangleBlendMode_);
+	particle_->SetColor (color_);
+	particle_->SetBlendMode (blendMode_);
 	particle_->Update (debugCamera_->GetViewProjectionMatrix ());
+
+	//=============================================================================================//
+	// Fence更新
+
+	fence_->SetTransform (fenceTransform_);
+	fence_->SetBlendMode (blendMode_);
+	fence_->Update (debugCamera_->GetViewProjectionMatrix ());
 
 #ifdef USE_IMGUI
 
 	//=============================================================================================//
 	// ImGui
 
-	ImGui::Begin ("Triangle");
-	ImGui::DragFloat3 (
-		"TriangleScale",
-		&triangleTransform_.scale.x,
-		0.1f,
-		0.f,
-		10.f);
-	ImGui::DragFloat3 (
-		"TriangleRotate",
-		&triangleTransform_.rotate.x,
-		0.1f,
-		0.f,
-		10.f);
-
-	ImGui::DragFloat3 (
-		"InvTriangleScale",
-		&invTriangleTransform_.scale.x,
-		0.1f,
-		0.f,
-		10.f);
-	ImGui::DragFloat3 (
-		"InvTriangleRotate",
-		&invTriangleTransform_.rotate.x,
-		0.1f,
-		0.f,
-		10.f);
-	ImGui::End ();
-
 	ImGui::Begin ("Settings");
-	ImGui::ColorEdit4 ("color", &triangleColor_.x);
+	ImGui::ColorEdit4 ("color", &color_.x);
 
 	static const char* kBlendModeNames[kCountOfBlendMode] = {
 		"kBlendModeNone",
@@ -257,9 +148,12 @@ void GameScene::UpdateObject () {
 		"kBlendModeSubtract",
 		"kBlendModeMultiply",
 		"kBlendModeScreen",
+		"kBlendModeLighten",
+		"kBlendModeDarken",
+		"kBlendModeInvert",
 	};
 
-	int blendMode = static_cast<int>(triangleBlendMode_);
+	int blendMode = static_cast<int>(blendMode_);
 
 	if (ImGui::Combo (
 		"Blend",
@@ -267,9 +161,20 @@ void GameScene::UpdateObject () {
 		kBlendModeNames,
 		kCountOfBlendMode)) {
 
-		triangleBlendMode_ = static_cast<BlendMode>(blendMode);
+		blendMode_ = static_cast<BlendMode>(blendMode);
 	}
 
+	ImGui::End ();
+
+	ImGui::Begin ("Fence");
+	ImGui::DragFloat3 (
+		"FenceRotate",
+		&fenceTransform_.rotate.x,
+		0.01f);
+	ImGui::DragFloat3 (
+		"FenceTranslate",
+		&fenceTransform_.translate.x,
+		0.1f);
 	ImGui::End ();
 
 #endif

@@ -25,7 +25,7 @@ void Sprite::Initialize(SpriteRenderer* renderer) {
 
 	mesh_ = new Mesh();
 
-	mesh_->Initialize(dxCommon, MeshType::kPlane);
+	mesh_->Initialize(dxCommon, MeshType::kSprite);
 
 	//=============================================================================================//
 	// Material生成
