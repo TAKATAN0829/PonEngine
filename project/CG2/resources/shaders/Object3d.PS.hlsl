@@ -1,4 +1,4 @@
-#include "Object3d.hlsli"
+﻿#include "Object3d.hlsli"
 
 struct Material
 {
@@ -39,7 +39,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     {
         discard;
     }
-
+    
     if (gMaterial.enableLighting != 0)
     { // Lightingする場合
         float NdotL = dot(normalize(input.normal), -gDirectionalLight.direction);
@@ -51,7 +51,13 @@ PixelShaderOutput main(VertexShaderOutput input)
     { // Lightingしない場合
         output.color = gMaterial.color * textureColor;
     }
-    
+
+    // output.colorのα値が0.0のときにPixelを棄却
+    if (output.color.a == 0.0)
+    {
+        discard;
+    }
+
     return output;
 }
 
