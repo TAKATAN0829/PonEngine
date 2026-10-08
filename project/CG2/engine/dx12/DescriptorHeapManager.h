@@ -18,16 +18,6 @@ public:
 		bool shaderVisible);
 
 	//=============================================================================================//
-	// CPUHandle取得
-
-	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(uint32_t index);
-
-	//=============================================================================================//
-	// GPUHandle取得
-
-	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(uint32_t index);
-
-	//=============================================================================================//
 	// 空きDescriptor確保
 
 	uint32_t Allocate();
@@ -38,9 +28,25 @@ public:
 	void Free(uint32_t index);
 
 	//=============================================================================================//
-	// Getter
+	// CPUHandle取得
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(uint32_t index);
+
+	//=============================================================================================//
+	// GPUHandle取得
+
+	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(uint32_t index);
+
+	//=============================================================================================//
+	// DescriptorHeap取得
 
 	ID3D12DescriptorHeap* GetDescriptorHeap() { return descriptorHeap_.Get(); }
+
+	//=============================================================================================//
+	// CPUHandleからIndex取得
+
+	uint32_t GetIndex(D3D12_CPU_DESCRIPTOR_HANDLE handle);
+	
 
 private:
 	//=============================================================================================//

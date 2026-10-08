@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 // Windows
 #include <Windows.h>
@@ -34,6 +34,8 @@ public:
 
 	static const uint32_t kMaxSrvCount = 128;
 
+public:
+
 	//=============================================================================================//
 	// 初期化処理
 
@@ -60,6 +62,8 @@ public:
 	ID3D12Device* GetDevice() { return device_.Get(); }
 
 	ID3D12GraphicsCommandList* GetCommandList() { return commandList_.Get(); }
+
+	ID3D12CommandQueue* GetCommandQueue() { return commandQueue_.Get(); }
 
 	DescriptorHeapManager* GetSrvHeap() { return &srvHeap_; }
 
