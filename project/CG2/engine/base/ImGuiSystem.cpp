@@ -1,4 +1,4 @@
-#include "ImGuiSystem.h"
+﻿#include "ImGuiSystem.h"
 
 // C++
 #include <cassert>
@@ -36,6 +36,9 @@ void ImGuiSystem::Initialize(WinApp* winApp, DirectXCommon* dxCommon) {
 
 	ImGui::CreateContext();
 
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
 	ImGui::StyleColorsDark();
 
 	//=============================================================================================//
@@ -46,17 +49,40 @@ void ImGuiSystem::Initialize(WinApp* winApp, DirectXCommon* dxCommon) {
 	//=============================================================================================//
 	// DX12初期化
 
-	DescriptorHeapManager* srvHeap = dxCommon_->GetSrvHeap();
+	ImGui_ImplDX12_InitInfo initInfo{};
 
-	uint32_t srvIndex = srvHeap->Allocate();
+	initInfo.Device = dxCommon_->GetDevice();
+	initInfo.CommandQueue = dxCommon_->GetCommandQueue();
+	initInfo.NumFramesInFlight = static_cast<int>(DirectXCommon::kBufferCount);
+	initInfo.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	initInfo.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	initInfo.UserData = dxCommon_->GetSrvHeap();
+	initInfo.SrvDescriptorHeap = dxCommon_->GetSrvHeap()->GetDescriptorHeap();
 
-	ImGui_ImplDX12_Init(
-		dxCommon_->GetDevice(),
-		static_cast<int>(DirectXCommon::kBufferCount),
-		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
-		srvHeap->GetDescriptorHeap(),
-		srvHeap->GetCPUDescriptorHandle(srvIndex),
-		srvHeap->GetGPUDescriptorHandle(srvIndex));
+	initInfo.SrvDescriptorAllocFn = [](
+		ImGui_ImplDX12_InitInfo* info,
+		D3D12_CPU_DESCRIPTOR_HANDLE* outCpuHandle,
+		D3D12_GPU_DESCRIPTOR_HANDLE* outGpuHandle) {
+
+			DescriptorHeapManager* srvHeap = static_cast<DescriptorHeapManager*>(info->UserData);
+
+			uint32_t index = srvHeap->Allocate();
+
+			*outCpuHandle = srvHeap->GetCPUDescriptorHandle(index);
+			*outGpuHandle = srvHeap->GetGPUDescriptorHandle(index);
+		};
+
+	initInfo.SrvDescriptorFreeFn = [](
+		ImGui_ImplDX12_InitInfo* info,
+		D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle,
+		D3D12_GPU_DESCRIPTOR_HANDLE) {
+
+			DescriptorHeapManager* srvHeap = static_cast<DescriptorHeapManager*>(info->UserData);
+
+			srvHeap->Free(srvHeap->GetIndex(cpuHandle));
+		};
+
+	ImGui_ImplDX12_Init(&initInfo);
 
 	isInitialized_ = true;
 #endif
@@ -76,10 +102,10 @@ void ImGuiSystem::Begin() {
 	// ImGuiフレーム開始
 #ifdef USE_IMGUI
 	ImGui_ImplDX12_NewFrame();
-
 	ImGui_ImplWin32_NewFrame();
-
 	ImGui::NewFrame();
+
+	ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 #endif
 }
 

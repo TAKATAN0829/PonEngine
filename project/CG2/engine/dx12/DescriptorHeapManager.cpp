@@ -1,11 +1,11 @@
-#include "DescriptorHeapManager.h"
+﻿#include "DescriptorHeapManager.h"
 
 #include <cassert>
 
 //=============================================================================================//
 // 初期化
 
-void DescriptorHeapManager::Initialize (
+void DescriptorHeapManager::Initialize(
 	ID3D12Device* device,
 	D3D12_DESCRIPTOR_HEAP_TYPE heapType,
 	uint32_t descriptorCount,
@@ -31,48 +31,71 @@ void DescriptorHeapManager::Initialize (
 	}
 
 	// Heap生成
-	HRESULT hr = device_->CreateDescriptorHeap (&descriptorHeapDesc, IID_PPV_ARGS (&descriptorHeap_));
+	HRESULT hr = device_->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap_));
 
-	assert (SUCCEEDED (hr));
+	assert(SUCCEEDED(hr));
 
 	// DescriptorSize取得
-	descriptorSize_ = device_->GetDescriptorHandleIncrementSize (heapType);
-}
-
-//=============================================================================================//
-// CPUHandle取得
-
-D3D12_CPU_DESCRIPTOR_HANDLE
-DescriptorHeapManager::GetCPUDescriptorHandle (uint32_t index) {
-
-	D3D12_CPU_DESCRIPTOR_HANDLE handle =
-		descriptorHeap_->
-		GetCPUDescriptorHandleForHeapStart ();
-
-	handle.ptr += descriptorSize_ * index;
-
-	return handle;
-}
-
-//=============================================================================================//
-// GPUHandle取得
-
-D3D12_GPU_DESCRIPTOR_HANDLE
-DescriptorHeapManager::GetGPUDescriptorHandle (uint32_t index) {
-
-	D3D12_GPU_DESCRIPTOR_HANDLE handle = descriptorHeap_->GetGPUDescriptorHandleForHeapStart ();
-
-	handle.ptr += descriptorSize_ * index;
-
-	return handle;
+	descriptorSize_ = device_->GetDescriptorHandleIncrementSize(heapType);
 }
 
 //=============================================================================================//
 // 空きDescriptor確保
 
-uint32_t DescriptorHeapManager::Allocate () {
+uint32_t DescriptorHeapManager::Allocate() {
 
-	assert (nextIndex_ < descriptorCount_);
+	if (!freeIndices_.empty()) {
+		uint32_t index = freeIndices_.back();
+		freeIndices_.pop_back();
+		return index;
+	}
+
+	assert(nextIndex_ < descriptorCount_);
 
 	return nextIndex_++;
+}
+
+//=================================================================================================//
+// Descriptor解放
+
+void DescriptorHeapManager::Free(uint32_t index) {
+	assert(index < nextIndex_);
+	freeIndices_.push_back(index);
+}
+
+//=================================================================================================//
+// CPUHandle取得
+
+D3D12_CPU_DESCRIPTOR_HANDLE
+DescriptorHeapManager::GetCPUDescriptorHandle(uint32_t index) {
+
+	D3D12_CPU_DESCRIPTOR_HANDLE handle =
+		descriptorHeap_->
+		GetCPUDescriptorHandleForHeapStart();
+
+	handle.ptr += descriptorSize_ * index;
+
+	return handle;
+}
+
+//=================================================================================================//
+// GPUHandle取得
+
+D3D12_GPU_DESCRIPTOR_HANDLE
+DescriptorHeapManager::GetGPUDescriptorHandle(uint32_t index) {
+
+	D3D12_GPU_DESCRIPTOR_HANDLE handle = descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
+
+	handle.ptr += descriptorSize_ * index;
+
+	return handle;
+}
+
+//=================================================================================================//
+// CPUHandleから番号取得
+
+uint32_t DescriptorHeapManager::GetIndex(D3D12_CPU_DESCRIPTOR_HANDLE handle) {
+	D3D12_CPU_DESCRIPTOR_HANDLE start = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+
+	return static_cast<uint32_t>((handle.ptr - start.ptr) / descriptorSize_);
 }
