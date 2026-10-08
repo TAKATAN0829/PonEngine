@@ -1,4 +1,6 @@
-[*.{cpp},h]
+root = true
+
+[*.{cpp,h}]
 charset = utf-8
 # スペルミスをIntellisense上での「エラー」として扱う
 spelling_error_severity = error
@@ -10,7 +12,7 @@ spelling_languages = en-us
 spelling_use_default_exclusion_dictionary = true
 # 自分の除外辞書を指定
 spelling_exclusion_path = ./exclusion.dic
-[*,{cpp,hlsl,hlsli}]
+[*.{cpp,hlsl,hlsli}]
 charset = utf-8
 [externals/**]
 generated_code = true
