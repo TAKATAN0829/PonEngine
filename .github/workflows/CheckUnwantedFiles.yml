@@ -47,9 +47,9 @@ jobs:
             # 1. .git を除外
             # 2. 不要なディレクトリを検索(-type d)し、見つけたらパスを出力（-print）し、その中身を枝刈り(-prune)
             # 3. または（-o）不要なファイルを検索(-type f)し、パスを出力(-print)
-            UNWANTED_LIST=$(find . -path "./.git" -prune -o\
+            UNWANTED_LIST=$(find . -path "./.git" -prune -o \
               \( \( "${DIR_CONDITIONS[@]}" \) -a -type d -print -prune \) -o \
-              \( \( "${NAME_CONDITIONS[@]}" \) -a -type d -print \) \
+              \( \( "${NAME_CONDITIONS[@]}" \) -a -type f -print \) \
             )
             # 検出結果があればエラーとして出力し、失敗させる
             if [ -n "$UNWANTED_LIST" ]; then
