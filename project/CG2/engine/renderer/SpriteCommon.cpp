@@ -1,4 +1,4 @@
-#include "SpriteRenderer.h"
+#include "SpriteCommon.h"
 
 // C++
 #include <cassert>
@@ -10,11 +10,25 @@
 //=================================================================================================//
 // 初期化処理
 
-void SpriteRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler) {
+void SpriteCommon::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler) {
 
 	assert(dxCommon);
 
+	assert(shaderCompiler);
+
+	// 引数で受け取ってメンバ変数に記録する
 	dxCommon_ = dxCommon;
+
+	shaderCompiler_ = shaderCompiler;
+
+	// GraphicsPipelineの生成
+	CreateGraphicsPipeline();
+}
+
+//=================================================================================================//
+// RootSignatureの作成
+
+void SpriteCommon::CreateRootSignature() {
 
 	ID3D12Device* device = dxCommon_->GetDevice();
 
@@ -118,6 +132,17 @@ void SpriteRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderC
 		IID_PPV_ARGS (&rootSignature_));
 
 	assert (SUCCEEDED (hr));
+}
+
+//=================================================================================================//
+// GraphicsPipelineの生成
+
+void SpriteCommon::CreateGraphicsPipeline() {
+
+	// GraphicsPipelineの生成にはRootSignatureが必要なので最初に作成する
+	CreateRootSignature();
+
+	ID3D12Device* device = dxCommon_->GetDevice();
 
 	//=============================================================================================//
 	// InputLayout設定
@@ -178,9 +203,9 @@ void SpriteRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderC
 	//=============================================================================================//
 	// Shaderコンパイル
 
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = shaderCompiler->CompileShader (L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = shaderCompiler_->CompileShader (L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = shaderCompiler->CompileShader (L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = shaderCompiler_->CompileShader (L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
 
 	//=============================================================================================//
 	// PSO作成
@@ -224,23 +249,28 @@ void SpriteRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderC
 	//=============================================================================================//
 	// PipelineState生成
 
-	hr = device->CreateGraphicsPipelineState (&graphicsPipelineStateDesc, IID_PPV_ARGS (&pipelineState_));
+	HRESULT hr = device->CreateGraphicsPipelineState (&graphicsPipelineStateDesc, IID_PPV_ARGS (&pipelineState_));
 
 	assert (SUCCEEDED (hr));
 }
 
 //=================================================================================================//
-// 描画前設定
+// 共通描画設定
 
-void SpriteRenderer::PreDraw() {
+void SpriteCommon::DrawSettingCommon() {
 
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
+	// RootSignatureをセットするコマンド
 	commandList->SetGraphicsRootSignature(rootSignature_.Get());
 
+	// GraphicsPipelineStateをセットするコマンド
 	commandList->SetPipelineState(pipelineState_.Get());
 
+	// PrimitiveTopologyをセットするコマンド
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// SRV用のDescriptorHeapをセットするコマンド
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { dxCommon_->GetSrvHeap()->GetDescriptorHeap() };
 

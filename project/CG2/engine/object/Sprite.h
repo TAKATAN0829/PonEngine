@@ -11,7 +11,7 @@
 #include "Mesh.h"
 #include "Material.h"
 
-class SpriteRenderer;
+class SpriteCommon;
 
 class Sprite {
 public:
@@ -19,7 +19,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(SpriteRenderer* renderer);
+	void Initialize(SpriteCommon* spriteCommon);
 
 	//=============================================================================================//
 	// 更新処理
@@ -64,9 +64,9 @@ public:
 private:
 
 	//=============================================================================================//
-	// Renderer
+	// SpriteCommon
 
-	SpriteRenderer* renderer_ = nullptr;
+	SpriteCommon* spriteCommon_ = nullptr;
 
 	//=============================================================================================//
 	// Mesh

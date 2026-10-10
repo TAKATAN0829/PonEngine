@@ -4,7 +4,7 @@
 #include <cassert>
 
 // 自作
-#include "SpriteRenderer.h"
+#include "SpriteCommon.h"
 #include "DirectXCommon.h"
 #include "ResourceManager.h"
 #include "WinApp.h"
@@ -12,13 +12,13 @@
 //=================================================================================================//
 // 初期化処理
 
-void Sprite::Initialize(SpriteRenderer* renderer) {
+void Sprite::Initialize(SpriteCommon* spriteCommon) {
 
-	assert(renderer);
+	assert(spriteCommon);
 
-	renderer_ = renderer;
+	spriteCommon_ = spriteCommon;
 
-	DirectXCommon* dxCommon = renderer_->GetDxCommon();
+	DirectXCommon* dxCommon = spriteCommon_->GetDxCommon();
 
 	//=============================================================================================//
 	// Mesh生成
@@ -94,12 +94,9 @@ void Sprite::Update() {
 
 void Sprite::Draw() {
 
-	//=============================================================================================//
-	// 描画前設定
+	// 共通描画設定はSpriteCommon::DrawSettingCommonで描画前に一度だけ行う
 
-	renderer_->PreDraw();
-
-	ID3D12GraphicsCommandList* commandList = renderer_->GetDxCommon()->GetCommandList();
+	ID3D12GraphicsCommandList* commandList = spriteCommon_->GetDxCommon()->GetCommandList();
 
 	//=============================================================================================//
 	// Material設定

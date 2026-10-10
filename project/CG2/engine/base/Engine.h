@@ -7,7 +7,7 @@
 #include "AudioSystem.h"
 #include "ShaderCompiler.h"
 #include "Object3dRenderer.h"
-#include "SpriteRenderer.h"
+#include "SpriteCommon.h"
 #include "ParticleRenderer.h"
 #include "ImGuiSystem.h"
 #include "SceneManager.h"
@@ -62,7 +62,10 @@ private:
 
 	Object3dRenderer* object3dRenderer_ = nullptr;
 
-	SpriteRenderer* spriteRenderer_ = nullptr;
+	//=============================================================================================//
+	// SpriteCommon
+
+	SpriteCommon* spriteCommon_ = nullptr;
 
 	ParticleRenderer* particleRenderer_ = nullptr;
 
