@@ -15,6 +15,13 @@ class SpriteCommon;
 
 class Sprite {
 public:
+	// 頂点データ
+	struct VertexData {
+		Vector4 position;
+		Vector2 texcoord;
+		Vector3 normal;
+	};
+public:
 
 	//=============================================================================================//
 	// 初期化処理
@@ -97,4 +104,9 @@ private:
 	// WVPData
 
 	TransformationMatrix* wvpData_ = nullptr;
+
+	//=============================================================================================//
+	// バッファリソース
+
+	
 };
