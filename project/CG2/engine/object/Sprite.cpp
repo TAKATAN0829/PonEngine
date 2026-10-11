@@ -12,77 +12,77 @@
 //=================================================================================================//
 // 初期化処理
 
-void Sprite::Initialize(SpriteCommon* spriteCommon) {
+void Sprite::Initialize (SpriteCommon* spriteCommon) {
 
-	assert(spriteCommon);
+	assert (spriteCommon);
 
 	spriteCommon_ = spriteCommon;
 
-	DirectXCommon* dxCommon = spriteCommon_->GetDxCommon();
+	DirectXCommon* dxCommon = spriteCommon_->GetDxCommon ();
 
 	//=============================================================================================//
 	// Mesh生成
 
-	mesh_ = new Mesh();
+	mesh_ = new Mesh ();
 
-	mesh_->Initialize(dxCommon, MeshType::kSprite);
+	mesh_->Initialize (dxCommon, MeshType::kSprite);
 
 	//=============================================================================================//
 	// Material生成
 
-	material_ = new Material();
+	material_ = new Material ();
 
-	material_->Initialize(dxCommon);
+	material_->Initialize (dxCommon);
 
 	//=============================================================================================//
 	// WVPResource生成
 
-	wvpResource_ = ResourceManager::CreateBufferResource(
-		dxCommon->GetDevice(),
-		sizeof(TransformationMatrix),
+	wvpResource_ = ResourceManager::CreateBufferResource (
+		dxCommon->GetDevice (),
+		sizeof (TransformationMatrix),
 		"spriteWVPResource");
 
 	//=============================================================================================//
 	// WVPDataを書き込む
 
-	wvpResource_->Map(
+	wvpResource_->Map (
 		0,
 		nullptr,
 		reinterpret_cast<void**>(&wvpData_));
 
-	wvpData_->WVP = MathUtility::MakeIdentity4x4();
+	wvpData_->WVP = MathUtility::MakeIdentity4x4 ();
 
-	wvpData_->World = MathUtility::MakeIdentity4x4();
+	wvpData_->World = MathUtility::MakeIdentity4x4 ();
 }
 
 //=================================================================================================//
 // 更新処理
 
-void Sprite::Update() {
+void Sprite::Update () {
 
 	//=============================================================================================//
 	// WorldMatrix作成
 
-	Matrix4x4 worldMatrix = MathUtility::MakeAffineMatrix(
-		{ size_.x * 0.5f,size_.y * 0.5f,1.0f },
-		{ 0.0f,0.0f,0.0f },
+	Matrix4x4 worldMatrix = MathUtility::MakeAffineMatrix (
+		{ size_.x * 0.5f,size_.y * 0.5f,1.f },
+		{ 0.f,0.f,rotation_ },
 		{ position_.x, position_.y,0.0f });
 
 	//=============================================================================================//
 	// OrthographicMatrix作成
 
-	Matrix4x4 orthographicMatrix = MathUtility::MakeOrthographicMatrix(
-		0.0f,
-		0.0f,
+	Matrix4x4 orthographicMatrix = MathUtility::MakeOrthographicMatrix (
+		0.f,
+		0.f,
 		static_cast<float>(WinApp::kClientWidth),
 		static_cast<float>(WinApp::kClientHeight),
-		0.0f,
-		100.0f);
+		0.f,
+		100.f);
 
 	//=============================================================================================//
 	// WVP作成
 
-	Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply(worldMatrix, orthographicMatrix);
+	Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply (worldMatrix, orthographicMatrix);
 
 	wvpData_->WVP = worldViewProjectionMatrix;
 
@@ -92,32 +92,32 @@ void Sprite::Update() {
 //=================================================================================================//
 // 描画処理
 
-void Sprite::Draw() {
+void Sprite::Draw () {
 
 	// 共通描画設定はSpriteCommon::DrawSettingCommonで描画前に一度だけ行う
 
-	ID3D12GraphicsCommandList* commandList = spriteCommon_->GetDxCommon()->GetCommandList();
+	ID3D12GraphicsCommandList* commandList = spriteCommon_->GetDxCommon ()->GetCommandList ();
 
 	//=============================================================================================//
 	// Material設定
 
-	material_->Bind();
+	material_->Bind ();
 
 	//=============================================================================================//
 	// WVP設定
 
-	commandList->SetGraphicsRootConstantBufferView(1, wvpResource_->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView (1, wvpResource_->GetGPUVirtualAddress ());
 
 	//=============================================================================================//
 	// Mesh描画
 
-	mesh_->Draw();
+	mesh_->Draw ();
 }
 
 //=================================================================================================//
 // 終了処理
 
-void Sprite::Finalize() {
+void Sprite::Finalize () {
 
 	//=============================================================================================//
 	// Mesh解放
@@ -141,17 +141,9 @@ void Sprite::Finalize() {
 }
 
 //=================================================================================================//
-// Position設定
-
-void Sprite::SetPosition(const Vector2& position) {
-
-	position_ = position;
-}
-
-//=================================================================================================//
 // Size設定
 
-void Sprite::SetSize(const Vector2& size) {
+void Sprite::SetSize (const Vector2& size) {
 
 	size_ = size;
 }
@@ -159,23 +151,23 @@ void Sprite::SetSize(const Vector2& size) {
 //=================================================================================================//
 // Texture番号設定
 
-void Sprite::SetTextureIndex(uint32_t textureIndex) {
+void Sprite::SetTextureIndex (uint32_t textureIndex) {
 
-	material_->SetTextureIndex(textureIndex);
+	material_->SetTextureIndex (textureIndex);
 }
 
 //=================================================================================================//
 // 色設定
 
-void Sprite::SetColor(const Vector4& color) {
+void Sprite::SetColor (const Vector4& color) {
 
-	material_->SetColor(color);
+	material_->SetColor (color);
 }
 
 //=================================================================================================//
 // Lighting有効設定
 
-void Sprite::SetEnableLighting(bool enableLighting) {
+void Sprite::SetEnableLighting (bool enableLighting) {
 
-	material_->SetEnableLighting(enableLighting);
+	material_->SetEnableLighting (enableLighting);
 }
