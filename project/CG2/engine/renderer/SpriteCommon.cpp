@@ -196,7 +196,8 @@ void SpriteCommon::CreateGraphicsPipeline() {
 
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
 
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	// カリングしない
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
@@ -212,38 +213,39 @@ void SpriteCommon::CreateGraphicsPipeline() {
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 
+	// RootSignature
 	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get ();
-
+	// InputLayout
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-
+	// VertexShader
 	graphicsPipelineStateDesc.VS = {
 		vertexShaderBlob->GetBufferPointer (),
 		vertexShaderBlob->GetBufferSize ()
 	};
-
+	// PixelShader
 	graphicsPipelineStateDesc.PS = {
 		pixelShaderBlob->GetBufferPointer (),
 		pixelShaderBlob->GetBufferSize ()
 	};
-
+	// BlendState
 	graphicsPipelineStateDesc.BlendState = blendDesc;
-
+	// RasterizerState
 	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-
+	// 書き込むRTVの数
 	graphicsPipelineStateDesc.NumRenderTargets = 1;
-
+	// RTVのフォーマット
 	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-
+	// プリミティブトポロジのタイプ
 	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-
+	// サンプル数
 	graphicsPipelineStateDesc.SampleDesc.Count = 1;
-
+	// サンプルマスク
 	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-
+	// 深度テスト
 	graphicsPipelineStateDesc.DepthStencilState.DepthEnable = false;
-
+	// ステンシルテスト
 	graphicsPipelineStateDesc.DepthStencilState.StencilEnable = false;
-
+	// DSVのフォーマット
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	//=============================================================================================//

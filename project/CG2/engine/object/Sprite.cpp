@@ -13,7 +13,7 @@
 //=================================================================================================//
 // 初期化処理
 
-void Sprite::Initialize (SpriteCommon* spriteCommon) {
+void Sprite::Initialize (SpriteCommon* spriteCommon, const std::string& textureFilePath) {
 
 	assert (spriteCommon);
 
@@ -27,12 +27,74 @@ void Sprite::Initialize (SpriteCommon* spriteCommon) {
 
 	// 座標変換行列データ作成
 	CreateTransformationMatrixData ();
+
+	// Texture読み込み
+	SetTexture (textureFilePath);
+
+	// テクスチャサイズをイメージに合わせる
+	AdjustTextureSize ();
 }
 
 //=================================================================================================//
 // 更新処理
 
 void Sprite::Update () {
+
+	//=============================================================================================//
+	// AnchorPointを反映した頂点座標
+
+	float left = 0.f - anchorPoint_.x;
+	float right = 1.f - anchorPoint_.x;
+	float top = 0.f - anchorPoint_.y;
+	float bottom = 1.f - anchorPoint_.y;
+
+	// 左右反転
+	if (isFlipX_) {
+
+		left = -left;
+		right = -right;
+	}
+
+	// 上下反転
+	if (isFlipY_) {
+
+		top = -top;
+		bottom = -bottom;
+	}
+
+	// 左下
+	vertexData_[0].position = { left,bottom,0.f,1.f };
+
+	// 左上
+	vertexData_[1].position = { left,top,0.f,1.f };
+
+	// 右下
+	vertexData_[2].position = { right,bottom,0.f,1.f };
+
+	// 右上
+	vertexData_[3].position = { right,top,0.f,1.f };
+
+	//=============================================================================================//
+	// Texture範囲を反映したUV座標
+
+	const DirectX::TexMetadata& metadata = TextureManager::GetInstance ()->GetMetaData (textureIndex_);
+
+	float texLeft = textureLeftTop_.x / static_cast<float>(metadata.width);
+	float texRight = (textureLeftTop_.x + textureSize_.x) / static_cast<float>(metadata.width);
+	float texTop = textureLeftTop_.y / static_cast<float>(metadata.height);
+	float texBottom = (textureLeftTop_.y + textureSize_.y) / static_cast<float>(metadata.height);
+
+	// 左下
+	vertexData_[0].texcoord = { texLeft,texBottom };
+
+	// 左上
+	vertexData_[1].texcoord = { texLeft,texTop };
+
+	// 右下
+	vertexData_[2].texcoord = { texRight,texBottom };
+
+	// 右上
+	vertexData_[3].texcoord = { texRight,texTop };
 
 	//=============================================================================================//
 	// WorldMatrix作成
@@ -116,6 +178,21 @@ void Sprite::Draw () {
 void Sprite::SetTexture (const std::string& filePath) {
 
 	textureIndex_ = TextureManager::GetInstance ()->Load (filePath);
+}
+
+//=================================================================================================//
+// テクスチャサイズをイメージに合わせる
+
+void Sprite::AdjustTextureSize () {
+
+	// テクスチャメタデータを取得
+	const DirectX::TexMetadata& metadata = TextureManager::GetInstance ()->GetMetaData (textureIndex_);
+
+	textureSize_.x = static_cast<float>(metadata.width);
+	textureSize_.y = static_cast<float>(metadata.height);
+
+	// 画像サイズをテクスチャサイズに合わせる
+	size_ = textureSize_;
 }
 
 //=================================================================================================//
@@ -222,7 +299,7 @@ void Sprite::CreateMaterialData () {
 	materialData_->uvTransform = MathUtility::MakeIdentity4x4 ();
 
 	//=============================================================================================//
-	// DirectionalLightResource生成（Lightingはしないが、RootParameterを埋める必要がある）
+	// DirectionalLightResource生成
 
 	directionalLightResource_ = ResourceManager::CreateBufferResource (
 		device,

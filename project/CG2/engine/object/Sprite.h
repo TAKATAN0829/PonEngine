@@ -50,7 +50,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(SpriteCommon* spriteCommon);
+	void Initialize(SpriteCommon* spriteCommon, const std::string& textureFilePath);
 
 	//=============================================================================================//
 	// 更新処理
@@ -82,6 +82,38 @@ public:
 	const Vector2& GetSize() const { return size_; }
 
 	void SetSize(const Vector2& size) { size_ = size; }
+
+	//=============================================================================================//
+	// AnchorPoint
+
+	const Vector2& GetAnchorPoint() const { return anchorPoint_; }
+
+	void SetAnchorPoint(const Vector2& anchorPoint) { anchorPoint_ = anchorPoint; }
+
+	//=============================================================================================//
+	// Flip
+
+	bool GetIsFlipX() const { return isFlipX_; }
+
+	void SetIsFlipX(bool isFlipX) { isFlipX_ = isFlipX; }
+
+	bool GetIsFlipY() const { return isFlipY_; }
+
+	void SetIsFlipY(bool isFlipY) { isFlipY_ = isFlipY; }
+
+	//=============================================================================================//
+	// TextureLeftTop
+
+	const Vector2& GetTextureLeftTop() const { return textureLeftTop_; }
+
+	void SetTextureLeftTop(const Vector2& textureLeftTop) { textureLeftTop_ = textureLeftTop; }
+
+	//=============================================================================================//
+	// TextureSize
+
+	const Vector2& GetTextureSize() const { return textureSize_; }
+
+	void SetTextureSize(const Vector2& textureSize) { textureSize_ = textureSize; }
 
 	//=============================================================================================//
 	// Color
@@ -119,6 +151,11 @@ private:
 
 	void CreateTransformationMatrixData();
 
+	//=============================================================================================//
+	// テクスチャサイズをイメージに合わせる
+
+	void AdjustTextureSize();
+
 private:
 
 	//=============================================================================================//
@@ -140,6 +177,29 @@ private:
 	// Size
 
 	Vector2 size_ = { 100.f,100.f };
+
+	//=============================================================================================//
+	// AnchorPoint
+
+	Vector2 anchorPoint_ = { 0.f,0.f };
+
+	//=============================================================================================//
+	// Flip
+
+	// 左右フリップ
+	bool isFlipX_ = false;
+
+	// 上下フリップ
+	bool isFlipY_ = false;
+
+	//=============================================================================================//
+	// Texture範囲
+
+	// テクスチャ左上座標
+	Vector2 textureLeftTop_ = { 0.f,0.f };
+
+	// テクスチャ切り出しサイズ
+	Vector2 textureSize_ = { 100.f,100.f };
 
 	//=============================================================================================//
 	// Texture番号

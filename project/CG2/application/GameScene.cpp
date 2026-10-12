@@ -56,9 +56,7 @@ void GameScene::Initialize (const SceneContext& context) {
 
 		Sprite* sprite = new Sprite ();
 
-		sprite->Initialize (spriteCommon_);
-
-		sprite->SetTexture ("resources/uvChecker.png");
+		sprite->Initialize (spriteCommon_, "resources/uvChecker.png");
 
 		sprite->SetPosition ({ 50.f + 200.f * static_cast<float>(i),50.f });
 
@@ -264,6 +262,46 @@ void GameScene::UpdateObject () {
 			if (ImGui::DragFloat2 ("Size", &size.x, 1.f)) {
 
 				sprite->SetSize (size);
+			}
+
+			// AnchorPoint
+			Vector2 anchorPoint = sprite->GetAnchorPoint ();
+
+			if (ImGui::SliderFloat2 ("AnchorPoint", &anchorPoint.x, 0.f, 1.f)) {
+
+				sprite->SetAnchorPoint (anchorPoint);
+			}
+
+			// FlipX
+			bool isFlipX = sprite->GetIsFlipX ();
+
+			if (ImGui::Checkbox ("FlipX", &isFlipX)) {
+
+				sprite->SetIsFlipX (isFlipX);
+			}
+
+			// FlipY
+			bool isFlipY = sprite->GetIsFlipY ();
+
+			if (ImGui::Checkbox ("FlipY", &isFlipY)) {
+
+				sprite->SetIsFlipY (isFlipY);
+			}
+
+			// TextureLeftTop
+			Vector2 textureLeftTop = sprite->GetTextureLeftTop ();
+
+			if (ImGui::DragFloat2 ("TextureLeftTop", &textureLeftTop.x, 1.f)) {
+
+				sprite->SetTextureLeftTop (textureLeftTop);
+			}
+
+			// TextureSize
+			Vector2 textureSize = sprite->GetTextureSize ();
+
+			if (ImGui::DragFloat2 ("TextureSize", &textureSize.x, 1.f)) {
+
+				sprite->SetTextureSize (textureSize);
 			}
 
 			// Color
