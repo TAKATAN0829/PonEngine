@@ -57,13 +57,16 @@ void Engine::Initialize() {
 
 	object3dRenderer_->Initialize(dxCommon_, shaderCompiler_);
 
-	spriteRenderer_ = new SpriteRenderer();
-
-	spriteRenderer_->Initialize(dxCommon_, shaderCompiler_);
-
 	particleRenderer_ = new ParticleRenderer();
 
 	particleRenderer_->Initialize(dxCommon_, shaderCompiler_);
+
+	//=============================================================================================//
+	// SpriteCommon初期化
+
+	spriteCommon_ = new SpriteCommon();
+
+	spriteCommon_->Initialize(dxCommon_, shaderCompiler_);
 
 	//=============================================================================================//
 	// ImGuiSystem初期化
@@ -79,7 +82,7 @@ void Engine::Initialize() {
 
 	sceneContext.object3dRenderer = object3dRenderer_;
 
-	sceneContext.spriteRenderer = spriteRenderer_;
+	sceneContext.spriteCommon = spriteCommon_;
 
 	sceneContext.particleRenderer = particleRenderer_;
 
@@ -164,11 +167,14 @@ void Engine::Finalize() {
 	delete imGuiSystem_;
 
 	//=============================================================================================//
+	// SpriteCommon解放
+
+	delete spriteCommon_;
+
+	//=============================================================================================//
 	// Renderer解放
 
 	delete particleRenderer_;
-
-	delete spriteRenderer_;
 
 	delete object3dRenderer_;
 

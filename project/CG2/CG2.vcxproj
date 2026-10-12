@@ -228,7 +228,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
     <ClCompile Include="engine\renderer\Object3dRenderer.cpp" />
-    <ClCompile Include="engine\renderer\SpriteRenderer.cpp" />
+    <ClCompile Include="engine\renderer\SpriteCommon.cpp" />
     <ClCompile Include="engine\renderer\ParticleRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -307,7 +307,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\scene\SceneManager.h" />
     <ClInclude Include="engine\object\Transform.h" />
     <ClInclude Include="engine\renderer\Object3dRenderer.h" />
-    <ClInclude Include="engine\renderer\SpriteRenderer.h" />
+    <ClInclude Include="engine\renderer\SpriteCommon.h" />
     <ClInclude Include="engine\renderer\ParticleRenderer.h" />
   </ItemGroup>
   <ItemGroup>

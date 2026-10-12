@@ -4,7 +4,7 @@
 #include "Input.h"
 
 class Object3dRenderer;
-class SpriteRenderer;
+class SpriteCommon;
 class ParticleRenderer;
 
 //=================================================================================================//
@@ -14,7 +14,7 @@ struct SceneContext {
 
 	Object3dRenderer* object3dRenderer = nullptr;
 
-	SpriteRenderer* spriteRenderer = nullptr;
+	SpriteCommon* spriteCommon = nullptr;
 
 	ParticleRenderer* particleRenderer = nullptr;
 };

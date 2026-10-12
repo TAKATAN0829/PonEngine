@@ -1,4 +1,4 @@
-#include "SpriteRenderer.h"
+#include "SpriteCommon.h"
 
 // C++
 #include <cassert>
@@ -10,11 +10,25 @@
 //=================================================================================================//
 // 初期化処理
 
-void SpriteRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler) {
+void SpriteCommon::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler) {
 
 	assert(dxCommon);
 
+	assert(shaderCompiler);
+
+	// 引数で受け取ってメンバ変数に記録する
 	dxCommon_ = dxCommon;
+
+	shaderCompiler_ = shaderCompiler;
+
+	// GraphicsPipelineの生成
+	CreateGraphicsPipeline();
+}
+
+//=================================================================================================//
+// RootSignatureの作成
+
+void SpriteCommon::CreateRootSignature() {
 
 	ID3D12Device* device = dxCommon_->GetDevice();
 
@@ -118,6 +132,17 @@ void SpriteRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderC
 		IID_PPV_ARGS (&rootSignature_));
 
 	assert (SUCCEEDED (hr));
+}
+
+//=================================================================================================//
+// GraphicsPipelineの生成
+
+void SpriteCommon::CreateGraphicsPipeline() {
+
+	// GraphicsPipelineの生成にはRootSignatureが必要なので最初に作成する
+	CreateRootSignature();
+
+	ID3D12Device* device = dxCommon_->GetDevice();
 
 	//=============================================================================================//
 	// InputLayout設定
@@ -171,76 +196,83 @@ void SpriteRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderC
 
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
 
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	// カリングしない
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	//=============================================================================================//
 	// Shaderコンパイル
 
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = shaderCompiler->CompileShader (L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = shaderCompiler_->CompileShader (L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = shaderCompiler->CompileShader (L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = shaderCompiler_->CompileShader (L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
 
 	//=============================================================================================//
 	// PSO作成
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 
+	// RootSignature
 	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get ();
-
+	// InputLayout
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-
+	// VertexShader
 	graphicsPipelineStateDesc.VS = {
 		vertexShaderBlob->GetBufferPointer (),
 		vertexShaderBlob->GetBufferSize ()
 	};
-
+	// PixelShader
 	graphicsPipelineStateDesc.PS = {
 		pixelShaderBlob->GetBufferPointer (),
 		pixelShaderBlob->GetBufferSize ()
 	};
-
+	// BlendState
 	graphicsPipelineStateDesc.BlendState = blendDesc;
-
+	// RasterizerState
 	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-
+	// 書き込むRTVの数
 	graphicsPipelineStateDesc.NumRenderTargets = 1;
-
+	// RTVのフォーマット
 	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-
+	// プリミティブトポロジのタイプ
 	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-
+	// サンプル数
 	graphicsPipelineStateDesc.SampleDesc.Count = 1;
-
+	// サンプルマスク
 	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-
+	// 深度テスト
 	graphicsPipelineStateDesc.DepthStencilState.DepthEnable = false;
-
+	// ステンシルテスト
 	graphicsPipelineStateDesc.DepthStencilState.StencilEnable = false;
-
+	// DSVのフォーマット
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	//=============================================================================================//
 	// PipelineState生成
 
-	hr = device->CreateGraphicsPipelineState (&graphicsPipelineStateDesc, IID_PPV_ARGS (&pipelineState_));
+	HRESULT hr = device->CreateGraphicsPipelineState (&graphicsPipelineStateDesc, IID_PPV_ARGS (&pipelineState_));
 
 	assert (SUCCEEDED (hr));
 }
 
 //=================================================================================================//
-// 描画前設定
+// 共通描画設定
 
-void SpriteRenderer::PreDraw() {
+void SpriteCommon::DrawSettingCommon() {
 
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
+	// RootSignatureをセットするコマンド
 	commandList->SetGraphicsRootSignature(rootSignature_.Get());
 
+	// GraphicsPipelineStateをセットするコマンド
 	commandList->SetPipelineState(pipelineState_.Get());
 
+	// PrimitiveTopologyをセットするコマンド
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// SRV用のDescriptorHeapをセットするコマンド
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { dxCommon_->GetSrvHeap()->GetDescriptorHeap() };
 

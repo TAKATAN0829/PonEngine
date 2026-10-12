@@ -43,6 +43,32 @@ void GameScene::Initialize (const SceneContext& context) {
 		"fence.obj");
 
 	fence_->SetTexture ("resources/fence/fence.png");
+
+	//=============================================================================================//
+	// SpriteCommon取得
+
+	spriteCommon_ = context.spriteCommon;
+
+	//=============================================================================================//
+	// Sprite初期化
+
+	for (uint32_t i = 0; i < 5; ++i) {
+
+		Sprite* sprite = new Sprite ();
+
+		sprite->Initialize (spriteCommon_, "resources/uvChecker.png");
+
+		sprite->SetPosition ({ 50.f + 200.f * static_cast<float>(i),50.f });
+
+		sprites_.push_back (sprite);
+	}
+
+	//=============================================================================================//
+	// Sprite4のテクスチャ切り出し
+
+	sprites_[4]->SetTextureLeftTop ({ 0.f,0.f });
+	sprites_[4]->SetTextureSize ({ 64.f,64.f });
+	sprites_[4]->SetSize ({ 64.f,64.f });
 }
 
 //=================================================================================================//
@@ -73,6 +99,17 @@ void GameScene::Draw () {
 	// Fence描画
 
 	fence_->Draw ();
+
+	//=============================================================================================//
+	// Sprite描画
+
+	// Spriteの描画準備。Spriteの描画に共通のグラフィックスコマンドを積む
+	spriteCommon_->DrawSettingCommon ();
+
+	for (Sprite* sprite : sprites_) {
+
+		sprite->Draw ();
+	}
 }
 
 //=================================================================================================//
@@ -93,6 +130,16 @@ void GameScene::Finalize () {
 	fence_->Finalize ();
 
 	delete fence_;
+
+	//=============================================================================================//
+	// Sprite解放
+
+	for (Sprite* sprite : sprites_) {
+
+		delete sprite;
+	}
+
+	sprites_.clear ();
 
 	//=============================================================================================//
 	// Camera解放
@@ -132,6 +179,14 @@ void GameScene::UpdateObject () {
 	fence_->SetTransform (fenceTransform_);
 	fence_->SetBlendMode (blendMode_);
 	fence_->Update (debugCamera_->GetViewProjectionMatrix ());
+
+	//=============================================================================================//
+	// Sprite更新
+
+	for (Sprite* sprite : sprites_) {
+
+		sprite->Update ();
+	}
 
 #ifdef USE_IMGUI
 
@@ -175,6 +230,101 @@ void GameScene::UpdateObject () {
 		"FenceTranslate",
 		&fenceTransform_.translate.x,
 		0.1f);
+	ImGui::End ();
+
+	//=============================================================================================//
+	// Sprite
+
+	ImGui::Begin ("Sprite");
+
+	for (size_t i = 0; i < sprites_.size (); ++i) {
+
+		Sprite* sprite = sprites_[i];
+
+		// 同じラベルが並ぶので、Spriteごとに別IDにする
+		ImGui::PushID (static_cast<int>(i));
+
+		// Sprite番号ごとに折りたたみ表示
+		if (ImGui::TreeNode ("Sprite", "Sprite %zu", i)) {
+
+			// Position
+			Vector2 position = sprite->GetPosition ();
+
+			if (ImGui::DragFloat2 ("Position", &position.x, 1.f)) {
+
+				sprite->SetPosition (position);
+			}
+
+			// Rotation
+			float rotation = sprite->GetRotation ();
+
+			if (ImGui::SliderAngle ("Rotation", &rotation)) {
+
+				sprite->SetRotation (rotation);
+			}
+
+			// Size
+			Vector2 size = sprite->GetSize ();
+
+			if (ImGui::DragFloat2 ("Size", &size.x, 1.f)) {
+
+				sprite->SetSize (size);
+			}
+
+			// AnchorPoint
+			Vector2 anchorPoint = sprite->GetAnchorPoint ();
+
+			if (ImGui::SliderFloat2 ("AnchorPoint", &anchorPoint.x, 0.f, 1.f)) {
+
+				sprite->SetAnchorPoint (anchorPoint);
+			}
+
+			// FlipX
+			bool isFlipX = sprite->GetIsFlipX ();
+
+			if (ImGui::Checkbox ("FlipX", &isFlipX)) {
+
+				sprite->SetIsFlipX (isFlipX);
+			}
+
+			// FlipY
+			bool isFlipY = sprite->GetIsFlipY ();
+
+			if (ImGui::Checkbox ("FlipY", &isFlipY)) {
+
+				sprite->SetIsFlipY (isFlipY);
+			}
+
+			// TextureLeftTop
+			Vector2 textureLeftTop = sprite->GetTextureLeftTop ();
+
+			if (ImGui::DragFloat2 ("TextureLeftTop", &textureLeftTop.x, 1.f)) {
+
+				sprite->SetTextureLeftTop (textureLeftTop);
+			}
+
+			// TextureSize
+			Vector2 textureSize = sprite->GetTextureSize ();
+
+			if (ImGui::DragFloat2 ("TextureSize", &textureSize.x, 1.f)) {
+
+				sprite->SetTextureSize (textureSize);
+			}
+
+			// Color
+			Vector4 color = sprite->GetColor ();
+
+			if (ImGui::ColorEdit4 ("Color", &color.x)) {
+
+				sprite->SetColor (color);
+			}
+
+			ImGui::TreePop ();
+		}
+
+		ImGui::PopID ();
+	}
+
 	ImGui::End ();
 
 #endif

@@ -40,6 +40,11 @@ public:
 
 	uint32_t Load(const std::string& filePath);
 
+	//=============================================================================================//
+	// メタデータを取得
+
+	const DirectX::TexMetadata& GetMetaData(uint32_t textureIndex);
+
 private:
 
 	//=============================================================================================//
@@ -68,4 +73,9 @@ private:
 	// FilePathとSRV番号の対応
 
 	std::unordered_map<std::string, uint32_t> srvIndices_;
+
+	//=============================================================================================//
+	// SRV番号とメタデータの対応
+
+	std::unordered_map<uint32_t, DirectX::TexMetadata> metadatas_;
 };
