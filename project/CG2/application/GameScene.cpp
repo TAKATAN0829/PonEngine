@@ -48,6 +48,22 @@ void GameScene::Initialize (const SceneContext& context) {
 	// SpriteCommon取得
 
 	spriteCommon_ = context.spriteCommon;
+
+	//=============================================================================================//
+	// Sprite初期化
+
+	for (uint32_t i = 0; i < 5; ++i) {
+
+		Sprite* sprite = new Sprite ();
+
+		sprite->Initialize (spriteCommon_);
+
+		sprite->SetTexture ("resources/uvChecker.png");
+
+		sprite->SetPosition ({ 50.f + 200.f * static_cast<float>(i),50.f });
+
+		sprites_.push_back (sprite);
+	}
 }
 
 //=================================================================================================//
@@ -85,7 +101,10 @@ void GameScene::Draw () {
 	// Spriteの描画準備。Spriteの描画に共通のグラフィックスコマンドを積む
 	spriteCommon_->DrawSettingCommon ();
 
-	// TODO: 全てのSprite個々の描画
+	for (Sprite* sprite : sprites_) {
+
+		sprite->Draw ();
+	}
 }
 
 //=================================================================================================//
@@ -106,6 +125,16 @@ void GameScene::Finalize () {
 	fence_->Finalize ();
 
 	delete fence_;
+
+	//=============================================================================================//
+	// Sprite解放
+
+	for (Sprite* sprite : sprites_) {
+
+		delete sprite;
+	}
+
+	sprites_.clear ();
 
 	//=============================================================================================//
 	// Camera解放
@@ -145,6 +174,14 @@ void GameScene::UpdateObject () {
 	fence_->SetTransform (fenceTransform_);
 	fence_->SetBlendMode (blendMode_);
 	fence_->Update (debugCamera_->GetViewProjectionMatrix ());
+
+	//=============================================================================================//
+	// Sprite更新
+
+	for (Sprite* sprite : sprites_) {
+
+		sprite->Update ();
+	}
 
 #ifdef USE_IMGUI
 
@@ -188,6 +225,61 @@ void GameScene::UpdateObject () {
 		"FenceTranslate",
 		&fenceTransform_.translate.x,
 		0.1f);
+	ImGui::End ();
+
+	//=============================================================================================//
+	// Sprite
+
+	ImGui::Begin ("Sprite");
+
+	for (size_t i = 0; i < sprites_.size (); ++i) {
+
+		Sprite* sprite = sprites_[i];
+
+		// 同じラベルが並ぶので、Spriteごとに別IDにする
+		ImGui::PushID (static_cast<int>(i));
+
+		// Sprite番号ごとに折りたたみ表示
+		if (ImGui::TreeNode ("Sprite", "Sprite %zu", i)) {
+
+			// Position
+			Vector2 position = sprite->GetPosition ();
+
+			if (ImGui::DragFloat2 ("Position", &position.x, 1.f)) {
+
+				sprite->SetPosition (position);
+			}
+
+			// Rotation
+			float rotation = sprite->GetRotation ();
+
+			if (ImGui::SliderAngle ("Rotation", &rotation)) {
+
+				sprite->SetRotation (rotation);
+			}
+
+			// Size
+			Vector2 size = sprite->GetSize ();
+
+			if (ImGui::DragFloat2 ("Size", &size.x, 1.f)) {
+
+				sprite->SetSize (size);
+			}
+
+			// Color
+			Vector4 color = sprite->GetColor ();
+
+			if (ImGui::ColorEdit4 ("Color", &color.x)) {
+
+				sprite->SetColor (color);
+			}
+
+			ImGui::TreePop ();
+		}
+
+		ImGui::PopID ();
+	}
+
 	ImGui::End ();
 
 #endif

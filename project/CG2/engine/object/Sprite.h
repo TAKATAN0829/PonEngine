@@ -8,6 +8,7 @@
 
 // C++
 #include <cstdint>
+#include <string>
 
 // 自作
 #include "EngineStructs.h"
@@ -66,42 +67,35 @@ public:
 
 	const Vector2& GetPosition() const { return position_; }
 
-	void SetPosition(const Vector2& position) { this->position_ = position; }
+	void SetPosition(const Vector2& position) { position_ = position; }
 
 	//=============================================================================================//
 	// Rotation
 
-	const Vector2& GetPosition ()const { return position_; }
+	float GetRotation() const { return rotation_; }
 
-	void SetPosition (const Vector2& position) { this->position_ = position; }
+	void SetRotation(float rotation) { rotation_ = rotation; }
 
 	//=============================================================================================//
 	// Size
 
 	const Vector2& GetSize() const { return size_; }
 
-	void SetSize(const Vector2& size) { this->size_ = size; }
+	void SetSize(const Vector2& size) { size_ = size; }
 
 	//=============================================================================================//
-	// Rotate設定
-
-	float GetRotation ()const { return rotation_; }
-
-	void SetRotation (float rotation) { this->rotation_ = rotation; }
-
-	//=============================================================================================//
-	// Texture番号設定
+	// Color
 
 	const Vector4& GetColor() const { return materialData_->color; }
 
 	void SetColor(const Vector4& color) { materialData_->color = color; }
 
 	//=============================================================================================//
-	// Texture番号
+	// Texture設定
 
-	const Vector4& GetColor ()const { return color_; }
+	void SetTextureIndex(uint32_t textureIndex) { textureIndex_ = textureIndex; }
 
-	void SetColor (const Vector4& color) { this->color_ = color; }
+	void SetTexture(const std::string& filePath);
 
 	//=============================================================================================//
 	// Lighting有効設定
@@ -140,7 +134,7 @@ private:
 	//=============================================================================================//
 	// Rotation
 
-	float rotation_ = 0.0f;
+	float rotation_ = 0.f;
 
 	//=============================================================================================//
 	// Size
@@ -148,14 +142,9 @@ private:
 	Vector2 size_ = { 100.f,100.f };
 
 	//=============================================================================================//
-	// Rotation
+	// Texture番号
 
-	float rotation_ = 0.f;
-
-	//=============================================================================================//
-	// Color
-
-	Vector4 color_ = { 0.f,0.f,0.f,0.f };
+	uint32_t textureIndex_ = 0;
 
 	//=============================================================================================//
 	// バッファリソース
@@ -168,6 +157,15 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixResource_ = nullptr;
 
+	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_ = nullptr;
+
+	//=============================================================================================//
+	// バッファリソースのビュー
+
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
+
+	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
+
 	//=============================================================================================//
 	// バッファリソース内のデータを指すポインタ
 
@@ -177,6 +175,7 @@ private:
 
 	Material* materialData_ = nullptr;
 
-	TransformationMatrix* wvpData_ = nullptr;
-	
+	TransformationMatrix* transformationMatrixData_ = nullptr;
+
+	DirectionalLight* directionalLightData_ = nullptr;
 };

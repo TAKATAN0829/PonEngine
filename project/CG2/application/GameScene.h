@@ -8,6 +8,10 @@
 #include "Particle.h"
 #include "DebugCamera.h"
 #include "SpriteCommon.h"
+#include "Sprite.h"
+
+// C++
+#include <vector>
 
 class GameScene : public IScene {
 public:
@@ -52,6 +56,11 @@ private:
 	// SpriteCommon
 
 	SpriteCommon* spriteCommon_ = nullptr;
+
+	//=============================================================================================//
+	// Sprite
+
+	std::vector<Sprite*> sprites_;
 
 	//=============================================================================================//
 	// DebugCamera
