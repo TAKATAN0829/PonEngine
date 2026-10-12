@@ -4,181 +4,336 @@
 #include <cassert>
 
 // 自作
-#include "SpriteRenderer.h"
+#include "SpriteCommon.h"
 #include "DirectXCommon.h"
 #include "ResourceManager.h"
+#include "TextureManager.h"
 #include "WinApp.h"
 
 //=================================================================================================//
 // 初期化処理
 
-void Sprite::Initialize(SpriteRenderer* renderer) {
+void Sprite::Initialize (SpriteCommon* spriteCommon, const std::string& textureFilePath) {
 
-	assert(renderer);
+	assert (spriteCommon);
 
-	renderer_ = renderer;
+	spriteCommon_ = spriteCommon;
 
-	DirectXCommon* dxCommon = renderer_->GetDxCommon();
+	// 頂点データ作成
+	CreateVertexData ();
 
-	//=============================================================================================//
-	// Mesh生成
+	// マテリアルデータ作成
+	CreateMaterialData ();
 
-	mesh_ = new Mesh();
+	// 座標変換行列データ作成
+	CreateTransformationMatrixData ();
 
-	mesh_->Initialize(dxCommon, MeshType::kSprite);
+	// Texture読み込み
+	SetTexture (textureFilePath);
 
-	//=============================================================================================//
-	// Material生成
-
-	material_ = new Material();
-
-	material_->Initialize(dxCommon);
-
-	//=============================================================================================//
-	// WVPResource生成
-
-	wvpResource_ = ResourceManager::CreateBufferResource(
-		dxCommon->GetDevice(),
-		sizeof(TransformationMatrix),
-		"spriteWVPResource");
-
-	//=============================================================================================//
-	// WVPDataを書き込む
-
-	wvpResource_->Map(
-		0,
-		nullptr,
-		reinterpret_cast<void**>(&wvpData_));
-
-	wvpData_->WVP = MathUtility::MakeIdentity4x4();
-
-	wvpData_->World = MathUtility::MakeIdentity4x4();
+	// テクスチャサイズをイメージに合わせる
+	AdjustTextureSize ();
 }
 
 //=================================================================================================//
 // 更新処理
 
-void Sprite::Update() {
+void Sprite::Update () {
+
+	//=============================================================================================//
+	// AnchorPointを反映した頂点座標
+
+	float left = 0.f - anchorPoint_.x;
+	float right = 1.f - anchorPoint_.x;
+	float top = 0.f - anchorPoint_.y;
+	float bottom = 1.f - anchorPoint_.y;
+
+	// 左右反転
+	if (isFlipX_) {
+
+		left = -left;
+		right = -right;
+	}
+
+	// 上下反転
+	if (isFlipY_) {
+
+		top = -top;
+		bottom = -bottom;
+	}
+
+	// 左下
+	vertexData_[0].position = { left,bottom,0.f,1.f };
+
+	// 左上
+	vertexData_[1].position = { left,top,0.f,1.f };
+
+	// 右下
+	vertexData_[2].position = { right,bottom,0.f,1.f };
+
+	// 右上
+	vertexData_[3].position = { right,top,0.f,1.f };
+
+	//=============================================================================================//
+	// Texture範囲を反映したUV座標
+
+	const DirectX::TexMetadata& metadata = TextureManager::GetInstance ()->GetMetaData (textureIndex_);
+
+	float texLeft = textureLeftTop_.x / static_cast<float>(metadata.width);
+	float texRight = (textureLeftTop_.x + textureSize_.x) / static_cast<float>(metadata.width);
+	float texTop = textureLeftTop_.y / static_cast<float>(metadata.height);
+	float texBottom = (textureLeftTop_.y + textureSize_.y) / static_cast<float>(metadata.height);
+
+	// 左下
+	vertexData_[0].texcoord = { texLeft,texBottom };
+
+	// 左上
+	vertexData_[1].texcoord = { texLeft,texTop };
+
+	// 右下
+	vertexData_[2].texcoord = { texRight,texBottom };
+
+	// 右上
+	vertexData_[3].texcoord = { texRight,texTop };
 
 	//=============================================================================================//
 	// WorldMatrix作成
 
-	Matrix4x4 worldMatrix = MathUtility::MakeAffineMatrix(
-		{ size_.x * 0.5f,size_.y * 0.5f,1.0f },
-		{ 0.0f,0.0f,0.0f },
-		{ position_.x, position_.y,0.0f });
+	Matrix4x4 worldMatrix = MathUtility::MakeAffineMatrix (
+		{ size_.x,size_.y,1.f },
+		{ 0.f,0.f,rotation_ },
+		{ position_.x,position_.y,0.f });
 
 	//=============================================================================================//
-	// OrthographicMatrix作成
+	// ViewMatrix作成
 
-	Matrix4x4 orthographicMatrix = MathUtility::MakeOrthographicMatrix(
-		0.0f,
-		0.0f,
+	Matrix4x4 viewMatrix = MathUtility::MakeIdentity4x4 ();
+
+	//=============================================================================================//
+	// ProjectionMatrix作成
+
+	Matrix4x4 projectionMatrix = MathUtility::MakeOrthographicMatrix (
+		0.f,
+		0.f,
 		static_cast<float>(WinApp::kClientWidth),
 		static_cast<float>(WinApp::kClientHeight),
-		0.0f,
-		100.0f);
+		0.f,
+		100.f);
 
 	//=============================================================================================//
 	// WVP作成
 
-	Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply(worldMatrix, orthographicMatrix);
+	transformationMatrixData_->WVP = MathUtility::Multiply (worldMatrix, MathUtility::Multiply (viewMatrix, projectionMatrix));
 
-	wvpData_->WVP = worldViewProjectionMatrix;
-
-	wvpData_->World = worldMatrix;
+	transformationMatrixData_->World = worldMatrix;
 }
 
 //=================================================================================================//
 // 描画処理
 
-void Sprite::Draw() {
+void Sprite::Draw () {
+
+	// 共通描画設定はSpriteCommon::DrawSettingCommonで描画前に一度だけ行う
+
+	DirectXCommon* dxCommon = spriteCommon_->GetDxCommon ();
+
+	ID3D12GraphicsCommandList* commandList = dxCommon->GetCommandList ();
 
 	//=============================================================================================//
-	// 描画前設定
+	// VBV・IBV設定
 
-	renderer_->PreDraw();
+	commandList->IASetVertexBuffers (0, 1, &vertexBufferView_);
 
-	ID3D12GraphicsCommandList* commandList = renderer_->GetDxCommon()->GetCommandList();
+	commandList->IASetIndexBuffer (&indexBufferView_);
 
 	//=============================================================================================//
 	// Material設定
 
-	material_->Bind();
+	commandList->SetGraphicsRootConstantBufferView (0, materialResource_->GetGPUVirtualAddress ());
 
 	//=============================================================================================//
-	// WVP設定
+	// 座標変換行列設定
 
-	commandList->SetGraphicsRootConstantBufferView(1, wvpResource_->GetGPUVirtualAddress());
-
-	//=============================================================================================//
-	// Mesh描画
-
-	mesh_->Draw();
-}
-
-//=================================================================================================//
-// 終了処理
-
-void Sprite::Finalize() {
+	commandList->SetGraphicsRootConstantBufferView (1, transformationMatrixResource_->GetGPUVirtualAddress ());
 
 	//=============================================================================================//
-	// Mesh解放
+	// Texture設定
 
-	if (mesh_ != nullptr) {
-
-		delete mesh_;
-
-		mesh_ = nullptr;
-	}
+	commandList->SetGraphicsRootDescriptorTable (2, dxCommon->GetSrvHeap ()->GetGPUDescriptorHandle (textureIndex_));
 
 	//=============================================================================================//
-	// Material解放
+	// DirectionalLight設定
 
-	if (material_ != nullptr) {
+	commandList->SetGraphicsRootConstantBufferView (3, directionalLightResource_->GetGPUVirtualAddress ());
 
-		delete material_;
+	//=============================================================================================//
+	// 描画
 
-		material_ = nullptr;
-	}
+	commandList->DrawIndexedInstanced (6, 1, 0, 0, 0);
 }
 
 //=================================================================================================//
-// Position設定
+// Texture設定
 
-void Sprite::SetPosition(const Vector2& position) {
+void Sprite::SetTexture (const std::string& filePath) {
 
-	position_ = position;
+	textureIndex_ = TextureManager::GetInstance ()->Load (filePath);
 }
 
 //=================================================================================================//
-// Size設定
+// テクスチャサイズをイメージに合わせる
 
-void Sprite::SetSize(const Vector2& size) {
+void Sprite::AdjustTextureSize () {
 
-	size_ = size;
+	// テクスチャメタデータを取得
+	const DirectX::TexMetadata& metadata = TextureManager::GetInstance ()->GetMetaData (textureIndex_);
+
+	textureSize_.x = static_cast<float>(metadata.width);
+	textureSize_.y = static_cast<float>(metadata.height);
+
+	// 画像サイズをテクスチャサイズに合わせる
+	size_ = textureSize_;
 }
 
 //=================================================================================================//
-// Texture番号設定
+// 頂点データ作成
 
-void Sprite::SetTextureIndex(uint32_t textureIndex) {
+void Sprite::CreateVertexData () {
 
-	material_->SetTextureIndex(textureIndex);
+	ID3D12Device* device = spriteCommon_->GetDxCommon ()->GetDevice ();
+
+	//=============================================================================================//
+	// VertexResource・IndexResource生成
+
+	vertexResource_ = ResourceManager::CreateBufferResource (
+		device,
+		sizeof (VertexData) * 4,
+		"spriteVertexResource");
+
+	indexResource_ = ResourceManager::CreateBufferResource (
+		device,
+		sizeof (uint32_t) * 6,
+		"spriteIndexResource");
+
+	//=============================================================================================//
+	// VertexBufferView作成
+
+	vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress ();
+
+	vertexBufferView_.SizeInBytes = sizeof (VertexData) * 4;
+
+	vertexBufferView_.StrideInBytes = sizeof (VertexData);
+
+	//=============================================================================================//
+	// IndexBufferView作成
+
+	indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress ();
+
+	indexBufferView_.SizeInBytes = sizeof (uint32_t) * 6;
+
+	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
+
+	//=============================================================================================//
+	// VertexDataを書き込む
+
+	vertexResource_->Map (0, nullptr, reinterpret_cast<void**>(&vertexData_));
+
+	// 左下
+	vertexData_[0].position = { 0.f,1.f,0.f,1.f };
+	vertexData_[0].texcoord = { 0.f,1.f };
+	vertexData_[0].normal = { 0.f,0.f,-1.f };
+
+	// 左上
+	vertexData_[1].position = { 0.f,0.f,0.f,1.f };
+	vertexData_[1].texcoord = { 0.f,0.f };
+	vertexData_[1].normal = { 0.f,0.f,-1.f };
+
+	// 右下
+	vertexData_[2].position = { 1.f,1.f,0.f,1.f };
+	vertexData_[2].texcoord = { 1.f,1.f };
+	vertexData_[2].normal = { 0.f,0.f,-1.f };
+
+	// 右上
+	vertexData_[3].position = { 1.f,0.f,0.f,1.f };
+	vertexData_[3].texcoord = { 1.f,0.f };
+	vertexData_[3].normal = { 0.f,0.f,-1.f };
+
+	//=============================================================================================//
+	// IndexDataを書き込む
+
+	indexResource_->Map (0, nullptr, reinterpret_cast<void**>(&indexData_));
+
+	indexData_[0] = 0;
+	indexData_[1] = 1;
+	indexData_[2] = 2;
+
+	indexData_[3] = 1;
+	indexData_[4] = 3;
+	indexData_[5] = 2;
 }
 
 //=================================================================================================//
-// 色設定
+// マテリアルデータ作成
 
-void Sprite::SetColor(const Vector4& color) {
+void Sprite::CreateMaterialData () {
 
-	material_->SetColor(color);
+	ID3D12Device* device = spriteCommon_->GetDxCommon ()->GetDevice ();
+
+	//=============================================================================================//
+	// MaterialResource生成
+
+	materialResource_ = ResourceManager::CreateBufferResource (
+		device,
+		sizeof (Material),
+		"spriteMaterialResource");
+
+	//=============================================================================================//
+	// MaterialDataを書き込む
+
+	materialResource_->Map (0, nullptr, reinterpret_cast<void**>(&materialData_));
+
+	materialData_->color = { 1.f,1.f,1.f,1.f };
+
+	materialData_->enableLighting = false;
+
+	materialData_->uvTransform = MathUtility::MakeIdentity4x4 ();
+
+	//=============================================================================================//
+	// DirectionalLightResource生成
+
+	directionalLightResource_ = ResourceManager::CreateBufferResource (
+		device,
+		sizeof (DirectionalLight),
+		"spriteDirectionalLightResource");
+
+	directionalLightResource_->Map (0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
+
+	directionalLightData_->color = { 1.f,1.f,1.f,1.f };
+
+	directionalLightData_->direction = { 0.f,-1.f,0.f };
+
+	directionalLightData_->intensity = 1.f;
 }
 
 //=================================================================================================//
-// Lighting有効設定
+// 座標変換行列データ作成
 
-void Sprite::SetEnableLighting(bool enableLighting) {
+void Sprite::CreateTransformationMatrixData () {
 
-	material_->SetEnableLighting(enableLighting);
+	//=============================================================================================//
+	// TransformationMatrixResource生成
+
+	transformationMatrixResource_ = ResourceManager::CreateBufferResource (
+		spriteCommon_->GetDxCommon ()->GetDevice (),
+		sizeof (TransformationMatrix),
+		"spriteTransformationMatrixResource");
+
+	//=============================================================================================//
+	// TransformationMatrixDataを書き込む
+
+	transformationMatrixResource_->Map (0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
+
+	transformationMatrixData_->WVP = MathUtility::MakeIdentity4x4 ();
+
+	transformationMatrixData_->World = MathUtility::MakeIdentity4x4 ();
 }

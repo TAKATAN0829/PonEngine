@@ -35,6 +35,8 @@ void TextureManager::Finalize() {
 
 	srvIndices_.clear();
 
+	metadatas_.clear();
+
 	intermediateResources_.clear();
 
 	textureResources_.clear();
@@ -113,7 +115,22 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 
 	srvIndices_[filePath] = srvIndex;
 
+	metadatas_[srvIndex] = metadata;
+
 	return srvIndex;
+}
+
+//=================================================================================================//
+// メタデータを取得
+
+const DirectX::TexMetadata& TextureManager::GetMetaData(uint32_t textureIndex) {
+
+	// 範囲外指定違反チェック
+	auto it = metadatas_.find(textureIndex);
+
+	assert(it != metadatas_.end());
+
+	return it->second;
 }
 
 //=================================================================================================//

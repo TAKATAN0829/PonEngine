@@ -145,7 +145,7 @@
     <ClCompile Include="engine\renderer\Object3dRenderer.cpp">
       <Filter>engine\renderer</Filter>
     </ClCompile>
-    <ClCompile Include="engine\renderer\SpriteRenderer.cpp">
+    <ClCompile Include="engine\renderer\SpriteCommon.cpp">
       <Filter>engine\renderer</Filter>
     </ClCompile>
     <ClCompile Include="engine\renderer\ParticleRenderer.cpp">
@@ -276,7 +276,7 @@
     <ClInclude Include="engine\renderer\Object3dRenderer.h">
       <Filter>engine\renderer</Filter>
     </ClInclude>
-    <ClInclude Include="engine\renderer\SpriteRenderer.h">
+    <ClInclude Include="engine\renderer\SpriteCommon.h">
       <Filter>engine\renderer</Filter>
     </ClInclude>
     <ClInclude Include="engine\renderer\ParticleRenderer.h">
