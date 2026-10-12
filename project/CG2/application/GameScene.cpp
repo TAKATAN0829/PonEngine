@@ -62,6 +62,13 @@ void GameScene::Initialize (const SceneContext& context) {
 
 		sprites_.push_back (sprite);
 	}
+
+	//=============================================================================================//
+	// Sprite4のテクスチャ切り出し
+
+	sprites_[4]->SetTextureLeftTop ({ 0.f,0.f });
+	sprites_[4]->SetTextureSize ({ 64.f,64.f });
+	sprites_[4]->SetSize ({ 64.f,64.f });
 }
 
 //=================================================================================================//
