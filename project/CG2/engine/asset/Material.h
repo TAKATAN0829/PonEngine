@@ -33,7 +33,9 @@ public:
 	void BindWithoutLight();
 
 	//=============================================================================================//
-	// 色設定
+	// 色
+
+	const Vector4& GetColor() const { return materialData_->color; }
 
 	void SetColor(const Vector4& color);
 

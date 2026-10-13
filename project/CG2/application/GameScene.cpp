@@ -136,6 +136,8 @@ void GameScene::Finalize () {
 
 	for (Sprite* sprite : sprites_) {
 
+		sprite->Finalize ();
+
 		delete sprite;
 	}
 

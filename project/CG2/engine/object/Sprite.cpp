@@ -5,6 +5,7 @@
 
 // 自作
 #include "SpriteCommon.h"
+#include "Mesh.h"
 #include "DirectXCommon.h"
 #include "ResourceManager.h"
 #include "TextureManager.h"
@@ -19,20 +20,26 @@ void Sprite::Initialize (SpriteCommon* spriteCommon, const std::string& textureF
 
 	spriteCommon_ = spriteCommon;
 
-	// 頂点データ作成
-	CreateVertexData ();
+	DirectXCommon* dxCommon = spriteCommon_->GetDxCommon ();
 
-	// マテリアルデータ作成
-	CreateMaterialData ();
+	//=============================================================================================//
+	// Material生成
 
+	material_ = new Material ();
+
+	material_->Initialize (dxCommon);
+
+	material_->SetEnableLighting (false);
+
+	//=============================================================================================//
 	// 座標変換行列データ作成
+
 	CreateTransformationMatrixData ();
 
+	//=============================================================================================//
 	// Texture読み込み
-	SetTexture (textureFilePath);
 
-	// テクスチャサイズをイメージに合わせる
-	AdjustTextureSize ();
+	SetTexture (textureFilePath);
 }
 
 //=================================================================================================//
@@ -41,73 +48,9 @@ void Sprite::Initialize (SpriteCommon* spriteCommon, const std::string& textureF
 void Sprite::Update () {
 
 	//=============================================================================================//
-	// AnchorPointを反映した頂点座標
+	// UVTransform反映
 
-	float left = 0.f - anchorPoint_.x;
-	float right = 1.f - anchorPoint_.x;
-	float top = 0.f - anchorPoint_.y;
-	float bottom = 1.f - anchorPoint_.y;
-
-	// 左右反転
-	if (isFlipX_) {
-
-		left = -left;
-		right = -right;
-	}
-
-	// 上下反転
-	if (isFlipY_) {
-
-		top = -top;
-		bottom = -bottom;
-	}
-
-	// 左下
-	vertexData_[0].position = { left,bottom,0.f,1.f };
-
-	// 左上
-	vertexData_[1].position = { left,top,0.f,1.f };
-
-	// 右下
-	vertexData_[2].position = { right,bottom,0.f,1.f };
-
-	// 右上
-	vertexData_[3].position = { right,top,0.f,1.f };
-
-	//=============================================================================================//
-	// Texture範囲を反映したUV座標
-
-	const DirectX::TexMetadata& metadata = TextureManager::GetInstance ()->GetMetaData (textureIndex_);
-
-	float texLeft = textureLeftTop_.x / static_cast<float>(metadata.width);
-	float texRight = (textureLeftTop_.x + textureSize_.x) / static_cast<float>(metadata.width);
-	float texTop = textureLeftTop_.y / static_cast<float>(metadata.height);
-	float texBottom = (textureLeftTop_.y + textureSize_.y) / static_cast<float>(metadata.height);
-
-	// 左下
-	vertexData_[0].texcoord = { texLeft,texBottom };
-
-	// 左上
-	vertexData_[1].texcoord = { texLeft,texTop };
-
-	// 右下
-	vertexData_[2].texcoord = { texRight,texBottom };
-
-	// 右上
-	vertexData_[3].texcoord = { texRight,texTop };
-
-	//=============================================================================================//
-	// WorldMatrix作成
-
-	Matrix4x4 worldMatrix = MathUtility::MakeAffineMatrix (
-		{ size_.x,size_.y,1.f },
-		{ 0.f,0.f,rotation_ },
-		{ position_.x,position_.y,0.f });
-
-	//=============================================================================================//
-	// ViewMatrix作成
-
-	Matrix4x4 viewMatrix = MathUtility::MakeIdentity4x4 ();
+	material_->SetUVTransform (MakeUVTransform ());
 
 	//=============================================================================================//
 	// ProjectionMatrix作成
@@ -123,7 +66,9 @@ void Sprite::Update () {
 	//=============================================================================================//
 	// WVP作成
 
-	transformationMatrixData_->WVP = MathUtility::Multiply (worldMatrix, MathUtility::Multiply (viewMatrix, projectionMatrix));
+	Matrix4x4 worldMatrix = MakeWorldMatrix ();
+
+	transformationMatrixData_->WVP = MathUtility::Multiply (worldMatrix, projectionMatrix);
 
 	transformationMatrixData_->World = worldMatrix;
 }
@@ -133,23 +78,12 @@ void Sprite::Update () {
 
 void Sprite::Draw () {
 
-	// 共通描画設定はSpriteCommon::DrawSettingCommonで描画前に一度だけ行う
-
-	DirectXCommon* dxCommon = spriteCommon_->GetDxCommon ();
-
-	ID3D12GraphicsCommandList* commandList = dxCommon->GetCommandList ();
-
-	//=============================================================================================//
-	// VBV・IBV設定
-
-	commandList->IASetVertexBuffers (0, 1, &vertexBufferView_);
-
-	commandList->IASetIndexBuffer (&indexBufferView_);
+	ID3D12GraphicsCommandList* commandList = spriteCommon_->GetDxCommon ()->GetCommandList ();
 
 	//=============================================================================================//
 	// Material設定
 
-	commandList->SetGraphicsRootConstantBufferView (0, materialResource_->GetGPUVirtualAddress ());
+	material_->Bind ();
 
 	//=============================================================================================//
 	// 座標変換行列設定
@@ -157,19 +91,29 @@ void Sprite::Draw () {
 	commandList->SetGraphicsRootConstantBufferView (1, transformationMatrixResource_->GetGPUVirtualAddress ());
 
 	//=============================================================================================//
-	// Texture設定
+	// Mesh描画
 
-	commandList->SetGraphicsRootDescriptorTable (2, dxCommon->GetSrvHeap ()->GetGPUDescriptorHandle (textureIndex_));
+	spriteCommon_->GetMesh ()->Draw ();
+}
 
-	//=============================================================================================//
-	// DirectionalLight設定
+//=================================================================================================//
+// 終了処理
 
-	commandList->SetGraphicsRootConstantBufferView (3, directionalLightResource_->GetGPUVirtualAddress ());
+void Sprite::Finalize () {
 
-	//=============================================================================================//
-	// 描画
+	delete material_;
+}
 
-	commandList->DrawIndexedInstanced (6, 1, 0, 0, 0);
+//=================================================================================================//
+// Texture番号設定
+
+void Sprite::SetTextureIndex (uint32_t textureIndex) {
+
+	textureIndex_ = textureIndex;
+
+	material_->SetTextureIndex (textureIndex_);
+
+	AdjustTextureSize ();
 }
 
 //=================================================================================================//
@@ -177,7 +121,7 @@ void Sprite::Draw () {
 
 void Sprite::SetTexture (const std::string& filePath) {
 
-	textureIndex_ = TextureManager::GetInstance ()->Load (filePath);
+	SetTextureIndex (TextureManager::GetInstance ()->Load (filePath));
 }
 
 //=================================================================================================//
@@ -185,134 +129,61 @@ void Sprite::SetTexture (const std::string& filePath) {
 
 void Sprite::AdjustTextureSize () {
 
-	// テクスチャメタデータを取得
 	const DirectX::TexMetadata& metadata = TextureManager::GetInstance ()->GetMetaData (textureIndex_);
 
-	textureSize_.x = static_cast<float>(metadata.width);
-	textureSize_.y = static_cast<float>(metadata.height);
+	textureImageSize_.x = static_cast<float>(metadata.width);
+	textureImageSize_.y = static_cast<float>(metadata.height);
 
-	// 画像サイズをテクスチャサイズに合わせる
-	size_ = textureSize_;
+	textureLeftTop_ = { 0.f,0.f };
+
+	textureSize_ = textureImageSize_;
+
+	size_ = textureImageSize_;
 }
 
 //=================================================================================================//
-// 頂点データ作成
+// WorldMatrix作成
 
-void Sprite::CreateVertexData () {
+Matrix4x4 Sprite::MakeWorldMatrix () const {
 
-	ID3D12Device* device = spriteCommon_->GetDxCommon ()->GetDevice ();
+	Matrix4x4 anchorMatrix = MathUtility::MakeTranslateMatrix ({ -anchorPoint_.x,-anchorPoint_.y,0.f });
 
-	//=============================================================================================//
-	// VertexResource・IndexResource生成
+	Matrix4x4 affineMatrix = MathUtility::MakeAffineMatrix (
+		{ size_.x,size_.y,1.f },
+		{ 0.f,0.f,rotation_ },
+		{ position_.x,position_.y,0.f });
 
-	vertexResource_ = ResourceManager::CreateBufferResource (
-		device,
-		sizeof (VertexData) * 4,
-		"spriteVertexResource");
-
-	indexResource_ = ResourceManager::CreateBufferResource (
-		device,
-		sizeof (uint32_t) * 6,
-		"spriteIndexResource");
-
-	//=============================================================================================//
-	// VertexBufferView作成
-
-	vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress ();
-
-	vertexBufferView_.SizeInBytes = sizeof (VertexData) * 4;
-
-	vertexBufferView_.StrideInBytes = sizeof (VertexData);
-
-	//=============================================================================================//
-	// IndexBufferView作成
-
-	indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress ();
-
-	indexBufferView_.SizeInBytes = sizeof (uint32_t) * 6;
-
-	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
-
-	//=============================================================================================//
-	// VertexDataを書き込む
-
-	vertexResource_->Map (0, nullptr, reinterpret_cast<void**>(&vertexData_));
-
-	// 左下
-	vertexData_[0].position = { 0.f,1.f,0.f,1.f };
-	vertexData_[0].texcoord = { 0.f,1.f };
-	vertexData_[0].normal = { 0.f,0.f,-1.f };
-
-	// 左上
-	vertexData_[1].position = { 0.f,0.f,0.f,1.f };
-	vertexData_[1].texcoord = { 0.f,0.f };
-	vertexData_[1].normal = { 0.f,0.f,-1.f };
-
-	// 右下
-	vertexData_[2].position = { 1.f,1.f,0.f,1.f };
-	vertexData_[2].texcoord = { 1.f,1.f };
-	vertexData_[2].normal = { 0.f,0.f,-1.f };
-
-	// 右上
-	vertexData_[3].position = { 1.f,0.f,0.f,1.f };
-	vertexData_[3].texcoord = { 1.f,0.f };
-	vertexData_[3].normal = { 0.f,0.f,-1.f };
-
-	//=============================================================================================//
-	// IndexDataを書き込む
-
-	indexResource_->Map (0, nullptr, reinterpret_cast<void**>(&indexData_));
-
-	indexData_[0] = 0;
-	indexData_[1] = 1;
-	indexData_[2] = 2;
-
-	indexData_[3] = 1;
-	indexData_[4] = 3;
-	indexData_[5] = 2;
+	return MathUtility::Multiply (anchorMatrix, affineMatrix);
 }
 
 //=================================================================================================//
-// マテリアルデータ作成
+// UVTransform作成
 
-void Sprite::CreateMaterialData () {
+Matrix4x4 Sprite::MakeUVTransform () const {
 
-	ID3D12Device* device = spriteCommon_->GetDxCommon ()->GetDevice ();
+	Vector3 scale = {
+		textureSize_.x / textureImageSize_.x,
+		textureSize_.y / textureImageSize_.y,
+		1.f };
 
-	//=============================================================================================//
-	// MaterialResource生成
+	Vector3 translate = {
+		textureLeftTop_.x / textureImageSize_.x,
+		textureLeftTop_.y / textureImageSize_.y,
+		0.f };
 
-	materialResource_ = ResourceManager::CreateBufferResource (
-		device,
-		sizeof (Material),
-		"spriteMaterialResource");
+	if (isFlipX_) {
 
-	//=============================================================================================//
-	// MaterialDataを書き込む
+		translate.x += scale.x;
+		scale.x = -scale.x;
+	}
 
-	materialResource_->Map (0, nullptr, reinterpret_cast<void**>(&materialData_));
+	if (isFlipY_) {
 
-	materialData_->color = { 1.f,1.f,1.f,1.f };
+		translate.y += scale.y;
+		scale.y = -scale.y;
+	}
 
-	materialData_->enableLighting = false;
-
-	materialData_->uvTransform = MathUtility::MakeIdentity4x4 ();
-
-	//=============================================================================================//
-	// DirectionalLightResource生成
-
-	directionalLightResource_ = ResourceManager::CreateBufferResource (
-		device,
-		sizeof (DirectionalLight),
-		"spriteDirectionalLightResource");
-
-	directionalLightResource_->Map (0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
-
-	directionalLightData_->color = { 1.f,1.f,1.f,1.f };
-
-	directionalLightData_->direction = { 0.f,-1.f,0.f };
-
-	directionalLightData_->intensity = 1.f;
+	return MathUtility::Multiply (MathUtility::MakeScaleMatrix (scale), MathUtility::MakeTranslateMatrix (translate));
 }
 
 //=================================================================================================//
@@ -320,16 +191,10 @@ void Sprite::CreateMaterialData () {
 
 void Sprite::CreateTransformationMatrixData () {
 
-	//=============================================================================================//
-	// TransformationMatrixResource生成
-
 	transformationMatrixResource_ = ResourceManager::CreateBufferResource (
 		spriteCommon_->GetDxCommon ()->GetDevice (),
 		sizeof (TransformationMatrix),
 		"spriteTransformationMatrixResource");
-
-	//=============================================================================================//
-	// TransformationMatrixDataを書き込む
 
 	transformationMatrixResource_->Map (0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
 

@@ -8,6 +8,7 @@
 
 class DirectXCommon;
 class ShaderCompiler;
+class Mesh;
 
 //=================================================================================================//
 // スプライト共通部
@@ -26,9 +27,16 @@ public:
 	void DrawSettingCommon();
 
 	//=============================================================================================//
+	// 終了処理
+
+	void Finalize();
+
+	//=============================================================================================//
 	// Getter
 
 	DirectXCommon* GetDxCommon() const { return dxCommon_; }
+
+	Mesh* GetMesh() const { return mesh_; }
 
 private:
 
@@ -63,4 +71,9 @@ private:
 	// PipelineState
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
+
+	//=============================================================================================//
+	// 全Sprite共通の単位矩形Mesh
+
+	Mesh* mesh_ = nullptr;
 };
