@@ -4,14 +4,8 @@
 #include "IScene.h"
 #include "EngineStructs.h"
 #include "Camera.h"
-#include "Object3d.h"
 #include "Particle.h"
 #include "DebugCamera.h"
-#include "SpriteCommon.h"
-#include "Sprite.h"
-
-// C++
-#include <vector>
 
 class GameScene : public IScene {
 public:
@@ -30,40 +24,29 @@ private:
 	TransformData cameraTransform_{};
 
 	//=============================================================================================//
-	// 色とBlendMode
+	// 色
 
 	Vector4 color_ = { 1.0f,1.0f,1.0f,1.0f };
-
-	BlendMode blendMode_ = kBlendModeNormal;
 
 	//=============================================================================================//
 	// Particle
 
 	Particle* particle_ = nullptr;
 
-	//=============================================================================================//
-	// Fence
-
-	Object3d* fence_ = nullptr;
-
-	TransformData fenceTransform_ = {
-		{3.0f,3.0f,3.0f},
-		{0.0f,3.14159265f,0.0f},
-		{0.0f,0.0f,-15.0f}
-	};
-
-	//=============================================================================================//
-	// SpriteCommon
-
-	SpriteCommon* spriteCommon_ = nullptr;
-
-	//=============================================================================================//
-	// Sprite
-
-	std::vector<Sprite*> sprites_;
+	BlendMode particleBlendMode_ = kBlendModeAdd;
 
 	//=============================================================================================//
 	// DebugCamera
 
 	DebugCamera* debugCamera_ = nullptr;
+
+	//=============================================================================================//
+	// ビルボード
+
+	bool useBillboard_ = true;
+
+	//=============================================================================================//
+	// 加速度Field
+
+	bool useAccelerationField_ = false;
 };

@@ -6,19 +6,31 @@
 class DebugCamera
 {
 public:
+	//=============================================================================================//
+	// 初期化
 	void Initialize(int32_t clientWidth, int32_t clientHeight);
+	
+	//=============================================================================================//
+	// 更新 
 	void Update(Input* input);
 
-	const Matrix4x4& GetViewProjectionMatrix() const;
-	const TransformData& GetTransform() const;
+	//=============================================================================================//
+	// Getter
+
+	const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
+	const TransformData& GetTransform() const { return transform_; }
+	const Matrix4x4& GetCameraMatrix()const { return cameraMatrix_; }
+
 private:
+	//=============================================================================================//
+	// 行列更新
 	void UpdateMatrix();
 
 private:
 	Input* input_ = nullptr;
 
 	TransformData transform_{};
-
+	Matrix4x4 cameraMatrix_{};
 	Matrix4x4 viewMatrix_{};
 	Matrix4x4 projectionMatrix_{};
 	Matrix4x4 viewProjectionMatrix_{};

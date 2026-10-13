@@ -95,6 +95,8 @@ void ParticleRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shade
 
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = pipelineManager.CreateDepthStencilState();
 
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+
 	// BlendModeの数だけPSOを生成
 	for (int blendMode = 0; blendMode < kCountOfBlendMode; ++blendMode) {
 

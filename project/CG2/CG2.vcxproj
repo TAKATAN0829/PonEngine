@@ -230,6 +230,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\renderer\Object3dRenderer.cpp" />
     <ClCompile Include="engine\renderer\SpriteCommon.cpp" />
     <ClCompile Include="engine\renderer\ParticleRenderer.cpp" />
+    <ClCompile Include="engine\math\Random.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -300,6 +301,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\math\MathUtility.h" />
     <ClInclude Include="engine\math\Matrix4x4.h" />
     <ClInclude Include="engine\math\Vector2.h" />
+    <ClInclude Include="engine\math\AABB.h" />
     <ClInclude Include="engine\math\Vector3.h" />
     <ClInclude Include="engine\math\Vector4.h" />
     <ClInclude Include="application\GameScene.h" />
@@ -309,6 +311,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\renderer\Object3dRenderer.h" />
     <ClInclude Include="engine\renderer\SpriteCommon.h" />
     <ClInclude Include="engine\renderer\ParticleRenderer.h" />
+    <ClInclude Include="engine\math\Random.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\externals\imgui\LICENSE.txt" />
