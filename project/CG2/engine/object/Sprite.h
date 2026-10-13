@@ -12,39 +12,11 @@
 
 // 自作
 #include "EngineStructs.h"
+#include "Material.h"
 
 class SpriteCommon;
 
 class Sprite {
-public:
-
-	//=============================================================================================//
-	// 頂点データ
-
-	struct VertexData {
-		Vector4 position;
-		Vector2 texcoord;
-		Vector3 normal;
-	};
-
-	//=============================================================================================//
-	// マテリアル
-
-	struct Material {
-		Vector4 color;
-		int32_t enableLighting;
-		float padding[3];
-		Matrix4x4 uvTransform;
-	};
-
-	//=============================================================================================//
-	// 座標変換行列
-
-	struct TransformationMatrix {
-		Matrix4x4 WVP;
-		Matrix4x4 World;
-	};
-
 public:
 
 	//=============================================================================================//
@@ -61,6 +33,11 @@ public:
 	// 描画処理
 
 	void Draw();
+
+	//=============================================================================================//
+	// 終了処理
+
+	void Finalize();
 
 	//=============================================================================================//
 	// Position
@@ -118,33 +95,18 @@ public:
 	//=============================================================================================//
 	// Color
 
-	const Vector4& GetColor() const { return materialData_->color; }
+	const Vector4& GetColor() const { return material_->GetColor(); }
 
-	void SetColor(const Vector4& color) { materialData_->color = color; }
+	void SetColor(const Vector4& color) { material_->SetColor(color); }
 
 	//=============================================================================================//
 	// Texture設定
 
-	void SetTextureIndex(uint32_t textureIndex) { textureIndex_ = textureIndex; }
+	void SetTextureIndex(uint32_t textureIndex);
 
 	void SetTexture(const std::string& filePath);
 
-	//=============================================================================================//
-	// Lighting有効設定
-
-	void SetEnableLighting(bool enableLighting) { materialData_->enableLighting = enableLighting; }
-
 private:
-
-	//=============================================================================================//
-	// 頂点データ作成
-
-	void CreateVertexData();
-
-	//=============================================================================================//
-	// マテリアルデータ作成
-
-	void CreateMaterialData();
 
 	//=============================================================================================//
 	// 座標変換行列データ作成
@@ -156,12 +118,27 @@ private:
 
 	void AdjustTextureSize();
 
+	//=============================================================================================//
+	// WorldMatrix作成
+
+	Matrix4x4 MakeWorldMatrix() const;
+
+	//=============================================================================================//
+	// UVTransform作成
+
+	Matrix4x4 MakeUVTransform() const;
+
 private:
 
 	//=============================================================================================//
 	// SpriteCommon
 
 	SpriteCommon* spriteCommon_ = nullptr;
+
+	//=============================================================================================//
+	// Material
+
+	Material* material_ = nullptr;
 
 	//=============================================================================================//
 	// Position
@@ -207,35 +184,14 @@ private:
 	uint32_t textureIndex_ = 0;
 
 	//=============================================================================================//
-	// バッファリソース
+	// Texture画像サイズ
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_ = nullptr;
+	Vector2 textureImageSize_ = { 1.f,1.f };
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_ = nullptr;
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> materialResource_ = nullptr;
+	//=============================================================================================//
+	// 座標変換行列
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixResource_ = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_ = nullptr;
-
-	//=============================================================================================//
-	// バッファリソースのビュー
-
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
-
-	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
-
-	//=============================================================================================//
-	// バッファリソース内のデータを指すポインタ
-
-	VertexData* vertexData_ = nullptr;
-
-	uint32_t* indexData_ = nullptr;
-
-	Material* materialData_ = nullptr;
-
 	TransformationMatrix* transformationMatrixData_ = nullptr;
-
-	DirectionalLight* directionalLightData_ = nullptr;
 };
