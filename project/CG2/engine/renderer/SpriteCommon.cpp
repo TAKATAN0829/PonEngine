@@ -6,6 +6,7 @@
 // 自作
 #include "DirectXCommon.h"
 #include "ShaderCompiler.h"
+#include "Mesh.h"
 
 //=================================================================================================//
 // 初期化処理
@@ -23,6 +24,19 @@ void SpriteCommon::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCom
 
 	// GraphicsPipelineの生成
 	CreateGraphicsPipeline();
+
+	// 全Sprite共通の単位矩形Mesh生成
+	mesh_ = new Mesh();
+
+	mesh_->Initialize(dxCommon_, MeshType::kSprite);
+}
+
+//=================================================================================================//
+// 終了処理
+
+void SpriteCommon::Finalize() {
+
+	delete mesh_;
 }
 
 //=================================================================================================//

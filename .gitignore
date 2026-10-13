@@ -1,5 +1,6 @@
 # Build results
 generated/
+x64/
 
 # Visual Studio
 .vs/

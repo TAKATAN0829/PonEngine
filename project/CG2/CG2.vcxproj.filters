@@ -151,6 +151,7 @@
     <ClCompile Include="engine\renderer\ParticleRenderer.cpp">
       <Filter>engine\renderer</Filter>
     </ClCompile>
+    <ClCompile Include="engine\math\Random.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\externals\imgui\imconfig.h">
@@ -255,6 +256,9 @@
     <ClInclude Include="engine\math\Vector2.h">
       <Filter>engine\math</Filter>
     </ClInclude>
+    <ClInclude Include="engine\math\AABB.h">
+      <Filter>engine\math</Filter>
+    </ClInclude>
     <ClInclude Include="engine\math\Vector3.h">
       <Filter>engine\math</Filter>
     </ClInclude>
@@ -282,6 +286,7 @@
     <ClInclude Include="engine\renderer\ParticleRenderer.h">
       <Filter>engine\renderer</Filter>
     </ClInclude>
+    <ClInclude Include="engine\math\Random.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
