@@ -4,6 +4,7 @@
 #include "Vector3.h"
 #include "Vector4.h"
 #include "Matrix4x4.h"
+#include "AABB.h"
 
 #include <cmath>
 
@@ -351,5 +352,12 @@ public:
 		result.m[3][3] = 1.0f;
 
 		return result;
+	}
+	
+	static inline bool IsCollision(const AABB& aabb, const Vector3& point) {
+
+		return aabb.min.x <= point.x && point.x <= aabb.max.x &&
+			   aabb.min.y <= point.y && point.y <= aabb.max.y &&
+			   aabb.min.z <= point.z && point.z <= aabb.max.z;
 	}
 };

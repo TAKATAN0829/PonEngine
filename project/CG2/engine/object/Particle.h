@@ -9,6 +9,7 @@
 // C++
 #include <cstdint>
 #include <string>
+#include <list>
 
 // 自作
 #include "EngineStructs.h"
@@ -22,9 +23,9 @@ class Particle {
 public:
 
 	//=============================================================================================//
-	// インスタンス数
+	// 最大インスタンス数
 
-	static const uint32_t kNumInstance = 10;
+	static const uint32_t kNumMaxInstance = 100;
 
 	//=============================================================================================//
 	// 初期化処理
@@ -34,7 +35,7 @@ public:
 	//=============================================================================================//
 	// 更新処理
 
-	void Update (const Matrix4x4& viewProjectionMatrix);
+	void Update (const Matrix4x4& viewProjectionMatrix,const Matrix4x4& cameraMatrix);
 
 	//=============================================================================================//
 	// 描画処理
@@ -47,21 +48,73 @@ public:
 	void Finalize ();
 
 	//=============================================================================================//
-	// 色設定
+	// Particle追加
 
+	void AddParticles() { particles_.splice(particles_.end(), Emit()); }
+
+	//=============================================================================================//
+	// EmitterのTransform
+
+	TransformData& GetEmitterTransform() { return emitter_.transform; }	
+
+	//=============================================================================================//
+	// Setter
+
+	// 色
 	void SetColor (const Vector4& color);
-
-	//=============================================================================================//
-	// Texture設定
-
+	// テクスチャ
 	void SetTexture (const std::string& filePath);
-
-	//=============================================================================================//
-	// BlendMode設定
-
+	// ブレンドモード
 	void SetBlendMode (BlendMode blendMode);
+	// ビルボード
+	void SetUseBillboard(bool useBillboard) { useBillboard_ = useBillboard; }
+	// 加速度Field
+	void SetUseAccelerationField(bool useAccelerationField) { useAccelerationField_ = useAccelerationField; }
 
 private:
+	//=============================================================================================//
+	// Particle1粒分のデータ
+	
+	struct ParticleData {
+		TransformData transform;
+		Vector3 velocity;
+		Vector4 color;
+		float lifeTime;
+		float currentTime;
+	};
+
+	//=============================================================================================//
+	// 発生源
+
+	struct Emitter {
+		TransformData transform;
+		uint32_t count;
+		float frequency;
+		float frequencyTime;
+	};
+
+	//=============================================================================================//
+	// 加速度Field
+
+	struct AccelerationField {
+		Vector3 acceleration;
+		AABB area;
+	};
+
+	//=============================================================================================//
+	// 新しいParticle生成
+
+	ParticleData MakeNewParticle(const Vector3& translate);
+
+	//=============================================================================================//
+	// Emitterから指定個数のParticleを作る
+
+	std::list<ParticleData> Emit();
+
+	//=============================================================================================//
+	// Δt
+
+	static constexpr float kDeltaTime = 1.0f / 60.0f;
 
 	//=============================================================================================//
 	// Renderer
@@ -86,7 +139,7 @@ private:
 	//=============================================================================================//
 	// 書き込むためのアドレス
 
-	TransformationMatrix* instancingData_ = nullptr;
+	ParticleForGPU* instancingData_ = nullptr;
 
 	//=============================================================================================//
 	// Instancing用SRVのGPUHandle
@@ -94,17 +147,42 @@ private:
 	D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU_{};
 
 	//=============================================================================================//
-	// Transform
+	// Particle
 
-	TransformData transforms_[kNumInstance]{};
+	std::list<ParticleData> particles_;
+
+	//=============================================================================================//
+	// Emitter
+
+	Emitter emitter_ = {
+		{ { 1.0f,1.0f,1.0f },{ 0.0f,0.0f,0.0f },{ 0.0f,0.0f,0.0f } },
+		3,
+		0.5f,
+		0.0f
+	};
+
+	//=============================================================================================//
+	// 加速度Field
+
+	AccelerationField accelerationField_ = {
+		{ 15.0f,0.0f,0.0f },
+		{ { -1.0f,-1.0f,-1.0f },{ 1.0f,1.0f,1.0f } }
+	};
+
+	bool useAccelerationField_ = false;
 
 	//=============================================================================================//
 	// 描画するインスタンス数
 
-	uint32_t numInstance_ = kNumInstance;
+	uint32_t numInstance_ = 0;
 
 	//=============================================================================================//
 	// BlendMode
 
 	BlendMode blendMode_ = kBlendModeNormal;
+
+	//=============================================================================================//
+	// ビルボード
+
+	bool useBillboard_ = true;
 };

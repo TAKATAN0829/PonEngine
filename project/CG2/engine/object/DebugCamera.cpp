@@ -62,27 +62,15 @@ void DebugCamera::Update(Input* input) {
 		velocity.y *= moveSpeed_;
 		velocity.z *= moveSpeed_;
 
-		transform_.translate = MathUtility::Add(transform_.translate,velocity);
+		transform_.translate = MathUtility::Add(transform_.translate, velocity);
 	}
 
 #ifdef USE_IMGUI
 	ImGui::Begin("DebugCamera");
-	ImGui::DragFloat3(
-		"Translate",
-		&transform_.translate.x,
-		0.1f);
-	ImGui::DragFloat3(
-		"Rotate",
-		&transform_.rotate.x,
-		0.01f);
-	ImGui::DragFloat(
-		"MoveSpeed",
-		&moveSpeed_,
-		0.01f);
-	ImGui::DragFloat(
-		"RotateSpeed",
-		&rotateSpeed_,
-		0.001f);
+	ImGui::DragFloat3("Translate", &transform_.translate.x, 0.1f);
+	ImGui::DragFloat3("Rotate", &transform_.rotate.x, 0.01f);
+	ImGui::DragFloat("MoveSpeed", &moveSpeed_, 0.01f);
+	ImGui::DragFloat("RotateSpeed", &rotateSpeed_, 0.001f);
 	ImGui::End();
 #endif
 
@@ -91,26 +79,14 @@ void DebugCamera::Update(Input* input) {
 
 void DebugCamera::UpdateMatrix() {
 
-	Matrix4x4 cameraMatrix = MathUtility::MakeAffineMatrix(
+	cameraMatrix_ = MathUtility::MakeAffineMatrix(
 		transform_.scale,
 		transform_.rotate,
 		transform_.translate);
 
-	viewMatrix_ = MathUtility::Inverse(cameraMatrix);
+	viewMatrix_ = MathUtility::Inverse(cameraMatrix_);
 
-	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix(
-		0.45f,
-		float(clientWidth_) / float(clientHeight_),
-		0.1f,
-		1000.0f);
+	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix(0.45f, float(clientWidth_) / float(clientHeight_), 0.1f, 1000.0f);
 
 	viewProjectionMatrix_ = MathUtility::Multiply(viewMatrix_, projectionMatrix_);
-}
-
-const Matrix4x4& DebugCamera::GetViewProjectionMatrix() const {
-	return viewProjectionMatrix_;
-}
-
-const TransformData& DebugCamera::GetTransform() const {
-	return transform_;
 }

@@ -57,3 +57,12 @@ struct DirectionalLight {
 struct ModelData {
 	std::vector<VertexData> vertices;
 };
+
+//=================================================================================================//
+// Particle用インスタンシングデータ
+
+struct ParticleForGPU {
+	Matrix4x4 WVP;
+	Matrix4x4 World;
+	Vector4 color;
+};
