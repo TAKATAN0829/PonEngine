@@ -66,3 +66,10 @@ struct ParticleForGPU {
 	Matrix4x4 World;
 	Vector4 color;
 };
+
+//=================================================================================================//
+// カメラ（GPU転送用）
+
+struct CameraForGPU {
+	Vector3 worldPosition;
+};
