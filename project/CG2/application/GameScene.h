@@ -6,6 +6,7 @@
 #include "Camera.h"
 #include "Particle.h"
 #include "DebugCamera.h"
+#include "Object3dRenderer.h"
 
 class GameScene : public IScene {
 public:
@@ -39,6 +40,11 @@ private:
 	// DebugCamera
 
 	DebugCamera* debugCamera_ = nullptr;
+
+	//=============================================================================================//
+	// Object3dRenderer
+
+	Object3dRenderer* object3dRenderer_ = nullptr;
 
 	//=============================================================================================//
 	// ビルボード

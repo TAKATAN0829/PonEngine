@@ -1,4 +1,4 @@
-float4 main(float4po#include "Sprite.hlsli"
+#include "Sprite.hlsli"
 
 struct TransformationMatrix
 {

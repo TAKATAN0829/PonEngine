@@ -1,4 +1,4 @@
-﻿#include "Object3d.hlsli"
+#include "Object3d.hlsli"
 
 struct Material
 {
@@ -19,10 +19,15 @@ struct PixelShaderOutput
     float32_t4 color : SV_TARGET0;
 };
 
-
+struct Camera
+{
+    float32_t3 worldPosition;
+};
 ConstantBuffer<Material> gMaterial : register(b0);
 
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
+
+ConstantBuffer<Camera> gCamera : register(b2);
 
 Texture2D<float32_t4> gTexture : register(t0);
 
@@ -46,6 +51,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         float cos = pow(NdotL * 0.5f + 0.5f, 2.0f);
         output.color.rgb = gMaterial.color.rgb * textureColor.rgb * gDirectionalLight.color.rgb * cos * gDirectionalLight.intensity;
         output.color.a = gMaterial.color.a * textureColor.a; // α値にはLightingを適用しない
+        float32_t3 toEye = normalize(gCamera.worldPosition - input.worldPosition);
     }
     else
     { // Lightingしない場合

@@ -26,6 +26,11 @@ void GameScene::Initialize(const SceneContext& context) {
 	debugCamera_->Initialize(WinApp::kClientWidth, WinApp::kClientHeight);
 
 	//=============================================================================================//
+	// Object3dRenderer取得
+
+	object3dRenderer_ = context.object3dRenderer;
+
+	//=============================================================================================//
 	// Particle初期化
 
 	particle_ = new Particle();
@@ -93,6 +98,13 @@ void GameScene::UpdateCamera(Input* input) {
 // Object更新
 
 void GameScene::UpdateObject() {
+
+	//=============================================================================================//
+	// カメラ位置をObject3dRendererへ送る
+
+	const Matrix4x4& cameraMatrix = debugCamera_->GetCameraMatrix();
+
+	object3dRenderer_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
 
 	//=============================================================================================//
 	// Particle更新
