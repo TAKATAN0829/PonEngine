@@ -55,6 +55,11 @@ public:
 	void SetUVTransform (const Matrix4x4& uvTransform);
 
 	//=============================================================================================//
+	// 光沢度設定
+
+	void SetShininess(float shininess) { materialData_->shininess = shininess; }
+
+	//=============================================================================================//
 	// DirectionalLight設定
 
 	void SetDirectionalLight (

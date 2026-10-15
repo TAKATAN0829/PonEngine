@@ -31,6 +31,15 @@ void GameScene::Initialize(const SceneContext& context) {
 	object3dRenderer_ = context.object3dRenderer;
 
 	//=============================================================================================//
+	// モデル初期化
+
+	model_ = new Object3d();
+
+	model_->Initialize(object3dRenderer_, MeshType::kSphere);
+
+	model_->SetTexture("resources/uvChecker.png");
+
+	//=============================================================================================//
 	// Particle初期化
 
 	particle_ = new Particle();
@@ -58,6 +67,11 @@ void GameScene::Update(Input* input) {
 void GameScene::Draw() {
 
 	//=============================================================================================//
+	// モデル描画
+
+	model_->Draw();
+
+	//=============================================================================================//
 	// Particle描画
 
 	particle_->Draw();
@@ -74,6 +88,13 @@ void GameScene::Finalize() {
 	particle_->Finalize();
 
 	delete particle_;
+
+	//=============================================================================================//
+	// モデル解放
+
+	model_->Finalize();
+
+	delete model_;
 
 	//=============================================================================================//
 	// Camera解放
@@ -105,6 +126,16 @@ void GameScene::UpdateObject() {
 	const Matrix4x4& cameraMatrix = debugCamera_->GetCameraMatrix();
 
 	object3dRenderer_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
+
+	//=============================================================================================//
+	// モデル更新
+
+	model_->SetTransform(modelTransform_);
+	model_->SetColor(modelColor_);
+	model_->SetEnableLighting(enableLighting_);
+	model_->SetShininess(shininess_);
+	model_->SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
+	model_->Update(debugCamera_->GetViewProjectionMatrix());
 
 	//=============================================================================================//
 	// Particle更新
@@ -153,6 +184,23 @@ void GameScene::UpdateObject() {
 		particle_->AddParticles();
 	}
 
+	ImGui::End();
+
+	ImGui::Begin("Model");
+	ImGui::DragFloat3("Scale", &modelTransform_.scale.x, 0.01f);
+	ImGui::SliderAngle("RotateX", &modelTransform_.rotate.x);
+	ImGui::SliderAngle("RotateY", &modelTransform_.rotate.y);
+	ImGui::SliderAngle("RotateZ", &modelTransform_.rotate.z);
+	ImGui::DragFloat3("Translate", &modelTransform_.translate.x, 0.01f);
+	ImGui::ColorEdit4("Color", &modelColor_.x);
+	ImGui::Checkbox("EnableLighting", &enableLighting_);
+	ImGui::DragFloat("Shininess", &shininess_, 0.1f, 1.0f, 500.0f);
+	ImGui::End();
+
+	ImGui::Begin("DirectionalLight");
+	ImGui::ColorEdit4("Color", &lightColor_.x);
+	ImGui::SliderFloat3("Direction", &lightDirection_.x, -1.0f, 1.0f);
+	ImGui::DragFloat("Intensity", &lightIntensity_, 0.01f, 0.0f, 10.0f);
 	ImGui::End();
 
 #endif

@@ -74,6 +74,8 @@ void Object3d::InitializeResources() {
 	wvpData_->WVP = MathUtility::MakeIdentity4x4();
 
 	wvpData_->World = MathUtility::MakeIdentity4x4();
+
+	wvpData_->WorldInverseTranspose = MathUtility::MakeIdentity4x4();
 }
 
 
@@ -91,6 +93,8 @@ void Object3d::Update(const Matrix4x4& viewProjectionMatrix) {
 	wvpData_->WVP = worldViewProjectionMatrix;
 
 	wvpData_->World = worldMatrix;
+
+	wvpData_->WorldInverseTranspose = MathUtility::Transpose(MathUtility::Inverse(worldMatrix));
 }
 
 
