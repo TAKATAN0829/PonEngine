@@ -1,5 +1,6 @@
 #include "Object3d.hlsli"
 
+//=================================================================================================//
 struct Material
 {
     float32_t4 color;
@@ -7,33 +8,44 @@ struct Material
     float32_t4x4 uvTransform;
     float32_t shininess;
 };
-
+ConstantBuffer<Material> gMaterial : register(b0);
+//=================================================================================================//
+//=================================================================================================//
 struct DirectionalLight
 {
     float32_t4 color; // ライトの色
     float32_t3 direction; // ライトの向き
     float intensity; // 輝度
 };
-
+ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
+//=================================================================================================//
+//=================================================================================================//
+struct Camera
+{
+    float32_t3 worldPosition;
+};
+ConstantBuffer<Camera> gCamera : register(b2);
+//=================================================================================================//
+//=================================================================================================//
+struct PointLight
+{
+    float32_t4 color;
+    float32_t3 position;
+    float intensity;
+};
+ConstantBuffer<PointLight> gPointLight : register(b3);
+//=================================================================================================//
+//=================================================================================================//
 struct PixelShaderOutput
 {
     float32_t4 color : SV_TARGET0;
 };
 
-struct Camera
-{
-    float32_t3 worldPosition;
-};
-ConstantBuffer<Material> gMaterial : register(b0);
-
-ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
-
-ConstantBuffer<Camera> gCamera : register(b2);
-
 Texture2D<float32_t4> gTexture : register(t0);
 
 SamplerState gSampler : register(s0);
-
+//=================================================================================================//
+//=================================================================================================//
 PixelShaderOutput main(VertexShaderOutput input)
 {
     PixelShaderOutput output;
@@ -81,4 +93,4 @@ PixelShaderOutput main(VertexShaderOutput input)
 
     return output;
 }
-
+//=================================================================================================//
