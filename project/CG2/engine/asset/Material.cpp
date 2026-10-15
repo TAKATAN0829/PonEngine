@@ -40,6 +40,8 @@ void Material::Initialize(DirectXCommon* dxCommon) {
 
 	materialData_->uvTransform = MathUtility::MakeIdentity4x4();
 
+	materialData_->shininess = 40.0f;
+
 	//=============================================================================================//
 	// DirectionalLightResource生成
 

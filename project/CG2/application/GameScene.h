@@ -6,6 +6,8 @@
 #include "Camera.h"
 #include "Particle.h"
 #include "DebugCamera.h"
+#include "Object3dRenderer.h"
+#include "Object3d.h"
 
 class GameScene : public IScene {
 public:
@@ -41,6 +43,11 @@ private:
 	DebugCamera* debugCamera_ = nullptr;
 
 	//=============================================================================================//
+	// Object3dRenderer
+
+	Object3dRenderer* object3dRenderer_ = nullptr;
+
+	//=============================================================================================//
 	// ビルボード
 
 	bool useBillboard_ = true;
@@ -49,4 +56,30 @@ private:
 	// 加速度Field
 
 	bool useAccelerationField_ = false;
+
+	//=============================================================================================//
+	// モデル
+
+	Object3d* model_ = nullptr;
+
+	TransformData modelTransform_ = {
+		{ 5.0f,5.0f,5.0f },
+		{ 0.0f,0.0f,0.0f },
+		{ 0.0f,0.0f,0.0f }
+	};
+
+	Vector4 modelColor_ = { 1.0f,1.0f,1.0f,1.0f };
+
+	bool enableLighting_ = true;
+
+	float shininess_ = 40.0f;
+
+	//=============================================================================================//
+	// 平行光源
+
+	Vector4 lightColor_ = { 1.0f,1.0f,1.0f,1.0f };
+
+	Vector3 lightDirection_ = { 0.0f,-1.0f,0.0f };
+
+	float lightIntensity_ = 1.0f;
 };
