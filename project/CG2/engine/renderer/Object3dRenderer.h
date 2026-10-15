@@ -8,6 +8,7 @@
 
 // 自作
 #include "BlendMode.h"
+#include "EngineStructs.h"
 
 class DirectXCommon;
 class ShaderCompiler;
@@ -24,6 +25,11 @@ public:
 	// 描画前設定
 
 	void PreDraw(BlendMode blendMode);
+
+	//=============================================================================================//
+	// カメラ位置設定
+
+	void SetCameraPosition(const Vector3& position) { cameraData_->worldPosition = position; }
 
 	//=============================================================================================//
 	// Getter
@@ -46,4 +52,11 @@ private:
 	// PipelineState
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineStates_[kCountOfBlendMode];
+
+	//=============================================================================================//
+	// カメラ
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> cameraResource_ = nullptr;
+
+	CameraForGPU* cameraData_ = nullptr;
 };

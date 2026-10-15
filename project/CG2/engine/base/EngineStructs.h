@@ -32,6 +32,7 @@ struct MaterialData {
 	int32_t enableLighting;
 	float padding[3];
 	Matrix4x4 uvTransform;
+	float shininess;
 };
 
 //=================================================================================================//
@@ -40,6 +41,7 @@ struct MaterialData {
 struct TransformationMatrix {
 	Matrix4x4 WVP;
 	Matrix4x4 World;
+	Matrix4x4 WorldInverseTranspose;
 };
 
 //=================================================================================================//
@@ -65,4 +67,11 @@ struct ParticleForGPU {
 	Matrix4x4 WVP;
 	Matrix4x4 World;
 	Vector4 color;
+};
+
+//=================================================================================================//
+// カメラ（GPU転送用）
+
+struct CameraForGPU {
+	Vector3 worldPosition;
 };
