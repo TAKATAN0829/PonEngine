@@ -142,10 +142,7 @@ void DirectXCommon::InitializeDevice() {
 	// Device生成
 	for (size_t i = 0; i < _countof(featureLevels); ++i) {
 
-		hr = D3D12CreateDevice(
-			useAdapter_.Get(),
-			featureLevels[i],
-			IID_PPV_ARGS(&device_));
+		hr = D3D12CreateDevice(useAdapter_.Get(), featureLevels[i], IID_PPV_ARGS(&device_));
 
 		if (SUCCEEDED(hr)) {
 			break;
@@ -272,15 +269,9 @@ void DirectXCommon::InitializeRenderTargetView() {
 	rtvHandles_[1].ptr += descriptorSizeRTV;
 
 	// RTV生成
-	device_->CreateRenderTargetView(
-		swapChainResources_[0].Get(),
-		&rtvDesc,
-		rtvHandles_[0]);
+	device_->CreateRenderTargetView(swapChainResources_[0].Get(), &rtvDesc, rtvHandles_[0]);
 
-	device_->CreateRenderTargetView(
-		swapChainResources_[1].Get(),
-		&rtvDesc,
-		rtvHandles_[1]);
+	device_->CreateRenderTargetView(swapChainResources_[1].Get(), &rtvDesc, rtvHandles_[1]);
 }
 
 //=============================================================================================//
@@ -289,10 +280,7 @@ void DirectXCommon::InitializeRenderTargetView() {
 void DirectXCommon::InitializeFence() {
 
 	// Fence生成
-	HRESULT hr = device_->CreateFence(
-		fenceValue_,
-		D3D12_FENCE_FLAG_NONE,
-		IID_PPV_ARGS(&fence_));
+	HRESULT hr = device_->CreateFence(fenceValue_, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence_));
 
 	assert(SUCCEEDED(hr));
 
@@ -549,8 +537,5 @@ void DirectXCommon::InitializeDepthStencilView() {
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 
 	// DSV生成
-	device_->CreateDepthStencilView(
-		depthStencilResource_.Get(),
-		&dsvDesc,
-		dsvHeap_.GetCPUDescriptorHandle(0));
+	device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHeap_.GetCPUDescriptorHandle(0));
 }

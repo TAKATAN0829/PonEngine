@@ -29,10 +29,7 @@ void Input::Initialize(WinApp* winApp) {
 	assert(SUCCEEDED(hr));
 
 	// Keyboard生成
-	hr = directInput_->CreateDevice(
-		GUID_SysKeyboard,
-		keyboard_.GetAddressOf (),
-		NULL);
+	hr = directInput_->CreateDevice(GUID_SysKeyboard, keyboard_.GetAddressOf (), NULL);
 
 	assert(SUCCEEDED(hr));
 
@@ -53,10 +50,7 @@ void Input::Initialize(WinApp* winApp) {
 void Input::Update() {
 
 	// 前フレームの入力を保存
-	memcpy(
-		preKey_,
-		key_,
-		sizeof(key_));
+	memcpy(preKey_, key_, sizeof(key_));
 
 	// キーボード取得開始
 	keyboard_->Acquire();

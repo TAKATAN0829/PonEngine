@@ -13,123 +13,111 @@
 //=================================================================================================//
 // 初期化処理
 
-void Object3d::Initialize(Object3dRenderer* renderer, MeshType meshType) {
+void Object3d::Initialize (Object3dRenderer* renderer, MeshType meshType) {
 
-	assert(renderer);
+	assert (renderer);
 
 	renderer_ = renderer;
 
-	mesh_ = new Mesh();
+	mesh_ = new Mesh ();
 
-	mesh_->Initialize(renderer_->GetDxCommon(), meshType);
+	mesh_->Initialize (renderer_->GetDxCommon (), meshType);
 
-	InitializeResources();
+	InitializeResources ();
 }
 
 
 //=================================================================================================//
 // 初期化処理(OBJモデル)
 
-void Object3d::Initialize(
-	Object3dRenderer* renderer,
-	const std::string& directoryPath,
-	const std::string& filename) {
+void Object3d::Initialize (Object3dRenderer* renderer, const std::string& directoryPath, const std::string& filename) {
 
-	assert(renderer);
+	assert (renderer);
 
 	renderer_ = renderer;
 
-	mesh_ = new Mesh();
+	mesh_ = new Mesh ();
 
-	mesh_->Initialize(
-		renderer_->GetDxCommon(),
-		directoryPath,
-		filename);
+	mesh_->Initialize (renderer_->GetDxCommon (), directoryPath, filename);
 
-	InitializeResources();
+	InitializeResources ();
 }
 
 
 //=================================================================================================//
 // Material・WVPの初期化
 
-void Object3d::InitializeResources() {
+void Object3d::InitializeResources () {
 
-	DirectXCommon* dxCommon = renderer_->GetDxCommon();
+	DirectXCommon* dxCommon = renderer_->GetDxCommon ();
 
-	material_ = new Material();
+	material_ = new Material ();
 
-	material_->Initialize(dxCommon);
+	material_->Initialize (dxCommon);
 
-	wvpResource_ = ResourceManager::CreateBufferResource(
-		dxCommon->GetDevice(),
-		sizeof(TransformationMatrix),
-		"wvpResource");
+	wvpResource_ = ResourceManager::CreateBufferResource (dxCommon->GetDevice (), sizeof (TransformationMatrix), "wvpResource");
 
-	wvpResource_->Map(
-		0,
-		nullptr,
-		reinterpret_cast<void**> (&wvpData_));
+	wvpResource_->Map (0, nullptr, reinterpret_cast<void**> (&wvpData_));
 
-	wvpData_->WVP = MathUtility::MakeIdentity4x4();
+	wvpData_->WVP = MathUtility::MakeIdentity4x4 ();
 
-	wvpData_->World = MathUtility::MakeIdentity4x4();
+	wvpData_->World = MathUtility::MakeIdentity4x4 ();
 
-	wvpData_->WorldInverseTranspose = MathUtility::MakeIdentity4x4();
+	wvpData_->WorldInverseTranspose = MathUtility::MakeIdentity4x4 ();
 }
 
 
 //=================================================================================================//
 // 更新処理
 
-void Object3d::Update(const Matrix4x4& viewProjectionMatrix) {
+void Object3d::Update (const Matrix4x4& viewProjectionMatrix) {
 
 	transform_.UpdateMatrix ();
 
-	Matrix4x4 worldMatrix = transform_.GetWorldMatrix();
+	Matrix4x4 worldMatrix = transform_.GetWorldMatrix ();
 
-	Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply(worldMatrix, viewProjectionMatrix);
+	Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply (worldMatrix, viewProjectionMatrix);
 
 	wvpData_->WVP = worldViewProjectionMatrix;
 
 	wvpData_->World = worldMatrix;
 
-	wvpData_->WorldInverseTranspose = MathUtility::Transpose(MathUtility::Inverse(worldMatrix));
+	wvpData_->WorldInverseTranspose = MathUtility::Transpose (MathUtility::Inverse (worldMatrix));
 }
 
 
 //=================================================================================================//
 // 描画処理
 
-void Object3d::Draw() {
+void Object3d::Draw () {
 
 	//=============================================================================================//
 	// 描画前設定
-	renderer_->PreDraw(blendMode_);
+	renderer_->PreDraw (blendMode_);
 
-	ID3D12GraphicsCommandList* commandList = renderer_->GetDxCommon()->GetCommandList();
+	ID3D12GraphicsCommandList* commandList = renderer_->GetDxCommon ()->GetCommandList ();
 
 	//=============================================================================================//
 	// Material設定
 
-	material_->Bind();
+	material_->Bind ();
 
 	//=============================================================================================//
 	// WVP設定
 
-	commandList->SetGraphicsRootConstantBufferView(1, wvpResource_->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView (1, wvpResource_->GetGPUVirtualAddress ());
 
 	//=============================================================================================//
 	// Mesh描画
 
-	mesh_->Draw();
+	mesh_->Draw ();
 }
 
 
 //=================================================================================================//
 // 終了処理
 
-void Object3d::Finalize() {
+void Object3d::Finalize () {
 	delete mesh_;
 	delete material_;
 
@@ -139,7 +127,7 @@ void Object3d::Finalize() {
 //=================================================================================================//
 // Transform設定
 
-void Object3d::SetTransform(const TransformData& transform) {
+void Object3d::SetTransform (const TransformData& transform) {
 
 	transform_.local_ = transform;
 }
@@ -148,7 +136,7 @@ void Object3d::SetTransform(const TransformData& transform) {
 //=================================================================================================//
 // Transform取得
 
-TransformData Object3d::GetTransform() {
+TransformData Object3d::GetTransform () {
 
 	return transform_.local_;
 }
@@ -157,9 +145,9 @@ TransformData Object3d::GetTransform() {
 //=================================================================================================//
 // 色設定
 
-void Object3d::SetColor(const Vector4& color) {
+void Object3d::SetColor (const Vector4& color) {
 
-	material_->SetColor(color);
+	material_->SetColor (color);
 }
 
 
@@ -184,31 +172,25 @@ void Object3d::SetUVTransform (const Matrix4x4& uvTransform) {
 //=================================================================================================//
 // DirectionalLight設定
 
-void Object3d::SetDirectionalLight (
-	const Vector4& color,
-	const Vector3& direction,
-	float intensity) {
+void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity) {
 
-	material_->SetDirectionalLight (
-		color,
-		direction,
-		intensity);
+	material_->SetDirectionalLight (color, direction, intensity);
 }
 
 
 //=================================================================================================//
 // Texture番号設定
 
-void Object3d::SetTextureIndex(uint32_t textureIndex) {
+void Object3d::SetTextureIndex (uint32_t textureIndex) {
 
-	material_->SetTextureIndex(textureIndex);
+	material_->SetTextureIndex (textureIndex);
 }
 
 
 //=============================================================================================//
 // Transformアドレス取得
 
-Transform* Object3d::GetTransformAddress() {
+Transform* Object3d::GetTransformAddress () {
 
 	return &transform_;
 }
@@ -217,9 +199,9 @@ Transform* Object3d::GetTransformAddress() {
 //=============================================================================================//
 // 親設定
 
-void Object3d::SetParent(Transform* parent) {
+void Object3d::SetParent (Transform* parent) {
 
-	transform_.SetParent(parent);
+	transform_.SetParent (parent);
 }
 
 

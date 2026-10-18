@@ -101,10 +101,7 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 
 	uint32_t srvIndex = srvHeap->Allocate();
 
-	device->CreateShaderResourceView(
-		textureResource.Get(),
-		&srvDesc,
-		srvHeap->GetCPUDescriptorHandle(srvIndex));
+	device->CreateShaderResourceView(textureResource.Get(), &srvDesc, srvHeap->GetCPUDescriptorHandle(srvIndex));
 
 	//=============================================================================================//
 	// Resource保存
