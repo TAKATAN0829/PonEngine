@@ -21,10 +21,7 @@ public:
 	//=============================================================================================//
 	// BufferResourceを作る
 
-	static Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource (
-		ID3D12Device* device,
-		size_t sizeInBytes,
-		const char* resourceName);
+	static Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource (ID3D12Device* device, size_t sizeInBytes, const char* resourceName);
 
 	//=============================================================================================//
 	// TextureResourceを作る

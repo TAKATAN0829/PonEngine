@@ -34,10 +34,7 @@ void WinApp::Initialize() {
 	RECT wrc = { 0,	0,	kClientWidth,	kClientHeight };
 
 	// ClientSizeからWindowSizeへ変換
-	AdjustWindowRect(
-		&wrc,
-		WS_OVERLAPPEDWINDOW,
-		false);
+	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
 	// Window生成
 	hwnd_ = CreateWindow(

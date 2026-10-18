@@ -78,10 +78,7 @@ void Mesh::Initialize (DirectXCommon* dxCommon, const std::string& directoryPath
 	//=============================================================================================//
 	// VertexData・IndexDataを書き込む
 
-	std::memcpy (
-		vertexData_,
-		modelData.vertices.data (),
-		sizeof (VertexData) * vertexCount_);
+	std::memcpy (vertexData_, modelData.vertices.data (), sizeof (VertexData) * vertexCount_);
 
 	for (uint32_t index = 0; index < indexCount_; ++index) {
 
@@ -99,10 +96,7 @@ void Mesh::Draw (uint32_t instanceCount) {
 	//=============================================================================================//
 	// VBV設定
 
-	commandList->IASetVertexBuffers (
-		0,
-		1,
-		&vertexBufferView_);
+	commandList->IASetVertexBuffers (0, 1, &vertexBufferView_);
 
 	//=============================================================================================//
 	// IBV設定
@@ -252,10 +246,7 @@ void Mesh::CreateVertexResource () {
 	//=============================================================================================//
 	// VertexResource生成
 
-	vertexResource_ = ResourceManager::CreateBufferResource (
-		dxCommon_->GetDevice (),
-		sizeof (VertexData) * vertexCount_,
-		"vertexResource");
+	vertexResource_ = ResourceManager::CreateBufferResource (dxCommon_->GetDevice (), sizeof (VertexData) * vertexCount_, "vertexResource");
 
 	//=============================================================================================//
 	// VertexBufferView作成
@@ -269,10 +260,7 @@ void Mesh::CreateVertexResource () {
 	//=============================================================================================//
 	// VertexDataを書き込む
 
-	vertexResource_->Map (
-		0,
-		nullptr,
-		reinterpret_cast<void**>(&vertexData_));
+	vertexResource_->Map (0, nullptr, reinterpret_cast<void**>(&vertexData_));
 }
 
 //=================================================================================================//
@@ -283,10 +271,7 @@ void Mesh::CreateIndexResource () {
 	//=============================================================================================//
 	// IndexResource生成
 
-	indexResource_ = ResourceManager::CreateBufferResource (
-		dxCommon_->GetDevice (),
-		sizeof (uint32_t) * indexCount_,
-		"indexResource");
+	indexResource_ = ResourceManager::CreateBufferResource (dxCommon_->GetDevice (), sizeof (uint32_t) * indexCount_, "indexResource");
 
 	//=============================================================================================//
 	// IndexBufferView作成
@@ -300,10 +285,7 @@ void Mesh::CreateIndexResource () {
 	//=============================================================================================//
 	// IndexDataを書き込む
 
-	indexResource_->Map (
-		0,
-		nullptr,
-		reinterpret_cast<void**>(&indexData_));
+	indexResource_->Map (0, nullptr, reinterpret_cast<void**>(&indexData_));
 }
 
 //=================================================================================================//
@@ -582,10 +564,7 @@ ModelData Mesh::LoadObjFile (const std::string& directoryPath, const std::string
 
 					std::string index;
 
-					std::getline (
-						v,
-						index,
-						'/');
+					std::getline (v, index, '/');
 
 					if (!index.empty ()) {
 

@@ -191,10 +191,7 @@ Matrix4x4 Sprite::MakeUVTransform () const {
 
 void Sprite::CreateTransformationMatrixData () {
 
-	transformationMatrixResource_ = ResourceManager::CreateBufferResource (
-		spriteCommon_->GetDxCommon ()->GetDevice (),
-		sizeof (TransformationMatrix),
-		"spriteTransformationMatrixResource");
+	transformationMatrixResource_ = ResourceManager::CreateBufferResource (spriteCommon_->GetDxCommon ()->GetDevice (), sizeof (TransformationMatrix), "spriteTransformationMatrixResource");
 
 	transformationMatrixResource_->Map (0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
 
