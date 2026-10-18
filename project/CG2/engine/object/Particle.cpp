@@ -43,18 +43,12 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 	//=============================================================================================//
 	// Instancing用のTransformationMatrixリソースを作る
 
-	instancingResource_ = ResourceManager::CreateBufferResource(
-		device,
-		sizeof(ParticleForGPU) * kNumMaxInstance,
-		"instancingResource");
+	instancingResource_ = ResourceManager::CreateBufferResource(device, sizeof(ParticleForGPU) * kNumMaxInstance, "instancingResource");
 
 	//=============================================================================================//
 	// 書き込むためのアドレスを取得
 
-	instancingResource_->Map(
-		0,
-		nullptr,
-		reinterpret_cast<void**>(&instancingData_));
+	instancingResource_->Map(0, nullptr, reinterpret_cast<void**>(&instancingData_));
 
 	// 単位行列を書き込んでおく
 	for (uint32_t index = 0; index < kNumMaxInstance; ++index) {
@@ -83,10 +77,7 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 
 	instancingSrvHandleGPU_ = srvHeap->GetGPUDescriptorHandle(instancingSrvIndex);
 
-	device->CreateShaderResourceView(
-		instancingResource_.Get(),
-		&instancingSrvDesc,
-		instancingSrvHandleCPU);
+	device->CreateShaderResourceView(instancingResource_.Get(), &instancingSrvDesc, instancingSrvHandleCPU);
 }
 
 //=================================================================================================//
@@ -126,14 +117,10 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 
 		if (useAccelerationField_ && MathUtility::IsCollision(accelerationField_.area, particleIterator->transform.translate)) {
 
-			particleIterator->velocity = MathUtility::Add(
-				particleIterator->velocity,
-				MathUtility::Multiply(kDeltaTime, accelerationField_.acceleration));
+			particleIterator->velocity = MathUtility::Add(particleIterator->velocity, MathUtility::Multiply(kDeltaTime, accelerationField_.acceleration));
 		}
 
-		particleIterator->transform.translate = MathUtility::Add(
-			particleIterator->transform.translate,
-			MathUtility::Multiply(kDeltaTime, particleIterator->velocity));
+		particleIterator->transform.translate = MathUtility::Add(particleIterator->transform.translate, MathUtility::Multiply(kDeltaTime, particleIterator->velocity));
 
 		particleIterator->currentTime += kDeltaTime;
 
@@ -143,9 +130,7 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 
 			Matrix4x4 translateMatrix = MathUtility::MakeTranslateMatrix(particleIterator->transform.translate);
 
-			Matrix4x4 worldMatrix = MathUtility::Multiply(
-				MathUtility::Multiply(scaleMatrix, billboardMatrix),
-				translateMatrix);
+			Matrix4x4 worldMatrix = MathUtility::Multiply(MathUtility::Multiply(scaleMatrix, billboardMatrix), translateMatrix);
 
 			instancingData_[numInstance_].WVP = MathUtility::Multiply(worldMatrix, viewProjectionMatrix);
 

@@ -79,10 +79,7 @@ void DebugCamera::Update(Input* input) {
 
 void DebugCamera::UpdateMatrix() {
 
-	cameraMatrix_ = MathUtility::MakeAffineMatrix(
-		transform_.scale,
-		transform_.rotate,
-		transform_.translate);
+	cameraMatrix_ = MathUtility::MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
 
 	viewMatrix_ = MathUtility::Inverse(cameraMatrix_);
 

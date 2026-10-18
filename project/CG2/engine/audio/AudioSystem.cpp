@@ -10,10 +10,7 @@ void AudioSystem::Initialize () {
 	//=============================================================================================//
 	// XAudio2生成
 
-	result = XAudio2Create (
-		&xAudio2_,
-		0,
-		XAUDIO2_DEFAULT_PROCESSOR);
+	result = XAudio2Create (&xAudio2_, 0, XAUDIO2_DEFAULT_PROCESSOR);
 
 	assert (SUCCEEDED (result));
 

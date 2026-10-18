@@ -59,10 +59,7 @@ void ImGuiSystem::Initialize(WinApp* winApp, DirectXCommon* dxCommon) {
 	initInfo.UserData = dxCommon_->GetSrvHeap();
 	initInfo.SrvDescriptorHeap = dxCommon_->GetSrvHeap()->GetDescriptorHeap();
 
-	initInfo.SrvDescriptorAllocFn = [](
-		ImGui_ImplDX12_InitInfo* info,
-		D3D12_CPU_DESCRIPTOR_HANDLE* outCpuHandle,
-		D3D12_GPU_DESCRIPTOR_HANDLE* outGpuHandle) {
+	initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE* outCpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE* outGpuHandle) {
 
 			DescriptorHeapManager* srvHeap = static_cast<DescriptorHeapManager*>(info->UserData);
 
@@ -72,10 +69,7 @@ void ImGuiSystem::Initialize(WinApp* winApp, DirectXCommon* dxCommon) {
 			*outGpuHandle = srvHeap->GetGPUDescriptorHandle(index);
 		};
 
-	initInfo.SrvDescriptorFreeFn = [](
-		ImGui_ImplDX12_InitInfo* info,
-		D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle,
-		D3D12_GPU_DESCRIPTOR_HANDLE) {
+	initInfo.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE) {
 
 			DescriptorHeapManager* srvHeap = static_cast<DescriptorHeapManager*>(info->UserData);
 

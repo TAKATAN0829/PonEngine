@@ -135,6 +135,9 @@ void GameScene::UpdateObject() {
 	model_->SetEnableLighting(enableLighting_);
 	model_->SetShininess(shininess_);
 	model_->SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
+	model_->SetPointLight(pointLight_);
+	spotLight_.direction = MathUtility::Normalize(spotLight_.direction);
+	model_->SetSpotLight(spotLight_);
 	model_->Update(debugCamera_->GetViewProjectionMatrix());
 
 	//=============================================================================================//
@@ -201,6 +204,25 @@ void GameScene::UpdateObject() {
 	ImGui::ColorEdit4("Color", &lightColor_.x);
 	ImGui::SliderFloat3("Direction", &lightDirection_.x, -1.0f, 1.0f);
 	ImGui::DragFloat("Intensity", &lightIntensity_, 0.01f, 0.0f, 10.0f);
+	ImGui::End();
+
+	ImGui::Begin("PointLight");
+	ImGui::ColorEdit4("Color", &pointLight_.color.x);
+	ImGui::DragFloat3("Position", &pointLight_.position.x, 0.1f);
+	ImGui::DragFloat("Intensity", &pointLight_.intensity, 0.01f, 0.0f, 10.0f);
+	ImGui::DragFloat("Radius", &pointLight_.radius, 0.1f, 0.01f, 100.0f);
+	ImGui::DragFloat("Decay", &pointLight_.decay, 0.01f, 0.0f, 10.0f);
+	ImGui::End();
+
+	ImGui::Begin("SpotLight");
+	ImGui::ColorEdit4("Color", &spotLight_.color.x);
+	ImGui::DragFloat3("Position", &spotLight_.position.x, 0.1f);
+	ImGui::DragFloat("Intensity", &spotLight_.intensity, 0.01f, 0.0f, 10.0f);
+	ImGui::SliderFloat3("Direction", &spotLight_.direction.x, -1.0f, 1.0f);
+	ImGui::DragFloat("Distance", &spotLight_.distance, 0.1f, 0.01f, 100.0f);
+	ImGui::DragFloat("Decay", &spotLight_.decay, 0.01f, 0.0f, 10.0f);
+	ImGui::SliderFloat("CosAngle", &spotLight_.cosAngle, 0.0f, 1.0f);
+	ImGui::SliderFloat("CosFalloffStart", &spotLight_.cosFalloffStart, 0.0f, 1.0f);
 	ImGui::End();
 
 #endif

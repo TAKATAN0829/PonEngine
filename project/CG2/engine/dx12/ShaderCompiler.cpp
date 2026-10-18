@@ -58,10 +58,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstri
 
 	Microsoft::WRL::ComPtr<IDxcBlobEncoding> shaderSource = nullptr;
 
-	HRESULT hr = dxcUtils_->LoadFile (
-		filePath.c_str (),
-		nullptr,
-		&shaderSource);
+	HRESULT hr = dxcUtils_->LoadFile (filePath.c_str (), nullptr, &shaderSource);
 
 	assert (SUCCEEDED (hr));
 
@@ -107,10 +104,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstri
 
 	Microsoft::WRL::ComPtr<IDxcBlobUtf8> shaderError = nullptr;
 
-	shaderResult->GetOutput (
-		DXC_OUT_ERRORS,
-		IID_PPV_ARGS (&shaderError),
-		nullptr);
+	shaderResult->GetOutput (DXC_OUT_ERRORS, IID_PPV_ARGS (&shaderError), nullptr);
 
 	if (shaderError != nullptr &&
 		shaderError->GetStringLength () != 0) {
@@ -125,10 +119,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstri
 
 	Microsoft::WRL::ComPtr<IDxcBlob> shaderBlob = nullptr;
 
-	hr = shaderResult->GetOutput (
-		DXC_OUT_OBJECT,
-		IID_PPV_ARGS (&shaderBlob),
-		nullptr);
+	hr = shaderResult->GetOutput (DXC_OUT_OBJECT, IID_PPV_ARGS (&shaderBlob), nullptr);
 
 	assert (SUCCEEDED (hr));
 

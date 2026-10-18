@@ -62,10 +62,17 @@ public:
 	//=============================================================================================//
 	// DirectionalLight設定
 
-	void SetDirectionalLight (
-		const Vector4& color,
-		const Vector3& direction,
-		float intensity);
+	void SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity);
+
+	//=============================================================================================//
+	// PointLight設定
+
+	void SetPointLight(const PointLight& pointLight);
+
+	//=============================================================================================//
+	// SpotLight設定
+
+	void SetSpotLight(const SpotLight& spotLight);
 
 private:
 
@@ -98,4 +105,24 @@ private:
 	// DirectionalLightData
 
 	DirectionalLight* directionalLightData_ = nullptr;
+
+	//=============================================================================================//
+	// PointLightResource
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_ = nullptr;
+
+	//=============================================================================================//
+	// PointLightData
+
+	PointLight* pointLightData_ = nullptr;
+
+	//=============================================================================================//
+	// SpotLightResource
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_ = nullptr;
+
+	//=============================================================================================//
+	// SpotLightData
+
+	SpotLight* spotLightData_ = nullptr;
 };
