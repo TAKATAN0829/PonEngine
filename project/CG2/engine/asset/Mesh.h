@@ -15,6 +15,7 @@
 #include "ResourceManager.h"
 
 class DirectXCommon;
+struct aiNode;
 
 enum class MeshType {
 	kSphere,
@@ -31,7 +32,7 @@ public:
 	void Initialize (DirectXCommon* dxCommon, MeshType meshType);
 
 	//=============================================================================================//
-	// 初期化(OBJモデル)
+	// 初期化(モデル)
 
 	void Initialize (DirectXCommon* dxCommon, const std::string& directoryPath, const std::string& filename);
 
@@ -39,6 +40,13 @@ public:
 	// 描画処理
 
 	void Draw (uint32_t instanceCount = 1);
+
+	//=============================================================================================//
+	// Getter
+
+	const MaterialData& GetMaterial () const { return material_; }
+
+	const Node& GetRootNode () const { return rootNode_; }
 
 private:
 
@@ -93,9 +101,14 @@ private:
 	void CreateTriangle ();
 
 	//=============================================================================================//
-	// OBJファイル読み込み
+	// モデルファイル読み込み
 
-	static ModelData LoadObjFile (const std::string& directoryPath, const std::string& filename);
+	static ModelData LoadModelFile (const std::string& directoryPath, const std::string& filename);
+
+	//=============================================================================================//
+	// Node読み込み
+
+	static Node ReadNode (aiNode* node);
 
 private:
 
@@ -148,4 +161,14 @@ private:
 	// IndexData
 
 	uint32_t* indexData_ = nullptr;
+
+	//=============================================================================================//
+	// Material
+
+	MaterialData material_;
+
+	//=============================================================================================//
+	// RootNode
+
+	Node rootNode_;
 };

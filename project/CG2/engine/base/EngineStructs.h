@@ -2,6 +2,7 @@
 
 // C++
 #include <vector>
+#include <string>
 
 // 自作
 #include "MathUtility.h"
@@ -25,9 +26,9 @@ struct VertexData {
 };
 
 //=================================================================================================//
-// マテリアル
+// マテリアル（GPU転送用）
 
-struct MaterialData {
+struct MaterialForGPU {
 	Vector4 color;
 	int32_t enableLighting;
 	float padding[3];
@@ -81,10 +82,28 @@ struct SpotLight {
 };
 
 //=================================================================================================//
+// マテリアル（モデル読み込み用）
+
+struct MaterialData {
+	std::string textureFilePath;
+};
+
+//=================================================================================================//
+// ノード
+
+struct Node {
+	Matrix4x4 localMatrix = MathUtility::MakeIdentity4x4();
+	std::string name;
+	std::vector<Node> children;
+};
+
+//=================================================================================================//
 // モデルデータ
 
 struct ModelData {
 	std::vector<VertexData> vertices;
+	MaterialData material;
+	Node rootNode;
 };
 
 //=================================================================================================//

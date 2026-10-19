@@ -28,7 +28,7 @@ void Object3d::Initialize (Object3dRenderer* renderer, MeshType meshType) {
 
 
 //=================================================================================================//
-// 初期化処理(OBJモデル)
+// 初期化処理(モデル)
 
 void Object3d::Initialize (Object3dRenderer* renderer, const std::string& directoryPath, const std::string& filename) {
 
@@ -41,6 +41,11 @@ void Object3d::Initialize (Object3dRenderer* renderer, const std::string& direct
 	mesh_->Initialize (renderer_->GetDxCommon (), directoryPath, filename);
 
 	InitializeResources ();
+
+	if (!mesh_->GetMaterial ().textureFilePath.empty ()) {
+
+		SetTexture (mesh_->GetMaterial ().textureFilePath);
+	}
 }
 
 
@@ -75,6 +80,11 @@ void Object3d::Update (const Matrix4x4& viewProjectionMatrix) {
 	transform_.UpdateMatrix ();
 
 	Matrix4x4 worldMatrix = transform_.GetWorldMatrix ();
+
+	if (useRootNodeMatrix_) {
+
+		worldMatrix = MathUtility::Multiply (mesh_->GetRootNode ().localMatrix, worldMatrix);
+	}
 
 	Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply (worldMatrix, viewProjectionMatrix);
 
