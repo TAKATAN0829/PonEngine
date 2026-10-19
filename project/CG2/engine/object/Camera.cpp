@@ -1,5 +1,20 @@
 #include "Camera.h"
 
+// デフォルトコンストラクタ
+
+Camera::Camera()
+	: transform_({ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} })
+	, fovY_(0.45f)
+	, aspectRatio(float(WinApp::kClientWidth) / float(WinApp::kClientHeight))
+	, nearClip_(100.f)
+	, farClip_(100.f)
+	,worldMatrix(MathUtility::MakeAffineMatrix(transform.scale,transform.rotate,transform.translate))
+	,viewMatrix(MathUtility::Inverse(worldMatrix))
+	,projectionMatrix(MathUtility::MakePerspectiveFovMatrix(fovY_,aspectRatio,nearClip_,farClip_))
+	,viewProjectionMatrix_(MathUtility::Multiply(viewMatrix_,projectionMatrix_))
+{}
+
+
 //=================================================================================================//
 // 初期化処理
 
