@@ -53,9 +53,9 @@ void Engine::Initialize() {
 	//=============================================================================================//
 	// Renderer初期化
 
-	object3dRenderer_ = new Object3dRenderer();
+	object3dCommon_ = new Object3dCommon();
 
-	object3dRenderer_->Initialize(dxCommon_, shaderCompiler_);
+	object3dCommon_->Initialize(dxCommon_, shaderCompiler_);
 
 	particleRenderer_ = new ParticleRenderer();
 
@@ -80,7 +80,7 @@ void Engine::Initialize() {
 
 	SceneContext sceneContext{};
 
-	sceneContext.object3dRenderer = object3dRenderer_;
+	sceneContext.object3dCommon = object3dCommon_;
 
 	sceneContext.spriteCommon = spriteCommon_;
 
@@ -178,7 +178,7 @@ void Engine::Finalize() {
 
 	delete particleRenderer_;
 
-	delete object3dRenderer_;
+	delete object3dCommon_;
 
 	//=============================================================================================//
 	// ShaderCompiler終了

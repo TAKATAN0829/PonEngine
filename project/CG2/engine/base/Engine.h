@@ -6,7 +6,7 @@
 #include "Input.h"
 #include "AudioSystem.h"
 #include "ShaderCompiler.h"
-#include "Object3dRenderer.h"
+#include "Object3dCommon.h"
 #include "SpriteCommon.h"
 #include "ParticleRenderer.h"
 #include "ImGuiSystem.h"
@@ -60,7 +60,7 @@ private:
 	//=============================================================================================//
 	// Renderer
 
-	Object3dRenderer* object3dRenderer_ = nullptr;
+	Object3dCommon* object3dCommon_ = nullptr;
 
 	//=============================================================================================//
 	// SpriteCommon

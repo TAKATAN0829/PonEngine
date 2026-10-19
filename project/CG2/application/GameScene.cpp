@@ -26,16 +26,16 @@ void GameScene::Initialize(const SceneContext& context) {
 	debugCamera_->Initialize(WinApp::kClientWidth, WinApp::kClientHeight);
 
 	//=============================================================================================//
-	// Object3dRenderer取得
+	// Object3dCommon取得
 
-	object3dRenderer_ = context.object3dRenderer;
+	object3dCommon_ = context.object3dCommon;
 
 	//=============================================================================================//
 	// モデル初期化
 
 	model_ = new Object3d();
 
-	model_->Initialize(object3dRenderer_, "resources", "plane.gltf");
+	model_->Initialize(object3dCommon_, "resources", "plane.gltf");
 
 	model_->SetTexture("resources/uvChecker.png");
 
@@ -68,6 +68,8 @@ void GameScene::Draw() {
 
 	//=============================================================================================//
 	// モデル描画
+
+	object3dCommon_->DrawSettingCommon();
 
 	model_->Draw();
 
@@ -121,11 +123,11 @@ void GameScene::UpdateCamera(Input* input) {
 void GameScene::UpdateObject() {
 
 	//=============================================================================================//
-	// カメラ位置をObject3dRendererへ送る
+	// カメラ位置をObject3dCommonへ送る
 
 	const Matrix4x4& cameraMatrix = debugCamera_->GetCameraMatrix();
 
-	object3dRenderer_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
+	object3dCommon_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
 
 	//=============================================================================================//
 	// モデル更新

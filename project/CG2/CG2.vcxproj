@@ -234,10 +234,13 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\object\Transform.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
-    <ClCompile Include="engine\renderer\Object3dRenderer.cpp" />
+    <ClCompile Include="engine\renderer\Object3dCommon.cpp" />
     <ClCompile Include="engine\renderer\SpriteCommon.cpp" />
     <ClCompile Include="engine\renderer\ParticleRenderer.cpp" />
     <ClCompile Include="engine\math\Random.cpp" />
+    <ClCompile Include="engine\asset\Model.cpp" />
+    <ClCompile Include="engine\asset\ModelCommon.cpp" />
+    <ClCompile Include="engine\asset\ModelManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -331,10 +334,13 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\scene\IScene.h" />
     <ClInclude Include="engine\scene\SceneManager.h" />
     <ClInclude Include="engine\object\Transform.h" />
-    <ClInclude Include="engine\renderer\Object3dRenderer.h" />
+    <ClInclude Include="engine\renderer\Object3dCommon.h" />
     <ClInclude Include="engine\renderer\SpriteCommon.h" />
     <ClInclude Include="engine\renderer\ParticleRenderer.h" />
     <ClInclude Include="engine\math\Random.h" />
+    <ClInclude Include="engine\asset\Model.h" />
+    <ClInclude Include="engine\asset\ModelCommon.h" />
+    <ClInclude Include="engine\asset\ModelManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\externals\imgui\LICENSE.txt" />

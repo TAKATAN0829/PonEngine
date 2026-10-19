@@ -16,8 +16,9 @@
 #include "Camera.h"
 #include "Transform.h"
 #include "BlendMode.h"
+#include "../asset/Model.h"
 
-class Object3dRenderer;
+class Object3dCommon;
 
 class Object3d {
 public:
@@ -25,12 +26,12 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize (Object3dRenderer* renderer, MeshType meshType);
+	void Initialize (Object3dCommon* object3dCommon, MeshType meshType);
 
 	//=============================================================================================//
 	// 初期化処理(OBJモデル)
 
-	void Initialize (Object3dRenderer* renderer, const std::string& directoryPath, const std::string& filename);
+	void Initialize (Object3dCommon* object3dCommon, const std::string& directoryPath, const std::string& filename);
 
 	//=============================================================================================//
 	// 更新処理
@@ -121,6 +122,8 @@ public:
 
 	BlendMode GetBlendMode () const;
 
+	// モデル設定
+	void SetModel(Model* model) { this->model_ = model; }
 private:
 
 	//=============================================================================================//
@@ -133,7 +136,7 @@ private:
 	//=============================================================================================//
 	// Renderer
 
-	Object3dRenderer* renderer_ = nullptr;
+	Object3dCommon* object3dCommon_ = nullptr;
 
 	//=============================================================================================//
 	// Mesh
@@ -169,4 +172,8 @@ private:
 	// RootNode行列の適用
 
 	bool useRootNodeMatrix_ = true;
+
+	//Model
+
+	Model* model_ = nullptr;
 };

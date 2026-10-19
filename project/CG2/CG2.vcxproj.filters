@@ -142,7 +142,7 @@
     <ClCompile Include="engine\object\Transform.cpp">
       <Filter>engine\object</Filter>
     </ClCompile>
-    <ClCompile Include="engine\renderer\Object3dRenderer.cpp">
+    <ClCompile Include="engine\renderer\Object3dCommon.cpp">
       <Filter>engine\renderer</Filter>
     </ClCompile>
     <ClCompile Include="engine\renderer\SpriteCommon.cpp">
@@ -152,6 +152,9 @@
       <Filter>engine\renderer</Filter>
     </ClCompile>
     <ClCompile Include="engine\math\Random.cpp" />
+    <ClCompile Include="engine\asset\Model.cpp" />
+    <ClCompile Include="engine\asset\ModelCommon.cpp" />
+    <ClCompile Include="engine\asset\ModelManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\externals\imgui\imconfig.h">
@@ -277,7 +280,7 @@
     <ClInclude Include="engine\object\Transform.h">
       <Filter>engine\object</Filter>
     </ClInclude>
-    <ClInclude Include="engine\renderer\Object3dRenderer.h">
+    <ClInclude Include="engine\renderer\Object3dCommon.h">
       <Filter>engine\renderer</Filter>
     </ClInclude>
     <ClInclude Include="engine\renderer\SpriteCommon.h">
@@ -287,6 +290,9 @@
       <Filter>engine\renderer</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\Random.h" />
+    <ClInclude Include="engine\asset\Model.h" />
+    <ClInclude Include="engine\asset\ModelCommon.h" />
+    <ClInclude Include="engine\asset\ModelManager.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">

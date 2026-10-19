@@ -4,7 +4,7 @@
 #include <cassert>
 
 // 自作
-#include "Object3dRenderer.h"
+#include "Object3dCommon.h"
 #include "DirectXCommon.h"
 #include "ResourceManager.h"
 #include "TextureManager.h"
@@ -13,15 +13,15 @@
 //=================================================================================================//
 // 初期化処理
 
-void Object3d::Initialize (Object3dRenderer* renderer, MeshType meshType) {
+void Object3d::Initialize (Object3dCommon* object3dCommon, MeshType meshType) {
 
-	assert (renderer);
+	assert (object3dCommon);
 
-	renderer_ = renderer;
+	object3dCommon_ = object3dCommon;
 
 	mesh_ = new Mesh ();
 
-	mesh_->Initialize (renderer_->GetDxCommon (), meshType);
+	mesh_->Initialize (object3dCommon_->GetDxCommon (), meshType);
 
 	InitializeResources ();
 }
@@ -30,15 +30,15 @@ void Object3d::Initialize (Object3dRenderer* renderer, MeshType meshType) {
 //=================================================================================================//
 // 初期化処理(モデル)
 
-void Object3d::Initialize (Object3dRenderer* renderer, const std::string& directoryPath, const std::string& filename) {
+void Object3d::Initialize (Object3dCommon* object3dCommon, const std::string& directoryPath, const std::string& filename) {
 
-	assert (renderer);
+	assert (object3dCommon);
 
-	renderer_ = renderer;
+	object3dCommon_ = object3dCommon;
 
 	mesh_ = new Mesh ();
 
-	mesh_->Initialize (renderer_->GetDxCommon (), directoryPath, filename);
+	mesh_->Initialize (object3dCommon_->GetDxCommon (), directoryPath, filename);
 
 	InitializeResources ();
 
@@ -54,7 +54,7 @@ void Object3d::Initialize (Object3dRenderer* renderer, const std::string& direct
 
 void Object3d::InitializeResources () {
 
-	DirectXCommon* dxCommon = renderer_->GetDxCommon ();
+	DirectXCommon* dxCommon = object3dCommon_->GetDxCommon ();
 
 	material_ = new Material ();
 
@@ -102,10 +102,10 @@ void Object3d::Update (const Matrix4x4& viewProjectionMatrix) {
 void Object3d::Draw () {
 
 	//=============================================================================================//
-	// 描画前設定
-	renderer_->PreDraw (blendMode_);
+	// BlendMode設定
+	object3dCommon_->SetBlendMode (blendMode_);
 
-	ID3D12GraphicsCommandList* commandList = renderer_->GetDxCommon ()->GetCommandList ();
+	ID3D12GraphicsCommandList* commandList = object3dCommon_->GetDxCommon ()->GetCommandList ();
 
 	//=============================================================================================//
 	// Material設定
@@ -121,6 +121,11 @@ void Object3d::Draw () {
 	// Mesh描画
 
 	mesh_->Draw ();
+
+	// 3Dモデルが割り当てられていれば描画する
+	if (model_) {
+		model_->Draw();
+	}
 }
 
 
