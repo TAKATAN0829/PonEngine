@@ -35,7 +35,7 @@ void GameScene::Initialize(const SceneContext& context) {
 
 	model_ = new Object3d();
 
-	model_->Initialize(object3dRenderer_, MeshType::kSphere);
+	model_->Initialize(object3dRenderer_, "resources", "plane.gltf");
 
 	model_->SetTexture("resources/uvChecker.png");
 
@@ -134,6 +134,7 @@ void GameScene::UpdateObject() {
 	model_->SetColor(modelColor_);
 	model_->SetEnableLighting(enableLighting_);
 	model_->SetShininess(shininess_);
+	model_->SetUseRootNodeMatrix(useRootNodeMatrix_);
 	model_->SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
 	model_->SetPointLight(pointLight_);
 	spotLight_.direction = MathUtility::Normalize(spotLight_.direction);
@@ -197,6 +198,7 @@ void GameScene::UpdateObject() {
 	ImGui::DragFloat3("Translate", &modelTransform_.translate.x, 0.01f);
 	ImGui::ColorEdit4("Color", &modelColor_.x);
 	ImGui::Checkbox("EnableLighting", &enableLighting_);
+	ImGui::Checkbox("UseRootNodeMatrix", &useRootNodeMatrix_);
 	ImGui::DragFloat("Shininess", &shininess_, 0.1f, 1.0f, 500.0f);
 	ImGui::End();
 

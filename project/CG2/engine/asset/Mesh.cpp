@@ -1,12 +1,15 @@
-﻿#include "Mesh.h"
+#include "Mesh.h"
 
 // C++
 #include <numbers>
 #include <cmath>
 #include <cstring>
-#include <fstream>
-#include <sstream>
 #include <cassert>
+
+// assimp
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 // 自作
 #include "DirectXCommon.h"
@@ -14,71 +17,75 @@
 //=================================================================================================//
 // 初期化処理
 
-void Mesh::Initialize (DirectXCommon* dxCommon, MeshType meshType) {
+void Mesh::Initialize(DirectXCommon* dxCommon, MeshType meshType) {
 
-	assert (dxCommon);
+	assert(dxCommon);
 
 	dxCommon_ = dxCommon;
 
 	switch (meshType) {
 	case MeshType::kSphere:
 
-	InitializeSphere ();
+		InitializeSphere();
 
-	break;
+		break;
 
 	case MeshType::kPlane:
 
-	InitializePlane ();
+		InitializePlane();
 
-	break;
+		break;
 
 	case MeshType::kSprite:
 
-	InitializeSprite ();
+		InitializeSprite();
 
-	break;
+		break;
 
 	case MeshType::kTriangle:
 
-	InitializeTriangle ();
+		InitializeTriangle();
 
-	break;
+		break;
 	}
 }
 
 //=================================================================================================//
-// 初期化処理(OBJモデル)
+// 初期化処理(モデル)
 
-void Mesh::Initialize (DirectXCommon* dxCommon, const std::string& directoryPath, const std::string& filename) {
+void Mesh::Initialize(DirectXCommon* dxCommon, const std::string& directoryPath, const std::string& filename) {
 
-	assert (dxCommon);
+	assert(dxCommon);
 
 	dxCommon_ = dxCommon;
 
 	//=============================================================================================//
-	// OBJファイル読み込み
+	// モデルファイル読み込み
 
-	ModelData modelData = LoadObjFile (directoryPath, filename);
+	ModelData modelData = LoadModelFile(directoryPath, filename);
+
+	material_ = modelData.material;
+
+	rootNode_ = modelData.rootNode;
 
 	//=============================================================================================//
 	// Vertex数・Index数設定
 
-	vertexCount_ = static_cast<uint32_t>(modelData.vertices.size ());
+	vertexCount_ = static_cast<uint32_t>(modelData.vertices.size());
 
 	indexCount_ = vertexCount_;
 
 	//=============================================================================================//
 	// VertexResource・IndexResource生成
 
-	CreateVertexResource ();
+	CreateVertexResource();
 
-	CreateIndexResource ();
+	CreateIndexResource();
 
 	//=============================================================================================//
 	// VertexData・IndexDataを書き込む
 
-	std::memcpy (vertexData_, modelData.vertices.data (), sizeof (VertexData) * vertexCount_);
+	std::memcpy(vertexData_, modelData.vertices.data(), sizeof(VertexData) * vertexCount_);
 
 	for (uint32_t index = 0; index < indexCount_; ++index) {
 
@@ -89,24 +96,24 @@ void Mesh::Initialize (DirectXCommon* dxCommon, const std::string& directoryPath
 //=================================================================================================//
 // 描画処理
 
-void Mesh::Draw (uint32_t instanceCount) {
+void Mesh::Draw(uint32_t instanceCount) {
 
-	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList ();
+	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
 	//=============================================================================================//
 	// VBV設定
 
-	commandList->IASetVertexBuffers (0, 1, &vertexBufferView_);
+	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
 	//=============================================================================================//
 	// IBV設定
 
-	commandList->IASetIndexBuffer (&indexBufferView_);
+	commandList->IASetIndexBuffer(&indexBufferView_);
 
 	//=============================================================================================//
 	// 描画
 
-	commandList->DrawIndexedInstanced (
+	commandList->DrawIndexedInstanced(
 		indexCount_,
 		instanceCount,
 		0,
@@ -117,7 +124,7 @@ void Mesh::Draw (uint32_t instanceCount) {
 //=================================================================================================//
 // Sphere初期化
 
-void Mesh::InitializeSphere () {
+void Mesh::InitializeSphere() {
 
 	//=============================================================================================//
 	// Vertex数設定
@@ -132,23 +139,23 @@ void Mesh::InitializeSphere () {
 	//=============================================================================================//
 	// VertexResource生成
 
-	CreateVertexResource ();
+	CreateVertexResource();
 
 	//=============================================================================================//
 	// IndexResource生成
 
-	CreateIndexResource ();
+	CreateIndexResource();
 
 	//=============================================================================================//
 	// Sphere生成
 
-	CreateSphere ();
+	CreateSphere();
 }
 
 //=================================================================================================//
 // Plane初期化
 
-void Mesh::InitializePlane () {
+void Mesh::InitializePlane() {
 
 	//=============================================================================================//
 	// Vertex数設定
@@ -163,23 +170,23 @@ void Mesh::InitializePlane () {
 	//=============================================================================================//
 	// VertexResource生成
 
-	CreateVertexResource ();
+	CreateVertexResource();
 
 	//=============================================================================================//
 	// IndexResource生成
 
-	CreateIndexResource ();
+	CreateIndexResource();
 
 	//=============================================================================================//
 	// Plane生成
 
-	CreatePlane ();
+	CreatePlane();
 }
 
 //=================================================================================================//
 // Sprite初期化
 
-void Mesh::InitializeSprite () {
+void Mesh::InitializeSprite() {
 
 	//=============================================================================================//
 	// Vertex数設定
@@ -194,23 +201,23 @@ void Mesh::InitializeSprite () {
 	//=============================================================================================//
 	// VertexResource生成
 
-	CreateVertexResource ();
+	CreateVertexResource();
 
 	//=============================================================================================//
 	// IndexResource生成
 
-	CreateIndexResource ();
+	CreateIndexResource();
 
 	//=============================================================================================//
 	// Sprite生成
 
-	CreateSprite ();
+	CreateSprite();
 }
 
 //=================================================================================================//
 // Triangle初期化
 
-void Mesh::InitializeTriangle () {
+void Mesh::InitializeTriangle() {
 
 	//=============================================================================================//
 	// Vertex数設定
@@ -225,83 +232,83 @@ void Mesh::InitializeTriangle () {
 	//=============================================================================================//
 	// VertexResource生成
 
-	CreateVertexResource ();
+	CreateVertexResource();
 
 	//=============================================================================================//
 	// IndexResource生成
 
-	CreateIndexResource ();
+	CreateIndexResource();
 
 	//=============================================================================================//
 	// Triangle生成
 
-	CreateTriangle ();
+	CreateTriangle();
 }
 
 //=================================================================================================//
 // 頂点Resource生成
 
-void Mesh::CreateVertexResource () {
+void Mesh::CreateVertexResource() {
 
 	//=============================================================================================//
 	// VertexResource生成
 
-	vertexResource_ = ResourceManager::CreateBufferResource (dxCommon_->GetDevice (), sizeof (VertexData) * vertexCount_, "vertexResource");
+	vertexResource_ = ResourceManager::CreateBufferResource(dxCommon_->GetDevice(), sizeof(VertexData) * vertexCount_, "vertexResource");
 
 	//=============================================================================================//
 	// VertexBufferView作成
 
-	vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress ();
+	vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
 
-	vertexBufferView_.SizeInBytes = sizeof (VertexData) * vertexCount_;
+	vertexBufferView_.SizeInBytes = sizeof(VertexData) * vertexCount_;
 
-	vertexBufferView_.StrideInBytes = sizeof (VertexData);
+	vertexBufferView_.StrideInBytes = sizeof(VertexData);
 
 	//=============================================================================================//
 	// VertexDataを書き込む
 
-	vertexResource_->Map (0, nullptr, reinterpret_cast<void**>(&vertexData_));
+	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 }
 
 //=================================================================================================//
 // IndexResource生成
 
-void Mesh::CreateIndexResource () {
+void Mesh::CreateIndexResource() {
 
 	//=============================================================================================//
 	// IndexResource生成
 
-	indexResource_ = ResourceManager::CreateBufferResource (dxCommon_->GetDevice (), sizeof (uint32_t) * indexCount_, "indexResource");
+	indexResource_ = ResourceManager::CreateBufferResource(dxCommon_->GetDevice(), sizeof(uint32_t) * indexCount_, "indexResource");
 
 	//=============================================================================================//
 	// IndexBufferView作成
 
-	indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress ();
+	indexBufferView_.BufferLocation = indexResource_->GetGPUVirtualAddress();
 
-	indexBufferView_.SizeInBytes = sizeof (uint32_t) * indexCount_;
+	indexBufferView_.SizeInBytes = sizeof(uint32_t) * indexCount_;
 
 	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
 
 	//=============================================================================================//
 	// IndexDataを書き込む
 
-	indexResource_->Map (0, nullptr, reinterpret_cast<void**>(&indexData_));
+	indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData_));
 }
 
 //=================================================================================================//
 // Sphere生成
 
-void Mesh::CreateSphere () {
+void Mesh::CreateSphere() {
 
 	//=============================================================================================//
 	// 経度分割1つ分の角度
 
-	const float kLonEvery = std::numbers::pi_v<float> *2.0f / float (kSubdivision);
+	const float kLonEvery = std::numbers::pi_v<float> *2.0f / float(kSubdivision);
 
 	//=============================================================================================//
 	// 緯度分割1つ分の角度
 
-	const float kLatEvery = std::numbers::pi_v<float> / float (kSubdivision);
+	const float kLatEvery = std::numbers::pi_v<float> / float(kSubdivision);
 
 	//=============================================================================================//
 	// 頂点生成
@@ -316,17 +323,17 @@ void Mesh::CreateSphere () {
 
 			float lon = lonIndex * kLonEvery;
 
-			vertexData_[index].position.x = std::cos (lat) * std::cos (lon);
+			vertexData_[index].position.x = std::cos(lat) * std::cos(lon);
 
-			vertexData_[index].position.y = std::sin (lat);
+			vertexData_[index].position.y = std::sin(lat);
 
-			vertexData_[index].position.z = std::cos (lat) * std::sin (lon);
+			vertexData_[index].position.z = std::cos(lat) * std::sin(lon);
 
 			vertexData_[index].position.w = 1.0f;
 
 			vertexData_[index].texcoord = {
-				float (lonIndex) / float (kSubdivision),
-				1.0f - float (latIndex) / float (kSubdivision)
+				float(lonIndex) / float(kSubdivision),
+				1.0f - float(latIndex) / float(kSubdivision)
 			};
 
 			vertexData_[index].normal.x = vertexData_[index].position.x;
@@ -361,7 +368,7 @@ void Mesh::CreateSphere () {
 //=================================================================================================//
 // Plane生成
 
-void Mesh::CreatePlane () {
+void Mesh::CreatePlane() {
 
 	//=============================================================================================//
 	// 左上
@@ -406,7 +413,7 @@ void Mesh::CreatePlane () {
 //=================================================================================================//
 // Sprite生成
 
-void Mesh::CreateSprite () {
+void Mesh::CreateSprite() {
 
 	//=============================================================================================//
 	// 左上
@@ -451,7 +458,7 @@ void Mesh::CreateSprite () {
 //=================================================================================================//
 // Triangle生成
 
-void Mesh::CreateTriangle () {
+void Mesh::CreateTriangle() {
 
 	//=============================================================================================//
 	// 上
@@ -486,111 +493,111 @@ void Mesh::CreateTriangle () {
 	indexData_[3] = 0;
 	indexData_[4] = 2;
 	indexData_[5] = 1;
- }
+}
 
 //=================================================================================================//
-// OBJファイル読み込み
+// モデルファイル読み込み
 
-ModelData Mesh::LoadObjFile (const std::string& directoryPath, const std::string& filename) {
+ModelData Mesh::LoadModelFile(const std::string& directoryPath, const std::string& filename) {
 
 	ModelData modelData;
 
-	std::vector<Vector4> positions;
-	std::vector<Vector3> normals;
-	std::vector<Vector2> texcoords;
+	Assimp::Importer importer;
 
-	std::string line;
+	std::string filePath = directoryPath + "/" + filename;
 
-	// ファイルを開く
-	std::ifstream file (directoryPath + "/" + filename);
+	const aiScene* scene = importer.ReadFile(filePath.c_str(), aiProcess_FlipWindingOrder | aiProcess_FlipUVs);
 
-	assert (file.is_open ());
+	assert(scene);
+	assert(scene->HasMeshes());
 
-	// ファイルを読む
-	while (std::getline (file, line)) {
+	//=============================================================================================//
+	// Mesh解析
 
-		std::string identifier;
+	for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
 
-		std::istringstream s (line);
+		aiMesh* mesh = scene->mMeshes[meshIndex];
 
-		s >> identifier;
+		assert(mesh->HasNormals());
+		assert(mesh->HasTextureCoords(0));
 
-		if (identifier == "v") {
+		for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
 
-			Vector4 position{};
+			aiFace& face = mesh->mFaces[faceIndex];
 
-			s >> position.x >> position.y >> position.z;
+			assert(face.mNumIndices == 3);
 
-			position.x *= -1.0f;
-			position.w = 1.0f;
+			for (uint32_t element = 0; element < face.mNumIndices; ++element) {
 
-			positions.push_back (position);
+				uint32_t vertexIndex = face.mIndices[element];
 
-		} else if (identifier == "vt") {
+				aiVector3D& position = mesh->mVertices[vertexIndex];
+				aiVector3D& normal = mesh->mNormals[vertexIndex];
+				aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
 
-			Vector2 texcoord{};
+				VertexData vertex{};
 
-			s >> texcoord.x >> texcoord.y;
+				vertex.position = { -position.x,position.y,position.z,1.0f };
+				vertex.normal = { -normal.x,normal.y,normal.z };
+				vertex.texcoord = { texcoord.x,texcoord.y };
 
-			texcoord.y = 1.0f - texcoord.y;
-
-			texcoords.push_back (texcoord);
-
-		} else if (identifier == "vn") {
-
-			Vector3 normal{};
-
-			s >> normal.x >> normal.y >> normal.z;
-
-			normal.x *= -1.0f;
-
-			normals.push_back (normal);
-
-		} else if (identifier == "f") {
-
-			VertexData triangle[3]{};
-
-			for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
-
-				std::string vertexDefinition;
-
-				s >> vertexDefinition;
-
-				std::istringstream v (vertexDefinition);
-
-				uint32_t elementIndices[3]{};
-
-				for (int32_t element = 0; element < 3; ++element) {
-
-					std::string index;
-
-					std::getline (v, index, '/');
-
-					if (!index.empty ()) {
-
-						elementIndices[element] = std::stoi (index);
-					}
-				}
-
-				triangle[faceVertex].position = positions[elementIndices[0] - 1];
-
-				if (elementIndices[1] != 0) {
-
-					triangle[faceVertex].texcoord = texcoords[elementIndices[1] - 1];
-				}
-
-				if (elementIndices[2] != 0) {
-
-					triangle[faceVertex].normal = normals[elementIndices[2] - 1];
-				}
+				modelData.vertices.push_back(vertex);
 			}
-
-			// 頂点を逆順で登録して回り順を逆にする
-			modelData.vertices.push_back (triangle[2]);
-			modelData.vertices.push_back (triangle[1]);
-			modelData.vertices.push_back (triangle[0]);
 		}
 	}
 
+	//=============================================================================================//
+	// Material解析
+
+	for (uint32_t materialIndex = 0; materialIndex < scene->mNumMaterials; ++materialIndex) {
+
+		aiMaterial* material = scene->mMaterials[materialIndex];
+
+		if (material->GetTextureCount(aiTextureType_DIFFUSE) != 0) {
+
+			aiString textureFilePath;
+
+			material->GetTexture(aiTextureType_DIFFUSE, 0, &textureFilePath);
+
+			modelData.material.textureFilePath = directoryPath + "/" + textureFilePath.C_Str();
+		}
+	}
+
+	//=============================================================================================//
+	// Node解析
+
+	modelData.rootNode = ReadNode(scene->mRootNode);
+
 	return modelData;
+}
+
+//=================================================================================================//
+// Node読み込み
+
+Node Mesh::ReadNode(aiNode* node) {
+
+	Node result;
+
+	aiMatrix4x4 aiLocalMatrix = node->mTransformation;
+
+	aiLocalMatrix.Transpose();
+
+	for (uint32_t row = 0; row < 4; ++row) {
+
+		for (uint32_t column = 0; column < 4; ++column) {
+
+			result.localMatrix.m[row][column] = aiLocalMatrix[row][column];
+		}
+	}
+
+	result.name = node->mName.C_Str();
+
+	result.children.resize(node->mNumChildren);
+
+	for (uint32_t childIndex = 0; childIndex < node->mNumChildren; ++childIndex) {
+
+		result.children[childIndex] = ReadNode(node->mChildren[childIndex]);
+	}
+
+	return result;
 }

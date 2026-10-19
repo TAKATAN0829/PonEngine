@@ -87,6 +87,11 @@ public:
 	void SetShininess (float shininess) { material_->SetShininess (shininess); }
 
 	//=============================================================================================//
+	// RootNode行列の適用設定
+
+	void SetUseRootNodeMatrix (bool useRootNodeMatrix) { useRootNodeMatrix_ = useRootNodeMatrix; }
+
+	//=============================================================================================//
 	// DirectionalLight設定
 
 	void SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity);
@@ -159,4 +164,9 @@ private:
 	// BlendMode
 
 	BlendMode blendMode_ = kBlendModeNormal;
+
+	//=============================================================================================//
+	// RootNode行列の適用
+
+	bool useRootNodeMatrix_ = true;
 };

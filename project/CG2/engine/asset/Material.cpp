@@ -23,7 +23,7 @@ void Material::Initialize(DirectXCommon* dxCommon) {
 	//=============================================================================================//
 	// MaterialResource生成
 
-	materialResource_ = ResourceManager::CreateBufferResource(device, sizeof(MaterialData), "materialResource");
+	materialResource_ = ResourceManager::CreateBufferResource(device, sizeof(MaterialForGPU), "materialResource");
 
 	//=============================================================================================//
 	// MaterialDataを書き込む
