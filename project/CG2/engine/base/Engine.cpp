@@ -2,6 +2,7 @@
 
 // 自作
 #include "TextureManager.h"
+#include "ModelManager.h"
 
 //=================================================================================================//
 // 初期化処理
@@ -44,6 +45,11 @@ void Engine::Initialize() {
 	TextureManager::GetInstance()->Load("resources/white1x1.png");
 
 	//=============================================================================================//
+	// ModelManager初期化
+
+	ModelManager::GetInstance()->Initialize(dxCommon_);
+
+	//=============================================================================================//
 	// ShaderCompiler初期化
 
 	shaderCompiler_ = new ShaderCompiler();
@@ -53,9 +59,9 @@ void Engine::Initialize() {
 	//=============================================================================================//
 	// Renderer初期化
 
-	object3dRenderer_ = new Object3dRenderer();
+	object3dCommon_ = new Object3dCommon();
 
-	object3dRenderer_->Initialize(dxCommon_, shaderCompiler_);
+	object3dCommon_->Initialize(dxCommon_, shaderCompiler_);
 
 	particleRenderer_ = new ParticleRenderer();
 
@@ -80,7 +86,7 @@ void Engine::Initialize() {
 
 	SceneContext sceneContext{};
 
-	sceneContext.object3dRenderer = object3dRenderer_;
+	sceneContext.object3dCommon = object3dCommon_;
 
 	sceneContext.spriteCommon = spriteCommon_;
 
@@ -176,9 +182,11 @@ void Engine::Finalize() {
 	//=============================================================================================//
 	// Renderer解放
 
+	particleRenderer_->Finalize();
+
 	delete particleRenderer_;
 
-	delete object3dRenderer_;
+	delete object3dCommon_;
 
 	//=============================================================================================//
 	// ShaderCompiler終了
@@ -186,6 +194,11 @@ void Engine::Finalize() {
 	shaderCompiler_->Finalize();
 
 	delete shaderCompiler_;
+
+	//=============================================================================================//
+	// ModelManager終了
+
+	ModelManager::GetInstance()->Finalize();
 
 	//=============================================================================================//
 	// TextureManager終了

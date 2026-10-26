@@ -7,6 +7,7 @@
 #include "DirectXCommon.h"
 #include "PipelineManager.h"
 #include "ShaderCompiler.h"
+#include "Mesh.h"
 
 //=================================================================================================//
 // 初期化処理
@@ -112,6 +113,19 @@ void ParticleRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shade
 			vertexShaderBlob.Get(),
 			pixelShaderBlob.Get());
 	}
+
+	// 全Particle共通の板ポリMesh生成
+	mesh_ = new Mesh();
+
+	mesh_->Initialize(dxCommon_, MeshType::kPlane);
+}
+
+//=================================================================================================//
+// 終了処理
+
+void ParticleRenderer::Finalize() {
+
+	delete mesh_;
 }
 
 //=================================================================================================//

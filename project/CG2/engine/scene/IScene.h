@@ -3,7 +3,7 @@
 // 自作
 #include "Input.h"
 
-class Object3dRenderer;
+class Object3dCommon;
 class SpriteCommon;
 class ParticleRenderer;
 
@@ -12,7 +12,7 @@ class ParticleRenderer;
 
 struct SceneContext {
 
-	Object3dRenderer* object3dRenderer = nullptr;
+	Object3dCommon* object3dCommon = nullptr;
 
 	SpriteCommon* spriteCommon = nullptr;
 

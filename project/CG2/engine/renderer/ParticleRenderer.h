@@ -11,6 +11,7 @@
 
 class DirectXCommon;
 class ShaderCompiler;
+class Mesh;
 
 class ParticleRenderer {
 public:
@@ -21,6 +22,11 @@ public:
 	void Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler);
 
 	//=============================================================================================//
+	// 終了処理
+
+	void Finalize();
+
+	//=============================================================================================//
 	// 描画前設定
 
 	void PreDraw(BlendMode blendMode);
@@ -29,6 +35,8 @@ public:
 	// Getter
 
 	DirectXCommon* GetDxCommon() const { return dxCommon_; }
+
+	Mesh* GetMesh() const { return mesh_; }
 
 private:
 
@@ -46,4 +54,9 @@ private:
 	// PipelineState
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineStates_[kCountOfBlendMode];
+
+	//=============================================================================================//
+	// 全Particle共通の板ポリMesh
+
+	Mesh* mesh_ = nullptr;
 };

@@ -1,5 +1,6 @@
 #include "GameScene.h"
 #include "WinApp.h"
+#include "ModelManager.h"
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
@@ -26,18 +27,30 @@ void GameScene::Initialize(const SceneContext& context) {
 	debugCamera_->Initialize(WinApp::kClientWidth, WinApp::kClientHeight);
 
 	//=============================================================================================//
-	// Object3dRenderer取得
+	// Object3dCommon取得
 
-	object3dRenderer_ = context.object3dRenderer;
+	object3dCommon_ = context.object3dCommon;
 
 	//=============================================================================================//
 	// モデル初期化
 
+	ModelManager::GetInstance()->LoadModel("plane.gltf");
+
+	ModelManager::GetInstance()->LoadModel("axis.obj");
+
 	model_ = new Object3d();
 
-	model_->Initialize(object3dRenderer_, "resources", "plane.gltf");
+	model_->Initialize(object3dCommon_);
+
+	model_->SetModel(ModelManager::GetInstance()->FindModel("plane.gltf"));
 
 	model_->SetTexture("resources/uvChecker.png");
+
+	subModel_ = new Object3d();
+
+	subModel_->Initialize(object3dCommon_);
+
+	subModel_->SetModel(ModelManager::GetInstance()->FindModel("axis.obj"));
 
 	//=============================================================================================//
 	// Particle初期化
@@ -69,7 +82,11 @@ void GameScene::Draw() {
 	//=============================================================================================//
 	// モデル描画
 
+	object3dCommon_->DrawSettingCommon();
+
 	model_->Draw();
+
+	subModel_->Draw();
 
 	//=============================================================================================//
 	// Particle描画
@@ -92,9 +109,9 @@ void GameScene::Finalize() {
 	//=============================================================================================//
 	// モデル解放
 
-	model_->Finalize();
-
 	delete model_;
+
+	delete subModel_;
 
 	//=============================================================================================//
 	// Camera解放
@@ -121,11 +138,11 @@ void GameScene::UpdateCamera(Input* input) {
 void GameScene::UpdateObject() {
 
 	//=============================================================================================//
-	// カメラ位置をObject3dRendererへ送る
+	// カメラ位置をObject3dCommonへ送る
 
 	const Matrix4x4& cameraMatrix = debugCamera_->GetCameraMatrix();
 
-	object3dRenderer_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
+	object3dCommon_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
 
 	//=============================================================================================//
 	// モデル更新
@@ -140,6 +157,10 @@ void GameScene::UpdateObject() {
 	spotLight_.direction = MathUtility::Normalize(spotLight_.direction);
 	model_->SetSpotLight(spotLight_);
 	model_->Update(debugCamera_->GetViewProjectionMatrix());
+
+	subModel_->SetTransform(subModelTransform_);
+	subModel_->SetColor(subModelColor_);
+	subModel_->Update(debugCamera_->GetViewProjectionMatrix());
 
 	//=============================================================================================//
 	// Particle更新
@@ -191,6 +212,10 @@ void GameScene::UpdateObject() {
 	ImGui::End();
 
 	ImGui::Begin("Model");
+	static const char* kModelNames[] = { "plane.gltf","axis.obj" };
+	if (ImGui::Combo("ModelData", &modelIndex_, kModelNames, IM_ARRAYSIZE(kModelNames))) {
+		model_->SetModel(ModelManager::GetInstance()->FindModel(kModelNames[modelIndex_]));
+	}
 	ImGui::DragFloat3("Scale", &modelTransform_.scale.x, 0.01f);
 	ImGui::SliderAngle("RotateX", &modelTransform_.rotate.x);
 	ImGui::SliderAngle("RotateY", &modelTransform_.rotate.y);

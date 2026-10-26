@@ -5,6 +5,7 @@
 
 // 自作
 #include "ParticleRenderer.h"
+#include "Mesh.h"
 #include "DirectXCommon.h"
 #include "ResourceManager.h"
 #include "TextureManager.h"
@@ -25,13 +26,6 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 	ID3D12Device* device = dxCommon->GetDevice();
 
 	DescriptorHeapManager* srvHeap = dxCommon->GetSrvHeap();
-
-	//=============================================================================================//
-	// Mesh生成
-
-	mesh_ = new Mesh();
-
-	mesh_->Initialize(dxCommon, MeshType::kPlane);
 
 	//=============================================================================================//
 	// Material生成
@@ -165,7 +159,7 @@ void Particle::Draw() {
 	//=============================================================================================//
 	// Material・Texture設定
 
-	material_->BindWithoutLight();
+	material_->Bind();
 
 	//=============================================================================================//
 	// Instancing用のStructuredBufferのSRVを設定
@@ -175,20 +169,13 @@ void Particle::Draw() {
 	//=============================================================================================//
 	// インスタンス数だけ描画
 
-	mesh_->Draw(numInstance_);
+	renderer_->GetMesh()->Draw(numInstance_);
 }
 
 //=================================================================================================//
 // 終了処理
 
 void Particle::Finalize() {
-
-	if (mesh_ != nullptr) {
-
-		delete mesh_;
-
-		mesh_ = nullptr;
-	}
 
 	if (material_ != nullptr) {
 

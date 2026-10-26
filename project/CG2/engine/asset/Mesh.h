@@ -9,13 +9,13 @@
 // C++
 #include <cstdint>
 #include <string>
+#include <vector>
 
 // 自作
 #include "EngineStructs.h"
 #include "ResourceManager.h"
 
 class DirectXCommon;
-struct aiNode;
 
 enum class MeshType {
 	kSphere,
@@ -26,27 +26,31 @@ enum class MeshType {
 
 class Mesh {
 public:
+
+	//=============================================================================================//
+	// 頂点データ
+
+	struct VertexData {
+		Vector4 position;
+		Vector2 texcoord;
+		Vector3 normal;
+	};
+
+public:
 	//=============================================================================================//
 	// 初期化
 
 	void Initialize (DirectXCommon* dxCommon, MeshType meshType);
 
 	//=============================================================================================//
-	// 初期化(モデル)
+	// 初期化(頂点データ)
 
-	void Initialize (DirectXCommon* dxCommon, const std::string& directoryPath, const std::string& filename);
+	void Initialize(DirectXCommon* dxCommon, const std::vector<VertexData>& vertices);
 
 	//=============================================================================================//
 	// 描画処理
 
 	void Draw (uint32_t instanceCount = 1);
-
-	//=============================================================================================//
-	// Getter
-
-	const MaterialData& GetMaterial () const { return material_; }
-
-	const Node& GetRootNode () const { return rootNode_; }
 
 private:
 
@@ -100,16 +104,6 @@ private:
 
 	void CreateTriangle ();
 
-	//=============================================================================================//
-	// モデルファイル読み込み
-
-	static ModelData LoadModelFile (const std::string& directoryPath, const std::string& filename);
-
-	//=============================================================================================//
-	// Node読み込み
-
-	static Node ReadNode (aiNode* node);
-
 private:
 
 	//=============================================================================================//
@@ -161,14 +155,5 @@ private:
 	// IndexData
 
 	uint32_t* indexData_ = nullptr;
-
-	//=============================================================================================//
-	// Material
-
-	MaterialData material_;
-
-	//=============================================================================================//
-	// RootNode
-
-	Node rootNode_;
+	
 };
