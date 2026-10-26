@@ -2,6 +2,8 @@
 
 // C++
 #include <cassert>
+#include <cmath>
+#include <numbers>
 
 // 自作
 #include "Object3dCommon.h"
@@ -13,54 +15,28 @@
 //=================================================================================================//
 // 初期化処理
 
-void Object3d::Initialize (Object3dCommon* object3dCommon, MeshType meshType) {
+void Object3d::Initialize (Object3dCommon* object3dCommon) {
 
 	assert (object3dCommon);
 
 	object3dCommon_ = object3dCommon;
 
-	mesh_ = new Mesh ();
+	CreateTransformationMatrixData ();
 
-	mesh_->Initialize (object3dCommon_->GetDxCommon (), meshType);
+	CreateDirectionalLightData ();
 
-	InitializeResources ();
+	CreatePointLightData ();
+
+	CreateSpotLightData ();
 }
 
 
 //=================================================================================================//
-// 初期化処理(モデル)
+// 座標変換行列データ作成
 
-void Object3d::Initialize (Object3dCommon* object3dCommon, const std::string& directoryPath, const std::string& filename) {
+void Object3d::CreateTransformationMatrixData () {
 
-	assert (object3dCommon);
-
-	object3dCommon_ = object3dCommon;
-
-	mesh_ = new Mesh ();
-
-	mesh_->Initialize (object3dCommon_->GetDxCommon (), directoryPath, filename);
-
-	InitializeResources ();
-
-	if (!mesh_->GetMaterial ().textureFilePath.empty ()) {
-
-		SetTexture (mesh_->GetMaterial ().textureFilePath);
-	}
-}
-
-
-//=================================================================================================//
-// Material・WVPの初期化
-
-void Object3d::InitializeResources () {
-
-	DirectXCommon* dxCommon = object3dCommon_->GetDxCommon ();
-
-	material_ = new Material ();
-
-	material_->Initialize (dxCommon);
-
-	wvpResource_ = ResourceManager::CreateBufferResource (dxCommon->GetDevice (), sizeof (TransformationMatrix), "wvpResource");
+	wvpResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (TransformationMatrix), "wvpResource");
 
 	wvpResource_->Map (0, nullptr, reinterpret_cast<void**> (&wvpData_));
 
@@ -69,6 +45,71 @@ void Object3d::InitializeResources () {
 	wvpData_->World = MathUtility::MakeIdentity4x4 ();
 
 	wvpData_->WorldInverseTranspose = MathUtility::MakeIdentity4x4 ();
+}
+
+
+//=================================================================================================//
+// 平行光源データ作成
+
+void Object3d::CreateDirectionalLightData () {
+
+	directionalLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (DirectionalLight), "directionalLightResource");
+
+	directionalLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&directionalLightData_));
+
+	directionalLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
+
+	directionalLightData_->direction = { 0.0f,-1.0f,0.0f };
+
+	directionalLightData_->intensity = 1.0f;
+}
+
+
+//=================================================================================================//
+// 点光源データ作成
+
+void Object3d::CreatePointLightData () {
+
+	pointLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (PointLight), "pointLightResource");
+
+	pointLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&pointLightData_));
+
+	pointLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
+
+	pointLightData_->position = { 0.0f,2.0f,0.0f };
+
+	pointLightData_->intensity = 1.0f;
+
+	pointLightData_->radius = 10.0f;
+
+	pointLightData_->decay = 1.0f;
+}
+
+
+//=================================================================================================//
+// スポットライトデータ作成
+
+void Object3d::CreateSpotLightData () {
+
+	spotLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (SpotLight), "spotLightResource");
+
+	spotLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&spotLightData_));
+
+	spotLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
+
+	spotLightData_->position = { 2.0f,1.25f,0.0f };
+
+	spotLightData_->distance = 7.0f;
+
+	spotLightData_->direction = MathUtility::Normalize ({ -1.0f,-1.0f,0.0f });
+
+	spotLightData_->intensity = 4.0f;
+
+	spotLightData_->decay = 2.0f;
+
+	spotLightData_->cosAngle = std::cos (std::numbers::pi_v<float> / 3.0f);
+
+	spotLightData_->cosFalloffStart = 1.0f;
 }
 
 
@@ -83,7 +124,7 @@ void Object3d::Update (const Matrix4x4& viewProjectionMatrix) {
 
 	if (useRootNodeMatrix_) {
 
-		worldMatrix = MathUtility::Multiply (mesh_->GetRootNode ().localMatrix, worldMatrix);
+		worldMatrix = MathUtility::Multiply (model_->GetRootNode ().localMatrix, worldMatrix);
 	}
 
 	Matrix4x4 worldViewProjectionMatrix = MathUtility::Multiply (worldMatrix, viewProjectionMatrix);
@@ -103,14 +144,10 @@ void Object3d::Draw () {
 
 	//=============================================================================================//
 	// BlendMode設定
+
 	object3dCommon_->SetBlendMode (blendMode_);
 
 	ID3D12GraphicsCommandList* commandList = object3dCommon_->GetDxCommon ()->GetCommandList ();
-
-	//=============================================================================================//
-	// Material設定
-
-	material_->Bind ();
 
 	//=============================================================================================//
 	// WVP設定
@@ -118,24 +155,18 @@ void Object3d::Draw () {
 	commandList->SetGraphicsRootConstantBufferView (1, wvpResource_->GetGPUVirtualAddress ());
 
 	//=============================================================================================//
-	// Mesh描画
+	// ライト設定
 
-	mesh_->Draw ();
+	commandList->SetGraphicsRootConstantBufferView (3, directionalLightResource_->GetGPUVirtualAddress ());
 
-	// 3Dモデルが割り当てられていれば描画する
-	if (model_) {
-		model_->Draw();
-	}
-}
+	commandList->SetGraphicsRootConstantBufferView (5, pointLightResource_->GetGPUVirtualAddress ());
 
+	commandList->SetGraphicsRootConstantBufferView (6, spotLightResource_->GetGPUVirtualAddress ());
 
-//=================================================================================================//
-// 終了処理
+	//=============================================================================================//
+	// Model描画
 
-void Object3d::Finalize () {
-	delete mesh_;
-	delete material_;
-
+	model_->Draw ();
 }
 
 
@@ -162,7 +193,7 @@ TransformData Object3d::GetTransform () {
 
 void Object3d::SetColor (const Vector4& color) {
 
-	material_->SetColor (color);
+	model_->GetMaterial ()->SetColor (color);
 }
 
 
@@ -171,7 +202,7 @@ void Object3d::SetColor (const Vector4& color) {
 
 void Object3d::SetEnableLighting (bool enableLighting) {
 
-	material_->SetEnableLighting (enableLighting);
+	model_->GetMaterial ()->SetEnableLighting (enableLighting);
 }
 
 
@@ -180,7 +211,7 @@ void Object3d::SetEnableLighting (bool enableLighting) {
 
 void Object3d::SetUVTransform (const Matrix4x4& uvTransform) {
 
-	material_->SetUVTransform (uvTransform);
+	model_->GetMaterial ()->SetUVTransform (uvTransform);
 }
 
 
@@ -189,7 +220,11 @@ void Object3d::SetUVTransform (const Matrix4x4& uvTransform) {
 
 void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity) {
 
-	material_->SetDirectionalLight (color, direction, intensity);
+	directionalLightData_->color = color;
+
+	directionalLightData_->direction = MathUtility::Normalize (direction);
+
+	directionalLightData_->intensity = intensity;
 }
 
 
@@ -198,7 +233,7 @@ void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& directi
 
 void Object3d::SetTextureIndex (uint32_t textureIndex) {
 
-	material_->SetTextureIndex (textureIndex);
+	model_->GetMaterial ()->SetTextureIndex (textureIndex);
 }
 
 

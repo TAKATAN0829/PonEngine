@@ -313,6 +313,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\base\WinApp.h" />
     <ClInclude Include="engine\base\Engine.h" />
     <ClInclude Include="engine\base\EngineStructs.h" />
+    <ClInclude Include="engine\base\LightStructs.h" />
     <ClInclude Include="engine\dx12\DescriptorHeapManager.h" />
     <ClInclude Include="engine\asset\Material.h" />
     <ClInclude Include="engine\asset\Mesh.h" />

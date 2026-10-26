@@ -1,23 +1,24 @@
 #pragma once
-#include "../dx12/DirectXCommon.h"
 
+class DirectXCommon;
 
-class ModelCommon
-{
+class ModelCommon {
 public:
-	// 初期化
-	void Initialize(DirectXCommon* dxCommon);
 
-public:
+	//=============================================================================================//
+	// 初期化処理
+
+	void Initialize (DirectXCommon* dxCommon);
+
 	//=============================================================================================//
 	// Getter
-	
-	DirectXCommon* GetDxCommon()const { return dxCommon_; }
 
+	DirectXCommon* GetDxCommon () const { return dxCommon_; }
 
 private:
-	DirectXCommon* dxCommon_;
 
+	//=============================================================================================//
+	// DirectXCommon
 
+	DirectXCommon* dxCommon_ = nullptr;
 };
-

@@ -68,13 +68,27 @@ private:
 		{ 0.0f,0.0f,0.0f }
 	};
 
-	Vector4 modelColor_ = { 1.0f,1.0f,1.0f,1.0f };
+	Vector4 modelColor_ = { 1.f,1.f,1.f,1.f };
 
 	bool enableLighting_ = true;
 
-	float shininess_ = 40.0f;
+	float shininess_ = 40.f;
 
 	bool useRootNodeMatrix_ = true;
+
+	//=============================================================================================//
+	// 複数モデル描画できるか確認するためのモデル
+
+	Object3d* subModel_ = nullptr;
+	TransformData subModelTransform_ = {
+		{1.f,1.f,1.f},
+		{0.f,0.f,0.f},
+		{3.f,0.f,0.f}
+	};
+
+	Vector4 subModelColor_ = { 1.f,1.f,1.f,1.f };
+
+	int modelIndex_ = 0; // モデルを切り替えるための番号
 
 	//=============================================================================================//
 	// 平行光源

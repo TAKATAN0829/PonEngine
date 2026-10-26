@@ -2,6 +2,7 @@
 
 // 自作
 #include "TextureManager.h"
+#include "ModelManager.h"
 
 //=================================================================================================//
 // 初期化処理
@@ -42,6 +43,11 @@ void Engine::Initialize() {
 	TextureManager::GetInstance()->Initialize(dxCommon_);
 
 	TextureManager::GetInstance()->Load("resources/white1x1.png");
+
+	//=============================================================================================//
+	// ModelManager初期化
+
+	ModelManager::GetInstance()->Initialize(dxCommon_);
 
 	//=============================================================================================//
 	// ShaderCompiler初期化
@@ -176,6 +182,8 @@ void Engine::Finalize() {
 	//=============================================================================================//
 	// Renderer解放
 
+	particleRenderer_->Finalize();
+
 	delete particleRenderer_;
 
 	delete object3dCommon_;
@@ -186,6 +194,11 @@ void Engine::Finalize() {
 	shaderCompiler_->Finalize();
 
 	delete shaderCompiler_;
+
+	//=============================================================================================//
+	// ModelManager終了
+
+	ModelManager::GetInstance()->Finalize();
 
 	//=============================================================================================//
 	// TextureManager終了

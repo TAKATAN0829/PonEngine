@@ -28,11 +28,6 @@ public:
 	void Bind();
 
 	//=============================================================================================//
-	// RootParameter設定（DirectionalLightなし、Particle用）
-
-	void BindWithoutLight();
-
-	//=============================================================================================//
 	// 色
 
 	const Vector4& GetColor() const { return materialData_->color; }
@@ -59,22 +54,18 @@ public:
 
 	void SetShininess(float shininess) { materialData_->shininess = shininess; }
 
-	//=============================================================================================//
-	// DirectionalLight設定
-
-	void SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity);
-
-	//=============================================================================================//
-	// PointLight設定
-
-	void SetPointLight(const PointLight& pointLight);
-
-	//=============================================================================================//
-	// SpotLight設定
-
-	void SetSpotLight(const SpotLight& spotLight);
-
 private:
+
+	//=============================================================================================//
+	// マテリアル（GPU転送用）
+
+	struct MaterialForGPU {
+		Vector4 color;
+		int32_t enableLighting;
+		float padding[3];
+		Matrix4x4 uvTransform;
+		float shininess;
+	};
 
 	//=============================================================================================//
 	// DirectXCommon
@@ -95,34 +86,4 @@ private:
 	// Texture番号
 
 	uint32_t textureIndex_ = 0;
-
-	//=============================================================================================//
-	// DirectionalLightResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource>directionalLightResource_ = nullptr;
-
-	//=============================================================================================//
-	// DirectionalLightData
-
-	DirectionalLight* directionalLightData_ = nullptr;
-
-	//=============================================================================================//
-	// PointLightResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_ = nullptr;
-
-	//=============================================================================================//
-	// PointLightData
-
-	PointLight* pointLightData_ = nullptr;
-
-	//=============================================================================================//
-	// SpotLightResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_ = nullptr;
-
-	//=============================================================================================//
-	// SpotLightData
-
-	SpotLight* spotLightData_ = nullptr;
 };

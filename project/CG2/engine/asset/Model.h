@@ -1,32 +1,89 @@
 #pragma once
 
+// C++
+#include <string>
+#include <vector>
+#include <memory>
+
+// 自作
+#include "EngineStructs.h"
+#include "Mesh.h"
+#include "Material.h"
+
 class ModelCommon;
+struct aiNode;
 
-// 3Dモデル
-class Model
-{
-public: // メンバ関数
-	// 初期化
-	void Initialize(ModelCommon* modelCommon);
+class Model {
+public:
 
-	// 更新
-	void Update();
+	//=============================================================================================//
+	// ノード
 
-	// 描画
-	void Draw();
+	struct Node {
+		Matrix4x4 localMatrix = MathUtility::MakeIdentity4x4();
+		std::string name;
+		std::vector<Node> children;
+	};
+
+	//=============================================================================================//
+	// モデルデータ
+
+	struct ModelData {
+		std::vector<Mesh::VertexData> vertices;
+		MaterialData material;
+		Node rootNode;
+	};
+
+public:
+
+	//=============================================================================================//
+	// 初期化処理
+
+	void Initialize (ModelCommon* modelCommon, const std::string& directoryPath, const std::string& filename);
+
+	//=============================================================================================//
+	// 描画処理
+
+	void Draw ();
+
+	//=============================================================================================//
+	// Getter
+
+	Material* GetMaterial () const { return material_.get (); }
+
+	const Node& GetRootNode () const { return modelData_.rootNode; }
+
 private:
-	// ModelCommonのポインタ
-	ModelCommon* modelCommon_;
-	// Objファイルのデータ
 
-	// VertexResource
+	//=============================================================================================//
+	// モデルファイル読み込み
 
-	// VertexBufferResource
+	static ModelData LoadModelFile (const std::string& directoryPath, const std::string& filename);
 
-	// VertexBufferResourceにデータを書き込むためのポインタ
+	//=============================================================================================//
+	// Node読み込み
 
-	// マテリアルリソース
+	static Node ReadNode (aiNode* node);
 
-	// マテリアルリソースにデータを書き込むためのポインタ
+private:
+
+	//=============================================================================================//
+	// ModelCommon
+
+	ModelCommon* modelCommon_ = nullptr;
+
+	//=============================================================================================//
+	// モデルデータ
+
+	ModelData modelData_;
+
+	//=============================================================================================//
+	// Mesh
+
+	std::unique_ptr<Mesh> mesh_;
+
+	//=============================================================================================//
+	// Material
+
+	std::unique_ptr<Material> material_;
 };
-

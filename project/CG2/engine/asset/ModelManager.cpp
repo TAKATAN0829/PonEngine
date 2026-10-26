@@ -1,33 +1,66 @@
 #include "ModelManager.h"
 
-ModelManager* ModelManager::instance = nullptr; 
+// 自作
+#include "ModelCommon.h"
 
-void ModelManager::Initialize(DirectXCommon* dxCommon) {
-	ModelManager = new ModelCommon;
-	modelCommon->Initialize(dxCommon);
+//=================================================================================================//
+// インスタンス取得
+
+ModelManager* ModelManager::GetInstance() {
+
+	static ModelManager instance;
+
+	return &instance;
 }
 
-void ModelManager::LoadModel(const std::string&filePath) {
-	// 読み込み済みモデルを検索
-	if (models.contains(filePath)) {
-		// 読み込み済みなら早期return
+//=================================================================================================//
+// 初期化処理
+
+void ModelManager::Initialize(DirectXCommon* dxCommon) {
+
+	modelCommon_ = new ModelCommon();
+
+	modelCommon_->Initialize(dxCommon);
+}
+
+//=================================================================================================//
+// 終了処理
+
+void ModelManager::Finalize() {
+
+	models_.clear();
+
+	delete modelCommon_;
+
+	modelCommon_ = nullptr;
+}
+
+//=================================================================================================//
+// モデルファイル読み込み
+
+void ModelManager::LoadModel(const std::string& filePath) {
+
+	if (models_.contains(filePath)) {
+
 		return;
 	}
 
-	// モデルの生成とファイル読み込み、初期化
-	std::unique_ptr<Model>model = std::make_unique<Model>();
-	model->Initialize(modelCommon, "resources", filePath);
+	std::unique_ptr<Model> model = std::make_unique<Model>();
 
-	// モデルをmapコンテナに格納する
-	models.insert(std::make_pair(filePath, std::move(model)));
+	model->Initialize(modelCommon_, kDirectoryPath, filePath);
+
+	models_.insert(std::make_pair(filePath, std::move(model)));
 }
 
-void ModelManager::FindModel(const std::string& filePath) {
-	// 読み込み済みモデルを検索
-	if (models.contains(filePath)) {
-		// 読み込みモデルを戻り値としてreturn
-		return models.at(filePath).get();
+//=================================================================================================//
+// モデル検索
+
+Model* ModelManager::FindModel(const std::string& filePath) {
+
+	if (models_.contains(filePath)) {
+
+		return models_.at(filePath).get();
 	}
-	// ファイル名一致なし
+
 	return nullptr;
 }

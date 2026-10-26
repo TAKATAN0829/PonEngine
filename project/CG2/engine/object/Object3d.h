@@ -7,16 +7,15 @@
 #include <wrl.h>
 
 // C++
-#include <string.h>
+#include <string>
 
 // 自作
 #include "EngineStructs.h"
-#include "Mesh.h"
-#include "Material.h"
+#include "LightStructs.h"
+#include "Model.h"
 #include "Camera.h"
 #include "Transform.h"
 #include "BlendMode.h"
-#include "../asset/Model.h"
 
 class Object3dCommon;
 
@@ -26,12 +25,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize (Object3dCommon* object3dCommon, MeshType meshType);
-
-	//=============================================================================================//
-	// 初期化処理(OBJモデル)
-
-	void Initialize (Object3dCommon* object3dCommon, const std::string& directoryPath, const std::string& filename);
+	void Initialize (Object3dCommon* object3dCommon);
 
 	//=============================================================================================//
 	// 更新処理
@@ -44,9 +38,9 @@ public:
 	void Draw ();
 
 	//=============================================================================================//
-	// 終了処理
+	// Model設定
 
-	void Finalize ();
+	void SetModel (Model* model) { model_ = model; }
 
 	//=============================================================================================//
 	// Transform設定
@@ -85,7 +79,7 @@ public:
 	//=============================================================================================//
 	// 光沢度設定
 
-	void SetShininess (float shininess) { material_->SetShininess (shininess); }
+	void SetShininess (float shininess) { model_->GetMaterial ()->SetShininess (shininess); }
 
 	//=============================================================================================//
 	// RootNode行列の適用設定
@@ -100,12 +94,12 @@ public:
 	//=============================================================================================//
 	// PointLight設定
 
-	void SetPointLight (const PointLight& pointLight) { material_->SetPointLight (pointLight); }
+	void SetPointLight (const PointLight& pointLight) { *pointLightData_ = pointLight; }
 
 	//=============================================================================================//
 	// SpotLight設定
 
-	void SetSpotLight (const SpotLight& spotLight) { material_->SetSpotLight (spotLight); }
+	void SetSpotLight (const SpotLight& spotLight) { *spotLightData_ = spotLight; }
 
 	//=============================================================================================//
 	// Texture設定
@@ -122,26 +116,39 @@ public:
 
 	BlendMode GetBlendMode () const;
 
-	// モデル設定
-	void SetModel(Model* model) { this->model_ = model; }
 private:
 
 	//=============================================================================================//
-	// Material・WVPの初期化
+	// 座標変換行列データ作成
 
-	void InitializeResources ();
+	void CreateTransformationMatrixData ();
+
+	//=============================================================================================//
+	// 平行光源データ作成
+
+	void CreateDirectionalLightData ();
+
+	//=============================================================================================//
+	// 点光源データ作成
+
+	void CreatePointLightData ();
+
+	//=============================================================================================//
+	// スポットライトデータ作成
+
+	void CreateSpotLightData ();
 
 private:
 
 	//=============================================================================================//
-	// Renderer
+	// Object3dCommon
 
 	Object3dCommon* object3dCommon_ = nullptr;
 
 	//=============================================================================================//
-	// Mesh
+	// Model
 
-	Mesh* mesh_ = nullptr;
+	Model* model_ = nullptr;
 
 	//=============================================================================================//
 	// Transform
@@ -159,9 +166,25 @@ private:
 	TransformationMatrix* wvpData_ = nullptr;
 
 	//=============================================================================================//
-	// Material
+	// 平行光源
 
-	Material* material_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_ = nullptr;
+
+	DirectionalLight* directionalLightData_ = nullptr;
+
+	//=============================================================================================//
+	// 点光源
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_ = nullptr;
+
+	PointLight* pointLightData_ = nullptr;
+
+	//=============================================================================================//
+	// スポットライト
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_ = nullptr;
+
+	SpotLight* spotLightData_ = nullptr;
 
 	//=============================================================================================//
 	// BlendMode
@@ -172,8 +195,4 @@ private:
 	// RootNode行列の適用
 
 	bool useRootNodeMatrix_ = true;
-
-	//Model
-
-	Model* model_ = nullptr;
 };

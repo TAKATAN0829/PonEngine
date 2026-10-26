@@ -2,8 +2,6 @@
 
 // C++
 #include <cassert>
-#include <cmath>
-#include <numbers>
 
 // 自作
 #include "DirectXCommon.h"
@@ -37,102 +35,12 @@ void Material::Initialize(DirectXCommon* dxCommon) {
 	materialData_->uvTransform = MathUtility::MakeIdentity4x4();
 
 	materialData_->shininess = 40.0f;
-
-	//=============================================================================================//
-	// DirectionalLightResource生成
-
-	directionalLightResource_ = ResourceManager::CreateBufferResource(device, sizeof(DirectionalLight), "directionalLightResource");
-
-	//=============================================================================================//
-	// DirectionalLightDataを書き込む
-
-	directionalLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
-
-	directionalLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
-
-	directionalLightData_->direction = { 0.0f,-1.0f,0.0f };
-
-	directionalLightData_->intensity = 1.0f;
-
-	//=============================================================================================//
-	// PointLightResource生成
-
-	pointLightResource_ = ResourceManager::CreateBufferResource(device, sizeof(PointLight), "pointLightResource");
-
-	//=============================================================================================//
-	// PointLightDataを書き込む
-
-	pointLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&pointLightData_));
-
-	pointLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
-
-	pointLightData_->position = { 0.0f,2.0f,0.0f };
-
-	pointLightData_->intensity = 1.0f;
-
-	pointLightData_->radius = 10.0f;
-
-	pointLightData_->decay = 1.0f;
-
-	//=============================================================================================//
-	// SpotLightResource生成
-
-	spotLightResource_ = ResourceManager::CreateBufferResource(device, sizeof(SpotLight), "spotLightResource");
-
-	//=============================================================================================//
-	// SpotLightDataを書き込む
-
-	spotLightResource_->Map(0, nullptr, reinterpret_cast<void**>(&spotLightData_));
-
-	spotLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
-
-	spotLightData_->position = { 2.0f,1.25f,0.0f };
-
-	spotLightData_->distance = 7.0f;
-
-	spotLightData_->direction = MathUtility::Normalize({ -1.0f,-1.0f,0.0f });
-
-	spotLightData_->intensity = 4.0f;
-
-	spotLightData_->decay = 2.0f;
-
-	spotLightData_->cosAngle = std::cos(std::numbers::pi_v<float> / 3.0f);
-
-	spotLightData_->cosFalloffStart = 1.0f;
 }
 
 //=================================================================================================//
 // RootParameter設定
 
 void Material::Bind() {
-
-	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
-
-	//=============================================================================================//
-	// Material・Texture設定
-
-	BindWithoutLight();
-
-	//=============================================================================================//
-	// DirectionalLight設定
-
-	commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource_->GetGPUVirtualAddress());
-
-	//=============================================================================================//
-	// PointLight設定
-
-	commandList->SetGraphicsRootConstantBufferView(5, pointLightResource_->GetGPUVirtualAddress());
-
-	//=============================================================================================//
-	// SpotLight設定
-
-	commandList->SetGraphicsRootConstantBufferView(6, spotLightResource_->GetGPUVirtualAddress());
-}
-
-//=================================================================================================//
-// RootParameter設定（DirectionalLightなし、Particle用）
-
-void Material::BindWithoutLight() {
 
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
@@ -177,32 +85,4 @@ void Material::SetEnableLighting(bool enableLighting) {
 void Material::SetUVTransform (const Matrix4x4& uvTransform) {
 
 	materialData_->uvTransform = uvTransform;
-}
-
-//=============================================================================================//
-// DirectionalLight設定
-
-void Material::SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity) {
-
-	directionalLightData_->color = color;
-
-	directionalLightData_->direction = MathUtility::Normalize (direction);
-
-	directionalLightData_->intensity = intensity;
-}
-
-//=============================================================================================//
-// PointLight設定
-
-void Material::SetPointLight(const PointLight& pointLight) {
-
-	*pointLightData_ = pointLight;
-}
-
-//=============================================================================================//
-// SpotLight設定
-
-void Material::SetSpotLight(const SpotLight& spotLight) {
-
-	*spotLightData_ = spotLight;
 }

@@ -1,41 +1,65 @@
 #pragma once
-#include <stdlib.h>
+
+// C++
 #include <string>
 #include <map>
 #include <memory>
 
-class ModelManager
-{
+// 自作
+#include "Model.h"
+
+class DirectXCommon;
+class ModelCommon;
+
+class ModelManager {
 public:
-	// 初期化
-	void Initialize(DirectXCommon* dxCommon);
 
-	// シングルトンインスタンスの取得
-	static ModelManager* GetInstance();
+	//=============================================================================================//
+	// インスタンス取得
 
-	// モデルファイルの読み込み
-	void LoadModel(const std::string& filePath);
+	static ModelManager* GetInstance ();
 
-	// モデルの検索
-	Model* FindModel(const std::string& filePath);
+	//=============================================================================================//
+	// 初期化処理
 
-	// 終了
-	void Finalize();
+	void Initialize (DirectXCommon* dxCommon);
+
+	//=============================================================================================//
+	// 終了処理
+
+	void Finalize ();
+
+	//=============================================================================================//
+	// モデルファイル読み込み
+
+	void LoadModel (const std::string& filePath);
+
+	//=============================================================================================//
+	// モデル検索
+
+	Model* FindModel (const std::string& filePath);
+
 private:
-	static ModelManager* instance;
 
-	// コンストラクタ
-	ModelManager() = default;
-	// デストラクタ
-	~ModelManager() = default;
-	// コピーコンストラクタ
-	ModelManager(ModelManager* modelManager) = delete;
-	// コピー代入演算子
-	ModelManager& operator=(const ModelManager& modelManager) = delete;
+	ModelManager () = default;
+	~ModelManager () = default;
+	ModelManager (const ModelManager&) = delete;
+	ModelManager& operator=(const ModelManager&) = delete;
 
+private:
+
+	//=============================================================================================//
+	// モデル格納ディレクトリ
+
+	inline static const std::string kDirectoryPath = "resources";
+
+	//=============================================================================================//
+	// ModelCommon
+
+	ModelCommon* modelCommon_ = nullptr;
+
+	//=============================================================================================//
 	// モデルデータ
-	std::map<std::string, std::unique_ptr<Model>> models;
-	// モデル共通部
-	ModelCommon* modelCommon = nullptr;
-};
 
+	std::map<std::string, std::unique_ptr<Model>> models_;
+};
