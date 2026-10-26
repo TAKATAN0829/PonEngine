@@ -1,81 +1,87 @@
-﻿#pragma once
+#pragma once
 
-#include <cstdint>
-#include <d3d12.h>
-#include <wrl.h>
-#include <vector>
+// 自作
+#include "WinApp.h"
+#include "DirectXCommon.h"
+#include "SrvManager.h"
+#include "Input.h"
+#include "AudioSystem.h"
+#include "ShaderCompiler.h"
+#include "Object3dCommon.h"
+#include "SpriteCommon.h"
+#include "ParticleRenderer.h"
+#include "ImGuiSystem.h"
+#include "SceneManager.h"
 
-class DescriptorHeapManager {
+class Engine {
 public:
 
 	//=============================================================================================//
-	// 初期化
+	// 初期化処理
 
-	void Initialize(
-		ID3D12Device* device,
-		D3D12_DESCRIPTOR_HEAP_TYPE heapType,
-		uint32_t descriptorCount,
-		bool shaderVisible);
+	void Initialize (IScene* firstScene);
 
 	//=============================================================================================//
-	// 空きDescriptor確保
+	// 実行処理
 
-	uint32_t Allocate();
-
-	//=============================================================================================//
-	// Descriptor解放
-
-	void Free(uint32_t index);
+	void Run ();
 
 	//=============================================================================================//
-	// CPUHandle取得
+	// 終了処理
 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(uint32_t index);
-
-	//=============================================================================================//
-	// GPUHandle取得
-
-	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(uint32_t index);
-
-	//=============================================================================================//
-	// DescriptorHeap取得
-
-	ID3D12DescriptorHeap* GetDescriptorHeap() { return descriptorHeap_.Get(); }
-
-	//=============================================================================================//
-	// CPUHandleからIndex取得
-
-	uint32_t GetIndex(D3D12_CPU_DESCRIPTOR_HANDLE handle);
-	
+	void Finalize ();
 
 private:
-	//=============================================================================================//
-	// Device
-
-	Microsoft::WRL::ComPtr<ID3D12Device> device_;
 
 	//=============================================================================================//
-	// DescriptorHeap
+	// Window
 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap_;
-
-	//=============================================================================================//
-	// DescriptorSize
-
-	uint32_t descriptorSize_ = 0;
+	WinApp* winApp_ = nullptr;
 
 	//=============================================================================================//
-	// Descriptor数
+	// DirectXCommon
 
-	uint32_t descriptorCount_ = 0;
-
-	//=============================================================================================//
-	// 次に確保する番号
-
-	uint32_t nextIndex_ = 0;
+	DirectXCommon* dxCommon_ = nullptr;
 
 	//=============================================================================================//
-	// 解放された番号
+	// SrvManager
 
-	std::vector<uint32_t> freeIndices_;
+	SrvManager* srvManager_ = nullptr;
+
+	//=============================================================================================//
+	// Input
+
+	Input* input_ = nullptr;
+
+	//=============================================================================================//
+	// AudioSystem
+
+	AudioSystem* audioSystem_ = nullptr;
+
+	//=============================================================================================//
+	// ShaderCompiler
+
+	ShaderCompiler* shaderCompiler_ = nullptr;
+
+	//=============================================================================================//
+	// Renderer
+
+	Object3dCommon* object3dCommon_ = nullptr;
+
+	//=============================================================================================//
+	// SpriteCommon
+
+	SpriteCommon* spriteCommon_ = nullptr;
+
+	ParticleRenderer* particleRenderer_ = nullptr;
+
+	//=============================================================================================//
+	// ImGuiSystem
+
+	ImGuiSystem* imGuiSystem_ = nullptr;
+
+	//=============================================================================================//
+	// SceneManager
+
+	SceneManager* sceneManager_ = nullptr;
 };

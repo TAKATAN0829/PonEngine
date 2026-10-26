@@ -7,15 +7,18 @@
 #include "DirectXCommon.h"
 #include "PipelineManager.h"
 #include "ShaderCompiler.h"
+#include "Mesh.h"
 
 //=================================================================================================//
 // 初期化処理
 
-void ParticleRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler) {
+void ParticleRenderer::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
 
 	assert(dxCommon);
 
 	dxCommon_ = dxCommon;
+
+	srvManager_ = srvManager;
 
 	ID3D12Device* device = dxCommon_->GetDevice();
 
@@ -112,6 +115,19 @@ void ParticleRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shade
 			vertexShaderBlob.Get(),
 			pixelShaderBlob.Get());
 	}
+
+	// 全Particle共通の板ポリMesh生成
+	mesh_ = new Mesh();
+
+	mesh_->Initialize(dxCommon_, MeshType::kPlane);
+}
+
+//=================================================================================================//
+// 終了処理
+
+void ParticleRenderer::Finalize() {
+
+	delete mesh_;
 }
 
 //=================================================================================================//
@@ -127,7 +143,4 @@ void ParticleRenderer::PreDraw(BlendMode blendMode) {
 
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { dxCommon_->GetSrvHeap()->GetDescriptorHeap() };
-
-	commandList->SetDescriptorHeaps(1, descriptorHeaps);
 }

@@ -12,19 +12,25 @@
 
 class DirectXCommon;
 class ShaderCompiler;
+class SrvManager;
 
-class Object3dRenderer {
+class Object3dCommon {
 public:
 
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler);
+	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler);
 
 	//=============================================================================================//
-	// 描画前設定
+	// 共通描画設定
 
-	void PreDraw(BlendMode blendMode);
+	void DrawSettingCommon();
+
+	//=============================================================================================//
+	// BlendMode設定
+
+	void SetBlendMode(BlendMode blendMode);
 
 	//=============================================================================================//
 	// カメラ位置設定
@@ -36,12 +42,48 @@ public:
 
 	DirectXCommon* GetDxCommon() const { return dxCommon_; }
 
+	SrvManager* GetSrvManager() const { return srvManager_; }
+
 private:
+
+	//=============================================================================================//
+	// RootSignatureの作成
+
+	void CreateRootSignature();
+
+	//=============================================================================================//
+	// GraphicsPipelineの生成
+
+	void CreateGraphicsPipeline();
+
+	//=============================================================================================//
+	// カメラ用リソース生成
+
+	void CreateCameraResource();
+
+private:
+
+	//=============================================================================================//
+	// カメラ（GPU転送用）
+
+	struct CameraForGPU {
+		Vector3 worldPosition;
+	};
 
 	//=============================================================================================//
 	// DirectXCommon
 
 	DirectXCommon* dxCommon_ = nullptr;
+
+	//=============================================================================================//
+	// SrvManager
+
+	SrvManager* srvManager_ = nullptr;
+
+	//=============================================================================================//
+	// ShaderCompiler
+
+	ShaderCompiler* shaderCompiler_ = nullptr;
 
 	//=============================================================================================//
 	// RootSignature

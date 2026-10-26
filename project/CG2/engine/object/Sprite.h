@@ -102,8 +102,6 @@ public:
 	//=============================================================================================//
 	// Texture設定
 
-	void SetTextureIndex(uint32_t textureIndex);
-
 	void SetTexture(const std::string& filePath);
 
 private:
@@ -179,9 +177,9 @@ private:
 	Vector2 textureSize_ = { 100.f,100.f };
 
 	//=============================================================================================//
-	// Texture番号
+	// Textureファイルパス
 
-	uint32_t textureIndex_ = 0;
+	std::string textureFilePath_;
 
 	//=============================================================================================//
 	// Texture画像サイズ

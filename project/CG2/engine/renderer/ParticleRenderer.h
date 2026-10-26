@@ -11,6 +11,8 @@
 
 class DirectXCommon;
 class ShaderCompiler;
+class SrvManager;
+class Mesh;
 
 class ParticleRenderer {
 public:
@@ -18,7 +20,12 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler);
+	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler);
+
+	//=============================================================================================//
+	// 終了処理
+
+	void Finalize();
 
 	//=============================================================================================//
 	// 描画前設定
@@ -30,12 +37,21 @@ public:
 
 	DirectXCommon* GetDxCommon() const { return dxCommon_; }
 
+	SrvManager* GetSrvManager() const { return srvManager_; }
+
+	Mesh* GetMesh() const { return mesh_; }
+
 private:
 
 	//=============================================================================================//
 	// DirectXCommon
 
 	DirectXCommon* dxCommon_ = nullptr;
+
+	//=============================================================================================//
+	// SrvManager
+
+	SrvManager* srvManager_ = nullptr;
 
 	//=============================================================================================//
 	// RootSignature
@@ -46,4 +62,9 @@ private:
 	// PipelineState
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineStates_[kCountOfBlendMode];
+
+	//=============================================================================================//
+	// 全Particle共通の板ポリMesh
+
+	Mesh* mesh_ = nullptr;
 };

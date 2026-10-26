@@ -13,6 +13,7 @@
 #include "EngineStructs.h"
 
 class DirectXCommon;
+class SrvManager;
 
 class Material {
 public:
@@ -20,17 +21,12 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(DirectXCommon* dxCommon);
+	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager);
 
 	//=============================================================================================//
 	// RootParameter設定
 
 	void Bind();
-
-	//=============================================================================================//
-	// RootParameter設定（DirectionalLightなし、Particle用）
-
-	void BindWithoutLight();
 
 	//=============================================================================================//
 	// 色
@@ -59,27 +55,28 @@ public:
 
 	void SetShininess(float shininess) { materialData_->shininess = shininess; }
 
-	//=============================================================================================//
-	// DirectionalLight設定
-
-	void SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity);
-
-	//=============================================================================================//
-	// PointLight設定
-
-	void SetPointLight(const PointLight& pointLight);
-
-	//=============================================================================================//
-	// SpotLight設定
-
-	void SetSpotLight(const SpotLight& spotLight);
-
 private:
+
+	//=============================================================================================//
+	// マテリアル（GPU転送用）
+
+	struct MaterialForGPU {
+		Vector4 color;
+		int32_t enableLighting;
+		float padding[3];
+		Matrix4x4 uvTransform;
+		float shininess;
+	};
 
 	//=============================================================================================//
 	// DirectXCommon
 
 	DirectXCommon* dxCommon_ = nullptr;
+
+	//=============================================================================================//
+	// SrvManager
+
+	SrvManager* srvManager_ = nullptr;
 
 	//=============================================================================================//
 	// MaterialResource
@@ -95,34 +92,4 @@ private:
 	// Texture番号
 
 	uint32_t textureIndex_ = 0;
-
-	//=============================================================================================//
-	// DirectionalLightResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource>directionalLightResource_ = nullptr;
-
-	//=============================================================================================//
-	// DirectionalLightData
-
-	DirectionalLight* directionalLightData_ = nullptr;
-
-	//=============================================================================================//
-	// PointLightResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_ = nullptr;
-
-	//=============================================================================================//
-	// PointLightData
-
-	PointLight* pointLightData_ = nullptr;
-
-	//=============================================================================================//
-	// SpotLightResource
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_ = nullptr;
-
-	//=============================================================================================//
-	// SpotLightData
-
-	SpotLight* spotLightData_ = nullptr;
 };

@@ -15,10 +15,6 @@
 // WRL
 #include <wrl.h>
 
-
-// DescriptorHeap
-#include "DescriptorHeapManager.h"
-
 class WinApp;
 
 class DirectXCommon {
@@ -28,11 +24,6 @@ public:
 	// BackBuffer数
 
 	static const uint32_t kBufferCount = 2;
-
-	//=============================================================================================//
-	// SRVの最大数
-
-	static const uint32_t kMaxSrvCount = 128;
 
 public:
 
@@ -64,8 +55,6 @@ public:
 	ID3D12GraphicsCommandList* GetCommandList() { return commandList_.Get(); }
 
 	ID3D12CommandQueue* GetCommandQueue() { return commandQueue_.Get(); }
-
-	DescriptorHeapManager* GetSrvHeap() { return &srvHeap_; }
 
 private:
 
@@ -103,11 +92,6 @@ private:
 	// DSV初期化
 
 	void InitializeDepthStencilView();
-
-	//=============================================================================================//
-	// SRV初期化
-
-	void InitializeShaderResourceView();
 
 	//=============================================================================================//
 	// Viewport矩形初期化
@@ -221,12 +205,12 @@ private:
 	//=============================================================================================//
 	// DSVHeap
 
-	DescriptorHeapManager dsvHeap_;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap_;
 
 	//=============================================================================================//
-	// SRVHeap
+	// DSVHandle
 
-	DescriptorHeapManager srvHeap_;
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_{};
 
 	//=============================================================================================//
 	// DepthStencilResource

@@ -5,7 +5,9 @@
 
 // 自作
 #include "ParticleRenderer.h"
+#include "Mesh.h"
 #include "DirectXCommon.h"
+#include "SrvManager.h"
 #include "ResourceManager.h"
 #include "TextureManager.h"
 #include "MathUtility.h"
@@ -24,21 +26,14 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 
 	ID3D12Device* device = dxCommon->GetDevice();
 
-	DescriptorHeapManager* srvHeap = dxCommon->GetSrvHeap();
-
-	//=============================================================================================//
-	// Mesh生成
-
-	mesh_ = new Mesh();
-
-	mesh_->Initialize(dxCommon, MeshType::kPlane);
+	SrvManager* srvManager = renderer_->GetSrvManager();
 
 	//=============================================================================================//
 	// Material生成
 
 	material_ = new Material();
 
-	material_->Initialize(dxCommon);
+	material_->Initialize(dxCommon, srvManager);
 
 	//=============================================================================================//
 	// Instancing用のTransformationMatrixリソースを作る
@@ -61,23 +56,13 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 	//=============================================================================================//
 	// SRV生成
 
-	D3D12_SHADER_RESOURCE_VIEW_DESC instancingSrvDesc{};
+	instancingSrvIndex_ = srvManager->Allocate();
 
-	instancingSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
-	instancingSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	instancingSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-	instancingSrvDesc.Buffer.FirstElement = 0;
-	instancingSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-	instancingSrvDesc.Buffer.NumElements = kNumMaxInstance;
-	instancingSrvDesc.Buffer.StructureByteStride = sizeof(ParticleForGPU);
-
-	uint32_t instancingSrvIndex = srvHeap->Allocate();
-
-	D3D12_CPU_DESCRIPTOR_HANDLE instancingSrvHandleCPU = srvHeap->GetCPUDescriptorHandle(instancingSrvIndex);
-
-	instancingSrvHandleGPU_ = srvHeap->GetGPUDescriptorHandle(instancingSrvIndex);
-
-	device->CreateShaderResourceView(instancingResource_.Get(), &instancingSrvDesc, instancingSrvHandleCPU);
+	srvManager->CreateSRVforStructuredBuffer(
+		instancingSrvIndex_,
+		instancingResource_.Get(),
+		kNumMaxInstance,
+		sizeof(ParticleForGPU));
 }
 
 //=================================================================================================//
@@ -160,35 +145,26 @@ void Particle::Draw() {
 
 	renderer_->PreDraw(blendMode_);
 
-	ID3D12GraphicsCommandList* commandList = renderer_->GetDxCommon()->GetCommandList();
-
 	//=============================================================================================//
 	// Material・Texture設定
 
-	material_->BindWithoutLight();
+	material_->Bind();
 
 	//=============================================================================================//
 	// Instancing用のStructuredBufferのSRVを設定
 
-	commandList->SetGraphicsRootDescriptorTable(1, instancingSrvHandleGPU_);
+	renderer_->GetSrvManager()->SetGraphicsRootDescriptorTable(1, instancingSrvIndex_);
 
 	//=============================================================================================//
 	// インスタンス数だけ描画
 
-	mesh_->Draw(numInstance_);
+	renderer_->GetMesh()->Draw(numInstance_);
 }
 
 //=================================================================================================//
 // 終了処理
 
 void Particle::Finalize() {
-
-	if (mesh_ != nullptr) {
-
-		delete mesh_;
-
-		mesh_ = nullptr;
-	}
 
 	if (material_ != nullptr) {
 
