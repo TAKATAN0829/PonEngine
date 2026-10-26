@@ -7,7 +7,9 @@
   </Configurations>
   <Folder Name="/externals/">
     <Project Path="externals/DirectXTex/DirectXTex_Desktop_2022_Win10.vcxproj" Id="371b9fa9-4c90-4ac6-a123-aced756d6c77" />
-    <Project Path="externals/imgui/imgui.vcxproj" Id="7d8f1a59-2cbf-4876-8017-36991a65ec6a" />
+    <Project Path="externals/imgui/imgui.vcxproj" Id="7d8f1a59-2cbf-4876-8017-36991a65ec6a">
+      <Build Solution="Release|*" Project="false" />
+    </Project>
   </Folder>
   <Folder Name="/ソリューション項目/">
     <File Path=".editorconfig" />

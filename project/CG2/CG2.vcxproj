@@ -320,7 +320,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ProjectReference Include="..\externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\externals\imgui\imgui.vcxproj">
+    <ProjectReference Include="..\externals\imgui\imgui.vcxproj" Condition="'$(Configuration)'!='Release'">
       <Project>{7d8f1a59-2cbf-4876-8017-36991a65ec6a}</Project>
     </ProjectReference>
   </ItemGroup>
