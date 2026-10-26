@@ -11,6 +11,7 @@
 
 class DirectXCommon;
 class ShaderCompiler;
+class SrvManager;
 class Mesh;
 
 class ParticleRenderer {
@@ -19,7 +20,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler);
+	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler);
 
 	//=============================================================================================//
 	// 終了処理
@@ -36,6 +37,8 @@ public:
 
 	DirectXCommon* GetDxCommon() const { return dxCommon_; }
 
+	SrvManager* GetSrvManager() const { return srvManager_; }
+
 	Mesh* GetMesh() const { return mesh_; }
 
 private:
@@ -44,6 +47,11 @@ private:
 	// DirectXCommon
 
 	DirectXCommon* dxCommon_ = nullptr;
+
+	//=============================================================================================//
+	// SrvManager
+
+	SrvManager* srvManager_ = nullptr;
 
 	//=============================================================================================//
 	// RootSignature

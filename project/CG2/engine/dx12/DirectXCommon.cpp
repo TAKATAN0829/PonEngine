@@ -43,9 +43,6 @@ void DirectXCommon::Initialize(WinApp* winApp) {
 	// DSV初期化
 	InitializeDepthStencilView();
 
-	// SRV初期化
-	InitializeShaderResourceView();
-
 	// Fence初期化
 	InitializeFence();
 
@@ -325,13 +322,11 @@ void DirectXCommon::PreDraw() {
 	commandList_->RSSetScissorRects(1, &scissorRect_);
 
 	// RenderTarget設定
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap_.GetCPUDescriptorHandle(0);
-
 	commandList_->OMSetRenderTargets(
 		1,
 		&rtvHandles_[backBufferIndex_],
 		false,
-		&dsvHandle);
+		&dsvHandle_);
 
 	// ClearColor
 	float clearColor[] = { 0.1f,0.25f,0.5f,1.0f };
@@ -345,7 +340,7 @@ void DirectXCommon::PreDraw() {
 
 	// DepthStencilClear
 	commandList_->ClearDepthStencilView(
-		dsvHandle,
+		dsvHandle_,
 		D3D12_CLEAR_FLAG_DEPTH,
 		1.0f,
 		0,
@@ -472,29 +467,26 @@ void DirectXCommon::Finalize() {
 }
 
 //=============================================================================================//
-// SRV初期化
-
-void DirectXCommon::InitializeShaderResourceView() {
-
-	// SRVHeap生成
-	srvHeap_.Initialize(
-		device_.Get(),
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-		kMaxSrvCount,
-		true);
-}
-
-//=============================================================================================//
 // DSV初期化
 
 void DirectXCommon::InitializeDepthStencilView() {
 
+	// DSVHeap設定
+	D3D12_DESCRIPTOR_HEAP_DESC dsvDescriptorHeapDesc{};
+
+	dsvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+
+	dsvDescriptorHeapDesc.NumDescriptors = 1;
+
+	dsvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
 	// DSVHeap生成
-	dsvHeap_.Initialize(
-		device_.Get(),
-		D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
-		1,
-		false);
+	HRESULT hr = device_->CreateDescriptorHeap(&dsvDescriptorHeapDesc, IID_PPV_ARGS(&dsvDescriptorHeap_));
+
+	assert(SUCCEEDED(hr));
+
+	// DSVHandle取得
+	dsvHandle_ = dsvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
 
 	// DepthStencilTexture設定
 	D3D12_RESOURCE_DESC resourceDesc{};
@@ -520,7 +512,7 @@ void DirectXCommon::InitializeDepthStencilView() {
 	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	// DepthStencilResource生成
-	HRESULT hr = device_->CreateCommittedResource(
+	hr = device_->CreateCommittedResource(
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&resourceDesc,
@@ -537,5 +529,5 @@ void DirectXCommon::InitializeDepthStencilView() {
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 
 	// DSV生成
-	device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHeap_.GetCPUDescriptorHandle(0));
+	device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHandle_);
 }

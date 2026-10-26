@@ -16,11 +16,11 @@ ModelManager* ModelManager::GetInstance() {
 //=================================================================================================//
 // 初期化処理
 
-void ModelManager::Initialize(DirectXCommon* dxCommon) {
+void ModelManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 
 	modelCommon_ = new ModelCommon();
 
-	modelCommon_->Initialize(dxCommon);
+	modelCommon_->Initialize(dxCommon, srvManager);
 }
 
 //=================================================================================================//

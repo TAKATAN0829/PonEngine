@@ -38,7 +38,7 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 
 	material_ = std::make_unique<Material>();
 
-	material_->Initialize(modelCommon_->GetDxCommon());
+	material_->Initialize(modelCommon_->GetDxCommon(), modelCommon_->GetSrvManager());
 
 	//=============================================================================================//
 	// テクスチャ読み込み

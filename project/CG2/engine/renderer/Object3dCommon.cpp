@@ -12,13 +12,15 @@
 //=================================================================================================//
 // 初期化処理
 
-void Object3dCommon::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler) {
+void Object3dCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
 
 	assert(dxCommon);
 
 	assert(shaderCompiler);
 
 	dxCommon_ = dxCommon;
+
+	srvManager_ = srvManager;
 
 	shaderCompiler_ = shaderCompiler;
 
@@ -39,10 +41,6 @@ void Object3dCommon::DrawSettingCommon() {
 	commandList->SetPipelineState(pipelineStates_[kBlendModeNormal].Get());
 
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	ID3D12DescriptorHeap* descriptorHeaps[] = { dxCommon_->GetSrvHeap()->GetDescriptorHeap() };
-
-	commandList->SetDescriptorHeaps(1, descriptorHeaps);
 
 	commandList->SetGraphicsRootConstantBufferView(4, cameraResource_->GetGPUVirtualAddress());
 }

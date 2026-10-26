@@ -12,6 +12,7 @@
 
 class DirectXCommon;
 class ShaderCompiler;
+class SrvManager;
 
 class Object3dCommon {
 public:
@@ -19,7 +20,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler);
+	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler);
 
 	//=============================================================================================//
 	// 共通描画設定
@@ -40,6 +41,8 @@ public:
 	// Getter
 
 	DirectXCommon* GetDxCommon() const { return dxCommon_; }
+
+	SrvManager* GetSrvManager() const { return srvManager_; }
 
 private:
 
@@ -71,6 +74,11 @@ private:
 	// DirectXCommon
 
 	DirectXCommon* dxCommon_ = nullptr;
+
+	//=============================================================================================//
+	// SrvManager
+
+	SrvManager* srvManager_ = nullptr;
 
 	//=============================================================================================//
 	// ShaderCompiler

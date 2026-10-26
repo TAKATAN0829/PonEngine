@@ -11,11 +11,11 @@
 
 // C++
 #include <string>
-#include <vector>
 #include <unordered_map>
 #include <cstdint>
 
 class DirectXCommon;
+class SrvManager;
 
 class TextureManager {
 public:
@@ -28,7 +28,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(DirectXCommon* dxCommon);
+	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager);
 
 	//=============================================================================================//
 	// 終了処理
@@ -41,11 +41,33 @@ public:
 	uint32_t Load(const std::string& filePath);
 
 	//=============================================================================================//
-	// メタデータを取得
+	// メタデータ取得
 
-	const DirectX::TexMetadata& GetMetaData(uint32_t textureIndex);
+	const DirectX::TexMetadata& GetMetaData(const std::string& filePath);
+
+	//=============================================================================================//
+	// SRV番号取得
+
+	uint32_t GetSrvIndex(const std::string& filePath);
+
+	//=============================================================================================//
+	// GPUHandle取得
+
+	D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandleGPU(const std::string& filePath);
 
 private:
+
+	//=============================================================================================//
+	// テクスチャ1枚分のデータ
+
+	struct TextureData {
+		DirectX::TexMetadata metadata;
+		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+		Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource;
+		uint32_t srvIndex;
+		D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU;
+		D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU;
+	};
 
 	//=============================================================================================//
 	// Textureファイル読み込み
@@ -60,22 +82,12 @@ private:
 	DirectXCommon* dxCommon_ = nullptr;
 
 	//=============================================================================================//
-	// TextureResource
+	// SrvManager
 
-	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> textureResources_;
-
-	//=============================================================================================//
-	// IntermediateResource
-
-	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> intermediateResources_;
+	SrvManager* srvManager_ = nullptr;
 
 	//=============================================================================================//
-	// FilePathとSRV番号の対応
+	// テクスチャデータ
 
-	std::unordered_map<std::string, uint32_t> srvIndices_;
-
-	//=============================================================================================//
-	// SRV番号とメタデータの対応
-
-	std::unordered_map<uint32_t, DirectX::TexMetadata> metadatas_;
+	std::unordered_map<std::string, TextureData> textureDatas_;
 };

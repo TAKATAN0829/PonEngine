@@ -3,6 +3,7 @@
 // 自作
 #include "WinApp.h"
 #include "DirectXCommon.h"
+#include "SrvManager.h"
 #include "Input.h"
 #include "AudioSystem.h"
 #include "ShaderCompiler.h"
@@ -18,7 +19,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize ();
+	void Initialize (IScene* firstScene);
 
 	//=============================================================================================//
 	// 実行処理
@@ -41,6 +42,11 @@ private:
 	// DirectXCommon
 
 	DirectXCommon* dxCommon_ = nullptr;
+
+	//=============================================================================================//
+	// SrvManager
+
+	SrvManager* srvManager_ = nullptr;
 
 	//=============================================================================================//
 	// Input

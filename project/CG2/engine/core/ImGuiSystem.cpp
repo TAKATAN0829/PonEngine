@@ -1,4 +1,4 @@
-﻿#include "ImGuiSystem.h"
+#include "ImGuiSystem.h"
 
 // C++
 #include <cassert>
@@ -6,30 +6,30 @@
 // 自作
 #include "WinApp.h"
 #include "DirectXCommon.h"
+#include "SrvManager.h"
 
 // ImGui
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_dx12.h"
 #include "imgui/imgui_impl_win32.h"
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
-	HWND hwnd,
-	UINT msg,
-	WPARAM wParam,
-	LPARAM lParam);
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 #endif
 
 //=================================================================================================//
 // 初期化処理
 
-void ImGuiSystem::Initialize(WinApp* winApp, DirectXCommon* dxCommon) {
+void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] DirectXCommon* dxCommon, [[maybe_unused]] SrvManager* srvManager) {
 
 	assert(winApp);
 	assert(dxCommon);
+	assert(srvManager);
 
 	dxCommon_ = dxCommon;
 
-	//=============================================================================================//
+	srvManager_ = srvManager;
+
+	//===========================================//
 	// ImGui初期化
 #ifdef USE_IMGUI
 	IMGUI_CHECKVERSION();
@@ -41,12 +41,12 @@ void ImGuiSystem::Initialize(WinApp* winApp, DirectXCommon* dxCommon) {
 
 	ImGui::StyleColorsDark();
 
-	//=============================================================================================//
+	//===========================================//
 	// Win32初期化
 
 	ImGui_ImplWin32_Init(winApp->GetHwnd());
 
-	//=============================================================================================//
+	//===========================================//
 	// DX12初期化
 
 	ImGui_ImplDX12_InitInfo initInfo{};
@@ -56,24 +56,24 @@ void ImGuiSystem::Initialize(WinApp* winApp, DirectXCommon* dxCommon) {
 	initInfo.NumFramesInFlight = static_cast<int>(DirectXCommon::kBufferCount);
 	initInfo.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	initInfo.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	initInfo.UserData = dxCommon_->GetSrvHeap();
-	initInfo.SrvDescriptorHeap = dxCommon_->GetSrvHeap()->GetDescriptorHeap();
+	initInfo.UserData = srvManager;
+	initInfo.SrvDescriptorHeap = srvManager->GetDescriptorHeap();
 
 	initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE* outCpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE* outGpuHandle) {
 
-			DescriptorHeapManager* srvHeap = static_cast<DescriptorHeapManager*>(info->UserData);
+			SrvManager* srvManager = static_cast<SrvManager*>(info->UserData);
 
-			uint32_t index = srvHeap->Allocate();
+			uint32_t index = srvManager->Allocate();
 
-			*outCpuHandle = srvHeap->GetCPUDescriptorHandle(index);
-			*outGpuHandle = srvHeap->GetGPUDescriptorHandle(index);
+			*outCpuHandle = srvManager->GetCPUDescriptorHandle(index);
+			*outGpuHandle = srvManager->GetGPUDescriptorHandle(index);
 		};
 
 	initInfo.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE) {
 
-			DescriptorHeapManager* srvHeap = static_cast<DescriptorHeapManager*>(info->UserData);
+			SrvManager* srvManager = static_cast<SrvManager*>(info->UserData);
 
-			srvHeap->Free(srvHeap->GetIndex(cpuHandle));
+			srvManager->Free(srvManager->GetIndex(cpuHandle));
 		};
 
 	ImGui_ImplDX12_Init(&initInfo);
@@ -83,7 +83,7 @@ void ImGuiSystem::Initialize(WinApp* winApp, DirectXCommon* dxCommon) {
 }
 
 //=================================================================================================//
-// 開始処理
+// 受付開始
 
 void ImGuiSystem::Begin() {
 
@@ -92,7 +92,7 @@ void ImGuiSystem::Begin() {
 		return;
 	}
 
-	//=============================================================================================//
+	//===========================================//
 	// ImGuiフレーム開始
 #ifdef USE_IMGUI
 	ImGui_ImplDX12_NewFrame();
@@ -100,6 +100,23 @@ void ImGuiSystem::Begin() {
 	ImGui::NewFrame();
 
 	ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
+#endif
+}
+
+//=================================================================================================//
+// 受付終了
+
+void ImGuiSystem::End() {
+
+	if (isInitialized_ == false) {
+
+		return;
+	}
+
+	//===========================================//
+	// 描画データ確定
+#ifdef USE_IMGUI
+	ImGui::Render();
 #endif
 }
 
@@ -113,16 +130,14 @@ void ImGuiSystem::Draw() {
 		return;
 	}
 
-	//=============================================================================================//
+	//=============================================
 	// ImGui描画
 #ifdef USE_IMGUI
-	ImGui::Render();
-
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { dxCommon_->GetSrvHeap()->GetDescriptorHeap() };
+	ID3D12DescriptorHeap* ppHeaps[] = { srvManager_->GetDescriptorHeap() };
 
-	commandList->SetDescriptorHeaps(1, descriptorHeaps);
+	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 #endif
@@ -138,7 +153,7 @@ void ImGuiSystem::Finalize() {
 		return;
 	}
 
-	//=============================================================================================//
+	//===========================================//
 	// ImGui終了
 #ifdef USE_IMGUI
 	ImGui_ImplDX12_Shutdown();

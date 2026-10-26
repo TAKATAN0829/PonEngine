@@ -60,6 +60,15 @@ void GameScene::Initialize(const SceneContext& context) {
 	particle_->Initialize(context.particleRenderer);
 
 	particle_->SetTexture("resources/circle.png");
+
+	//=============================================================================================//
+	// Sprite初期化
+
+	spriteCommon_ = context.spriteCommon;
+
+	sprite_ = new Sprite();
+
+	sprite_->Initialize(spriteCommon_, "resources/uvChecker.png");
 }
 
 //=================================================================================================//
@@ -92,6 +101,13 @@ void GameScene::Draw() {
 	// Particle描画
 
 	particle_->Draw();
+
+	//=============================================================================================//
+	// Sprite描画
+
+	spriteCommon_->DrawSettingCommon();
+
+	sprite_->Draw();
 }
 
 //=================================================================================================//
@@ -105,6 +121,13 @@ void GameScene::Finalize() {
 	particle_->Finalize();
 
 	delete particle_;
+
+	//=============================================================================================//
+	// Sprite解放
+
+	sprite_->Finalize();
+
+	delete sprite_;
 
 	//=============================================================================================//
 	// モデル解放
@@ -170,6 +193,14 @@ void GameScene::UpdateObject() {
 	particle_->SetUseBillboard(useBillboard_);
 	particle_->SetUseAccelerationField(useAccelerationField_);
 	particle_->Update(debugCamera_->GetViewProjectionMatrix(), debugCamera_->GetCameraMatrix());
+
+	//=============================================================================================//
+	// Sprite更新
+
+	sprite_->SetPosition(spritePosition_);
+	sprite_->SetRotation(spriteRotation_);
+	sprite_->SetSize(spriteSize_);
+	sprite_->Update();
 
 #ifdef USE_IMGUI
 
@@ -250,6 +281,12 @@ void GameScene::UpdateObject() {
 	ImGui::DragFloat("Decay", &spotLight_.decay, 0.01f, 0.0f, 10.0f);
 	ImGui::SliderFloat("CosAngle", &spotLight_.cosAngle, 0.0f, 1.0f);
 	ImGui::SliderFloat("CosFalloffStart", &spotLight_.cosFalloffStart, 0.0f, 1.0f);
+	ImGui::End();
+
+	ImGui::Begin("Sprite");
+	ImGui::SliderFloat2("Position", &spritePosition_.x, 0.f, static_cast<float>(WinApp::kClientWidth));
+	ImGui::SliderAngle("Rotation", &spriteRotation_);
+	ImGui::SliderFloat2("Size", &spriteSize_.x, 0.f, 512.f);
 	ImGui::End();
 
 #endif

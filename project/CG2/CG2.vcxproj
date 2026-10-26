@@ -72,7 +72,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\base;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\scene;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\base;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\scene;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -102,7 +102,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\base;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\scene;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\base;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\scene;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -134,7 +134,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\base;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\scene;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\base;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\scene;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -153,34 +153,6 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\externals\imgui\imgui.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_demo.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_draw.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_impl_dx12.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_impl_win32.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_tables.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_widgets.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="engine\audio\AudioSystem.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
@@ -192,7 +164,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\dx12\DirectXCommon.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
-    <ClCompile Include="engine\base\ImGuiSystem.cpp">
+    <ClCompile Include="engine\core\ImGuiSystem.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
     <ClCompile Include="engine\io\Input.cpp">
@@ -207,10 +179,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\base\WinApp.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
-    <ClCompile Include="engine\base\Engine.cpp" />
-    <ClCompile Include="engine\dx12\DescriptorHeapManager.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
-    </ClCompile>
+    <ClCompile Include="engine\core\Engine.cpp" />
     <ClCompile Include="engine\asset\Material.cpp" />
     <ClCompile Include="engine\asset\Mesh.cpp" />
     <ClCompile Include="engine\object\Object3d.cpp" />
@@ -238,6 +207,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\renderer\SpriteCommon.cpp" />
     <ClCompile Include="engine\renderer\ParticleRenderer.cpp" />
     <ClCompile Include="engine\math\Random.cpp" />
+    <ClCompile Include="engine\dx12\SrvManager.cpp" />
     <ClCompile Include="engine\asset\Model.cpp" />
     <ClCompile Include="engine\asset\ModelCommon.cpp" />
     <ClCompile Include="engine\asset\ModelManager.cpp" />
@@ -293,28 +263,19 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\externals\imgui\imconfig.h" />
-    <ClInclude Include="..\externals\imgui\imgui.h" />
-    <ClInclude Include="..\externals\imgui\imgui_impl_dx12.h" />
-    <ClInclude Include="..\externals\imgui\imgui_impl_win32.h" />
-    <ClInclude Include="..\externals\imgui\imgui_internal.h" />
-    <ClInclude Include="..\externals\imgui\imstb_rectpack.h" />
-    <ClInclude Include="..\externals\imgui\imstb_textedit.h" />
-    <ClInclude Include="..\externals\imgui\imstb_truetype.h" />
     <ClInclude Include="engine\audio\AudioSystem.h" />
     <ClInclude Include="engine\object\Camera.h" />
     <ClInclude Include="engine\object\DebugCamera.h" />
     <ClInclude Include="engine\dx12\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\dx12\DirectXCommon.h" />
-    <ClInclude Include="engine\base\ImGuiSystem.h" />
+    <ClInclude Include="engine\core\ImGuiSystem.h" />
     <ClInclude Include="engine\io\Input.h" />
     <ClInclude Include="engine\base\LogSystem.h" />
     <ClInclude Include="engine\utility\StringUtility.h" />
     <ClInclude Include="engine\base\WinApp.h" />
-    <ClInclude Include="engine\base\Engine.h" />
+    <ClInclude Include="engine\core\Engine.h" />
     <ClInclude Include="engine\base\EngineStructs.h" />
     <ClInclude Include="engine\base\LightStructs.h" />
-    <ClInclude Include="engine\dx12\DescriptorHeapManager.h" />
     <ClInclude Include="engine\asset\Material.h" />
     <ClInclude Include="engine\asset\Mesh.h" />
     <ClInclude Include="engine\object\Object3d.h" />
@@ -339,12 +300,12 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\renderer\SpriteCommon.h" />
     <ClInclude Include="engine\renderer\ParticleRenderer.h" />
     <ClInclude Include="engine\math\Random.h" />
+    <ClInclude Include="engine\dx12\SrvManager.h" />
     <ClInclude Include="engine\asset\Model.h" />
     <ClInclude Include="engine\asset\ModelCommon.h" />
     <ClInclude Include="engine\asset\ModelManager.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\externals\imgui\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Sprite.hlsli">
@@ -358,6 +319,9 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   <ItemGroup>
     <ProjectReference Include="..\externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\externals\imgui\imgui.vcxproj">
+      <Project>{7d8f1a59-2cbf-4876-8017-36991a65ec6a}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

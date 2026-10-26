@@ -13,6 +13,7 @@
 #include "EngineStructs.h"
 
 class DirectXCommon;
+class SrvManager;
 
 class Material {
 public:
@@ -20,7 +21,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(DirectXCommon* dxCommon);
+	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager);
 
 	//=============================================================================================//
 	// RootParameter設定
@@ -71,6 +72,11 @@ private:
 	// DirectXCommon
 
 	DirectXCommon* dxCommon_ = nullptr;
+
+	//=============================================================================================//
+	// SrvManager
+
+	SrvManager* srvManager_ = nullptr;
 
 	//=============================================================================================//
 	// MaterialResource

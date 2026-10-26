@@ -5,6 +5,7 @@
 
 // 自作
 #include "DirectXCommon.h"
+#include "SrvManager.h"
 #include "ResourceManager.h"
 #include "StringUtility.h"
 
@@ -21,11 +22,14 @@ TextureManager* TextureManager::GetInstance() {
 //=================================================================================================//
 // 初期化処理
 
-void TextureManager::Initialize(DirectXCommon* dxCommon) {
+void TextureManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 
 	assert(dxCommon);
+	assert(srvManager);
 
 	dxCommon_ = dxCommon;
+
+	srvManager_ = srvManager;
 }
 
 //=================================================================================================//
@@ -33,13 +37,9 @@ void TextureManager::Initialize(DirectXCommon* dxCommon) {
 
 void TextureManager::Finalize() {
 
-	srvIndices_.clear();
+	textureDatas_.clear();
 
-	metadatas_.clear();
-
-	intermediateResources_.clear();
-
-	textureResources_.clear();
+	srvManager_ = nullptr;
 
 	dxCommon_ = nullptr;
 }
@@ -50,84 +50,84 @@ void TextureManager::Finalize() {
 uint32_t TextureManager::Load(const std::string& filePath) {
 
 	//=============================================================================================//
-	// 読み込み済みならその番号を返す
+	// 読み込み済みテクスチャを検索
 
-	auto it = srvIndices_.find(filePath);
+	if (textureDatas_.contains(filePath)) {
 
-	if (it != srvIndices_.end()) {
-		return it->second;
+		return textureDatas_.at(filePath).srvIndex;
 	}
 
-	ID3D12Device* device = dxCommon_->GetDevice();
+	//=============================================================================================//
+	// テクスチャ枚数上限チェック
 
-	DescriptorHeapManager* srvHeap = dxCommon_->GetSrvHeap();
+	assert(!srvManager_->IsFull());
 
 	//=============================================================================================//
-	// Texture読み込み
+	// テクスチャデータを追加して書き込む
+
+	TextureData& textureData = textureDatas_[filePath];
 
 	DirectX::ScratchImage mipImages = LoadTexture(filePath);
 
-	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
+	textureData.metadata = mipImages.GetMetadata();
 
-	//=============================================================================================//
-	// TextureResource生成
+	textureData.resource = ResourceManager::CreateTextureResource(dxCommon_->GetDevice(), textureData.metadata);
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = ResourceManager::CreateTextureResource(device, metadata);
-
-	//=============================================================================================//
-	// Texture転送
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = ResourceManager::UploadTextureData(
-		textureResource,
+	textureData.intermediateResource = ResourceManager::UploadTextureData(
+		textureData.resource,
 		mipImages,
-		device,
+		dxCommon_->GetDevice(),
 		dxCommon_->GetCommandList());
 
 	//=============================================================================================//
-	// SRV設定
+	// SRV確保
 
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	textureData.srvIndex = srvManager_->Allocate();
 
-	srvDesc.Format = metadata.format;
+	textureData.srvHandleCPU = srvManager_->GetCPUDescriptorHandle(textureData.srvIndex);
 
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-
-	srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
+	textureData.srvHandleGPU = srvManager_->GetGPUDescriptorHandle(textureData.srvIndex);
 
 	//=============================================================================================//
 	// SRV生成
 
-	uint32_t srvIndex = srvHeap->Allocate();
+	srvManager_->CreateSRVforTexture2D(
+		textureData.srvIndex,
+		textureData.resource.Get(),
+		textureData.metadata.format,
+		UINT(textureData.metadata.mipLevels));
 
-	device->CreateShaderResourceView(textureResource.Get(), &srvDesc, srvHeap->GetCPUDescriptorHandle(srvIndex));
-
-	//=============================================================================================//
-	// Resource保存
-
-	textureResources_.push_back(textureResource);
-
-	intermediateResources_.push_back(intermediateResource);
-
-	srvIndices_[filePath] = srvIndex;
-
-	metadatas_[srvIndex] = metadata;
-
-	return srvIndex;
+	return textureData.srvIndex;
 }
 
 //=================================================================================================//
-// メタデータを取得
+// メタデータ取得
 
-const DirectX::TexMetadata& TextureManager::GetMetaData(uint32_t textureIndex) {
+const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& filePath) {
 
-	// 範囲外指定違反チェック
-	auto it = metadatas_.find(textureIndex);
+	assert(textureDatas_.contains(filePath));
 
-	assert(it != metadatas_.end());
+	return textureDatas_.at(filePath).metadata;
+}
 
-	return it->second;
+//=================================================================================================//
+// SRV番号取得
+
+uint32_t TextureManager::GetSrvIndex(const std::string& filePath) {
+
+	assert(textureDatas_.contains(filePath));
+
+	return textureDatas_.at(filePath).srvIndex;
+}
+
+//=================================================================================================//
+// GPUHandle取得
+
+D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string& filePath) {
+
+	assert(textureDatas_.contains(filePath));
+
+	return textureDatas_.at(filePath).srvHandleGPU;
 }
 
 //=================================================================================================//

@@ -9,6 +9,7 @@
 #include "Model.h"
 
 class DirectXCommon;
+class SrvManager;
 class ModelCommon;
 
 class ModelManager {
@@ -22,7 +23,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize (DirectXCommon* dxCommon);
+	void Initialize (DirectXCommon* dxCommon, SrvManager* srvManager);
 
 	//=============================================================================================//
 	// 終了処理

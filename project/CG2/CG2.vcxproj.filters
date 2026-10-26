@@ -4,6 +4,9 @@
     <Filter Include="engine">
       <UniqueIdentifier>{99ef638a-3a6b-45d8-a79c-cf50764d385b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="engine\core">
+      <UniqueIdentifier>{69f51e07-0a4c-4b7a-8edd-55cbaf368b87}</UniqueIdentifier>
+    </Filter>
     <Filter Include="engine\base">
       <UniqueIdentifier>{f4f6de7b-d866-4d28-91b3-9a5143499ea9}</UniqueIdentifier>
     </Filter>
@@ -43,32 +46,8 @@
     <Filter Include="externals">
       <UniqueIdentifier>{24127203-dcf1-4b4f-880b-ee52aefece42}</UniqueIdentifier>
     </Filter>
-    <Filter Include="externals\imgui">
-      <UniqueIdentifier>{a6c4271d-04ec-4af9-9c31-92f59cac9047}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\externals\imgui\imgui.cpp">
-      <Filter>externals\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_demo.cpp">
-      <Filter>externals\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_draw.cpp">
-      <Filter>externals\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_impl_dx12.cpp">
-      <Filter>externals\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_impl_win32.cpp">
-      <Filter>externals\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_tables.cpp">
-      <Filter>externals\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\externals\imgui\imgui_widgets.cpp">
-      <Filter>externals\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="engine\audio\AudioSystem.cpp">
       <Filter>engine\audio</Filter>
     </ClCompile>
@@ -84,8 +63,8 @@
     <ClCompile Include="engine\dx12\DirectXCommon.cpp">
       <Filter>engine\dx12</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\ImGuiSystem.cpp">
-      <Filter>engine\base</Filter>
+    <ClCompile Include="engine\core\ImGuiSystem.cpp">
+      <Filter>engine\core</Filter>
     </ClCompile>
     <ClCompile Include="engine\io\Input.cpp">
       <Filter>engine\io</Filter>
@@ -99,11 +78,8 @@
     <ClCompile Include="engine\base\WinApp.cpp">
       <Filter>engine\base</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\Engine.cpp">
-      <Filter>engine\base</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\dx12\DescriptorHeapManager.cpp">
-      <Filter>engine\dx12</Filter>
+    <ClCompile Include="engine\core\Engine.cpp">
+      <Filter>engine\core</Filter>
     </ClCompile>
     <ClCompile Include="engine\asset\Material.cpp">
       <Filter>engine\asset</Filter>
@@ -152,35 +128,20 @@
       <Filter>engine\renderer</Filter>
     </ClCompile>
     <ClCompile Include="engine\math\Random.cpp" />
-    <ClCompile Include="engine\asset\Model.cpp" />
-    <ClCompile Include="engine\asset\ModelCommon.cpp" />
-    <ClCompile Include="engine\asset\ModelManager.cpp" />
+    <ClCompile Include="engine\dx12\SrvManager.cpp">
+      <Filter>engine\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\asset\Model.cpp">
+      <Filter>engine\asset</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\asset\ModelCommon.cpp">
+      <Filter>engine\asset</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\asset\ModelManager.cpp">
+      <Filter>engine\asset</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\externals\imgui\imconfig.h">
-      <Filter>externals\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\externals\imgui\imgui.h">
-      <Filter>externals\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\externals\imgui\imgui_impl_dx12.h">
-      <Filter>externals\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\externals\imgui\imgui_impl_win32.h">
-      <Filter>externals\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\externals\imgui\imgui_internal.h">
-      <Filter>externals\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\externals\imgui\imstb_rectpack.h">
-      <Filter>externals\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\externals\imgui\imstb_textedit.h">
-      <Filter>externals\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\externals\imgui\imstb_truetype.h">
-      <Filter>externals\imgui</Filter>
-    </ClInclude>
     <ClInclude Include="engine\audio\AudioSystem.h">
       <Filter>engine\audio</Filter>
     </ClInclude>
@@ -196,8 +157,8 @@
     <ClInclude Include="engine\dx12\DirectXCommon.h">
       <Filter>engine\dx12</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\ImGuiSystem.h">
-      <Filter>engine\base</Filter>
+    <ClInclude Include="engine\core\ImGuiSystem.h">
+      <Filter>engine\core</Filter>
     </ClInclude>
     <ClInclude Include="engine\io\Input.h">
       <Filter>engine\io</Filter>
@@ -211,17 +172,14 @@
     <ClInclude Include="engine\base\WinApp.h">
       <Filter>engine\base</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\Engine.h">
-      <Filter>engine\base</Filter>
+    <ClInclude Include="engine\core\Engine.h">
+      <Filter>engine\core</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\EngineStructs.h">
       <Filter>engine\base</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\LightStructs.h">
       <Filter>engine\base</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\dx12\DescriptorHeapManager.h">
-      <Filter>engine\dx12</Filter>
     </ClInclude>
     <ClInclude Include="engine\asset\Material.h">
       <Filter>engine\asset</Filter>
@@ -293,9 +251,18 @@
       <Filter>engine\renderer</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\Random.h" />
-    <ClInclude Include="engine\asset\Model.h" />
-    <ClInclude Include="engine\asset\ModelCommon.h" />
-    <ClInclude Include="engine\asset\ModelManager.h" />
+    <ClInclude Include="engine\dx12\SrvManager.h">
+      <Filter>engine\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\asset\Model.h">
+      <Filter>engine\asset</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\asset\ModelCommon.h">
+      <Filter>engine\asset</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\asset\ModelManager.h">
+      <Filter>engine\asset</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -323,8 +290,5 @@
     <None Include="resources\shaders\Sprite.hlsli" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\externals\imgui\LICENSE.txt">
-      <Filter>externals\imgui</Filter>
-    </Text>
   </ItemGroup>
 </Project>

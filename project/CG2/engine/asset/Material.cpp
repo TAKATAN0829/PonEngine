@@ -5,16 +5,19 @@
 
 // 自作
 #include "DirectXCommon.h"
+#include "SrvManager.h"
 #include "ResourceManager.h"
 
 //=================================================================================================//
 // 初期化処理
 
-void Material::Initialize(DirectXCommon* dxCommon) {
+void Material::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 
 	assert(dxCommon);
 
 	dxCommon_ = dxCommon;
+
+	srvManager_ = srvManager;
 
 	ID3D12Device* device = dxCommon_->GetDevice();
 
@@ -52,7 +55,7 @@ void Material::Bind() {
 	//=============================================================================================//
 	// Texture設定
 
-	commandList->SetGraphicsRootDescriptorTable(2, dxCommon_->GetSrvHeap()->GetGPUDescriptorHandle(textureIndex_));
+	srvManager_->SetGraphicsRootDescriptorTable(2, textureIndex_);
 }
 
 //=================================================================================================//

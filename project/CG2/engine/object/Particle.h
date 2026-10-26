@@ -145,9 +145,9 @@ private:
 	ParticleForGPU* instancingData_ = nullptr;
 
 	//=============================================================================================//
-	// Instancing用SRVのGPUHandle
+	// Instancing用SRV番号
 
-	D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU_{};
+	uint32_t instancingSrvIndex_ = 0;
 
 	//=============================================================================================//
 	// Particle

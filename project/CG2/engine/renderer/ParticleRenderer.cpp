@@ -12,11 +12,13 @@
 //=================================================================================================//
 // 初期化処理
 
-void ParticleRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler) {
+void ParticleRenderer::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
 
 	assert(dxCommon);
 
 	dxCommon_ = dxCommon;
+
+	srvManager_ = srvManager;
 
 	ID3D12Device* device = dxCommon_->GetDevice();
 
@@ -141,7 +143,4 @@ void ParticleRenderer::PreDraw(BlendMode blendMode) {
 
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { dxCommon_->GetSrvHeap()->GetDescriptorHeap() };
-
-	commandList->SetDescriptorHeaps(1, descriptorHeaps);
 }

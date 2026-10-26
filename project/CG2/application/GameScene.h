@@ -8,6 +8,8 @@
 #include "DebugCamera.h"
 #include "Object3dCommon.h"
 #include "Object3d.h"
+#include "Sprite.h"
+#include "SpriteCommon.h"
 
 class GameScene : public IScene {
 public:
@@ -89,6 +91,22 @@ private:
 	Vector4 subModelColor_ = { 1.f,1.f,1.f,1.f };
 
 	int modelIndex_ = 0; // モデルを切り替えるための番号
+
+	//=============================================================================================//
+	// SpriteCommon
+
+	SpriteCommon* spriteCommon_ = nullptr;
+
+	//=============================================================================================//
+	// Sprite
+
+	Sprite* sprite_ = nullptr;
+
+	Vector2 spritePosition_ = { 100.f,100.f };
+
+	float spriteRotation_ = 0.f;
+
+	Vector2 spriteSize_ = { 256.f,256.f };
 
 	//=============================================================================================//
 	// 平行光源
