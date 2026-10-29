@@ -1,5 +1,7 @@
 #include "GameScene.h"
 #include "WinApp.h"
+#include "SceneFile.h"
+#include "LogSystem.h"
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
@@ -47,6 +49,18 @@ void GameScene::Initialize(const SceneContext& context) {
 	particle_->Initialize(context.particleRenderer);
 
 	particle_->SetTexture("resources/circle.png");
+
+	// Restore authored data in all configurations, including Release.
+	std::error_code fileError;
+	const bool hasSavedScene = std::filesystem::exists(SceneFile::kDefaultPath, fileError);
+	if (fileError) {
+		LogSystem::Log("Scene file check failed: " + fileError.message() + "\n");
+	} else if (hasSavedScene) {
+		std::string error;
+		if (!SceneFile::Load(*this, SceneFile::kDefaultPath, error)) {
+			LogSystem::Log("Scene load failed: " + error + "\n");
+		}
+	}
 }
 
 //=================================================================================================//
@@ -189,17 +203,6 @@ void GameScene::UpdateObject() {
 
 	ImGui::End();
 
-	ImGui::Begin("Model");
-	ImGui::DragFloat3("Scale", &modelTransform_.scale.x, 0.01f);
-	ImGui::SliderAngle("RotateX", &modelTransform_.rotate.x);
-	ImGui::SliderAngle("RotateY", &modelTransform_.rotate.y);
-	ImGui::SliderAngle("RotateZ", &modelTransform_.rotate.z);
-	ImGui::DragFloat3("Translate", &modelTransform_.translate.x, 0.01f);
-	ImGui::ColorEdit4("Color", &modelColor_.x);
-	ImGui::Checkbox("EnableLighting", &enableLighting_);
-	ImGui::DragFloat("Shininess", &shininess_, 0.1f, 1.0f, 500.0f);
-	ImGui::End();
-
 	ImGui::Begin("DirectionalLight");
 	ImGui::ColorEdit4("Color", &lightColor_.x);
 	ImGui::SliderFloat3("Direction", &lightDirection_.x, -1.0f, 1.0f);
@@ -226,4 +229,9 @@ void GameScene::UpdateObject() {
 	ImGui::End();
 
 #endif
+}
+
+EditableObjectView GameScene::GetEditableObject(size_t index) {
+	if (index != 0 || !model_) { return {}; }
+	return { 1, "Sphere", &modelTransform_, &modelColor_, &enableLighting_, &shininess_ };
 }

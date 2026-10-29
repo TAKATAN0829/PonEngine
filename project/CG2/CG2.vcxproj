@@ -349,4 +349,18 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\Editor.cpp" />
+    <ClCompile Include="editor\panels\HierarchyPanel.cpp" />
+    <ClCompile Include="editor\panels\InspectorPanel.cpp" />
+    <ClInclude Include="editor\Editor.h" />
+    <ClInclude Include="editor\EditorSelection.h" />
+    <ClInclude Include="editor\panels\HierarchyPanel.h" />
+    <ClInclude Include="editor\panels\InspectorPanel.h" />
+    <ClInclude Include="engine\scene\IEditableScene.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneFile.cpp" />
+    <ClInclude Include="engine\scene\SceneFile.h" />
+  </ItemGroup>
 </Project>

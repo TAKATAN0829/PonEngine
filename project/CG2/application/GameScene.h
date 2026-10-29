@@ -2,6 +2,7 @@
 
 // 自作
 #include "IScene.h"
+#include "IEditableScene.h"
 #include "EngineStructs.h"
 #include "Camera.h"
 #include "Particle.h"
@@ -9,13 +10,17 @@
 #include "Object3dRenderer.h"
 #include "Object3d.h"
 
-class GameScene : public IScene {
+class GameScene : public IScene, public IEditableScene {
 public:
 
 	void Initialize (const SceneContext& context) override;
 	void Update (Input* input) override;
 	void Draw () override;
 	void Finalize () override;
+
+	IEditableScene* GetEditableScene() override { return this; }
+	size_t GetEditableObjectCount() const override { return 1; }
+	EditableObjectView GetEditableObject(size_t index) override;
 
 	void UpdateCamera (Input* input);
 	void UpdateObject ();

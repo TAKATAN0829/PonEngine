@@ -125,6 +125,11 @@ void Engine::Run() {
 
 		imGuiSystem_->Begin();
 
+#ifdef USE_IMGUI
+		// Edit before the scene uploads its transform and material data.
+		editor_.Draw(sceneManager_->GetEditableScene());
+#endif
+
 		//=========================================================================================//
 		// シーン更新
 

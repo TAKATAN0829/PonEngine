@@ -11,6 +11,9 @@
 #include "ParticleRenderer.h"
 #include "ImGuiSystem.h"
 #include "SceneManager.h"
+#ifdef USE_IMGUI
+#include "../../editor/Editor.h"
+#endif
 
 class Engine {
 public:
@@ -78,4 +81,8 @@ private:
 	// SceneManager
 
 	SceneManager* sceneManager_ = nullptr;
+
+#ifdef USE_IMGUI
+	Editor editor_;
+#endif
 };

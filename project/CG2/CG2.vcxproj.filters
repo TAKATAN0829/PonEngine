@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="engine">
@@ -317,5 +317,20 @@
     <Text Include="..\externals\imgui\LICENSE.txt">
       <Filter>externals\imgui</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup><Filter Include="editor" /><Filter Include="editor\panels" /></ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\Editor.cpp"><Filter>editor</Filter></ClCompile>
+    <ClCompile Include="editor\panels\HierarchyPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClCompile Include="editor\panels\InspectorPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClInclude Include="editor\Editor.h"><Filter>editor</Filter></ClInclude>
+    <ClInclude Include="editor\EditorSelection.h"><Filter>editor</Filter></ClInclude>
+    <ClInclude Include="editor\panels\HierarchyPanel.h"><Filter>editor\panels</Filter></ClInclude>
+    <ClInclude Include="editor\panels\InspectorPanel.h"><Filter>editor\panels</Filter></ClInclude>
+    <ClInclude Include="engine\scene\IEditableScene.h"><Filter>engine\scene</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneFile.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClInclude Include="engine\scene\SceneFile.h"><Filter>engine\scene</Filter></ClInclude>
   </ItemGroup>
 </Project>

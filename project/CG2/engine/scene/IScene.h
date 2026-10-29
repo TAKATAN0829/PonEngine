@@ -3,6 +3,7 @@
 // 自作
 #include "Input.h"
 
+class IEditableScene;
 class Object3dRenderer;
 class SpriteCommon;
 class ParticleRenderer;
@@ -26,6 +27,9 @@ class IScene {
 public:
 
 	virtual ~IScene() = default;
+
+	// Optional data access without depending on editor panels.
+	virtual IEditableScene* GetEditableScene() { return nullptr; }
 
 	//=============================================================================================//
 	// 初期化処理

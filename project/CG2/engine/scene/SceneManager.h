@@ -22,6 +22,8 @@ public:
 
 	void Draw();
 
+	IEditableScene* GetEditableScene() { return currentScene_ ? currentScene_->GetEditableScene() : nullptr; }
+
 	//=============================================================================================//
 	// 終了処理
 
