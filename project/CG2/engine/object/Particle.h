@@ -13,7 +13,6 @@
 
 // 自作
 #include "EngineStructs.h"
-#include "Mesh.h"
 #include "Material.h"
 #include "BlendMode.h"
 
@@ -84,6 +83,15 @@ private:
 	};
 
 	//=============================================================================================//
+	// Particle用インスタンシングデータ（GPU転送用）
+
+	struct ParticleForGPU {
+		Matrix4x4 WVP;
+		Matrix4x4 World;
+		Vector4 color;
+	};
+
+	//=============================================================================================//
 	// 発生源
 
 	struct Emitter {
@@ -122,11 +130,6 @@ private:
 	ParticleRenderer* renderer_ = nullptr;
 
 	//=============================================================================================//
-	// Mesh
-
-	Mesh* mesh_ = nullptr;
-
-	//=============================================================================================//
 	// Material
 
 	Material* material_ = nullptr;
@@ -142,9 +145,9 @@ private:
 	ParticleForGPU* instancingData_ = nullptr;
 
 	//=============================================================================================//
-	// Instancing用SRVのGPUHandle
+	// Instancing用SRV番号
 
-	D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU_{};
+	uint32_t instancingSrvIndex_ = 0;
 
 	//=============================================================================================//
 	// Particle

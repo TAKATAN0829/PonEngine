@@ -2,6 +2,7 @@
 #include "WinApp.h"
 #include "SceneFile.h"
 #include "LogSystem.h"
+#include "ModelManager.h"
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
@@ -28,18 +29,30 @@ void GameScene::Initialize(const SceneContext& context) {
 	debugCamera_->Initialize(WinApp::kClientWidth, WinApp::kClientHeight);
 
 	//=============================================================================================//
-	// Object3dRenderer取得
+	// Object3dCommon取得
 
-	object3dRenderer_ = context.object3dRenderer;
+	object3dCommon_ = context.object3dCommon;
 
 	//=============================================================================================//
 	// モデル初期化
 
+	ModelManager::GetInstance()->LoadModel("plane.gltf");
+
+	ModelManager::GetInstance()->LoadModel("axis.obj");
+
 	model_ = new Object3d();
 
-	model_->Initialize(object3dRenderer_, MeshType::kSphere);
+	model_->Initialize(object3dCommon_);
+
+	model_->SetModel(ModelManager::GetInstance()->FindModel("plane.gltf"));
 
 	model_->SetTexture("resources/uvChecker.png");
+
+	subModel_ = new Object3d();
+
+	subModel_->Initialize(object3dCommon_);
+
+	subModel_->SetModel(ModelManager::GetInstance()->FindModel("axis.obj"));
 
 	//=============================================================================================//
 	// Particle初期化
@@ -61,6 +74,14 @@ void GameScene::Initialize(const SceneContext& context) {
 			LogSystem::Log("Scene load failed: " + error + "\n");
 		}
 	}
+	//=============================================================================================//
+	// Sprite初期化
+
+	spriteCommon_ = context.spriteCommon;
+
+	sprite_ = new Sprite();
+
+	sprite_->Initialize(spriteCommon_, "resources/uvChecker.png");
 }
 
 //=================================================================================================//
@@ -83,12 +104,23 @@ void GameScene::Draw() {
 	//=============================================================================================//
 	// モデル描画
 
+	object3dCommon_->DrawSettingCommon();
+
 	model_->Draw();
+
+	subModel_->Draw();
 
 	//=============================================================================================//
 	// Particle描画
 
 	particle_->Draw();
+
+	//=============================================================================================//
+	// Sprite描画
+
+	spriteCommon_->DrawSettingCommon();
+
+	sprite_->Draw();
 }
 
 //=================================================================================================//
@@ -104,11 +136,18 @@ void GameScene::Finalize() {
 	delete particle_;
 
 	//=============================================================================================//
+	// Sprite解放
+
+	sprite_->Finalize();
+
+	delete sprite_;
+
+	//=============================================================================================//
 	// モデル解放
 
-	model_->Finalize();
-
 	delete model_;
+
+	delete subModel_;
 
 	//=============================================================================================//
 	// Camera解放
@@ -135,11 +174,11 @@ void GameScene::UpdateCamera(Input* input) {
 void GameScene::UpdateObject() {
 
 	//=============================================================================================//
-	// カメラ位置をObject3dRendererへ送る
+	// カメラ位置をObject3dCommonへ送る
 
 	const Matrix4x4& cameraMatrix = debugCamera_->GetCameraMatrix();
 
-	object3dRenderer_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
+	object3dCommon_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
 
 	//=============================================================================================//
 	// モデル更新
@@ -148,11 +187,16 @@ void GameScene::UpdateObject() {
 	model_->SetColor(modelColor_);
 	model_->SetEnableLighting(enableLighting_);
 	model_->SetShininess(shininess_);
+	model_->SetUseRootNodeMatrix(useRootNodeMatrix_);
 	model_->SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
 	model_->SetPointLight(pointLight_);
 	spotLight_.direction = MathUtility::Normalize(spotLight_.direction);
 	model_->SetSpotLight(spotLight_);
 	model_->Update(debugCamera_->GetViewProjectionMatrix());
+
+	subModel_->SetTransform(subModelTransform_);
+	subModel_->SetColor(subModelColor_);
+	subModel_->Update(debugCamera_->GetViewProjectionMatrix());
 
 	//=============================================================================================//
 	// Particle更新
@@ -162,6 +206,14 @@ void GameScene::UpdateObject() {
 	particle_->SetUseBillboard(useBillboard_);
 	particle_->SetUseAccelerationField(useAccelerationField_);
 	particle_->Update(debugCamera_->GetViewProjectionMatrix(), debugCamera_->GetCameraMatrix());
+
+	//=============================================================================================//
+	// Sprite更新
+
+	sprite_->SetPosition(spritePosition_);
+	sprite_->SetRotation(spriteRotation_);
+	sprite_->SetSize(spriteSize_);
+	sprite_->Update();
 
 #ifdef USE_IMGUI
 
@@ -203,6 +255,14 @@ void GameScene::UpdateObject() {
 
 	ImGui::End();
 
+	ImGui::Begin("Model Asset");
+	static const char* kModelNames[] = { "plane.gltf", "axis.obj" };
+	if (ImGui::Combo("ModelData", &modelIndex_, kModelNames, IM_ARRAYSIZE(kModelNames))) {
+		model_->SetModel(ModelManager::GetInstance()->FindModel(kModelNames[modelIndex_]));
+	}
+	ImGui::Checkbox("UseRootNodeMatrix", &useRootNodeMatrix_);
+	ImGui::End();
+
 	ImGui::Begin("DirectionalLight");
 	ImGui::ColorEdit4("Color", &lightColor_.x);
 	ImGui::SliderFloat3("Direction", &lightDirection_.x, -1.0f, 1.0f);
@@ -228,10 +288,16 @@ void GameScene::UpdateObject() {
 	ImGui::SliderFloat("CosFalloffStart", &spotLight_.cosFalloffStart, 0.0f, 1.0f);
 	ImGui::End();
 
+	ImGui::Begin("Sprite");
+	ImGui::SliderFloat2("Position", &spritePosition_.x, 0.f, static_cast<float>(WinApp::kClientWidth));
+	ImGui::SliderAngle("Rotation", &spriteRotation_);
+	ImGui::SliderFloat2("Size", &spriteSize_.x, 0.f, 512.f);
+	ImGui::End();
+
 #endif
 }
 
 EditableObjectView GameScene::GetEditableObject(size_t index) {
 	if (index != 0 || !model_) { return {}; }
-	return { 1, "Sphere", &modelTransform_, &modelColor_, &enableLighting_, &shininess_ };
+	return { 1, "Model", &modelTransform_, &modelColor_, &enableLighting_, &shininess_ };
 }

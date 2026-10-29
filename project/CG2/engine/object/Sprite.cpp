@@ -27,7 +27,7 @@ void Sprite::Initialize (SpriteCommon* spriteCommon, const std::string& textureF
 
 	material_ = new Material ();
 
-	material_->Initialize (dxCommon);
+	material_->Initialize (dxCommon, spriteCommon_->GetSrvManager ());
 
 	material_->SetEnableLighting (false);
 
@@ -105,23 +105,15 @@ void Sprite::Finalize () {
 }
 
 //=================================================================================================//
-// Texture番号設定
-
-void Sprite::SetTextureIndex (uint32_t textureIndex) {
-
-	textureIndex_ = textureIndex;
-
-	material_->SetTextureIndex (textureIndex_);
-
-	AdjustTextureSize ();
-}
-
-//=================================================================================================//
 // Texture設定
 
 void Sprite::SetTexture (const std::string& filePath) {
 
-	SetTextureIndex (TextureManager::GetInstance ()->Load (filePath));
+	textureFilePath_ = filePath;
+
+	material_->SetTextureIndex (TextureManager::GetInstance ()->Load (textureFilePath_));
+
+	AdjustTextureSize ();
 }
 
 //=================================================================================================//
@@ -129,7 +121,7 @@ void Sprite::SetTexture (const std::string& filePath) {
 
 void Sprite::AdjustTextureSize () {
 
-	const DirectX::TexMetadata& metadata = TextureManager::GetInstance ()->GetMetaData (textureIndex_);
+	const DirectX::TexMetadata& metadata = TextureManager::GetInstance ()->GetMetaData (textureFilePath_);
 
 	textureImageSize_.x = static_cast<float>(metadata.width);
 	textureImageSize_.y = static_cast<float>(metadata.height);

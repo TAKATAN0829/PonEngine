@@ -1,17 +1,19 @@
 #include "SceneManager.h"
 
-// 自作
-#include "GameScene.h"
+// C++
+#include <cassert>
 
 //=================================================================================================//
 // 初期化処理
 
-void SceneManager::Initialize(const SceneContext& context) {
+void SceneManager::Initialize(const SceneContext& context, IScene* firstScene) {
+
+	assert(firstScene);
 
 	//=============================================================================================//
-	// GameScene生成
+	// 最初のScene設定
 
-	currentScene_ = new GameScene();
+	currentScene_ = firstScene;
 
 	currentScene_->Initialize(context);
 }

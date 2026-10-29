@@ -11,7 +11,7 @@
 //=================================================================================================//
 // 初期化処理
 
-void SpriteCommon::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler) {
+void SpriteCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
 
 	assert(dxCommon);
 
@@ -19,6 +19,8 @@ void SpriteCommon::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCom
 
 	// 引数で受け取ってメンバ変数に記録する
 	dxCommon_ = dxCommon;
+
+	srvManager_ = srvManager;
 
 	shaderCompiler_ = shaderCompiler;
 
@@ -278,9 +280,4 @@ void SpriteCommon::DrawSettingCommon() {
 	// PrimitiveTopologyをセットするコマンド
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// SRV用のDescriptorHeapをセットするコマンド
-
-	ID3D12DescriptorHeap* descriptorHeaps[] = { dxCommon_->GetSrvHeap()->GetDescriptorHeap() };
-
-	commandList->SetDescriptorHeaps(1, descriptorHeaps);
 }

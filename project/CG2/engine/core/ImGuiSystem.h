@@ -2,6 +2,7 @@
 
 class WinApp;
 class DirectXCommon;
+class SrvManager;
 
 class ImGuiSystem {
 public:
@@ -9,12 +10,17 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize(WinApp* winApp, DirectXCommon* dxCommon);
+	void Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] DirectXCommon* dxCommon, [[maybe_unused]] SrvManager* srvManager);
 
 	//=============================================================================================//
-	// 開始処理
+	// 受付開始
 
 	void Begin();
+
+	//=============================================================================================//
+	// 受付終了
+
+	void End();
 
 	//=============================================================================================//
 	// 描画処理
@@ -32,6 +38,11 @@ private:
 	// DirectXCommon
 
 	DirectXCommon* dxCommon_ = nullptr;
+
+	//=============================================================================================//
+	// SrvManager
+
+	SrvManager* srvManager_ = nullptr;
 
 	//=============================================================================================//
 	// 初期化済みフラグ

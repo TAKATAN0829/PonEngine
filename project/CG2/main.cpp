@@ -4,15 +4,12 @@
 #include "Engine.h"
 #include "LogSystem.h"
 #include "D3DResourceLeakChecker.h"
+#include "GameScene.h"
 
 //=================================================================================================//
 // エントリーポイント
 
-int WINAPI WinMain (
-	_In_ HINSTANCE,
-	_In_opt_ HINSTANCE,
-	_In_ LPSTR,
-	_In_ int) {
+int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR,	_In_ int) {
 
 	//=============================================================================================//
 	// リークチェッカー
@@ -36,7 +33,7 @@ int WINAPI WinMain (
 
 	Engine engine;
 
-	engine.Initialize ();
+	engine.Initialize (new GameScene ());
 
 	engine.Run ();
 

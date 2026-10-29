@@ -7,8 +7,10 @@
 #include "Camera.h"
 #include "Particle.h"
 #include "DebugCamera.h"
-#include "Object3dRenderer.h"
+#include "Object3dCommon.h"
 #include "Object3d.h"
+#include "Sprite.h"
+#include "SpriteCommon.h"
 
 class GameScene : public IScene, public IEditableScene {
 public:
@@ -48,9 +50,9 @@ private:
 	DebugCamera* debugCamera_ = nullptr;
 
 	//=============================================================================================//
-	// Object3dRenderer
+	// Object3dCommon
 
-	Object3dRenderer* object3dRenderer_ = nullptr;
+	Object3dCommon* object3dCommon_ = nullptr;
 
 	//=============================================================================================//
 	// ビルボード
@@ -73,11 +75,43 @@ private:
 		{ 0.0f,0.0f,0.0f }
 	};
 
-	Vector4 modelColor_ = { 1.0f,1.0f,1.0f,1.0f };
+	Vector4 modelColor_ = { 1.f,1.f,1.f,1.f };
 
 	bool enableLighting_ = true;
 
-	float shininess_ = 40.0f;
+	float shininess_ = 40.f;
+
+	bool useRootNodeMatrix_ = true;
+
+	//=============================================================================================//
+	// 複数モデル描画できるか確認するためのモデル
+
+	Object3d* subModel_ = nullptr;
+	TransformData subModelTransform_ = {
+		{1.f,1.f,1.f},
+		{0.f,0.f,0.f},
+		{3.f,0.f,0.f}
+	};
+
+	Vector4 subModelColor_ = { 1.f,1.f,1.f,1.f };
+
+	int modelIndex_ = 0; // モデルを切り替えるための番号
+
+	//=============================================================================================//
+	// SpriteCommon
+
+	SpriteCommon* spriteCommon_ = nullptr;
+
+	//=============================================================================================//
+	// Sprite
+
+	Sprite* sprite_ = nullptr;
+
+	Vector2 spritePosition_ = { 100.f,100.f };
+
+	float spriteRotation_ = 0.f;
+
+	Vector2 spriteSize_ = { 256.f,256.f };
 
 	//=============================================================================================//
 	// 平行光源

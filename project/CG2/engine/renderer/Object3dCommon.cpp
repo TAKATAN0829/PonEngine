@@ -1,4 +1,4 @@
-#include "Object3dRenderer.h"
+#include "Object3dCommon.h"
 
 // C++
 #include <cassert>
@@ -12,19 +12,51 @@
 //=================================================================================================//
 // 初期化処理
 
-void Object3dRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shaderCompiler) {
+void Object3dCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
 
 	assert(dxCommon);
 
+	assert(shaderCompiler);
+
 	dxCommon_ = dxCommon;
 
-	ID3D12Device* device = dxCommon_->GetDevice();
+	srvManager_ = srvManager;
 
-	PipelineManager pipelineManager;
+	shaderCompiler_ = shaderCompiler;
 
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = shaderCompiler->CompileShader(L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
+	CreateGraphicsPipeline();
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = shaderCompiler->CompileShader(L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
+	CreateCameraResource();
+}
+
+//=================================================================================================//
+// 共通描画設定
+
+void Object3dCommon::DrawSettingCommon() {
+
+	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
+
+	commandList->SetGraphicsRootSignature(rootSignature_.Get());
+
+	commandList->SetPipelineState(pipelineStates_[kBlendModeNormal].Get());
+
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	commandList->SetGraphicsRootConstantBufferView(4, cameraResource_->GetGPUVirtualAddress());
+}
+
+//=================================================================================================//
+// BlendMode設定
+
+void Object3dCommon::SetBlendMode(BlendMode blendMode) {
+
+	dxCommon_->GetCommandList()->SetPipelineState(pipelineStates_[blendMode].Get());
+}
+
+//=================================================================================================//
+// RootSignatureの作成
+
+void Object3dCommon::CreateRootSignature() {
 
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 
@@ -87,7 +119,23 @@ void Object3dRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shade
 
 	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
 
-	rootSignature_ = pipelineManager.CreateRootSignature(device, descriptionRootSignature);
+	PipelineManager pipelineManager;
+
+	rootSignature_ = pipelineManager.CreateRootSignature(dxCommon_->GetDevice(), descriptionRootSignature);
+}
+
+//=================================================================================================//
+// GraphicsPipelineの生成
+
+void Object3dCommon::CreateGraphicsPipeline() {
+
+	CreateRootSignature();
+
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = shaderCompiler_->CompileShader(L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
+
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = shaderCompiler_->CompileShader(L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
+
+	PipelineManager pipelineManager;
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = pipelineManager.CreateInputLayout();
 
@@ -101,7 +149,7 @@ void Object3dRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shade
 		D3D12_BLEND_DESC blendDesc = pipelineManager.CreateBlendState(static_cast<BlendMode>(blendMode));
 
 		pipelineStates_[blendMode] = pipelineManager.CreateGraphicsPipelineState(
-			device,
+			dxCommon_->GetDevice(),
 			rootSignature_.Get(),
 			inputLayoutDesc,
 			blendDesc,
@@ -110,33 +158,16 @@ void Object3dRenderer::Initialize(DirectXCommon* dxCommon, ShaderCompiler* shade
 			vertexShaderBlob.Get(),
 			pixelShaderBlob.Get());
 	}
+}
 
-	//=============================================================================================//
-	// カメラ用リソース生成
+//=================================================================================================//
+// カメラ用リソース生成
 
-	cameraResource_ = ResourceManager::CreateBufferResource(device, sizeof(CameraForGPU), "cameraResource");
+void Object3dCommon::CreateCameraResource() {
+
+	cameraResource_ = ResourceManager::CreateBufferResource(dxCommon_->GetDevice(), sizeof(CameraForGPU), "cameraResource");
 
 	cameraResource_->Map(0, nullptr, reinterpret_cast<void**>(&cameraData_));
 
 	cameraData_->worldPosition = { 0.0f,0.0f,0.0f };
-}
-
-//=================================================================================================//
-// 描画前設定
-
-void Object3dRenderer::PreDraw(BlendMode blendMode) {
-
-	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
-
-	commandList->SetGraphicsRootSignature(rootSignature_.Get());
-
-	commandList->SetPipelineState(pipelineStates_[blendMode].Get());
-
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	ID3D12DescriptorHeap* descriptorHeaps[] = { dxCommon_->GetSrvHeap()->GetDescriptorHeap() };
-
-	commandList->SetDescriptorHeaps(1, descriptorHeaps);
-
-	commandList->SetGraphicsRootConstantBufferView(4, cameraResource_->GetGPUVirtualAddress());
 }

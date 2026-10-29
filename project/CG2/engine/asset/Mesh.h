@@ -9,6 +9,7 @@
 // C++
 #include <cstdint>
 #include <string>
+#include <vector>
 
 // 自作
 #include "EngineStructs.h"
@@ -25,15 +26,26 @@ enum class MeshType {
 
 class Mesh {
 public:
+
+	//=============================================================================================//
+	// 頂点データ
+
+	struct VertexData {
+		Vector4 position;
+		Vector2 texcoord;
+		Vector3 normal;
+	};
+
+public:
 	//=============================================================================================//
 	// 初期化
 
 	void Initialize (DirectXCommon* dxCommon, MeshType meshType);
 
 	//=============================================================================================//
-	// 初期化(OBJモデル)
+	// 初期化(頂点データ)
 
-	void Initialize (DirectXCommon* dxCommon, const std::string& directoryPath, const std::string& filename);
+	void Initialize(DirectXCommon* dxCommon, const std::vector<VertexData>& vertices);
 
 	//=============================================================================================//
 	// 描画処理
@@ -92,11 +104,6 @@ private:
 
 	void CreateTriangle ();
 
-	//=============================================================================================//
-	// OBJファイル読み込み
-
-	static ModelData LoadObjFile (const std::string& directoryPath, const std::string& filename);
-
 private:
 
 	//=============================================================================================//
@@ -148,4 +155,5 @@ private:
 	// IndexData
 
 	uint32_t* indexData_ = nullptr;
+	
 };

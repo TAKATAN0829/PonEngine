@@ -2,11 +2,12 @@
 
 // 自作
 #include "TextureManager.h"
+#include "ModelManager.h"
 
 //=================================================================================================//
 // 初期化処理
 
-void Engine::Initialize() {
+void Engine::Initialize(IScene* firstScene) {
 
 	//=============================================================================================//
 	// Window初期化
@@ -21,6 +22,13 @@ void Engine::Initialize() {
 	dxCommon_ = new DirectXCommon();
 
 	dxCommon_->Initialize(winApp_);
+
+	//=============================================================================================//
+	// SrvManager初期化
+
+	srvManager_ = new SrvManager();
+
+	srvManager_->Initialize(dxCommon_);
 
 	//=============================================================================================//
 	// Input初期化
@@ -39,9 +47,14 @@ void Engine::Initialize() {
 	//=============================================================================================//
 	// TextureManager初期化
 
-	TextureManager::GetInstance()->Initialize(dxCommon_);
+	TextureManager::GetInstance()->Initialize(dxCommon_, srvManager_);
 
 	TextureManager::GetInstance()->Load("resources/white1x1.png");
+
+	//=============================================================================================//
+	// ModelManager初期化
+
+	ModelManager::GetInstance()->Initialize(dxCommon_, srvManager_);
 
 	//=============================================================================================//
 	// ShaderCompiler初期化
@@ -53,34 +66,34 @@ void Engine::Initialize() {
 	//=============================================================================================//
 	// Renderer初期化
 
-	object3dRenderer_ = new Object3dRenderer();
+	object3dCommon_ = new Object3dCommon();
 
-	object3dRenderer_->Initialize(dxCommon_, shaderCompiler_);
+	object3dCommon_->Initialize(dxCommon_, srvManager_, shaderCompiler_);
 
 	particleRenderer_ = new ParticleRenderer();
 
-	particleRenderer_->Initialize(dxCommon_, shaderCompiler_);
+	particleRenderer_->Initialize(dxCommon_, srvManager_, shaderCompiler_);
 
 	//=============================================================================================//
 	// SpriteCommon初期化
 
 	spriteCommon_ = new SpriteCommon();
 
-	spriteCommon_->Initialize(dxCommon_, shaderCompiler_);
+	spriteCommon_->Initialize(dxCommon_, srvManager_, shaderCompiler_);
 
 	//=============================================================================================//
 	// ImGuiSystem初期化
 
 	imGuiSystem_ = new ImGuiSystem();
 
-	imGuiSystem_->Initialize(winApp_, dxCommon_);
+	imGuiSystem_->Initialize(winApp_, dxCommon_, srvManager_);
 
 	//=============================================================================================//
 	// SceneManager初期化
 
 	SceneContext sceneContext{};
 
-	sceneContext.object3dRenderer = object3dRenderer_;
+	sceneContext.object3dCommon = object3dCommon_;
 
 	sceneContext.spriteCommon = spriteCommon_;
 
@@ -88,7 +101,7 @@ void Engine::Initialize() {
 
 	sceneManager_ = new SceneManager();
 
-	sceneManager_->Initialize(sceneContext);
+	sceneManager_->Initialize(sceneContext, firstScene);
 }
 
 //=================================================================================================//
@@ -121,6 +134,11 @@ void Engine::Run() {
 		dxCommon_->PreDraw();
 
 		//=========================================================================================//
+		// SRV描画前処理
+
+		srvManager_->PreDraw();
+
+		//=========================================================================================//
 		// ImGui開始
 
 		imGuiSystem_->Begin();
@@ -134,6 +152,11 @@ void Engine::Run() {
 		// シーン更新
 
 		sceneManager_->Update(input_);
+
+		//=========================================================================================//
+		// ImGui受付終了
+
+		imGuiSystem_->End();
 
 		//=========================================================================================//
 		// シーン描画
@@ -181,9 +204,11 @@ void Engine::Finalize() {
 	//=============================================================================================//
 	// Renderer解放
 
+	particleRenderer_->Finalize();
+
 	delete particleRenderer_;
 
-	delete object3dRenderer_;
+	delete object3dCommon_;
 
 	//=============================================================================================//
 	// ShaderCompiler終了
@@ -191,6 +216,11 @@ void Engine::Finalize() {
 	shaderCompiler_->Finalize();
 
 	delete shaderCompiler_;
+
+	//=============================================================================================//
+	// ModelManager終了
+
+	ModelManager::GetInstance()->Finalize();
 
 	//=============================================================================================//
 	// TextureManager終了
@@ -210,6 +240,11 @@ void Engine::Finalize() {
 	input_->Finalize();
 
 	delete input_;
+
+	//=============================================================================================//
+	// SrvManager解放
+
+	delete srvManager_;
 
 	//=============================================================================================//
 	// DirectXCommon終了
