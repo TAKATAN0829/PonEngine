@@ -108,6 +108,9 @@ void Engine::Initialize(IScene* firstScene) {
 // 実行処理
 
 void Engine::Run() {
+#ifdef USE_IMGUI
+	bool previousPlayState = false;
+#endif
 
 	while (true) {
 
@@ -144,14 +147,37 @@ void Engine::Run() {
 		imGuiSystem_->Begin();
 
 #ifdef USE_IMGUI
-		// Edit before the scene uploads its transform and material data.
+		// 座標やマテリアルをGPUへ送る前に編集し、変更を同じフレームの描画へ反映する。
 		editor_.Draw(sceneManager_->GetEditableScene());
+		if (winApp_->IsCloseRequested()) {
+			editor_.RequestExit(sceneManager_->GetEditableScene());
+			winApp_->ClearCloseRequest();
+		}
+		if (editor_.ShouldExit()) {
+			winApp_->ConfirmClose();
+			break;
+		}
+#else
+		if (winApp_->IsCloseRequested()) {
+			winApp_->ConfirmClose();
+			break;
+		}
 #endif
 
 		//=========================================================================================//
 		// シーン更新
 
+#ifdef USE_IMGUI
+		const bool playing = editor_.IsPlaying();
+		if (playing != previousPlayState) {
+			// 開始・停止したフレームだけ通知し、粒子の初期化などを毎フレーム繰り返さない。
+			sceneManager_->SetPlayState(playing);
+			previousPlayState = playing;
+		}
+		sceneManager_->Update(input_, editor_.ShouldSimulate());
+#else
 		sceneManager_->Update(input_);
+#endif
 
 		//=========================================================================================//
 		// ImGui受付終了

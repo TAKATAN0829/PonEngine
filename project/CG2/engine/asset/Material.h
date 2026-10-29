@@ -39,6 +39,7 @@ public:
 	// Texture番号設定
 
 	void SetTextureIndex(uint32_t textureIndex);
+	uint32_t GetTextureIndex() const { return textureIndex_; }
 
 	//=============================================================================================//
 	// Lighting有効設定

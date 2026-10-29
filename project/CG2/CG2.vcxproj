@@ -341,4 +341,18 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\scene\SceneFile.cpp" />
     <ClInclude Include="engine\scene\SceneFile.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneObjects.cpp" />
+    <ClInclude Include="engine\scene\SceneObjects.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\EditorSession.cpp" />
+    <ClInclude Include="editor\EditorSession.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\math\SceneViewMath.cpp" />
+    <ClInclude Include="engine\math\SceneViewMath.h" />
+    <ClCompile Include="editor\panels\SceneViewPanel.cpp" />
+    <ClInclude Include="editor\panels\SceneViewPanel.h" />
+  </ItemGroup>
 </Project>

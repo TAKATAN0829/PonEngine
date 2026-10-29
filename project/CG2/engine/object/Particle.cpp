@@ -68,14 +68,16 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 //=================================================================================================//
 // 更新処理
 
-void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix) {
+void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate) {
+	// 一時停止中は発生・移動・経過時間を止め、カメラに合わせた描画データだけを更新する。
 
 	// 頻度による発生
-	emitter_.frequencyTime += kDeltaTime;
-
-	if (emitter_.frequency <= emitter_.frequencyTime) {
-		particles_.splice(particles_.end(), Emit());
-		emitter_.frequencyTime -= emitter_.frequency;
+	if (simulate) {
+		emitter_.frequencyTime += kDeltaTime;
+		if (emitter_.frequency <= emitter_.frequencyTime) {
+			particles_.splice(particles_.end(), Emit());
+			emitter_.frequencyTime -= emitter_.frequency;
+		}
 	}
 
 
@@ -100,14 +102,16 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 			continue;
 		}
 
-		if (useAccelerationField_ && MathUtility::IsCollision(accelerationField_.area, particleIterator->transform.translate)) {
+		if (simulate) {
+			if (useAccelerationField_ && MathUtility::IsCollision(accelerationField_.area, particleIterator->transform.translate)) {
 
-			particleIterator->velocity = MathUtility::Add(particleIterator->velocity, MathUtility::Multiply(kDeltaTime, accelerationField_.acceleration));
+				particleIterator->velocity = MathUtility::Add(particleIterator->velocity, MathUtility::Multiply(kDeltaTime, accelerationField_.acceleration));
+			}
+
+			particleIterator->transform.translate = MathUtility::Add(particleIterator->transform.translate, MathUtility::Multiply(kDeltaTime, particleIterator->velocity));
+
+			particleIterator->currentTime += kDeltaTime;
 		}
-
-		particleIterator->transform.translate = MathUtility::Add(particleIterator->transform.translate, MathUtility::Multiply(kDeltaTime, particleIterator->velocity));
-
-		particleIterator->currentTime += kDeltaTime;
 
 		if (numInstance_ < kNumMaxInstance) {
 
@@ -238,4 +242,11 @@ std::list<Particle::ParticleData> Particle::Emit() {
 	}
 
 	return particles;
+}
+
+// 描画用リソースを残したまま、実行中の粒子と発生タイマーだけを初期化する。
+void Particle::ResetSimulation() {
+	particles_.clear();
+	emitter_.frequencyTime = 0;
+	numInstance_ = 0;
 }

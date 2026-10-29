@@ -20,28 +20,45 @@ void DebugCamera::Update(Input* input) {
 
 	Vector3 move{ 0.0f, 0.0f, 0.0f };
 
-	if (input->IsPressKey(DIK_W)) {
-		move.z += 1.0f;
+	bool allowCameraInput = true;
+#ifdef USE_IMGUI
+	// 名前入力やショートカットに使ったキーで、カメラまで動かないようにする。
+	const ImGuiIO& inputState = ImGui::GetIO();
+	if (inputState.WantCaptureKeyboard || inputState.WantTextInput || inputState.KeyCtrl) {
+		allowCameraInput = false;
 	}
+#endif
+	if (allowCameraInput) {
+#ifdef USE_IMGUI
+		// UI上では右ドラッグを消費せず、シーンを見ている間だけ視点を回転する。
+		if (!inputState.WantCaptureMouse && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+			transform_.rotate.x += inputState.MouseDelta.y * rotateSpeed_;
+			transform_.rotate.y += inputState.MouseDelta.x * rotateSpeed_;
+		}
+#endif
+		if (input->IsPressKey(DIK_W)) {
+			move.z += 1.0f;
+		}
 
-	if (input->IsPressKey(DIK_S)) {
-		move.z -= 1.0f;
-	}
+		if (input->IsPressKey(DIK_S)) {
+			move.z -= 1.0f;
+		}
 
-	if (input->IsPressKey(DIK_A)) {
-		move.x -= 1.0f;
-	}
+		if (input->IsPressKey(DIK_A)) {
+			move.x -= 1.0f;
+		}
 
-	if (input->IsPressKey(DIK_D)) {
-		move.x += 1.0f;
-	}
+		if (input->IsPressKey(DIK_D)) {
+			move.x += 1.0f;
+		}
 
-	if (input->IsPressKey(DIK_Q)) {
-		move.y -= 1.0f;
-	}
+		if (input->IsPressKey(DIK_Q)) {
+			move.y -= 1.0f;
+		}
 
-	if (input->IsPressKey(DIK_E)) {
-		move.y += 1.0f;
+		if (input->IsPressKey(DIK_E)) {
+			move.y += 1.0f;
+		}
 	}
 
 	//=============================================================================================//
@@ -86,4 +103,11 @@ void DebugCamera::UpdateMatrix() {
 	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix(0.45f, float(clientWidth_) / float(clientHeight_), 0.1f, 1000.0f);
 
 	viewProjectionMatrix_ = MathUtility::Multiply(viewMatrix_, projectionMatrix_);
+}
+
+// 注視後すぐに行列を更新し、同じフレームの選択枠も新しいカメラに合わせる。
+void DebugCamera::Focus(const Vector3& targetPosition) {
+	const Vector3 forwardDirection = {cameraMatrix_.m[2][0], cameraMatrix_.m[2][1], cameraMatrix_.m[2][2]};
+	transform_.translate = MathUtility::Subtract(targetPosition, MathUtility::Multiply(10.0f, forwardDirection));
+	UpdateMatrix();
 }

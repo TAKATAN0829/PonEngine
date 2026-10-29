@@ -15,14 +15,21 @@ public:
 	//=============================================================================================//
 	// 更新処理
 
-	void Update(Input* input);
+	void Update(Input* input, bool simulate = true);
+	void SetPlayState(bool playing);
 
 	//=============================================================================================//
 	// 描画処理
 
 	void Draw();
 
-	IEditableScene* GetEditableScene() { return currentScene_ ? currentScene_->GetEditableScene() : nullptr; }
+	// 現在のシーンが公開する編集窓口を借用する。シーンの所有権は渡さない。
+	IEditableScene* GetEditableScene() {
+		if (currentScene_ == nullptr) {
+			return nullptr;
+		}
+		return currentScene_->GetEditableScene();
+	}
 
 	//=============================================================================================//
 	// 終了処理

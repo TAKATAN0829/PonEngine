@@ -2,7 +2,9 @@
 
 // 自作
 #include "IScene.h"
-#include "IEditableScene.h"
+#include "SceneObjects.h"
+#include <memory>
+#include <unordered_map>
 #include "EngineStructs.h"
 #include "Camera.h"
 #include "Particle.h"
@@ -12,17 +14,22 @@
 #include "Sprite.h"
 #include "SpriteCommon.h"
 
-class GameScene : public IScene, public IEditableScene {
+class GameScene : public IScene, public SceneObjects {
 public:
 
 	void Initialize (const SceneContext& context) override;
 	void Update (Input* input) override;
 	void Draw () override;
 	void Finalize () override;
+	void UpdateEditorFrame(Input* input, bool simulate) override;
+	void OnPlayStateChanged(bool playing) override;
 
 	IEditableScene* GetEditableScene() override { return this; }
-	size_t GetEditableObjectCount() const override { return 1; }
-	EditableObjectView GetEditableObject(size_t index) override;
+	bool GetEditorViewInfo(EditorViewInfo& viewInfo) const override;
+	bool GetEditableObjectBounds(size_t objectIndex, AABB& worldBounds) const override;
+	void FocusEditorCamera(const Vector3& position) override;
+
+
 
 	void UpdateCamera (Input* input);
 	void UpdateObject ();
@@ -67,36 +74,14 @@ private:
 	//=============================================================================================//
 	// モデル
 
-	Object3d* model_ = nullptr;
-
-	TransformData modelTransform_ = {
-		{ 5.0f,5.0f,5.0f },
-		{ 0.0f,0.0f,0.0f },
-		{ 0.0f,0.0f,0.0f }
+	// 編集データのIDに対応する描画用リソース。保存ファイルや履歴には含めない。
+	struct RuntimeObject {
+		std::unique_ptr<Object3d> drawable;
+		std::string model;
 	};
-
-	Vector4 modelColor_ = { 1.f,1.f,1.f,1.f };
-
-	bool enableLighting_ = true;
-
-	float shininess_ = 40.f;
-
-	bool useRootNodeMatrix_ = true;
-
-	//=============================================================================================//
-	// 複数モデル描画できるか確認するためのモデル
-
-	Object3d* subModel_ = nullptr;
-	TransformData subModelTransform_ = {
-		{1.f,1.f,1.f},
-		{0.f,0.f,0.f},
-		{3.f,0.f,0.f}
-	};
-
-	Vector4 subModelColor_ = { 1.f,1.f,1.f,1.f };
-
-	int modelIndex_ = 0; // モデルを切り替えるための番号
-
+	std::unordered_map<SceneObjectId, RuntimeObject> runtimeObjects_;
+	bool simulationEnabled_ = true; // このフレームに時間経過を進めるかどうか。
+	bool playing_ = false; // Pause中もtrueとなる、再生モード自体の状態。
 	//=============================================================================================//
 	// SpriteCommon
 

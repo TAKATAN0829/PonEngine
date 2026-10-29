@@ -306,4 +306,18 @@
     <ClCompile Include="engine\scene\SceneFile.cpp"><Filter>engine\scene</Filter></ClCompile>
     <ClInclude Include="engine\scene\SceneFile.h"><Filter>engine\scene</Filter></ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneObjects.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClInclude Include="engine\scene\SceneObjects.h"><Filter>engine\scene</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\EditorSession.cpp"><Filter>editor</Filter></ClCompile>
+    <ClInclude Include="editor\EditorSession.h"><Filter>editor</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\math\SceneViewMath.cpp"><Filter>engine\math</Filter></ClCompile>
+    <ClInclude Include="engine\math\SceneViewMath.h"><Filter>engine\math</Filter></ClInclude>
+    <ClCompile Include="editor\panels\SceneViewPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClInclude Include="editor\panels\SceneViewPanel.h"><Filter>editor\panels</Filter></ClInclude>
+  </ItemGroup>
 </Project>

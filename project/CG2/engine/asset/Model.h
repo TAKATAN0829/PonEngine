@@ -44,7 +44,7 @@ public:
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw ();
+	void Draw (Material* instanceMaterial = nullptr);
 
 	//=============================================================================================//
 	// Getter
@@ -52,6 +52,8 @@ public:
 	Material* GetMaterial () const { return material_.get (); }
 
 	const Node& GetRootNode () const { return modelData_.rootNode; }
+	// 読込時に求めたメッシュの範囲。画面上の選択判定に使用する。
+	const AABB& GetLocalBounds() const { return localBounds_; }
 
 private:
 
@@ -76,6 +78,7 @@ private:
 	// モデルデータ
 
 	ModelData modelData_;
+	AABB localBounds_{};
 
 	//=============================================================================================//
 	// Mesh

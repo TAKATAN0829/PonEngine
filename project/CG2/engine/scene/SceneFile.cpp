@@ -1,5 +1,6 @@
 #include "SceneFile.h"
 #include "IEditableScene.h"
+#include "SceneObjects.h"
 
 #include <Windows.h>
 #include <array>
@@ -14,17 +15,36 @@
 namespace {
 struct Record {
     SceneObjectId id{};
-    unsigned mask{};
-    std::array<float, 14> values{}; // scale, rotation, position, color, shininess
+    unsigned mask{}; // 下位4ビットがTransform・色・ライティング・光沢の有無を表す。
+    std::array<float, 14> values{}; // 拡縮・回転・位置・色・光沢の順に保存する。
     int lighting{};
+    std::string name;
+    std::string model;
+    int rootMatrix = 1;
+    int active = 1;
+    int meshRenderer = 1;
 };
 
-unsigned Mask(const EditableObjectView& view) {
-    return (view.transform ? 1u : 0u) | (view.color ? 2u : 0u) |
-        (view.enableLighting ? 4u : 0u) | (view.shininess ? 8u : 0u);
+// 公開されているプロパティの有無をビットへ変換し、保存形式に記録する。
+unsigned GetPropertyMask(const EditableObjectView& view) {
+    unsigned propertyMask = 0;
+    if (view.transform != nullptr) {
+        propertyMask |= 1u;
+    }
+    if (view.color != nullptr) {
+        propertyMask |= 2u;
+    }
+    if (view.enableLighting != nullptr) {
+        propertyMask |= 4u;
+    }
+    if (view.shininess != nullptr) {
+        propertyMask |= 8u;
+    }
+    return propertyMask;
 }
 
-bool Valid(const Record& record) {
+// 読み込んだ数値とフラグを検証し、扱えないレコードを拒否する。
+bool IsValidRecord(const Record& record) {
     for (float value : record.values) {
         if (!std::isfinite(value)) { return false; }
     }
@@ -32,86 +52,195 @@ bool Valid(const Record& record) {
         (record.lighting == 0 || record.lighting == 1) &&
         (!(record.mask & 8) || (record.values[13] >= 1.0f && record.values[13] <= 500.0f));
 }
+
+// 保存形式の数値配列を、シーンが扱うTransformや見た目の設定へ戻す。
+void ApplyRecordToObject(const Record& record, SceneObjectData& object) {
+    const std::array<float, 14>& values = record.values;
+    // 0～2が拡縮、3～5が回転、6～8が位置、9～12が色、13が光沢。
+    object.transform = {{values[0], values[1], values[2]}, {values[3], values[4], values[5]}, {values[6], values[7], values[8]}};
+    object.color = {values[9], values[10], values[11], values[12]};
+    object.enableLighting = record.lighting != 0;
+    object.shininess = values[13];
+}
 }
 
+// 設定を検証して一時ファイルへ書き込み、完了したものだけを保存先へ反映する。
 bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, std::string& error) {
     error.clear();
-    if (scene.GetEditableObjectCount() > 100000) {
+    if (scene.GetEditableObjectCount() > 100000 ||
+        (scene.SupportsObjectCollection() && scene.GetEditableObjectCount() > SceneObjects::kMaxObjects)) {
         error = "Scene exceeds the supported object count.";
         return false;
     }
     std::vector<Record> records;
+    const bool collection = scene.SupportsObjectCollection();
+    std::vector<SceneObjectData> objects;
+    if (collection) {
+        objects = scene.CaptureObjects();
+    }
+    if (collection && objects.size() != scene.GetEditableObjectCount()) {
+        error = "Scene object snapshot mismatch.";
+        return false;
+    }
     std::unordered_set<SceneObjectId> ids;
-    for (size_t i = 0; i < scene.GetEditableObjectCount(); ++i) {
-        const auto view = scene.GetEditableObject(i);
+    for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
+        const EditableObjectView view = scene.GetEditableObject(objectIndex);
         Record record{};
         record.id = view.id;
-        record.mask = Mask(view);
+        record.mask = GetPropertyMask(view);
         if (view.transform) {
-            const auto& t = *view.transform;
-            record.values = { t.scale.x, t.scale.y, t.scale.z, t.rotate.x, t.rotate.y, t.rotate.z,
-                t.translate.x, t.translate.y, t.translate.z };
+            const TransformData& transform = *view.transform;
+            record.values = { transform.scale.x, transform.scale.y, transform.scale.z, transform.rotate.x, transform.rotate.y, transform.rotate.z,
+                transform.translate.x, transform.translate.y, transform.translate.z };
         }
         if (view.color) {
             record.values[9] = view.color->x; record.values[10] = view.color->y;
             record.values[11] = view.color->z; record.values[12] = view.color->w;
         }
-        if (view.enableLighting) { record.lighting = *view.enableLighting ? 1 : 0; }
+        if (view.enableLighting != nullptr) {
+            if (*view.enableLighting) {
+                record.lighting = 1;
+            } else {
+                record.lighting = 0;
+            }
+        }
         if (view.shininess) { record.values[13] = *view.shininess; }
-        if (!Valid(record) || !ids.insert(record.id).second) {
+        if (collection) {
+            if (!SceneObjects::Validate(objects[objectIndex]) || objects[objectIndex].id != record.id || record.mask != 15) {
+                error = "Invalid scene object data.";
+                return false;
+            }
+            record.name = objects[objectIndex].name;
+            record.model = objects[objectIndex].model;
+            if (!objects[objectIndex].active) {
+                record.active = 0;
+            }
+            if (!objects[objectIndex].hasMeshRenderer) {
+                record.meshRenderer = 0;
+            }
+            if (objects[objectIndex].useRootNodeMatrix) {
+                record.rootMatrix = 1;
+            } else {
+                record.rootMatrix = 0;
+            }
+        }
+        if (!IsValidRecord(record) || !ids.insert(record.id).second) {
             error = "Scene contains invalid values or duplicate IDs.";
             return false;
         }
         records.push_back(record);
     }
 
-    std::error_code ec;
-    if (!path.parent_path().empty()) { std::filesystem::create_directories(path.parent_path(), ec); }
-    if (ec) { error = "Cannot create scene directory: " + ec.message(); return false; }
-    auto temporary = path;
+    std::error_code fileError;
+    if (!path.parent_path().empty()) { std::filesystem::create_directories(path.parent_path(), fileError); }
+    if (fileError) { error = "Cannot create scene directory: " + fileError.message(); return false; }
+    std::filesystem::path temporary = path;
     temporary += L".tmp";
-    std::ofstream out(temporary, std::ios::trunc);
-    out.imbue(std::locale::classic());
-    out << std::setprecision(std::numeric_limits<float>::max_digits10);
-    out << "PON_SCENE 1\n" << records.size() << '\n';
-    for (const auto& record : records) {
-        out << record.id << ' ' << record.mask;
-        for (float value : record.values) { out << ' ' << value; }
-        out << ' ' << record.lighting << '\n';
+    std::ofstream outputFile(temporary, std::ios::trunc);
+    outputFile.imbue(std::locale::classic());
+    outputFile << std::setprecision(std::numeric_limits<float>::max_digits10);
+    unsigned formatVersion = 1;
+    if (collection) {
+        formatVersion = 3;
     }
-    out.close();
-    if (!out) {
+    outputFile << "PON_SCENE " << formatVersion << '\n' << records.size() << '\n';
+    for (const Record& record : records) {
+        outputFile << record.id << ' ' << record.mask;
+        for (float value : record.values) { outputFile << ' ' << value; }
+        outputFile << ' ' << record.lighting;
+        if (collection) {
+            outputFile << ' ' << std::quoted(record.name) << ' ' << std::quoted(record.model) << ' ' << record.rootMatrix
+                << ' ' << record.active << ' ' << record.meshRenderer;
+        }
+        outputFile << '\n';
+    }
+    outputFile.close();
+    if (!outputFile) {
         error = "Cannot write scene file.";
-        std::filesystem::remove(temporary, ec);
+        std::filesystem::remove(temporary, fileError);
         return false;
     }
-    // Replace only after the entire temporary file was written successfully.
+    // 書込完了前に元ファイルを置き換えず、途中失敗による保存データの消失を防ぐ。
     if (!MoveFileExW(temporary.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
         error = "Cannot replace scene file (Windows error " + std::to_string(GetLastError()) + ").";
-        std::filesystem::remove(temporary, ec);
+        std::filesystem::remove(temporary, fileError);
         return false;
     }
     return true;
 }
 
+// 対応する保存形式を読み込み、全件の整合性を確認してからシーンへ反映する。
 bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, std::string& error) {
     error.clear();
-    std::ifstream in(path);
-    in.imbue(std::locale::classic());
-    if (!in) { error = "Cannot open scene file."; return false; }
+    std::ifstream inputFile(path);
+    inputFile.imbue(std::locale::classic());
+    if (!inputFile) { error = "Cannot open scene file."; return false; }
     std::string magic;
     unsigned version{};
     size_t count{};
-    if (!(in >> magic >> version >> count) || magic != "PON_SCENE" || version != 1 ||
-        count != scene.GetEditableObjectCount() || count > 100000) {
+    const bool collection = scene.SupportsObjectCollection();
+    if (!(inputFile >> magic >> version >> count) || magic != "PON_SCENE" || (version < 1 || version > 3) ||
+        (!collection && (version != 1 || count != scene.GetEditableObjectCount())) || count > 100000 ||
+        (collection && count > SceneObjects::kMaxObjects)) {
         error = "Unsupported scene format or object count mismatch.";
         return false;
     }
 
+    if (collection) {
+        // 形式2・3はシーン全体を復元する。形式1は既定モデルの同じIDへ設定を適用する。
+        std::vector<SceneObjectData> objects;
+        if (version == 1) {
+            objects = scene.CaptureObjects();
+        }
+        std::unordered_set<SceneObjectId> ids;
+        for (size_t objectIndex = 0; objectIndex < count; ++objectIndex) {
+            Record record;
+            inputFile >> record.id >> record.mask;
+            for (float& value : record.values) { inputFile >> value; }
+            inputFile >> record.lighting;
+            if (version >= 2) {
+                inputFile >> std::quoted(record.name) >> std::quoted(record.model) >> record.rootMatrix;
+            }
+            if (version >= 3) {
+                inputFile >> record.active >> record.meshRenderer;
+            }
+            if (!inputFile || !IsValidRecord(record) || record.mask != 15 || !ids.insert(record.id).second ||
+                (record.rootMatrix != 0 && record.rootMatrix != 1) ||
+                (record.active != 0 && record.active != 1) || (record.meshRenderer != 0 && record.meshRenderer != 1)) {
+                error = "Invalid or incomplete scene object data.";
+                return false;
+            }
+            SceneObjectData object;
+            object.id = record.id;
+            ApplyRecordToObject(record, object);
+            if (version >= 2) {
+                object.name = record.name;
+                object.model = record.model;
+                object.useRootNodeMatrix = record.rootMatrix != 0;
+                object.active = record.active != 0;
+                object.hasMeshRenderer = record.meshRenderer != 0;
+                objects.push_back(std::move(object));
+            } else {
+                size_t matchingObjectIndex = 0;
+                while (matchingObjectIndex < objects.size() && objects[matchingObjectIndex].id != record.id) {
+                    ++matchingObjectIndex;
+                }
+                if (matchingObjectIndex == objects.size()) {
+                    error = "Legacy scene object ID is not present in the current scene.";
+                    return false;
+                }
+                ApplyRecordToObject(record, objects[matchingObjectIndex]);
+            }
+        }
+        inputFile >> std::ws;
+        if (inputFile.bad() || !inputFile.eof()) { error = "Unexpected data after scene records."; return false; }
+        return scene.ReplaceObjects(std::move(objects), error);
+    }
+
     std::vector<EditableObjectView> views;
     std::unordered_set<SceneObjectId> sceneIds;
-    for (size_t i = 0; i < count; ++i) {
-        auto view = scene.GetEditableObject(i);
+    for (size_t objectIndex = 0; objectIndex < count; ++objectIndex) {
+        EditableObjectView view = scene.GetEditableObject(objectIndex);
         if (view.id == kInvalidSceneObjectId || !sceneIds.insert(view.id).second) {
             error = "Scene contains invalid or duplicate IDs.";
             return false;
@@ -121,34 +250,34 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
     std::vector<Record> records(count);
     std::vector<size_t> targets;
     std::unordered_set<SceneObjectId> fileIds;
-    for (auto& record : records) {
-        in >> record.id >> record.mask;
-        for (float& value : record.values) { in >> value; }
-        in >> record.lighting;
-        if (!in || !Valid(record) || !fileIds.insert(record.id).second) {
+    for (Record& record : records) {
+        inputFile >> record.id >> record.mask;
+        for (float& value : record.values) { inputFile >> value; }
+        inputFile >> record.lighting;
+        if (!inputFile || !IsValidRecord(record) || !fileIds.insert(record.id).second) {
             error = "Invalid or incomplete scene data.";
             return false;
         }
         size_t target = 0;
         while (target < views.size() && views[target].id != record.id) { ++target; }
-        if (target == views.size() || Mask(views[target]) != record.mask) {
+        if (target == views.size() || GetPropertyMask(views[target]) != record.mask) {
             error = "Scene object ID or property mismatch.";
             return false;
         }
         targets.push_back(target);
     }
-    in >> std::ws;
-    if (in.bad() || !in.eof()) { error = "Unexpected data after scene records."; return false; }
+    inputFile >> std::ws;
+    if (inputFile.bad() || !inputFile.eof()) { error = "Unexpected data after scene records."; return false; }
 
-    // Validate everything before changing any live data.
-    for (size_t i = 0; i < records.size(); ++i) {
-        const auto& record = records[i];
-        const auto& v = record.values;
-        auto& view = views[targets[i]];
-        if (view.transform) { *view.transform = { {v[0], v[1], v[2]}, {v[3], v[4], v[5]}, {v[6], v[7], v[8]} }; }
-        if (view.color) { *view.color = {v[9], v[10], v[11], v[12]}; }
+    // 全レコードの検証後に反映し、後半が不正なファイルでも前半だけ変更されることを防ぐ。
+    for (size_t objectIndex = 0; objectIndex < records.size(); ++objectIndex) {
+        const Record& record = records[objectIndex];
+        const std::array<float, 14>& values = record.values;
+        EditableObjectView& view = views[targets[objectIndex]];
+        if (view.transform) { *view.transform = { {values[0], values[1], values[2]}, {values[3], values[4], values[5]}, {values[6], values[7], values[8]} }; }
+        if (view.color) { *view.color = {values[9], values[10], values[11], values[12]}; }
         if (view.enableLighting) { *view.enableLighting = record.lighting != 0; }
-        if (view.shininess) { *view.shininess = v[13]; }
+        if (view.shininess) { *view.shininess = values[13]; }
     }
     return true;
 }

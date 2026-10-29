@@ -3,6 +3,8 @@
 #include "SceneFile.h"
 #include "LogSystem.h"
 #include "ModelManager.h"
+#include "SceneViewMath.h"
+#include <unordered_set>
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
@@ -40,20 +42,17 @@ void GameScene::Initialize(const SceneContext& context) {
 
 	ModelManager::GetInstance()->LoadModel("axis.obj");
 
-	model_ = new Object3d();
-
-	model_->Initialize(object3dCommon_);
-
-	model_->SetModel(ModelManager::GetInstance()->FindModel("plane.gltf"));
-
-	model_->SetTexture("resources/uvChecker.png");
-
-	subModel_ = new Object3d();
-
-	subModel_->Initialize(object3dCommon_);
-
-	subModel_->SetModel(ModelManager::GetInstance()->FindModel("axis.obj"));
-
+	SceneObjectData mainModel;
+	mainModel.id = 1;
+	mainModel.name = "Plane #1";
+	mainModel.transform.scale = {5, 5, 5};
+	SceneObjectData axis;
+	axis.id = 2;
+	axis.name = "Axis #2";
+	axis.model = "axis.obj";
+	axis.transform.translate = {3, 0, 0};
+	std::string sceneError;
+	ReplaceObjects({mainModel, axis}, sceneError);
 	//=============================================================================================//
 	// Particle初期化
 
@@ -63,7 +62,7 @@ void GameScene::Initialize(const SceneContext& context) {
 
 	particle_->SetTexture("resources/circle.png");
 
-	// Restore authored data in all configurations, including Release.
+	// Releaseでも保存した編集用データを読み込み、制作時の配置をゲームへ引き継ぐ。
 	std::error_code fileError;
 	const bool hasSavedScene = std::filesystem::exists(SceneFile::kDefaultPath, fileError);
 	if (fileError) {
@@ -106,9 +105,11 @@ void GameScene::Draw() {
 
 	object3dCommon_->DrawSettingCommon();
 
-	model_->Draw();
-
-	subModel_->Draw();
+	for (const SceneObjectData& object : GetObjects()) {
+		if (object.active && object.hasMeshRenderer) {
+			runtimeObjects_.at(object.id).drawable->Draw();
+		}
+	}
 
 	//=============================================================================================//
 	// Particle描画
@@ -145,9 +146,7 @@ void GameScene::Finalize() {
 	//=============================================================================================//
 	// モデル解放
 
-	delete model_;
-
-	delete subModel_;
+	runtimeObjects_.clear();
 
 	//=============================================================================================//
 	// Camera解放
@@ -183,21 +182,44 @@ void GameScene::UpdateObject() {
 	//=============================================================================================//
 	// モデル更新
 
-	model_->SetTransform(modelTransform_);
-	model_->SetColor(modelColor_);
-	model_->SetEnableLighting(enableLighting_);
-	model_->SetShininess(shininess_);
-	model_->SetUseRootNodeMatrix(useRootNodeMatrix_);
-	model_->SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
-	model_->SetPointLight(pointLight_);
+	// PostDrawで前フレームのGPU処理が完了しているため、ここで不要な描画リソースを破棄できる。
+	// 現フレームの描画命令を記録する前に、設定一覧と描画用一覧を一致させる。
+	std::unordered_set<SceneObjectId> liveIds;
 	spotLight_.direction = MathUtility::Normalize(spotLight_.direction);
-	model_->SetSpotLight(spotLight_);
-	model_->Update(debugCamera_->GetViewProjectionMatrix());
-
-	subModel_->SetTransform(subModelTransform_);
-	subModel_->SetColor(subModelColor_);
-	subModel_->Update(debugCamera_->GetViewProjectionMatrix());
-
+	for (const SceneObjectData& data : GetObjects()) {
+		if (!data.active || !data.hasMeshRenderer) {
+			continue;
+		}
+		liveIds.insert(data.id);
+		RuntimeObject& runtime = runtimeObjects_[data.id];
+		if (!runtime.drawable) {
+			runtime.drawable = std::make_unique<Object3d>();
+			runtime.drawable->Initialize(object3dCommon_);
+		}
+		if (runtime.model != data.model) {
+			runtime.drawable->SetModel(ModelManager::GetInstance()->FindModel(data.model));
+			if (data.model == "plane.gltf") { runtime.drawable->SetTexture("resources/uvChecker.png"); }
+			runtime.model = data.model;
+		}
+		Object3d& object = *runtime.drawable;
+		object.SetTransform(data.transform);
+		object.SetColor(data.color);
+		object.SetEnableLighting(data.enableLighting);
+		object.SetShininess(data.shininess);
+		object.SetUseRootNodeMatrix(data.useRootNodeMatrix);
+		object.SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
+		object.SetPointLight(pointLight_);
+		object.SetSpotLight(spotLight_);
+		object.Update(debugCamera_->GetViewProjectionMatrix());
+	}
+	std::unordered_map<SceneObjectId, RuntimeObject>::iterator runtimeObjectIterator = runtimeObjects_.begin();
+	while (runtimeObjectIterator != runtimeObjects_.end()) {
+		if (liveIds.contains(runtimeObjectIterator->first)) {
+			++runtimeObjectIterator;
+		} else {
+			runtimeObjectIterator = runtimeObjects_.erase(runtimeObjectIterator);
+		}
+	}
 	//=============================================================================================//
 	// Particle更新
 
@@ -205,7 +227,7 @@ void GameScene::UpdateObject() {
 	particle_->SetBlendMode(particleBlendMode_);
 	particle_->SetUseBillboard(useBillboard_);
 	particle_->SetUseAccelerationField(useAccelerationField_);
-	particle_->Update(debugCamera_->GetViewProjectionMatrix(), debugCamera_->GetCameraMatrix());
+	particle_->Update(debugCamera_->GetViewProjectionMatrix(), debugCamera_->GetCameraMatrix(), simulationEnabled_);
 
 	//=============================================================================================//
 	// Sprite更新
@@ -221,6 +243,7 @@ void GameScene::UpdateObject() {
 	// ImGui
 
 	ImGui::Begin("Settings");
+	ImGui::BeginDisabled(playing_);
 	ImGui::ColorEdit4("color", &color_.x);
 
 	static const char* kBlendModeNames[kCountOfBlendMode] = {
@@ -247,37 +270,37 @@ void GameScene::UpdateObject() {
 	ImGui::Checkbox("useAccelerationField", &useAccelerationField_);
 
 	ImGui::DragFloat3("EmitterTranslate", &particle_->GetEmitterTransform().translate.x, 0.01f, -100.0f, 100.0f);
+	ImGui::EndDisabled();
 
+	ImGui::BeginDisabled(!simulationEnabled_);
 	if (ImGui::Button("Add Particle")) {
 
 		particle_->AddParticles();
 	}
+	ImGui::EndDisabled();
 
-	ImGui::End();
-
-	ImGui::Begin("Model Asset");
-	static const char* kModelNames[] = { "plane.gltf", "axis.obj" };
-	if (ImGui::Combo("ModelData", &modelIndex_, kModelNames, IM_ARRAYSIZE(kModelNames))) {
-		model_->SetModel(ModelManager::GetInstance()->FindModel(kModelNames[modelIndex_]));
-	}
-	ImGui::Checkbox("UseRootNodeMatrix", &useRootNodeMatrix_);
 	ImGui::End();
 
 	ImGui::Begin("DirectionalLight");
+	ImGui::BeginDisabled(playing_);
 	ImGui::ColorEdit4("Color", &lightColor_.x);
 	ImGui::SliderFloat3("Direction", &lightDirection_.x, -1.0f, 1.0f);
 	ImGui::DragFloat("Intensity", &lightIntensity_, 0.01f, 0.0f, 10.0f);
+	ImGui::EndDisabled();
 	ImGui::End();
 
 	ImGui::Begin("PointLight");
+	ImGui::BeginDisabled(playing_);
 	ImGui::ColorEdit4("Color", &pointLight_.color.x);
 	ImGui::DragFloat3("Position", &pointLight_.position.x, 0.1f);
 	ImGui::DragFloat("Intensity", &pointLight_.intensity, 0.01f, 0.0f, 10.0f);
 	ImGui::DragFloat("Radius", &pointLight_.radius, 0.1f, 0.01f, 100.0f);
 	ImGui::DragFloat("Decay", &pointLight_.decay, 0.01f, 0.0f, 10.0f);
+	ImGui::EndDisabled();
 	ImGui::End();
 
 	ImGui::Begin("SpotLight");
+	ImGui::BeginDisabled(playing_);
 	ImGui::ColorEdit4("Color", &spotLight_.color.x);
 	ImGui::DragFloat3("Position", &spotLight_.position.x, 0.1f);
 	ImGui::DragFloat("Intensity", &spotLight_.intensity, 0.01f, 0.0f, 10.0f);
@@ -286,18 +309,75 @@ void GameScene::UpdateObject() {
 	ImGui::DragFloat("Decay", &spotLight_.decay, 0.01f, 0.0f, 10.0f);
 	ImGui::SliderFloat("CosAngle", &spotLight_.cosAngle, 0.0f, 1.0f);
 	ImGui::SliderFloat("CosFalloffStart", &spotLight_.cosFalloffStart, 0.0f, 1.0f);
+	ImGui::EndDisabled();
 	ImGui::End();
 
 	ImGui::Begin("Sprite");
+	ImGui::BeginDisabled(playing_);
 	ImGui::SliderFloat2("Position", &spritePosition_.x, 0.f, static_cast<float>(WinApp::kClientWidth));
 	ImGui::SliderAngle("Rotation", &spriteRotation_);
 	ImGui::SliderFloat2("Size", &spriteSize_.x, 0.f, 512.f);
+	ImGui::EndDisabled();
 	ImGui::End();
 
 #endif
 }
 
-EditableObjectView GameScene::GetEditableObject(size_t index) {
-	if (index != 0 || !model_) { return {}; }
-	return { 1, "Model", &modelTransform_, &modelColor_, &enableLighting_, &shininess_ };
+// 編集・一時停止中もカメラと描画は更新し、ゲーム固有の更新だけを止める。
+void GameScene::UpdateEditorFrame(Input* input, bool simulate) {
+	simulationEnabled_ = simulate;
+	if (simulate) {
+		Update(input);
+	} else {
+		UpdateCamera(input);
+		UpdateObject();
+	}
+}
+
+// 再生開始・停止時に粒子と発生タイマーを消し、毎回同じ状態から確認できるようにする。
+void GameScene::OnPlayStateChanged(bool playing) {
+	playing_ = playing;
+	particle_->ResetSimulation();
+}
+
+// 現在描画しているDebugCameraの行列と、DX12で使う固定の表示サイズを公開する。
+bool GameScene::GetEditorViewInfo(EditorViewInfo& viewInfo) const {
+    if (debugCamera_ == nullptr) {
+        return false;
+    }
+    viewInfo.viewProjection = debugCamera_->GetViewProjectionMatrix();
+    const Matrix4x4& cameraMatrix = debugCamera_->GetCameraMatrix();
+    viewInfo.cameraPosition = {cameraMatrix.m[3][0], cameraMatrix.m[3][1], cameraMatrix.m[3][2]};
+    viewInfo.viewportWidth = static_cast<float>(WinApp::kClientWidth);
+    viewInfo.viewportHeight = static_cast<float>(WinApp::kClientHeight);
+    return true;
+}
+
+// メッシュの範囲へ描画時と同じRootNode・Transformを適用し、選択位置のずれを防ぐ。
+bool GameScene::GetEditableObjectBounds(size_t objectIndex, AABB& worldBounds) const {
+    if (objectIndex >= GetObjects().size()) {
+        return false;
+    }
+    const SceneObjectData& object = GetObjects()[objectIndex];
+    if (!object.active || !object.hasMeshRenderer) {
+        return false;
+    }
+    const Model* model = ModelManager::GetInstance()->FindModel(object.model);
+    if (model == nullptr) {
+        return false;
+    }
+    Matrix4x4 worldMatrix = MathUtility::MakeAffineMatrix(object.transform.scale,
+        object.transform.rotate, object.transform.translate);
+    if (object.useRootNodeMatrix) {
+        worldMatrix = MathUtility::Multiply(model->GetRootNode().localMatrix, worldMatrix);
+    }
+    worldBounds = SceneViewMath::TransformBounds(model->GetLocalBounds(), worldMatrix);
+    return true;
+}
+
+// Editorの注視要求を、シーンが所有するカメラへ渡す。
+void GameScene::FocusEditorCamera(const Vector3& position) {
+    if (debugCamera_ != nullptr) {
+        debugCamera_->Focus(position);
+    }
 }

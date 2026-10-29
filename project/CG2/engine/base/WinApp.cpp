@@ -1,4 +1,4 @@
-﻿#include "WinApp.h"
+#include "WinApp.h"
 
 #pragma comment(lib, "winmm.lib")
 
@@ -48,7 +48,7 @@ void WinApp::Initialize() {
 		nullptr,
 		nullptr,
 		wc_.hInstance,
-		nullptr);
+		this);
 
 	// Window表示
 	ShowWindow(hwnd_, SW_SHOW);
@@ -103,6 +103,11 @@ LRESULT CALLBACK WinApp::WindowProc(
 	UINT msg,
 	WPARAM wParam,
 	LPARAM lParam) {
+	if (msg == WM_NCCREATE) {
+		// OSのウィンドウとWinAppを対応付け、後続のメッセージから所有者を取得できるようにする。
+		const CREATESTRUCT* creationData = reinterpret_cast<const CREATESTRUCT*>(lParam);
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(creationData->lpCreateParams));
+	}
 
 #ifdef USE_IMGUI
 	if (ImGui_ImplWin32_WndProcHandler(
@@ -116,6 +121,15 @@ LRESULT CALLBACK WinApp::WindowProc(
 #endif
 
 	switch (msg) {
+	case WM_CLOSE: {
+		// ここでは破棄せず、Editorが未保存の変更を確認できるように終了要求だけを残す。
+		WinApp* window = reinterpret_cast<WinApp*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+		if (window != nullptr) {
+			window->closeRequested_ = true;
+			return 0;
+		}
+		break;
+	}
 	case WM_DESTROY:
 
 		// OSに終了を通知
@@ -129,4 +143,9 @@ LRESULT CALLBACK WinApp::WindowProc(
 		msg,
 		wParam,
 		lParam);
+}
+
+// 保存確認が済んだ後にウィンドウを破棄し、通常の終了メッセージを発生させる。
+void WinApp::ConfirmClose() {
+	DestroyWindow(hwnd_);
 }

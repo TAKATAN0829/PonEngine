@@ -20,6 +20,8 @@ void Object3d::Initialize (Object3dCommon* object3dCommon) {
 	assert (object3dCommon);
 
 	object3dCommon_ = object3dCommon;
+	material_ = std::make_unique<Material>();
+	material_->Initialize(object3dCommon_->GetDxCommon(), object3dCommon_->GetSrvManager());
 
 	CreateTransformationMatrixData ();
 
@@ -166,7 +168,7 @@ void Object3d::Draw () {
 	//=============================================================================================//
 	// Model描画
 
-	model_->Draw ();
+	model_->Draw (material_.get());
 }
 
 
@@ -193,7 +195,7 @@ TransformData Object3d::GetTransform () {
 
 void Object3d::SetColor (const Vector4& color) {
 
-	model_->GetMaterial ()->SetColor (color);
+	material_->SetColor (color);
 }
 
 
@@ -202,7 +204,7 @@ void Object3d::SetColor (const Vector4& color) {
 
 void Object3d::SetEnableLighting (bool enableLighting) {
 
-	model_->GetMaterial ()->SetEnableLighting (enableLighting);
+	material_->SetEnableLighting (enableLighting);
 }
 
 
@@ -211,7 +213,7 @@ void Object3d::SetEnableLighting (bool enableLighting) {
 
 void Object3d::SetUVTransform (const Matrix4x4& uvTransform) {
 
-	model_->GetMaterial ()->SetUVTransform (uvTransform);
+	material_->SetUVTransform (uvTransform);
 }
 
 
@@ -233,7 +235,7 @@ void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& directi
 
 void Object3d::SetTextureIndex (uint32_t textureIndex) {
 
-	model_->GetMaterial ()->SetTextureIndex (textureIndex);
+	material_->SetTextureIndex (textureIndex);
 }
 
 
@@ -281,4 +283,11 @@ void Object3d::SetBlendMode (BlendMode blendMode) {
 BlendMode Object3d::GetBlendMode () const {
 
 	return blendMode_;
+}
+
+// メッシュは共有するが、テクスチャ番号はオブジェクト専用のマテリアルへ設定する。
+void Object3d::SetModel(Model* model) {
+	assert(model);
+	model_ = model;
+	material_->SetTextureIndex(model_->GetMaterial()->GetTextureIndex());
 }

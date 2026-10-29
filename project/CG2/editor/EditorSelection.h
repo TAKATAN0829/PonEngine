@@ -2,7 +2,7 @@
 
 #include "IEditableScene.h"
 
-// Selection never owns or keeps a pointer to a scene object.
+// 選択対象はIDだけで保持し、削除される可能性のあるオブジェクトへの参照を残さない。
 class EditorSelection {
 public:
     SceneObjectId Get() const { return selected_; }

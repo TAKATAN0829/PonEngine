@@ -26,6 +26,21 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 
 	modelData_ = LoadModelFile(directoryPath, filename);
 
+	// 全頂点を一度だけ走査し、オブジェクトの選択に使うローカル範囲を保持する。
+	if (!modelData_.vertices.empty()) {
+		const Vector4& firstPosition = modelData_.vertices.front().position;
+		localBounds_ = {{firstPosition.x, firstPosition.y, firstPosition.z},
+			{firstPosition.x, firstPosition.y, firstPosition.z}};
+		for (const Mesh::VertexData& vertex : modelData_.vertices) {
+			if (vertex.position.x < localBounds_.min.x) { localBounds_.min.x = vertex.position.x; }
+			if (vertex.position.y < localBounds_.min.y) { localBounds_.min.y = vertex.position.y; }
+			if (vertex.position.z < localBounds_.min.z) { localBounds_.min.z = vertex.position.z; }
+			if (vertex.position.x > localBounds_.max.x) { localBounds_.max.x = vertex.position.x; }
+			if (vertex.position.y > localBounds_.max.y) { localBounds_.max.y = vertex.position.y; }
+			if (vertex.position.z > localBounds_.max.z) { localBounds_.max.z = vertex.position.z; }
+		}
+	}
+
 	//=============================================================================================//
 	// 頂点データの初期化
 
@@ -54,12 +69,17 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 //=================================================================================================//
 // 描画処理
 
-void Model::Draw() {
+void Model::Draw(Material* instanceMaterial) {
 
 	//=============================================================================================//
 	// Material・Texture設定
 
-	material_->Bind();
+	if (instanceMaterial != nullptr) {
+		// Object3dから呼ばれた場合は、共有モデルの設定ではなく個別の見た目を使う。
+		instanceMaterial->Bind();
+	} else {
+		material_->Bind();
+	}
 
 	//=============================================================================================//
 	// VBV設定・DrawCall

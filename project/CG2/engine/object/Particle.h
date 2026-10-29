@@ -34,7 +34,8 @@ public:
 	//=============================================================================================//
 	// 更新処理
 
-	void Update (const Matrix4x4& viewProjectionMatrix,const Matrix4x4& cameraMatrix);
+	void Update (const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate = true);
+	void ResetSimulation();
 
 	//=============================================================================================//
 	// 描画処理

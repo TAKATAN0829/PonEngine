@@ -20,6 +20,9 @@ public:
 	// メッセージの処理
 
 	bool ProcessMessage();
+	bool IsCloseRequested() const { return closeRequested_; }
+	void ClearCloseRequest() { closeRequested_ = false; }
+	void ConfirmClose();
 
 	//=============================================================================================//
 	// 終了処理
@@ -55,6 +58,7 @@ private:
 	// Window
 
 	HWND hwnd_ = nullptr;
+	bool closeRequested_ = false;
 
 	//=============================================================================================//
 	// WindowClass

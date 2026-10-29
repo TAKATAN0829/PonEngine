@@ -8,6 +8,7 @@
 
 // C++
 #include <string>
+#include <memory>
 
 // 自作
 #include "EngineStructs.h"
@@ -40,7 +41,7 @@ public:
 	//=============================================================================================//
 	// Model設定
 
-	void SetModel (Model* model) { model_ = model; }
+	void SetModel (Model* model);
 
 	//=============================================================================================//
 	// Transform設定
@@ -79,7 +80,7 @@ public:
 	//=============================================================================================//
 	// 光沢度設定
 
-	void SetShininess (float shininess) { model_->GetMaterial ()->SetShininess (shininess); }
+	void SetShininess (float shininess) { material_->SetShininess (shininess); }
 
 	//=============================================================================================//
 	// RootNode行列の適用設定
@@ -149,6 +150,7 @@ private:
 	// Model
 
 	Model* model_ = nullptr;
+	std::unique_ptr<Material> material_; // 同じModelを使う別のオブジェクトへ色や光沢を波及させない。
 
 	//=============================================================================================//
 	// Transform

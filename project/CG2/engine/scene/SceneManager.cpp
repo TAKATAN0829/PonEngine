@@ -21,12 +21,19 @@ void SceneManager::Initialize(const SceneContext& context, IScene* firstScene) {
 //=================================================================================================//
 // 更新処理
 
-void SceneManager::Update(Input* input) {
+void SceneManager::Update(Input* input, bool simulate) {
 
 	//=============================================================================================//
 	// CurrentScene更新
 
-	currentScene_->Update(input);
+	currentScene_->UpdateEditorFrame(input, simulate);
+}
+
+// シーン固有の再生開始・停止処理を呼び出し、実行用データを初期化する。
+void SceneManager::SetPlayState(bool playing) {
+	if (currentScene_ != nullptr) {
+		currentScene_->OnPlayStateChanged(playing);
+	}
 }
 
 //=================================================================================================//
