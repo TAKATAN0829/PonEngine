@@ -36,9 +36,6 @@ public:
 	// 更新処理
 
 	void Update (const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate = true, bool emit = true);
-	void ResetSimulation();
-	bool ApplySettings(const ParticleSettings& settings);
-	size_t GetLiveCount() const { return particles_.size(); }
 
 	//=============================================================================================//
 	// 描画処理
@@ -53,12 +50,27 @@ public:
 	//=============================================================================================//
 	// Particle追加
 
+	// 保存データの設定を検証してから適用し、実行中の粒子は保持する。
+	bool ApplySettings(const ParticleSettings& settings);
+	// 設定は保持したまま、粒子と発生タイマーを初期状態へ戻す。
+	void ResetSimulation();
+
+	//=============================================================================================//
+	// Getter / 現在の粒子数
+
+	size_t GetLiveCount() const { return particles_.size(); }
+
+	//=============================================================================================//
+	// メンバ関数 / Particle追加
+
 	void AddParticles() { particles_.splice(particles_.end(), Emit()); }
 
 	//=============================================================================================//
 	// EmitterのTransform
 
-	TransformData& GetEmitterTransform() { return emitter_.transform; }	
+	TransformData& GetEmitterTransform() { return emitter_.transform; }
+	// 親子変換で求めたワールド位置。プリセットのローカル設定とは分けて適用する。
+	void SetEmitterPosition(const Vector3& position);
 
 	//=============================================================================================//
 	// Setter
@@ -77,7 +89,7 @@ public:
 private:
 	//=============================================================================================//
 	// Particle1粒分のデータ
-	
+
 	struct ParticleData {
 		TransformData transform;
 		Vector3 velocity;
@@ -124,12 +136,15 @@ private:
 	std::list<ParticleData> Emit();
 
 	//=============================================================================================//
-	// Δt
+	// 定数 / Δt
 
 	static constexpr float kDeltaTime = 1.0f / 60.0f;
 
+
+private:
+
 	//=============================================================================================//
-	// Renderer
+	// メンバ変数 / Renderer
 
 	ParticleRenderer* renderer_ = nullptr;
 

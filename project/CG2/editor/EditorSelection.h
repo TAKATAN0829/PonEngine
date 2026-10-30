@@ -2,13 +2,29 @@
 
 #include "IEditableScene.h"
 
-// 選択対象はIDだけで保持し、削除される可能性のあるオブジェクトへの参照を残さない。
+// 参照の寿命に依存しないよう、選択対象をIDだけで管理する。
 class EditorSelection {
 public:
-    SceneObjectId Get() const { return selected_; }
-    void Select(SceneObjectId id) { selected_ = id; }
-    void Clear() { selected_ = kInvalidSceneObjectId; }
+
+	//=============================================================================================//
+	// Getter / 選択ID
+
+	SceneObjectId Get() const { return selected_; }
+
+	//=============================================================================================//
+	// Setter / 選択ID
+
+	void Select(SceneObjectId id) { selected_ = id; }
+
+	//=============================================================================================//
+	// メンバ関数 / 選択解除
+
+	void Clear() { selected_ = kInvalidSceneObjectId; }
 
 private:
-    SceneObjectId selected_ = kInvalidSceneObjectId;
+
+	//=============================================================================================//
+	// メンバ変数 / 選択ID
+
+	SceneObjectId selected_ = kInvalidSceneObjectId; // 未選択は0。
 };

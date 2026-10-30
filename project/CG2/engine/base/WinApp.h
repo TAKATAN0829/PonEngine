@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <Windows.h>
 #include <cstdint>
@@ -20,9 +20,6 @@ public:
 	// メッセージの処理
 
 	bool ProcessMessage();
-	bool IsCloseRequested() const { return closeRequested_; }
-	void ClearCloseRequest() { closeRequested_ = false; }
-	void ConfirmClose();
 
 	//=============================================================================================//
 	// 終了処理
@@ -32,9 +29,17 @@ public:
 	//=============================================================================================//
 	// Getter
 
+	bool IsCloseRequested() const { return closeRequested_; }
+
 	HWND GetHwnd() const { return hwnd_; }
 
 	HINSTANCE GetHInstance() const { return wc_.hInstance; }
+
+	//=============================================================================================//
+	// Setter・メンバ関数 / 終了要求
+
+	void ClearCloseRequest() { closeRequested_ = false; }
+	void ConfirmClose(); // 保存確認後にだけウィンドウを破棄する。
 
 	//=============================================================================================//
 	// WindowSize

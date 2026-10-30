@@ -72,19 +72,21 @@ void Object3d::CreateDirectionalLightData () {
 
 void Object3d::CreatePointLightData () {
 
-	pointLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (PointLight), "pointLightResource");
+	pointLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (PointLightBuffer), "pointLightResource");
 
 	pointLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&pointLightData_));
 
-	pointLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
+	*pointLightData_ = {};
+	pointLightData_->count = 1;
+	pointLightData_->lights[0].color = { 1.0f,1.0f,1.0f,1.0f };
 
-	pointLightData_->position = { 0.0f,2.0f,0.0f };
+	pointLightData_->lights[0].position = { 0.0f,2.0f,0.0f };
 
-	pointLightData_->intensity = 1.0f;
+	pointLightData_->lights[0].intensity = 1.0f;
 
-	pointLightData_->radius = 10.0f;
+	pointLightData_->lights[0].radius = 10.0f;
 
-	pointLightData_->decay = 1.0f;
+	pointLightData_->lights[0].decay = 1.0f;
 }
 
 
@@ -122,7 +124,12 @@ void Object3d::Update (const Matrix4x4& viewProjectionMatrix) {
 
 	transform_.UpdateMatrix ();
 
-	Matrix4x4 worldMatrix = transform_.GetWorldMatrix ();
+	Update(viewProjectionMatrix, transform_.GetWorldMatrix());
+}
+
+// 保存データ側で解決した親子変換を使い、メッシュのRootNodeはこの後に適用する。
+void Object3d::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& objectWorldMatrix) {
+	Matrix4x4 worldMatrix = objectWorldMatrix;
 
 	if (useRootNodeMatrix_) {
 

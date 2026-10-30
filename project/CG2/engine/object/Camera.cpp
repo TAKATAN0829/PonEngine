@@ -86,7 +86,9 @@ const Matrix4x4& Camera::GetProjectionMatrix () const {
 }
 // Gameビューも描画先の寸法に合わせ、縦横比による引き伸ばしを防ぐ。
 void Camera::SetViewportSize(int32_t width, int32_t height) {
-	if (width <= 0 || height <= 0) { return; }
+	if (width <= 0 || height <= 0) {
+		return;
+	}
 	clientWidth_ = width;
 	clientHeight_ = height;
 	Update();

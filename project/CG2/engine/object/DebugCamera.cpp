@@ -12,11 +12,11 @@ void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight) {
 	transform_.rotate = { 0.f,0.f,0.f };
 	transform_.translate = { 0.f,0.f,-30.f };
 
+	UpdateProjectionMatrix();
 	UpdateMatrix();
 }
 
 void DebugCamera::Update(Input* input) {
-	input_ = input;
 
 	Vector3 move{ 0.0f, 0.0f, 0.0f };
 
@@ -69,29 +69,39 @@ void DebugCamera::Update(Input* input) {
 		move = MathUtility::Normalize(move);
 
 		Matrix4x4 rotateMatrix =
-			MathUtility::Multiply(MathUtility::MakeRotateXMatrix(transform_.rotate.x),
-				MathUtility::Multiply(MathUtility::MakeRotateYMatrix(transform_.rotate.y), MathUtility::MakeRotateZMatrix(transform_.rotate.z))
+		MathUtility::Multiply(MathUtility::MakeRotateXMatrix(transform_.rotate.x),
+			MathUtility::Multiply(MathUtility::MakeRotateYMatrix(transform_.rotate.y), MathUtility::MakeRotateZMatrix(transform_.rotate.z))
 			);
 
-		Vector3 velocity = MathUtility::TransformNormal(move, rotateMatrix);
-
-		velocity.x *= moveSpeed_;
-		velocity.y *= moveSpeed_;
-		velocity.z *= moveSpeed_;
-
-		transform_.translate = MathUtility::Add(transform_.translate, velocity);
+		transform_.translate = MathUtility::Add(transform_.translate,
+			MathUtility::Multiply(moveSpeed_, MathUtility::TransformNormal(move, rotateMatrix)));
 	}
 
-#ifdef USE_IMGUI
-	ImGui::Begin("Camera");
-	ImGui::DragFloat3("Translate", &transform_.translate.x, 0.1f);
-	ImGui::DragFloat3("Rotate", &transform_.rotate.x, 0.01f);
-	ImGui::DragFloat("MoveSpeed", &moveSpeed_, 0.01f);
-	ImGui::DragFloat("RotateSpeed", &rotateSpeed_, 0.001f);
-	ImGui::End();
-#endif
 
 	UpdateMatrix();
+}
+
+//=============================================================================================//
+// 描画処理
+
+void DebugCamera::Draw(bool* open) {
+#ifdef USE_IMGUI
+	ImGui::SetNextWindowSize({350, 250}, ImGuiCond_FirstUseEver);
+	if (ImGui::Begin("Camera", open)) {
+		bool edited = ImGui::DragFloat3("Translate", &transform_.translate.x, 0.1f);
+		if (ImGui::DragFloat3("Rotate", &transform_.rotate.x, 0.01f)) {
+			edited = true;
+		}
+		ImGui::DragFloat("MoveSpeed", &moveSpeed_, 0.01f);
+		ImGui::DragFloat("RotateSpeed", &rotateSpeed_, 0.001f);
+		if (edited) {
+			UpdateMatrix();
+		}
+	}
+	ImGui::End();
+#else
+	(void)open;
+#endif
 }
 
 void DebugCamera::UpdateMatrix() {
@@ -100,7 +110,6 @@ void DebugCamera::UpdateMatrix() {
 
 	viewMatrix_ = MathUtility::Inverse(cameraMatrix_);
 
-	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix(0.45f, float(clientWidth_) / float(clientHeight_), 0.1f, 1000.0f);
 
 	viewProjectionMatrix_ = MathUtility::Multiply(viewMatrix_, projectionMatrix_);
 }
@@ -114,8 +123,19 @@ void DebugCamera::Focus(const Vector3& targetPosition) {
 
 // パネルのアスペクト比に合わせ、投影とクリック判定の行列を同時に更新する。
 void DebugCamera::SetViewportSize(int32_t width, int32_t height) {
-	if (width <= 0 || height <= 0) { return; }
+	if (width <= 0 || height <= 0) {
+		return;
+	}
+	if (clientWidth_ == width && clientHeight_ == height) {
+		return;
+	}
 	clientWidth_ = width;
 	clientHeight_ = height;
+	UpdateProjectionMatrix();
 	UpdateMatrix();
+}
+
+// 表示サイズが変わらない間は投影行列を再利用する。
+void DebugCamera::UpdateProjectionMatrix() {
+	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix(0.45f, static_cast<float>(clientWidth_) / static_cast<float>(clientHeight_), 0.1f, 1000.0f);
 }

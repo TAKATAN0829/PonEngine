@@ -73,6 +73,7 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
     }
     // 文字と背景のコントラストを保ち、項目間を詰めすぎない配色・余白にする。
     ImGuiStyle& style = ImGui::GetStyle();
+    style.FontScaleMain = 0.85f; // 初回フレームも含め、Editor全体で倍率を固定する。
     style.WindowPadding = {12, 10};
     style.FramePadding = {8, 5};
     style.ItemSpacing = {9, 8};
@@ -87,7 +88,15 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
     style.Colors[ImGuiCol_Header] = {0.16f, 0.25f, 0.36f, 1};
     style.Colors[ImGuiCol_Button] = {0.17f, 0.28f, 0.42f, 1};
     style.Colors[ImGuiCol_ButtonHovered] = {0.23f, 0.42f, 0.62f, 1};
-    style.Colors[ImGuiCol_TabSelected] = {0.19f, 0.33f, 0.49f, 1};
+    // タブ選択やフォーカスでバーを発光させず、落ち着いた同じ背景を保つ。
+    style.Colors[ImGuiCol_Tab] = {0.12f, 0.14f, 0.17f, 1};
+    style.Colors[ImGuiCol_TabHovered] = style.Colors[ImGuiCol_Tab];
+    style.Colors[ImGuiCol_TabSelected] = style.Colors[ImGuiCol_Tab];
+    style.Colors[ImGuiCol_TabDimmed] = style.Colors[ImGuiCol_Tab];
+    style.Colors[ImGuiCol_TabDimmedSelected] = style.Colors[ImGuiCol_Tab];
+    style.Colors[ImGuiCol_TabSelectedOverline] = {0, 0, 0, 0};
+    style.Colors[ImGuiCol_TabDimmedSelectedOverline] = {0, 0, 0, 0};
+    style.Colors[ImGuiCol_TitleBgActive] = style.Colors[ImGuiCol_TitleBg];
 
 	//===========================================//
 	// Win32初期化

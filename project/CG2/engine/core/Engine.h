@@ -30,12 +30,17 @@ public:
 
 	// frameLimitが0なら通常実行。起動試験では指定フレーム数だけ描画して終了する。
 	void Run (uint32_t frameLimit = 0);
-	bool HasGraphicsErrors() const { return dxCommon_->HasValidationErrors(); }
 
 	//=============================================================================================//
 	// 終了処理
 
 	void Finalize ();
+
+
+	//=============================================================================================//
+	// Getter / GPU検証結果
+
+	bool HasGraphicsErrors() const { return dxCommon_->HasValidationErrors(); }
 
 private:
 
@@ -79,6 +84,10 @@ private:
 
 	SpriteCommon* spriteCommon_ = nullptr;
 
+
+	//=============================================================================================//
+	// メンバ変数 / Particle描画
+
 	ParticleRenderer* particleRenderer_ = nullptr;
 
 	//=============================================================================================//
@@ -92,6 +101,11 @@ private:
 	SceneManager* sceneManager_ = nullptr;
 
 #ifdef USE_IMGUI
+
+	//=============================================================================================//
+	// メンバ変数 / Editor・Scene描画先
+
+	// Editorは編集状態を所有し、SceneRenderTargetは画像用GPUリソースを所有する。
 	Editor editor_;
 	SceneRenderTarget sceneTarget_;
 #endif

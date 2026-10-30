@@ -2,8 +2,12 @@
 
 #include "IEditableScene.h"
 
-// 選択中のデータを借用してComponentを編集する。対象の所有や破棄は行わない。
+// 選択対象の設定を借用して編集する。オブジェクトは所有しない。
 class InspectorPanel {
 public:
-    static void Draw(const EditableObjectView& object);
+
+	//=============================================================================================//
+	// 描画処理
+
+	static void Draw(const EditableObjectView& object, bool* particleEditorOpen = nullptr);
 };

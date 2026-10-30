@@ -105,13 +105,17 @@ void Engine::Initialize(IScene* firstScene) {
 	sceneManager_ = new SceneManager();
 
 	sceneManager_->Initialize(sceneContext, firstScene);
+#ifdef USE_IMGUI
+	// シーンの初期化後に編集用の履歴・選択状態を作る。
+	editor_.Initialize(sceneManager_->GetEditableScene());
+#endif
 }
 
 //=================================================================================================//
 // 実行処理
 
 void Engine::Run(uint32_t frameLimit) {
-    uint32_t renderedFrames = 0;
+	uint32_t renderedFrames = 0;
 #ifdef USE_IMGUI
 	bool previousPlayState = false;
 #endif
@@ -154,6 +158,7 @@ void Engine::Run(uint32_t frameLimit) {
 		// 座標やマテリアルをGPUへ送る前に編集し、変更を同じフレームの描画へ反映する。
 		editor_.SetSceneTexture(sceneTarget_.GetTextureHandle());
 		editor_.Draw(sceneManager_->GetEditableScene());
+		editor_.Update(sceneManager_->GetEditableScene());
 		if (winApp_->IsCloseRequested()) {
 			editor_.RequestExit(sceneManager_->GetEditableScene());
 			winApp_->ClearCloseRequest();
@@ -192,7 +197,7 @@ void Engine::Run(uint32_t frameLimit) {
 		//=========================================================================================//
 		// シーン描画
 
-		#ifdef USE_IMGUI
+#ifdef USE_IMGUI
 		sceneTarget_.Resize(editor_.GetSceneWidth(), editor_.GetSceneHeight());
 		sceneTarget_.Begin();
 #endif
@@ -210,8 +215,10 @@ void Engine::Run(uint32_t frameLimit) {
 		// 描画後処理
 
 		dxCommon_->PostDraw();
-        ++renderedFrames;
-        if (frameLimit != 0 && renderedFrames >= frameLimit) { break; }
+		++renderedFrames;
+		if (frameLimit != 0 && renderedFrames >= frameLimit) {
+			break;
+		}
 	}
 }
 
@@ -230,7 +237,7 @@ void Engine::Finalize() {
 	//=============================================================================================//
 	// ImGuiSystem終了
 
-	#ifdef USE_IMGUI
+#ifdef USE_IMGUI
 	sceneTarget_.Finalize();
 #endif
 	imGuiSystem_->Finalize();

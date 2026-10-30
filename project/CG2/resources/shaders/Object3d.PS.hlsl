@@ -35,7 +35,13 @@ struct PointLight
     float radius;
     float decay;
 };
-ConstantBuffer<PointLight> gPointLight : register(b3);
+// C++のPointLightBufferと同じ配置。配列要素は48バイトとなる。
+struct PointLightBuffer {
+    uint count;
+    float3 padding;
+    PointLight lights[9];
+};
+ConstantBuffer<PointLightBuffer> gPointLights : register(b3);
 //=================================================================================================//
 //=================================================================================================//
 struct SpotLight
@@ -96,19 +102,25 @@ PixelShaderOutput main(VertexShaderOutput input)
         //=========================================================================================//
         // 点光源
 
-        float32_t3 pointLightDirection = normalize(input.worldPosition - gPointLight.position);
-        float distance = length(gPointLight.position - input.worldPosition);
-        float factor = pow(saturate(-distance / gPointLight.radius + 1.0f), gPointLight.decay);
+        float32_t3 diffusePointLight = float32_t3(0,0,0);
+        float32_t3 specularPointLight = float32_t3(0,0,0);
+        for (uint lightIndex = 0; lightIndex < min(gPointLights.count, 9u); ++lightIndex) {
+            PointLight pointLight = gPointLights.lights[lightIndex];
+        float32_t3 pointLightDirection = normalize(input.worldPosition - pointLight.position);
+        float distance = length(pointLight.position - input.worldPosition);
+        float factor = pow(saturate(-distance / pointLight.radius + 1.0f), pointLight.decay);
 
         float NdotLPoint = dot(normal, -pointLightDirection);
         float cosPoint = pow(NdotLPoint * 0.5f + 0.5f, 2.0f);
         float32_t3 halfVectorPoint = normalize(-pointLightDirection + toEye);
         float specularPowPoint = pow(saturate(dot(normal, halfVectorPoint)), gMaterial.shininess);
 
-        float32_t3 diffusePointLight =
-        gMaterial.color.rgb * textureColor.rgb * gPointLight.color.rgb * cosPoint * gPointLight.intensity * factor;
-        float32_t3 specularPointLight =
-        gPointLight.color.rgb * gPointLight.intensity * factor * specularPowPoint * float32_t3(1.f, 1.f, 1.f);
+        diffusePointLight +=
+        gMaterial.color.rgb * textureColor.rgb * pointLight.color.rgb * cosPoint * pointLight.intensity * factor;
+        specularPointLight +=
+        pointLight.color.rgb * pointLight.intensity * factor * specularPowPoint * float32_t3(1.f, 1.f, 1.f);
+
+        }
 
         //=========================================================================================//
         // スポットライト

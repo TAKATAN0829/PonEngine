@@ -2,6 +2,7 @@
 
 // C++
 #include <cassert>
+#include <cmath>
 
 // 自作
 #include "ParticleRenderer.h"
@@ -133,7 +134,9 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 			instancingData_[numInstance_].color = particleIterator->color;
 
 			float remainingAlpha = 1.0f - particleIterator->currentTime / particleIterator->lifeTime;
-			if (remainingAlpha < 0) { remainingAlpha = 0; }
+			if (remainingAlpha < 0) {
+				remainingAlpha = 0;
+			}
 			instancingData_[numInstance_].color.w = particleIterator->color.w * remainingAlpha;
 
 			++numInstance_;
@@ -257,7 +260,9 @@ std::list<Particle::ParticleData> Particle::Emit() {
 
 	for (uint32_t count = 0; count < emitter_.count; ++count) {
 		// 描画上限を超える粒子は生成せず、長い寿命や高頻度でもメモリを増やし続けない。
-		if (particles_.size() + particles.size() >= kNumMaxInstance) { break; }
+		if (particles_.size() + particles.size() >= kNumMaxInstance) {
+			break;
+		}
 
 		particles.push_back(MakeNewParticle(emitter_.transform.translate));
 	}
@@ -274,16 +279,28 @@ void Particle::ResetSimulation() {
 
 // 不正な編集中の値は実行へ反映せず、直前の正常な設定でプレビューを続ける。
 bool Particle::ApplySettings(const ParticleSettings& settings) {
-    if (!ValidateParticleSettings(settings)) { return false; }
-    if (settings.texture != appliedTexture_) { SetTexture(settings.texture); }
-    settings_ = settings;
-    emitter_.transform.translate = settings.emitterPosition;
-    emitter_.count = settings.spawnCount;
-    emitter_.frequency = settings.interval;
-    accelerationField_.acceleration = settings.acceleration;
-    useAccelerationField_ = settings.accelerationEnabled;
-    useBillboard_ = settings.billboard;
-    blendMode_ = settings.blendMode;
-    material_->SetColor({1,1,1,1});
-    return true;
+	if (!ValidateParticleSettings(settings)) {
+		return false;
+	}
+	if (settings.texture != appliedTexture_) {
+		SetTexture(settings.texture);
+	}
+	settings_ = settings;
+	emitter_.transform.translate = settings.emitterPosition;
+	emitter_.count = settings.spawnCount;
+	emitter_.frequency = settings.interval;
+	accelerationField_.acceleration = settings.acceleration;
+	useAccelerationField_ = settings.accelerationEnabled;
+	useBillboard_ = settings.billboard;
+	blendMode_ = settings.blendMode;
+	material_->SetColor({1,1,1,1});
+	return true;
+}
+
+// 設定のコピーを作らず、シーン側で解決した発生位置だけを反映する。
+void Particle::SetEmitterPosition(const Vector3& position) {
+	if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) {
+		return;
+	}
+	emitter_.transform.translate = position;
 }

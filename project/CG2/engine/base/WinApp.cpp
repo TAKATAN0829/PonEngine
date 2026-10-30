@@ -66,21 +66,15 @@ void WinApp::Update() {
 
 bool WinApp::ProcessMessage() {
 
-	MSG msg{};
+	MSG message{};
 
-	if (PeekMessage(
-		&msg,
-		nullptr,
-		0,
-		0,
-		PM_REMOVE)) {
-
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
-
-	if (msg.message == WM_QUIT) {
-		return true;
+	// マウス移動とキー入力を同時に行っても、古い入力を次フレームへ溜めない。
+	while (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
+		if (message.message == WM_QUIT) {
+			return true;
+		}
+		TranslateMessage(&message);
+		DispatchMessage(&message);
 	}
 
 	return false;
@@ -121,16 +115,16 @@ LRESULT CALLBACK WinApp::WindowProc(
 #endif
 
 	switch (msg) {
-	case WM_CLOSE: {
-		// ここでは破棄せず、Editorが未保存の変更を確認できるように終了要求だけを残す。
-		WinApp* window = reinterpret_cast<WinApp*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		if (window != nullptr) {
-			window->closeRequested_ = true;
-			return 0;
+		case WM_CLOSE: {
+			// ここでは破棄せず、Editorが未保存の変更を確認できるように終了要求だけを残す。
+			WinApp* window = reinterpret_cast<WinApp*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+			if (window != nullptr) {
+				window->closeRequested_ = true;
+				return 0;
+			}
+			break;
 		}
-		break;
-	}
-	case WM_DESTROY:
+		case WM_DESTROY:
 
 		// OSに終了を通知
 		PostQuitMessage(0);

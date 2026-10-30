@@ -1,4 +1,6 @@
 #pragma once
+#include <algorithm>
+#include <vector>
 
 // DirectX
 #include <d3d12.h>
@@ -32,6 +34,8 @@ public:
 	// 更新処理
 
 	void Update (const Matrix4x4& viewProjectionMatrix);
+	// シーンの親子変換を解決したワールド行列で描画用データを更新する。
+	void Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& objectWorldMatrix);
 
 	//=============================================================================================//
 	// 描画処理
@@ -95,7 +99,14 @@ public:
 	//=============================================================================================//
 	// PointLight設定
 
-	void SetPointLight (const PointLight& pointLight) { *pointLightData_ = pointLight; }
+	void SetPointLight (const PointLight& pointLight) { pointLightData_->count = 1; pointLightData_->lights[0] = pointLight; }
+	// 最大数は呼出元と保存時にも検証するが、GPU転送時にも配列境界を守る。
+	void SetPointLights(const std::vector<PointLight>& lights) {
+		pointLightData_->count = static_cast<uint32_t>((std::min)(lights.size(), size_t{9}));
+		for (uint32_t lightIndex = 0; lightIndex < pointLightData_->count; ++lightIndex) {
+			pointLightData_->lights[lightIndex] = lights[lightIndex];
+		}
+	}
 
 	//=============================================================================================//
 	// SpotLight設定
@@ -179,7 +190,7 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightResource_ = nullptr;
 
-	PointLight* pointLightData_ = nullptr;
+	PointLightBuffer* pointLightData_ = nullptr;
 
 	//=============================================================================================//
 	// スポットライト
