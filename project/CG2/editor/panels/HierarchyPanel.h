@@ -24,7 +24,7 @@ private:
 	// 型 / 親子一覧・操作要求
 
 	using ChildIndices = std::unordered_map<SceneObjectId, std::vector<size_t>>;
-	struct ParentChangeRequest {
+	struct HierarchyRequest {
 		SceneObjectId childId = kInvalidSceneObjectId;
 		SceneObjectId parentId = kInvalidSceneObjectId;
 		bool requested = false;
@@ -38,9 +38,9 @@ private:
 	static void DrawCreateMenu(IEditableScene& scene, EditorSelection& selection);
 	static void DrawContextMenu(IEditableScene& scene, EditorSelection& selection);
 	static void DrawBranch(IEditableScene& scene, EditorSelection& selection, const ChildIndices& children,
-		SceneObjectId parentId, ParentChangeRequest& request);
+		SceneObjectId parentId, HierarchyRequest& request);
 	// 描画中は参照を無効化しないよう、ドロップ結果だけを記録する。
-	static void AcceptParentDrop(SceneObjectId parentId, ParentChangeRequest& request);
+	static void AcceptParentDrop(SceneObjectId parentId, HierarchyRequest& request);
 
 private:
 	//=============================================================================================//

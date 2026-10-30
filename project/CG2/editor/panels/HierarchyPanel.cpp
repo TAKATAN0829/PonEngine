@@ -11,7 +11,7 @@ void HierarchyPanel::Initialize() {
 	contextTarget_ = kInvalidSceneObjectId;
 }
 
-// 種類別の上限を先に表示し、追加に失敗した状態もユーザーへ知らせる。
+// 種類別の上限を確認し、新規作成サブメニューを描く。
 void HierarchyPanel::DrawCreateMenu(IEditableScene& scene, EditorSelection& selection) {
 #ifdef USE_IMGUI
 	if (!ImGui::BeginMenu("新規作成")) {
@@ -111,7 +111,7 @@ void HierarchyPanel::DrawContextMenu(IEditableScene& scene, EditorSelection& sel
 }
 
 // ドロップでvectorが置き換わるのはツリー描画がすべて終わってから。
-void HierarchyPanel::AcceptParentDrop(SceneObjectId parentId, ParentChangeRequest& request) {
+void HierarchyPanel::AcceptParentDrop(SceneObjectId parentId, HierarchyRequest& request) {
 #ifdef USE_IMGUI
 	if (ImGui::BeginDragDropTarget()) {
 		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PON_SCENE_OBJECT");
@@ -131,7 +131,7 @@ void HierarchyPanel::AcceptParentDrop(SceneObjectId parentId, ParentChangeReques
 }
 
 void HierarchyPanel::DrawBranch(IEditableScene& scene, EditorSelection& selection, const ChildIndices& children,
-	SceneObjectId parentId, ParentChangeRequest& request) {
+	SceneObjectId parentId, HierarchyRequest& request) {
 #ifdef USE_IMGUI
 	const ChildIndices::const_iterator found = children.find(parentId);
 	if (found == children.end()) {
@@ -208,7 +208,7 @@ void HierarchyPanel::Draw(IEditableScene* scene, EditorSelection& selection) {
 	}
 	ImGui::TextDisabled("Objects: %zu", scene->GetEditableObjectCount());
 	ImGui::Separator();
-	ParentChangeRequest request;
+	HierarchyRequest request;
 	ChildIndices children;
 	for (size_t objectIndex = 0; objectIndex < scene->GetEditableObjectCount(); ++objectIndex) {
 		children[scene->GetEditableObject(objectIndex).parentId].push_back(objectIndex);
