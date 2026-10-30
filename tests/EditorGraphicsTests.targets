@@ -1,0 +1,15 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- 本番のビルド設定とソース一覧を利用し、起動部分と出力先だけを試験用に変える。 -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'CG2'">
+    <OutDir>$(MSBuildThisFileDirectory)..\generated\editor-graphics-tests\bin\</OutDir>
+    <IntDir>$(MSBuildThisFileDirectory)..\generated\editor-graphics-tests\obj\</IntDir>
+    <TargetName>EditorGraphicsTests</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(MSBuildProjectName)' == 'CG2'">
+    <Link><SubSystem>Console</SubSystem></Link>
+  </ItemDefinitionGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'CG2'">
+    <ClCompile Remove="main.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)EditorGraphicsTests.cpp" />
+  </ItemGroup>
+</Project>

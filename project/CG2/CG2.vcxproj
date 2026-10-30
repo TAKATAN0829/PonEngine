@@ -355,4 +355,18 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="editor\panels\SceneViewPanel.cpp" />
     <ClInclude Include="editor\panels\SceneViewPanel.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\dx12\SceneRenderTarget.cpp" />
+    <ClInclude Include="engine\dx12\SceneRenderTarget.h" />
+    <ClCompile Include="engine\scene\ParticleSettings.cpp" />
+    <ClInclude Include="engine\scene\ParticleSettings.h" />
+    <ClCompile Include="engine\scene\ParticlePresetFile.cpp" />
+    <ClInclude Include="engine\scene\ParticlePresetFile.h" />
+    <ClCompile Include="editor\EditorLayout.cpp" />
+    <ClInclude Include="editor\EditorLayout.h" />
+    <ClCompile Include="editor\panels\ParticleEditorPanel.cpp" />
+    <ClInclude Include="editor\panels\ParticleEditorPanel.h" />
+    <ClCompile Include="editor\panels\UtilityPanels.cpp" />
+    <ClInclude Include="editor\panels\UtilityPanels.h" />
+  </ItemGroup>
 </Project>

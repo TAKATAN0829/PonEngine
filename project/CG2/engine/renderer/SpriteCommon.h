@@ -16,6 +16,9 @@ class Mesh;
 
 class SpriteCommon {
 public:
+	void SetViewportSize(float width, float height) { viewportWidth_ = width; viewportHeight_ = height; }
+	float GetViewportWidth() const { return viewportWidth_; }
+	float GetViewportHeight() const { return viewportHeight_; }
 
 	//=============================================================================================//
 	// 初期化処理
@@ -42,6 +45,8 @@ public:
 	Mesh* GetMesh() const { return mesh_; }
 
 private:
+	float viewportWidth_ = 1600;
+	float viewportHeight_ = 900;
 
 	//=============================================================================================//
 	// RootSignatureの作成

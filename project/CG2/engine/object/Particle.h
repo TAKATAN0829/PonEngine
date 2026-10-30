@@ -15,6 +15,7 @@
 #include "EngineStructs.h"
 #include "Material.h"
 #include "BlendMode.h"
+#include "ParticleSettings.h"
 
 class ParticleRenderer;
 
@@ -34,8 +35,10 @@ public:
 	//=============================================================================================//
 	// 更新処理
 
-	void Update (const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate = true);
+	void Update (const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate = true, bool emit = true);
 	void ResetSimulation();
+	bool ApplySettings(const ParticleSettings& settings);
+	size_t GetLiveCount() const { return particles_.size(); }
 
 	//=============================================================================================//
 	// 描画処理
@@ -189,4 +192,7 @@ private:
 	// ビルボード
 
 	bool useBillboard_ = true;
+	ParticleSettings settings_;
+	bool descriptorAllocated_ = false;
+	std::string appliedTexture_;
 };

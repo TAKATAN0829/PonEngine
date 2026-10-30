@@ -3,6 +3,9 @@
 #include "EditorSelection.h"
 #include "EditorSession.h"
 #include "panels/SceneViewPanel.h"
+#include "panels/ParticleEditorPanel.h"
+#include "panels/UtilityPanels.h"
+#include "EditorLayout.h"
 #include <string>
 
 // 各パネルをまとめ、編集・保存・再生・終了確認の操作順序を管理する。
@@ -13,6 +16,9 @@ public:
     bool ShouldSimulate();
     void RequestExit(IEditableScene* scene);
     bool ShouldExit() const { return exitApproved_; }
+    void SetSceneTexture(uint64_t textureHandle) { sceneView_.SetTexture(textureHandle); }
+    uint32_t GetSceneWidth() const { return sceneView_.GetWidth(); }
+    uint32_t GetSceneHeight() const { return sceneView_.GetHeight(); }
 
 private:
     enum class SceneAction { None, NewScene, LoadScene, Exit };
@@ -27,6 +33,10 @@ private:
     EditorSelection selection_;
     EditorSession session_;
     SceneViewPanel sceneView_; // 画面上の選択とドラッグ状態を管理する。
+    ParticleEditorPanel particleEditor_;
+    UtilityPanels utilityPanels_;
+    EditorLayout layout_;
+    std::string loggedStatus_;
     std::string fileStatus_; // 保存や読込の結果を表示するメッセージ。
     SceneAction pendingAction_ = SceneAction::None; // 保存確認待ちの操作。
     bool openDiscardPrompt_ = false; // 次の描画時に確認ダイアログを開く。

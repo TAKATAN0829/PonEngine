@@ -15,6 +15,8 @@ public:
 	void Update(Input* input);
 	// 向きを維持し、選択位置から一定距離離れた場所へカメラを移す。
 	void Focus(const Vector3& targetPosition);
+	void SetViewportSize(int32_t width, int32_t height);
+	void SetEditorInputEnabled(bool enabled) { editorInputEnabled_ = enabled; }
 
 	//=============================================================================================//
 	// Getter
@@ -42,5 +44,6 @@ private:
 
 	float moveSpeed_ = 0.2f;
 	float rotateSpeed_ = 0.01f;
+	bool editorInputEnabled_ = true;
 };
 

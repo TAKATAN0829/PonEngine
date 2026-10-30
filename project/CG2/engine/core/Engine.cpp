@@ -87,6 +87,9 @@ void Engine::Initialize(IScene* firstScene) {
 	imGuiSystem_ = new ImGuiSystem();
 
 	imGuiSystem_->Initialize(winApp_, dxCommon_, srvManager_);
+#ifdef USE_IMGUI
+	sceneTarget_.Initialize(dxCommon_, srvManager_);
+#endif
 
 	//=============================================================================================//
 	// SceneManager初期化
@@ -107,7 +110,8 @@ void Engine::Initialize(IScene* firstScene) {
 //=================================================================================================//
 // 実行処理
 
-void Engine::Run() {
+void Engine::Run(uint32_t frameLimit) {
+    uint32_t renderedFrames = 0;
 #ifdef USE_IMGUI
 	bool previousPlayState = false;
 #endif
@@ -148,6 +152,7 @@ void Engine::Run() {
 
 #ifdef USE_IMGUI
 		// 座標やマテリアルをGPUへ送る前に編集し、変更を同じフレームの描画へ反映する。
+		editor_.SetSceneTexture(sceneTarget_.GetTextureHandle());
 		editor_.Draw(sceneManager_->GetEditableScene());
 		if (winApp_->IsCloseRequested()) {
 			editor_.RequestExit(sceneManager_->GetEditableScene());
@@ -187,7 +192,14 @@ void Engine::Run() {
 		//=========================================================================================//
 		// シーン描画
 
+		#ifdef USE_IMGUI
+		sceneTarget_.Resize(editor_.GetSceneWidth(), editor_.GetSceneHeight());
+		sceneTarget_.Begin();
+#endif
 		sceneManager_->Draw();
+#ifdef USE_IMGUI
+		sceneTarget_.End();
+#endif
 
 		//=========================================================================================//
 		// ImGui描画
@@ -198,6 +210,8 @@ void Engine::Run() {
 		// 描画後処理
 
 		dxCommon_->PostDraw();
+        ++renderedFrames;
+        if (frameLimit != 0 && renderedFrames >= frameLimit) { break; }
 	}
 }
 
@@ -216,6 +230,9 @@ void Engine::Finalize() {
 	//=============================================================================================//
 	// ImGuiSystem終了
 
+	#ifdef USE_IMGUI
+	sceneTarget_.Finalize();
+#endif
 	imGuiSystem_->Finalize();
 
 	delete imGuiSystem_;

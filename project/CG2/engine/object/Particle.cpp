@@ -57,6 +57,7 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 	// SRV生成
 
 	instancingSrvIndex_ = srvManager->Allocate();
+	descriptorAllocated_ = true;
 
 	srvManager->CreateSRVforStructuredBuffer(
 		instancingSrvIndex_,
@@ -68,13 +69,17 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 //=================================================================================================//
 // 更新処理
 
-void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate) {
+void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate, bool emit) {
 	// 一時停止中は発生・移動・経過時間を止め、カメラに合わせた描画データだけを更新する。
 
 	// 頻度による発生
-	if (simulate) {
+	if (simulate && emit) {
 		emitter_.frequencyTime += kDeltaTime;
-		if (emitter_.frequency <= emitter_.frequencyTime) {
+		while (emitter_.frequency <= emitter_.frequencyTime) {
+			if (particles_.size() >= kNumMaxInstance) {
+				emitter_.frequencyTime = std::fmod(emitter_.frequencyTime, emitter_.frequency);
+				break;
+			}
 			particles_.splice(particles_.end(), Emit());
 			emitter_.frequencyTime -= emitter_.frequency;
 		}
@@ -103,7 +108,7 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 		}
 
 		if (simulate) {
-			if (useAccelerationField_ && MathUtility::IsCollision(accelerationField_.area, particleIterator->transform.translate)) {
+			if (useAccelerationField_) {
 
 				particleIterator->velocity = MathUtility::Add(particleIterator->velocity, MathUtility::Multiply(kDeltaTime, accelerationField_.acceleration));
 			}
@@ -127,7 +132,9 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 
 			instancingData_[numInstance_].color = particleIterator->color;
 
-			instancingData_[numInstance_].color.w = 1.0f - (particleIterator->currentTime / particleIterator->lifeTime);
+			float remainingAlpha = 1.0f - particleIterator->currentTime / particleIterator->lifeTime;
+			if (remainingAlpha < 0) { remainingAlpha = 0; }
+			instancingData_[numInstance_].color.w = particleIterator->color.w * remainingAlpha;
 
 			++numInstance_;
 		}
@@ -169,6 +176,10 @@ void Particle::Draw() {
 // 終了処理
 
 void Particle::Finalize() {
+	if (descriptorAllocated_) {
+		renderer_->GetSrvManager()->Free(instancingSrvIndex_);
+		descriptorAllocated_ = false;
+	}
 
 	if (material_ != nullptr) {
 
@@ -194,6 +205,7 @@ void Particle::SetTexture(const std::string& filePath) {
 	uint32_t textureIndex = TextureManager::GetInstance()->Load(filePath);
 
 	material_->SetTextureIndex(textureIndex);
+	appliedTexture_ = filePath;
 }
 
 //=================================================================================================//
@@ -211,18 +223,25 @@ Particle::ParticleData Particle::MakeNewParticle(const Vector3& translate) {
 
 	ParticleData particle{};
 
-	particle.transform.scale = { 1.0f,1.0f,1.0f };
+	particle.transform.scale = settings_.particleScale;
 	particle.transform.rotate = { 0.0f,0.0f,0.0f };
 
-	Vector3 randomTranslate = { Random::Range(-1.0f,1.0f),Random::Range(-1.0f,1.0f),Random::Range(-1.0f,1.0f) };
+	Vector3 randomTranslate = {Random::Range(-settings_.spread.x, settings_.spread.x),
+		Random::Range(-settings_.spread.y, settings_.spread.y), Random::Range(-settings_.spread.z, settings_.spread.z)};
 
 	particle.transform.translate = MathUtility::Add(translate, randomTranslate);
 
-	particle.velocity = { Random::Range(-1.0f,1.0f),Random::Range(-1.0f,1.0f),Random::Range(-1.0f,1.0f) };
+	particle.velocity = {Random::Range(settings_.velocityMinimum.x, settings_.velocityMaximum.x),
+		Random::Range(settings_.velocityMinimum.y, settings_.velocityMaximum.y), Random::Range(settings_.velocityMinimum.z, settings_.velocityMaximum.z)};
 
-	particle.color = { Random::Range(0.0f,1.0f),Random::Range(0.0f,1.0f),Random::Range(0.0f,1.0f),1.0f };
+	particle.color = settings_.color;
+	if (settings_.randomColor) {
+		particle.color.x *= Random::Range(0.0f, 1.0f);
+		particle.color.y *= Random::Range(0.0f, 1.0f);
+		particle.color.z *= Random::Range(0.0f, 1.0f);
+	}
 
-	particle.lifeTime = Random::Range(1.0f, 3.0f);
+	particle.lifeTime = Random::Range(settings_.lifetimeMinimum, settings_.lifetimeMaximum);
 
 	particle.currentTime = 0.0f;
 
@@ -237,6 +256,8 @@ std::list<Particle::ParticleData> Particle::Emit() {
 	std::list<ParticleData> particles;
 
 	for (uint32_t count = 0; count < emitter_.count; ++count) {
+		// 描画上限を超える粒子は生成せず、長い寿命や高頻度でもメモリを増やし続けない。
+		if (particles_.size() + particles.size() >= kNumMaxInstance) { break; }
 
 		particles.push_back(MakeNewParticle(emitter_.transform.translate));
 	}
@@ -249,4 +270,20 @@ void Particle::ResetSimulation() {
 	particles_.clear();
 	emitter_.frequencyTime = 0;
 	numInstance_ = 0;
+}
+
+// 不正な編集中の値は実行へ反映せず、直前の正常な設定でプレビューを続ける。
+bool Particle::ApplySettings(const ParticleSettings& settings) {
+    if (!ValidateParticleSettings(settings)) { return false; }
+    if (settings.texture != appliedTexture_) { SetTexture(settings.texture); }
+    settings_ = settings;
+    emitter_.transform.translate = settings.emitterPosition;
+    emitter_.count = settings.spawnCount;
+    emitter_.frequency = settings.interval;
+    accelerationField_.acceleration = settings.acceleration;
+    useAccelerationField_ = settings.accelerationEnabled;
+    useBillboard_ = settings.billboard;
+    blendMode_ = settings.blendMode;
+    material_->SetColor({1,1,1,1});
+    return true;
 }

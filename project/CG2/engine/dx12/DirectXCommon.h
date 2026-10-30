@@ -36,6 +36,8 @@ public:
 	// 描画前処理
 
 	void PreDraw();
+	void BindBackBuffer();
+	bool HasValidationErrors() const;
 
 	//=============================================================================================//
 	// 描画後処理
@@ -57,6 +59,9 @@ public:
 	ID3D12CommandQueue* GetCommandQueue() { return commandQueue_.Get(); }
 
 private:
+	void ResizeIfNeeded();
+	uint32_t renderWidth_ = 0;
+	uint32_t renderHeight_ = 0;
 
 	//=============================================================================================//
 	// DebugLayer初期化

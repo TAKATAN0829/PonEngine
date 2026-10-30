@@ -14,6 +14,7 @@
 #include "SceneManager.h"
 #ifdef USE_IMGUI
 #include "../../editor/Editor.h"
+#include "SceneRenderTarget.h"
 #endif
 
 class Engine {
@@ -27,7 +28,9 @@ public:
 	//=============================================================================================//
 	// 実行処理
 
-	void Run ();
+	// frameLimitが0なら通常実行。起動試験では指定フレーム数だけ描画して終了する。
+	void Run (uint32_t frameLimit = 0);
+	bool HasGraphicsErrors() const { return dxCommon_->HasValidationErrors(); }
 
 	//=============================================================================================//
 	// 終了処理
@@ -90,5 +93,6 @@ private:
 
 #ifdef USE_IMGUI
 	Editor editor_;
+	SceneRenderTarget sceneTarget_;
 #endif
 };

@@ -9,6 +9,7 @@
 
 void RunEditorSessionTests();
 void RunSceneViewMathTests();
+void RunParticlePresetTests();
 
 namespace {
 // 検証条件を満たさなければ、失敗理由をテスト実行元へ通知する。
@@ -196,6 +197,7 @@ int main() {
         TestCollections(directory);
         RunEditorSessionTests();
         RunSceneViewMathTests();
+        RunParticlePresetTests();
         std::cout << "SceneFile, SceneObjects, EditorSession and SceneViewMath tests passed\n";
         return 0;
     } catch (const std::exception& exception) {

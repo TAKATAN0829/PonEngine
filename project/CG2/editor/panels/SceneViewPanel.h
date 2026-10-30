@@ -10,6 +10,10 @@ public:
     void Draw(IEditableScene& scene, EditorSelection& selection);
     void ResetInteraction();
     bool IsManipulating() const { return dragging_; }
+    void SetTexture(uint64_t textureHandle) { textureHandle_ = textureHandle; }
+    uint32_t GetWidth() const { return width_; }
+    uint32_t GetHeight() const { return height_; }
+    void ShowScene() { forceScene_ = true; }
 
 private:
     static EditableObjectView FindObject(IEditableScene& scene, SceneObjectId objectId);
@@ -22,4 +26,9 @@ private:
     float dragStartDistance_ = 0;
     float snapDistance_ = 1;
     bool showGrid_ = true;
+    uint64_t textureHandle_ = 0;
+    uint32_t width_ = 800;
+    uint32_t height_ = 500;
+    bool gameView_ = false;
+    bool forceScene_ = false;
 };

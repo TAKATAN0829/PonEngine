@@ -28,6 +28,14 @@ public:
 	bool GetEditorViewInfo(EditorViewInfo& viewInfo) const override;
 	bool GetEditableObjectBounds(size_t objectIndex, AABB& worldBounds) const override;
 	void FocusEditorCamera(const Vector3& position) override;
+	void SetEditorViewport(uint32_t width, uint32_t height) override;
+	void SetEditorCameraInput(bool enabled) override;
+	void SetEditorGameView(bool enabled) override { gameView_ = enabled; }
+	ParticleSettings* GetParticleSettings() override { return &particleSettings_; }
+	void SetParticlePreview(const ParticlePreviewState& state) override { particlePreview_ = state; }
+	void ResetParticlePreview() override;
+	void BurstParticles() override { particleBurstRequested_ = true; }
+	size_t GetParticleCount() const override;
 
 
 
@@ -42,14 +50,14 @@ private:
 	//=============================================================================================//
 	// 色
 
-	Vector4 color_ = { 1.0f,1.0f,1.0f,1.0f };
+
 
 	//=============================================================================================//
 	// Particle
 
 	Particle* particle_ = nullptr;
 
-	BlendMode particleBlendMode_ = kBlendModeAdd;
+
 
 	//=============================================================================================//
 	// DebugCamera
@@ -64,12 +72,12 @@ private:
 	//=============================================================================================//
 	// ビルボード
 
-	bool useBillboard_ = true;
+
 
 	//=============================================================================================//
 	// 加速度Field
 
-	bool useAccelerationField_ = false;
+
 
 	//=============================================================================================//
 	// モデル
@@ -82,6 +90,12 @@ private:
 	std::unordered_map<SceneObjectId, RuntimeObject> runtimeObjects_;
 	bool simulationEnabled_ = true; // このフレームに時間経過を進めるかどうか。
 	bool playing_ = false; // Pause中もtrueとなる、再生モード自体の状態。
+	ParticleSettings particleSettings_;
+	ParticlePreviewState particlePreview_;
+	bool particleBurstRequested_ = false;
+	bool gameView_ = false;
+	uint32_t viewportWidth_ = 1600;
+	uint32_t viewportHeight_ = 900;
 	//=============================================================================================//
 	// SpriteCommon
 

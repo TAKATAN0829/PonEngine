@@ -14,6 +14,7 @@
 // static変数実体
 
 std::ofstream LogSystem::logStream_;
+std::deque<std::string> LogSystem::recentMessages_;
 
 //=============================================================================================//
 // 初期化
@@ -64,6 +65,9 @@ void LogSystem::Finalize () {
 // Log出力
 
 void LogSystem::Log (const std::string& message) {
+	// Console表示は件数を制限し、長時間起動してもログを無制限に保持しない。
+	recentMessages_.push_back(message.substr(0, 16384));
+	if (recentMessages_.size() > 256) { recentMessages_.pop_front(); }
 
 	// 出力ウィンドウに表示
 	OutputDebugStringA (message.c_str ());

@@ -320,4 +320,18 @@
     <ClCompile Include="editor\panels\SceneViewPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
     <ClInclude Include="editor\panels\SceneViewPanel.h"><Filter>editor\panels</Filter></ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\dx12\SceneRenderTarget.cpp"><Filter>engine\dx12</Filter></ClCompile>
+    <ClInclude Include="engine\dx12\SceneRenderTarget.h"><Filter>engine\dx12</Filter></ClInclude>
+    <ClCompile Include="engine\scene\ParticleSettings.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClInclude Include="engine\scene\ParticleSettings.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClCompile Include="engine\scene\ParticlePresetFile.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClInclude Include="engine\scene\ParticlePresetFile.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClCompile Include="editor\EditorLayout.cpp"><Filter>editor</Filter></ClCompile>
+    <ClInclude Include="editor\EditorLayout.h"><Filter>editor</Filter></ClInclude>
+    <ClCompile Include="editor\panels\ParticleEditorPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClInclude Include="editor\panels\ParticleEditorPanel.h"><Filter>editor\panels</Filter></ClInclude>
+    <ClCompile Include="editor\panels\UtilityPanels.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClInclude Include="editor\panels\UtilityPanels.h"><Filter>editor\panels</Filter></ClInclude>
+  </ItemGroup>
 </Project>

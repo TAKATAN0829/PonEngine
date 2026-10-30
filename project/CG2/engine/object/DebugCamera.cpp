@@ -20,18 +20,18 @@ void DebugCamera::Update(Input* input) {
 
 	Vector3 move{ 0.0f, 0.0f, 0.0f };
 
-	bool allowCameraInput = true;
+	bool allowCameraInput = editorInputEnabled_;
 #ifdef USE_IMGUI
 	// 名前入力やショートカットに使ったキーで、カメラまで動かないようにする。
 	const ImGuiIO& inputState = ImGui::GetIO();
-	if (inputState.WantCaptureKeyboard || inputState.WantTextInput || inputState.KeyCtrl) {
+	if (inputState.WantTextInput || inputState.KeyCtrl) {
 		allowCameraInput = false;
 	}
 #endif
 	if (allowCameraInput) {
 #ifdef USE_IMGUI
 		// UI上では右ドラッグを消費せず、シーンを見ている間だけ視点を回転する。
-		if (!inputState.WantCaptureMouse && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+		if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
 			transform_.rotate.x += inputState.MouseDelta.y * rotateSpeed_;
 			transform_.rotate.y += inputState.MouseDelta.x * rotateSpeed_;
 		}
@@ -83,7 +83,7 @@ void DebugCamera::Update(Input* input) {
 	}
 
 #ifdef USE_IMGUI
-	ImGui::Begin("DebugCamera");
+	ImGui::Begin("Camera");
 	ImGui::DragFloat3("Translate", &transform_.translate.x, 0.1f);
 	ImGui::DragFloat3("Rotate", &transform_.rotate.x, 0.01f);
 	ImGui::DragFloat("MoveSpeed", &moveSpeed_, 0.01f);
@@ -109,5 +109,13 @@ void DebugCamera::UpdateMatrix() {
 void DebugCamera::Focus(const Vector3& targetPosition) {
 	const Vector3 forwardDirection = {cameraMatrix_.m[2][0], cameraMatrix_.m[2][1], cameraMatrix_.m[2][2]};
 	transform_.translate = MathUtility::Subtract(targetPosition, MathUtility::Multiply(10.0f, forwardDirection));
+	UpdateMatrix();
+}
+
+// パネルのアスペクト比に合わせ、投影とクリック判定の行列を同時に更新する。
+void DebugCamera::SetViewportSize(int32_t width, int32_t height) {
+	if (width <= 0 || height <= 0) { return; }
+	clientWidth_ = width;
+	clientHeight_ = height;
 	UpdateMatrix();
 }

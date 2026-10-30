@@ -2,6 +2,7 @@
 
 // C++
 #include <cassert>
+#include <filesystem>
 
 // 自作
 #include "WinApp.h"
@@ -14,6 +15,22 @@
 #include "imgui/imgui_impl_dx12.h"
 #include "imgui/imgui_impl_win32.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+namespace {
+// ImGuiのテクスチャもエンジンと同じSRVヒープから確保する。
+void AllocateGuiDescriptor(ImGui_ImplDX12_InitInfo* information, D3D12_CPU_DESCRIPTOR_HANDLE* cpuHandle,
+    D3D12_GPU_DESCRIPTOR_HANDLE* gpuHandle) {
+    SrvManager* manager = static_cast<SrvManager*>(information->UserData);
+    const uint32_t descriptorIndex = manager->Allocate();
+    *cpuHandle = manager->GetCPUDescriptorHandle(descriptorIndex);
+    *gpuHandle = manager->GetGPUDescriptorHandle(descriptorIndex);
+}
+// フォント再生成などで不要になった記述子は共有管理へ戻す。
+void FreeGuiDescriptor(ImGui_ImplDX12_InitInfo* information, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle,
+    D3D12_GPU_DESCRIPTOR_HANDLE) {
+    SrvManager* manager = static_cast<SrvManager*>(information->UserData);
+    manager->Free(manager->GetIndex(cpuHandle));
+}
+}
 #endif
 
 //=================================================================================================//
@@ -36,10 +53,41 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 
 	ImGui::CreateContext();
 
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	ImGuiIO& inputOutput = ImGui::GetIO();
+	inputOutput.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 	ImGui::StyleColorsDark();
+    // 以前の自由配置と混ざらない専用設定を使い、ウィンドウ位置は次回も復元する。
+    inputOutput.IniFilename = "editor-layout.ini";
+    inputOutput.ConfigWindowsMoveFromTitleBarOnly = true;
+    wchar_t windowsDirectory[MAX_PATH]{};
+    GetWindowsDirectoryW(windowsDirectory, MAX_PATH);
+    const std::filesystem::path fontPath = std::filesystem::path(windowsDirectory) / "Fonts" / "meiryo.ttc";
+    std::error_code fontError;
+    if (std::filesystem::exists(fontPath, fontError)) {
+        ImFontConfig fontConfiguration;
+        fontConfiguration.SizePixels = 18;
+        inputOutput.Fonts->AddFontFromFileTTF(fontPath.string().c_str(), 18, &fontConfiguration);
+    } else {
+        inputOutput.Fonts->AddFontDefault();
+    }
+    // 文字と背景のコントラストを保ち、項目間を詰めすぎない配色・余白にする。
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.WindowPadding = {12, 10};
+    style.FramePadding = {8, 5};
+    style.ItemSpacing = {9, 8};
+    style.WindowRounding = 4;
+    style.FrameRounding = 4;
+    style.TabRounding = 4;
+    style.ScrollbarSize = 15;
+    style.Colors[ImGuiCol_WindowBg] = {0.085f, 0.095f, 0.12f, 1};
+    style.Colors[ImGuiCol_Text] = {0.92f, 0.94f, 0.97f, 1};
+    style.Colors[ImGuiCol_TextDisabled] = {0.52f, 0.58f, 0.65f, 1};
+    style.Colors[ImGuiCol_FrameBg] = {0.14f, 0.17f, 0.21f, 1};
+    style.Colors[ImGuiCol_Header] = {0.16f, 0.25f, 0.36f, 1};
+    style.Colors[ImGuiCol_Button] = {0.17f, 0.28f, 0.42f, 1};
+    style.Colors[ImGuiCol_ButtonHovered] = {0.23f, 0.42f, 0.62f, 1};
+    style.Colors[ImGuiCol_TabSelected] = {0.19f, 0.33f, 0.49f, 1};
 
 	//===========================================//
 	// Win32初期化
@@ -59,22 +107,8 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 	initInfo.UserData = srvManager;
 	initInfo.SrvDescriptorHeap = srvManager->GetDescriptorHeap();
 
-	initInfo.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE* outCpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE* outGpuHandle) {
-
-			SrvManager* srvManager = static_cast<SrvManager*>(info->UserData);
-
-			uint32_t index = srvManager->Allocate();
-
-			*outCpuHandle = srvManager->GetCPUDescriptorHandle(index);
-			*outGpuHandle = srvManager->GetGPUDescriptorHandle(index);
-		};
-
-	initInfo.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE) {
-
-			SrvManager* srvManager = static_cast<SrvManager*>(info->UserData);
-
-			srvManager->Free(srvManager->GetIndex(cpuHandle));
-		};
+	initInfo.SrvDescriptorAllocFn = AllocateGuiDescriptor;
+	initInfo.SrvDescriptorFreeFn = FreeGuiDescriptor;
 
 	ImGui_ImplDX12_Init(&initInfo);
 
@@ -99,7 +133,7 @@ void ImGuiSystem::Begin() {
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
-	ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
+	// EditorLayoutが中央・左右・下部のドッキング領域を構築する。
 #endif
 }
 

@@ -2,6 +2,7 @@
 #include "panels/HierarchyPanel.h"
 #include "panels/InspectorPanel.h"
 #include "SceneFile.h"
+#include "LogSystem.h"
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
@@ -28,7 +29,7 @@ bool Editor::SaveScene(IEditableScene& scene) {
 // 未保存の変更がある場合は、処理を保留して保存確認を表示する。
 void Editor::RequestSceneAction(SceneAction action, IEditableScene& scene) {
     pendingAction_ = action;
-    if (session_.IsDirty(scene)) {
+    if (session_.IsDirty(scene) || (action == SceneAction::Exit && particleEditor_.IsDirty(scene))) {
         openDiscardPrompt_ = true;
     } else {
         PerformSceneAction(scene);
@@ -106,75 +107,53 @@ void Editor::RequestExit(IEditableScene* scene) {
 // 保存・履歴・再生操作をまとめ、現在のモードで使えない操作は無効にする。
 void Editor::DrawToolbar(IEditableScene& scene) {
 #ifdef USE_IMGUI
-    if (ImGui::Begin("Scene")) {
-        ImGui::TextWrapped("%s", SceneFile::kDefaultPath);
-        if (session_.IsDirty(scene)) {
-            ImGui::TextUnformatted("* Unsaved changes");
-        } else {
-            ImGui::TextUnformatted("No unsaved object changes");
-        }
+    if (ImGui::Begin("Toolbar", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+        ImGui::TextDisabled("SCENE");
+        ImGui::SameLine();
+        ImGui::TextUnformatted(SceneFile::kDefaultPath);
+        ImGui::SameLine();
+        if (session_.IsDirty(scene)) { ImGui::TextColored({1,0.72f,0.3f,1}, "* 未保存"); }
+        else { ImGui::TextDisabled("保存済み"); }
         ImGui::BeginDisabled(session_.IsPlaying());
-        if (ImGui::Button("New Scene")) {
-            RequestSceneAction(SceneAction::NewScene, scene);
-        }
+        if (ImGui::Button("新規")) { RequestSceneAction(SceneAction::NewScene, scene); }
         ImGui::SameLine();
-        if (ImGui::Button("Save Scene")) {
-            SaveScene(scene);
-        }
+        if (ImGui::Button("保存 Ctrl+S")) { SaveScene(scene); }
         ImGui::SameLine();
-        if (ImGui::Button("Load Scene")) {
-            RequestSceneAction(SceneAction::LoadScene, scene);
-        }
+        if (ImGui::Button("読込")) { RequestSceneAction(SceneAction::LoadScene, scene); }
         ImGui::EndDisabled();
+        ImGui::SameLine();
         ImGui::BeginDisabled(!session_.CanUndo());
-        if (ImGui::Button("Undo")) {
-            session_.Undo(scene, fileStatus_);
-        }
+        if (ImGui::Button("Undo")) { session_.Undo(scene, fileStatus_); }
         ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::BeginDisabled(!session_.CanRedo());
-        if (ImGui::Button("Redo")) {
-            session_.Redo(scene, fileStatus_);
-        }
+        if (ImGui::Button("Redo")) { session_.Redo(scene, fileStatus_); }
         ImGui::EndDisabled();
-        ImGui::Separator();
+        ImGui::SameLine();
         if (session_.IsPlaying()) {
-            if (ImGui::Button("Stop")) {
-                TogglePlay(scene);
-            }
+            if (ImGui::Button("停止")) { TogglePlay(scene); }
         } else {
-            if (ImGui::Button("Play")) {
-                TogglePlay(scene);
-            }
+            if (ImGui::Button("再生 Ctrl+P")) { TogglePlay(scene); }
         }
         ImGui::SameLine();
         ImGui::BeginDisabled(!session_.IsPlaying());
         if (session_.IsPaused()) {
-            if (ImGui::Button("Resume")) {
-                session_.TogglePause();
-            }
+            if (ImGui::Button("再開")) { session_.TogglePause(); }
         } else {
-            if (ImGui::Button("Pause")) {
-                session_.TogglePause();
-            }
+            if (ImGui::Button("一時停止")) { session_.TogglePause(); }
         }
         ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::BeginDisabled(!session_.IsPlaying() || !session_.IsPaused());
-        if (ImGui::Button("Step")) {
-            session_.RequestStep();
-        }
+        if (ImGui::Button("Step")) { session_.RequestStep(); }
         ImGui::EndDisabled();
-        if (!fileStatus_.empty()) {
-            ImGui::TextWrapped("%s", fileStatus_.c_str());
-        }
+        if (!fileStatus_.empty()) { ImGui::TextWrapped("%s", fileStatus_.c_str()); }
     }
     ImGui::End();
 #else
     (void)scene;
 #endif
 }
-
 // 保存成功または破棄の選択が済むまで、シーンを置き換えない。
 void Editor::DrawDiscardPrompt(IEditableScene& scene) {
 #ifdef USE_IMGUI
@@ -185,7 +164,12 @@ void Editor::DrawDiscardPrompt(IEditableScene& scene) {
     if (ImGui::BeginPopupModal("Unsaved Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextUnformatted("Save object changes before replacing the scene?");
         if (ImGui::Button("Save and Continue")) {
-            if (SaveScene(scene)) {
+            bool saved = SaveScene(scene);
+            if (saved && pendingAction_ == SceneAction::Exit) {
+                saved = particleEditor_.Save(scene);
+                if (!saved) { fileStatus_ = "Particleプリセットを保存できません。設定値または保存先を確認してください。"; }
+            }
+            if (saved) {
                 PerformSceneAction(scene);
                 ImGui::CloseCurrentPopup();
             }
@@ -255,6 +239,7 @@ void Editor::HandleShortcuts(IEditableScene& scene) {
 
 // パネルの編集を受け付け、操作が完了した状態を履歴へ記録する。
 void Editor::Draw(IEditableScene* scene) {
+    layout_.Draw();
     if (scene_ != scene) {
         sceneView_.ResetInteraction();
         selection_.Clear();
@@ -275,6 +260,13 @@ void Editor::Draw(IEditableScene* scene) {
     }
     DrawToolbar(*scene);
     HierarchyPanel::Draw(scene, selection_);
+    particleEditor_.Draw(*scene, session_.IsPlaying());
+    if (particleEditor_.ConsumeFocusRequest()) {
+        sceneView_.ShowScene();
+        const ParticleSettings* settings = scene->GetParticleSettings();
+        if (settings != nullptr) { scene->FocusEditorCamera(settings->emitterPosition); }
+    }
+    utilityPanels_.Draw(*scene, selection_);
     sceneView_.Draw(*scene, selection_);
     EditableObjectView selectedObject{};
     for (size_t objectIndex = 0; objectIndex < scene->GetEditableObjectCount(); ++objectIndex) {
@@ -289,6 +281,10 @@ void Editor::Draw(IEditableScene* scene) {
     }
     InspectorPanel::Draw(selectedObject);
     DrawDiscardPrompt(*scene);
+    if (!fileStatus_.empty() && fileStatus_ != loggedStatus_) {
+        LogSystem::Log(fileStatus_ + "\n");
+        loggedStatus_ = fileStatus_;
+    }
 #ifdef USE_IMGUI
     session_.RecordChanges(*scene, ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
     HandleShortcuts(*scene);

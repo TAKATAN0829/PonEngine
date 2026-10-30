@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "EngineStructs.h"
+#include "ParticleSettings.h"
 
 using SceneObjectId = uint64_t;
 inline constexpr SceneObjectId kInvalidSceneObjectId = 0;
@@ -55,6 +56,14 @@ public:
     virtual EditableObjectView GetEditableObject(size_t index) = 0;
     // カメラやモデルを持たないシーンでは、画面上の編集機能を利用しない。
     virtual bool GetEditorViewInfo(EditorViewInfo&) const { return false; }
+    virtual void SetEditorViewport(uint32_t width, uint32_t height) { (void)width; (void)height; }
+    virtual void SetEditorCameraInput(bool enabled) { (void)enabled; }
+    virtual void SetEditorGameView(bool enabled) { (void)enabled; }
+    virtual ParticleSettings* GetParticleSettings() { return nullptr; }
+    virtual void SetParticlePreview(const ParticlePreviewState& state) { (void)state; }
+    virtual void ResetParticlePreview() {}
+    virtual void BurstParticles() {}
+    virtual size_t GetParticleCount() const { return 0; }
     virtual bool GetEditableObjectBounds(size_t, AABB&) const { return false; }
     virtual void FocusEditorCamera(const Vector3& position) { (void)position; }
     virtual bool SupportsObjectCollection() const { return false; }

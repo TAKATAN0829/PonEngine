@@ -1,6 +1,7 @@
 #include "GameScene.h"
 #include "WinApp.h"
 #include "SceneFile.h"
+#include "ParticlePresetFile.h"
 #include "LogSystem.h"
 #include "ModelManager.h"
 #include "SceneViewMath.h"
@@ -61,6 +62,13 @@ void GameScene::Initialize(const SceneContext& context) {
 	particle_->Initialize(context.particleRenderer);
 
 	particle_->SetTexture("resources/circle.png");
+    std::error_code presetError;
+    if (std::filesystem::exists(ParticlePresetFile::kDefaultPath, presetError)) {
+        std::string presetMessage;
+        if (!ParticlePresetFile::Load(particleSettings_, ParticlePresetFile::kDefaultPath, presetMessage)) {
+            LogSystem::Log("Particle preset: " + presetMessage + "\n");
+        }
+    }
 
 	// Releaseでも保存した編集用データを読み込み、制作時の配置をゲームへ引き継ぐ。
 	std::error_code fileError;
@@ -103,12 +111,16 @@ void GameScene::Draw() {
 	//=============================================================================================//
 	// モデル描画
 
+	const bool isolateParticles = particlePreview_.enabled && particlePreview_.isolate && !playing_;
+	if (!isolateParticles) {
 	object3dCommon_->DrawSettingCommon();
 
 	for (const SceneObjectData& object : GetObjects()) {
 		if (object.active && object.hasMeshRenderer) {
 			runtimeObjects_.at(object.id).drawable->Draw();
 		}
+	}
+
 	}
 
 	//=============================================================================================//
@@ -119,9 +131,15 @@ void GameScene::Draw() {
 	//=============================================================================================//
 	// Sprite描画
 
+#ifdef USE_IMGUI
+	if (gameView_ && !isolateParticles) {
+#endif
 	spriteCommon_->DrawSettingCommon();
 
 	sprite_->Draw();
+#ifdef USE_IMGUI
+	}
+#endif
 }
 
 //=================================================================================================//
@@ -175,7 +193,12 @@ void GameScene::UpdateObject() {
 	//=============================================================================================//
 	// カメラ位置をObject3dCommonへ送る
 
-	const Matrix4x4& cameraMatrix = debugCamera_->GetCameraMatrix();
+	Matrix4x4 cameraMatrix = debugCamera_->GetCameraMatrix();
+	Matrix4x4 viewProjection = debugCamera_->GetViewProjectionMatrix();
+	if (gameView_) {
+		cameraMatrix = MathUtility::Inverse(camera_->GetViewMatrix());
+		viewProjection = camera_->GetViewProjectionMatrix();
+	}
 
 	object3dCommon_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
 
@@ -210,7 +233,7 @@ void GameScene::UpdateObject() {
 		object.SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
 		object.SetPointLight(pointLight_);
 		object.SetSpotLight(spotLight_);
-		object.Update(debugCamera_->GetViewProjectionMatrix());
+		object.Update(viewProjection);
 	}
 	std::unordered_map<SceneObjectId, RuntimeObject>::iterator runtimeObjectIterator = runtimeObjects_.begin();
 	while (runtimeObjectIterator != runtimeObjects_.end()) {
@@ -223,12 +246,18 @@ void GameScene::UpdateObject() {
 	//=============================================================================================//
 	// Particle更新
 
-	particle_->SetColor(color_);
-	particle_->SetBlendMode(particleBlendMode_);
-	particle_->SetUseBillboard(useBillboard_);
-	particle_->SetUseAccelerationField(useAccelerationField_);
-	particle_->Update(debugCamera_->GetViewProjectionMatrix(), debugCamera_->GetCameraMatrix(), simulationEnabled_);
-
+    particle_->ApplySettings(particleSettings_);
+    if (particleBurstRequested_) {
+        particle_->AddParticles();
+        particleBurstRequested_ = false;
+    }
+    bool simulateParticles = simulationEnabled_;
+    if (!playing_ && particlePreview_.enabled && (!particlePreview_.paused || particlePreview_.step)) {
+        simulateParticles = true;
+    }
+    const bool emitParticles = simulationEnabled_ || (particlePreview_.enabled && particlePreview_.automaticEmission);
+    particle_->Update(viewProjection, cameraMatrix, simulateParticles, emitParticles);
+    particlePreview_.step = false;
 	//=============================================================================================//
 	// Sprite更新
 
@@ -242,54 +271,18 @@ void GameScene::UpdateObject() {
 	//=============================================================================================//
 	// ImGui
 
-	ImGui::Begin("Settings");
-	ImGui::BeginDisabled(playing_);
-	ImGui::ColorEdit4("color", &color_.x);
+	ImGui::Begin("World Settings");
+	if (ImGui::CollapsingHeader("DirectionalLight")) {
 
-	static const char* kBlendModeNames[kCountOfBlendMode] = {
-		"kBlendModeNone",
-		"kBlendModeNormal",
-		"kBlendModeAdd",
-		"kBlendModeSubtract",
-		"kBlendModeMultiply",
-		"kBlendModeScreen",
-		"kBlendModeLighten",
-		"kBlendModeDarken",
-		"kBlendModeInvert",
-	};
-
-	int blendMode = static_cast<int>(particleBlendMode_);
-
-	if (ImGui::Combo("Blend", &blendMode, kBlendModeNames, kCountOfBlendMode)) {
-
-		particleBlendMode_ = static_cast<BlendMode>(blendMode);
-	}
-
-	ImGui::Checkbox("useBillboard", &useBillboard_);
-
-	ImGui::Checkbox("useAccelerationField", &useAccelerationField_);
-
-	ImGui::DragFloat3("EmitterTranslate", &particle_->GetEmitterTransform().translate.x, 0.01f, -100.0f, 100.0f);
-	ImGui::EndDisabled();
-
-	ImGui::BeginDisabled(!simulationEnabled_);
-	if (ImGui::Button("Add Particle")) {
-
-		particle_->AddParticles();
-	}
-	ImGui::EndDisabled();
-
-	ImGui::End();
-
-	ImGui::Begin("DirectionalLight");
 	ImGui::BeginDisabled(playing_);
 	ImGui::ColorEdit4("Color", &lightColor_.x);
 	ImGui::SliderFloat3("Direction", &lightDirection_.x, -1.0f, 1.0f);
 	ImGui::DragFloat("Intensity", &lightIntensity_, 0.01f, 0.0f, 10.0f);
 	ImGui::EndDisabled();
-	ImGui::End();
 
-	ImGui::Begin("PointLight");
+	}
+	if (ImGui::CollapsingHeader("PointLight")) {
+
 	ImGui::BeginDisabled(playing_);
 	ImGui::ColorEdit4("Color", &pointLight_.color.x);
 	ImGui::DragFloat3("Position", &pointLight_.position.x, 0.1f);
@@ -297,9 +290,10 @@ void GameScene::UpdateObject() {
 	ImGui::DragFloat("Radius", &pointLight_.radius, 0.1f, 0.01f, 100.0f);
 	ImGui::DragFloat("Decay", &pointLight_.decay, 0.01f, 0.0f, 10.0f);
 	ImGui::EndDisabled();
-	ImGui::End();
 
-	ImGui::Begin("SpotLight");
+	}
+	if (ImGui::CollapsingHeader("SpotLight")) {
+
 	ImGui::BeginDisabled(playing_);
 	ImGui::ColorEdit4("Color", &spotLight_.color.x);
 	ImGui::DragFloat3("Position", &spotLight_.position.x, 0.1f);
@@ -310,14 +304,17 @@ void GameScene::UpdateObject() {
 	ImGui::SliderFloat("CosAngle", &spotLight_.cosAngle, 0.0f, 1.0f);
 	ImGui::SliderFloat("CosFalloffStart", &spotLight_.cosFalloffStart, 0.0f, 1.0f);
 	ImGui::EndDisabled();
-	ImGui::End();
 
-	ImGui::Begin("Sprite");
+	}
+	if (ImGui::CollapsingHeader("Sprite")) {
+
 	ImGui::BeginDisabled(playing_);
 	ImGui::SliderFloat2("Position", &spritePosition_.x, 0.f, static_cast<float>(WinApp::kClientWidth));
 	ImGui::SliderAngle("Rotation", &spriteRotation_);
 	ImGui::SliderFloat2("Size", &spriteSize_.x, 0.f, 512.f);
 	ImGui::EndDisabled();
+
+	}
 	ImGui::End();
 
 #endif
@@ -342,17 +339,14 @@ void GameScene::OnPlayStateChanged(bool playing) {
 
 // 現在描画しているDebugCameraの行列と、DX12で使う固定の表示サイズを公開する。
 bool GameScene::GetEditorViewInfo(EditorViewInfo& viewInfo) const {
-    if (debugCamera_ == nullptr) {
-        return false;
-    }
+    if (debugCamera_ == nullptr) { return false; }
     viewInfo.viewProjection = debugCamera_->GetViewProjectionMatrix();
     const Matrix4x4& cameraMatrix = debugCamera_->GetCameraMatrix();
     viewInfo.cameraPosition = {cameraMatrix.m[3][0], cameraMatrix.m[3][1], cameraMatrix.m[3][2]};
-    viewInfo.viewportWidth = static_cast<float>(WinApp::kClientWidth);
-    viewInfo.viewportHeight = static_cast<float>(WinApp::kClientHeight);
+    viewInfo.viewportWidth = static_cast<float>(viewportWidth_);
+    viewInfo.viewportHeight = static_cast<float>(viewportHeight_);
     return true;
 }
-
 // メッシュの範囲へ描画時と同じRootNode・Transformを適用し、選択位置のずれを防ぐ。
 bool GameScene::GetEditableObjectBounds(size_t objectIndex, AABB& worldBounds) const {
     if (objectIndex >= GetObjects().size()) {
@@ -381,3 +375,24 @@ void GameScene::FocusEditorCamera(const Vector3& position) {
         debugCamera_->Focus(position);
     }
 }
+
+// 表示領域の大きさを投影行列と2D描画へ同時に渡す。
+void GameScene::SetEditorViewport(uint32_t width, uint32_t height) {
+    if (width == 0 || height == 0) { return; }
+    viewportWidth_ = width;
+    viewportHeight_ = height;
+    debugCamera_->SetViewportSize(static_cast<int32_t>(width), static_cast<int32_t>(height));
+    camera_->SetViewportSize(static_cast<int32_t>(width), static_cast<int32_t>(height));
+    if (spriteCommon_ != nullptr) { spriteCommon_->SetViewportSize(static_cast<float>(width), static_cast<float>(height)); }
+}
+
+// Scene画像の上にいるときだけEditorカメラの入力を受け付ける。
+void GameScene::SetEditorCameraInput(bool enabled) {
+    debugCamera_->SetEditorInputEnabled(enabled);
+}
+
+// プレビューの再開や設定読込時は、古い粒子を残さず作り直す。
+void GameScene::ResetParticlePreview() { particle_->ResetSimulation(); }
+
+// 表示上限だけではなく、実際に管理している粒子数をEditorへ通知する。
+size_t GameScene::GetParticleCount() const { return particle_->GetLiveCount(); }

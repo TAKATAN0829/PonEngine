@@ -1,8 +1,10 @@
-﻿#include "DirectXCommon.h"
+#include "DirectXCommon.h"
 
 // C++
 #include <cassert>
 #include <thread>
+#include <d3d12sdklayers.h>
+#include <vector>
 
 // Library
 #pragma comment(lib,"d3d12.lib")
@@ -21,6 +23,8 @@ void DirectXCommon::Initialize(WinApp* winApp) {
 
 	// メンバ変数に記録
 	winApp_ = winApp;
+	renderWidth_ = WinApp::kClientWidth;
+	renderHeight_ = WinApp::kClientHeight;
 
 	// FPS固定初期化
 	InitializeFixFPS();
@@ -58,8 +62,8 @@ void DirectXCommon::Initialize(WinApp* winApp) {
 
 void DirectXCommon::InitializeViewport() {
 
-	viewport_.Width = static_cast<float>(WinApp::kClientWidth);
-	viewport_.Height = static_cast<float>(WinApp::kClientHeight);
+	viewport_.Width = static_cast<float>(renderWidth_);
+	viewport_.Height = static_cast<float>(renderHeight_);
 	viewport_.TopLeftX = 0.f;
 	viewport_.TopLeftY = 0.f;
 	viewport_.MinDepth = 0.f;
@@ -72,9 +76,9 @@ void DirectXCommon::InitializeViewport() {
 void DirectXCommon::InitializeScissorRect() {
 
 	scissorRect_.left = 0;
-	scissorRect_.right = WinApp::kClientWidth;
+	scissorRect_.right = static_cast<LONG>(renderWidth_);
 	scissorRect_.top = 0;
-	scissorRect_.bottom = WinApp::kClientHeight;
+	scissorRect_.bottom = static_cast<LONG>(renderHeight_);
 }
 
 //=============================================================================================//
@@ -295,6 +299,7 @@ void DirectXCommon::InitializeFence() {
 // 描画前処理
 
 void DirectXCommon::PreDraw() {
+	ResizeIfNeeded();
 
 	// BackBufferIndex取得
 	backBufferIndex_ = swapChain_->GetCurrentBackBufferIndex();
@@ -491,8 +496,8 @@ void DirectXCommon::InitializeDepthStencilView() {
 	// DepthStencilTexture設定
 	D3D12_RESOURCE_DESC resourceDesc{};
 
-	resourceDesc.Width = WinApp::kClientWidth;
-	resourceDesc.Height = WinApp::kClientHeight;
+	resourceDesc.Width = renderWidth_;
+	resourceDesc.Height = renderHeight_;
 	resourceDesc.MipLevels = 1;
 	resourceDesc.DepthOrArraySize = 1;
 	resourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -530,4 +535,51 @@ void DirectXCommon::InitializeDepthStencilView() {
 
 	// DSV生成
 	device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHandle_);
+}
+// Scene用描画先から戻るときに、バックバッファの表示領域も復元する。
+void DirectXCommon::BindBackBuffer() {
+    commandList_->OMSetRenderTargets(1, &rtvHandles_[backBufferIndex_], false, &dsvHandle_);
+    commandList_->RSSetViewports(1, &viewport_);
+    commandList_->RSSetScissorRects(1, &scissorRect_);
+}
+
+// 前フレームはPostDrawで待機済みなので、現在の命令を記録する前に安全に作り直せる。
+void DirectXCommon::ResizeIfNeeded() {
+    RECT clientArea{};
+    GetClientRect(winApp_->GetHwnd(), &clientArea);
+    const uint32_t width = static_cast<uint32_t>(clientArea.right);
+    const uint32_t height = static_cast<uint32_t>(clientArea.bottom);
+    if (width == 0 || height == 0 || (width == renderWidth_ && height == renderHeight_)) { return; }
+    for (Microsoft::WRL::ComPtr<ID3D12Resource>& buffer : swapChainResources_) { buffer.Reset(); }
+    depthStencilResource_.Reset();
+    const HRESULT resizeResult = swapChain_->ResizeBuffers(kBufferCount, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+    assert(SUCCEEDED(resizeResult));
+    renderWidth_ = width;
+    renderHeight_ = height;
+    for (uint32_t bufferIndex = 0; bufferIndex < kBufferCount; ++bufferIndex) {
+        const HRESULT bufferResult = swapChain_->GetBuffer(bufferIndex, IID_PPV_ARGS(&swapChainResources_[bufferIndex]));
+        assert(SUCCEEDED(bufferResult));
+    }
+    InitializeRenderTargetView();
+    InitializeDepthStencilView();
+    InitializeViewport();
+    InitializeScissorRect();
+}
+
+// 起動試験で実デバイスの検証結果を調べ、描画エラーをビルド成功だけで見逃さない。
+bool DirectXCommon::HasValidationErrors() const {
+    Microsoft::WRL::ComPtr<ID3D12InfoQueue> information;
+    if (FAILED(device_.As(&information))) { return false; }
+    const UINT64 messageCount = information->GetNumStoredMessagesAllowedByRetrievalFilter();
+    for (UINT64 messageIndex = 0; messageIndex < messageCount; ++messageIndex) {
+        SIZE_T messageSize = 0;
+        information->GetMessage(messageIndex, nullptr, &messageSize);
+        std::vector<unsigned char> storage(messageSize);
+        D3D12_MESSAGE* message = reinterpret_cast<D3D12_MESSAGE*>(storage.data());
+        if (SUCCEEDED(information->GetMessage(messageIndex, message, &messageSize)) &&
+            (message->Severity == D3D12_MESSAGE_SEVERITY_ERROR || message->Severity == D3D12_MESSAGE_SEVERITY_CORRUPTION)) {
+            return true;
+        }
+    }
+    return false;
 }

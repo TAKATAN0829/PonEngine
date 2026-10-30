@@ -58,8 +58,8 @@ void Sprite::Update () {
 	Matrix4x4 projectionMatrix = MathUtility::MakeOrthographicMatrix (
 		0.f,
 		0.f,
-		static_cast<float>(WinApp::kClientWidth),
-		static_cast<float>(WinApp::kClientHeight),
+		spriteCommon_->GetViewportWidth(),
+		spriteCommon_->GetViewportHeight(),
 		0.f,
 		100.f);
 

@@ -102,38 +102,80 @@ void SceneViewPanel::UpdateDrag(IEditableScene& scene, const EditorViewInfo& vie
 // パネル操作中のクリックは拾わず、背景のモデル選択とワールド軸の移動だけを扱う。
 void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
 #ifdef USE_IMGUI
-    EditableObjectView selectedObject = FindObject(scene, selection.Get());
-    if (ImGui::Begin("Scene Tools")) {
-        ImGui::TextUnformatted("Click: select / Drag X,Y,Z: move / Ctrl: snap / Esc: cancel");
-        ImGui::TextUnformatted("F: focus selection / Right drag: look / WASD + QE: move camera");
-        ImGui::Checkbox("Grid", &showGrid_);
-        ImGui::DragFloat("Move Snap", &snapDistance_, 0.1f, 0.1f, 100.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
-        ImGui::BeginDisabled(selectedObject.transform == nullptr || dragging_);
-        if (ImGui::Button("Focus Selection")) {
-            scene.FocusEditorCamera(selectedObject.transform->translate);
-        }
-        ImGui::EndDisabled();
+    scene.SetEditorCameraInput(false);
+    if (!ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+        ResetInteraction();
+        ImGui::End();
+        return;
     }
-    ImGui::End();
-
-    if (!dragging_ && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() &&
-        !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId) &&
+    if (ImGui::BeginTabBar("SceneViewTabs")) {
+        ImGuiTabItemFlags sceneFlags = ImGuiTabItemFlags_None;
+        if (forceScene_) { sceneFlags = ImGuiTabItemFlags_SetSelected; }
+        if (ImGui::BeginTabItem("Scene", nullptr, sceneFlags)) { gameView_ = false; ImGui::EndTabItem(); }
+        if (ImGui::BeginTabItem("Game")) { gameView_ = true; ImGui::EndTabItem(); }
+        ImGui::EndTabBar();
+        forceScene_ = false;
+    }
+    EditableObjectView selectedObject = FindObject(scene, selection.Get());
+    if (!gameView_) {
+        ImGui::Checkbox("Grid", &showGrid_);
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(95);
+        ImGui::DragFloat("Snap", &snapDistance_, 0.1f, 0.1f, 100, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SameLine();
+        ImGui::BeginDisabled(selectedObject.transform == nullptr || dragging_);
+        if (ImGui::Button("注視 F")) { scene.FocusEditorCamera(selectedObject.transform->translate); }
+        ImGui::EndDisabled();
+    } else {
+        ImGui::TextUnformatted("ゲームカメラ / Playで動作確認");
+    }
+    const ImVec2 availableSize = ImGui::GetContentRegionAvail();
+    if (availableSize.x < 64 || availableSize.y < 64 || textureHandle_ == 0) {
+        ResetInteraction();
+        ImGui::End();
+        return;
+    }
+    float requestedWidth = availableSize.x;
+    float requestedHeight = availableSize.y;
+    if (requestedWidth > 4096) { requestedWidth = 4096; }
+    if (requestedHeight > 4096) { requestedHeight = 4096; }
+    const uint32_t nextWidth = static_cast<uint32_t>(requestedWidth);
+    const uint32_t nextHeight = static_cast<uint32_t>(requestedHeight);
+    if (dragging_ && (width_ != nextWidth || height_ != nextHeight || gameView_)) {
+        const EditableObjectView draggedObject = FindObject(scene, draggedObject_);
+        if (draggedObject.transform != nullptr) { draggedObject.transform->translate = dragStartPosition_; }
+        ResetInteraction();
+    }
+    width_ = nextWidth;
+    height_ = nextHeight;
+    scene.SetEditorViewport(width_, height_);
+    scene.SetEditorGameView(gameView_);
+    const ImVec2 viewportOrigin = ImGui::GetCursorScreenPos();
+    // 画像・クリック・ギズモはすべて同じ矩形を使う。
+    ImGui::Image(ImTextureRef(static_cast<ImTextureID>(textureHandle_)),
+        {static_cast<float>(width_), static_cast<float>(height_)});
+    const bool imageHovered = ImGui::IsItemHovered() && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId);
+    if (gameView_) {
+        ImGui::End();
+        return;
+    }
+    if (imageHovered && !dragging_ && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() &&
         !ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F, false) && selectedObject.transform != nullptr) {
         scene.FocusEditorCamera(selectedObject.transform->translate);
     }
     EditorViewInfo viewInfo;
     if (!scene.GetEditorViewInfo(viewInfo)) {
         ResetInteraction();
+        ImGui::End();
         return;
     }
-    const ImVec2 viewportOrigin = ImGui::GetMainViewport()->Pos;
     const ImGuiIO& inputState = ImGui::GetIO();
     const Vector2 mousePosition = {inputState.MousePos.x - viewportOrigin.x, inputState.MousePos.y - viewportOrigin.y};
     if (dragging_) {
         UpdateDrag(scene, viewInfo, mousePosition);
     }
 
-    ImDrawList& drawList = *ImGui::GetBackgroundDrawList();
+    ImDrawList& drawList = *ImGui::GetWindowDrawList();
     drawList.PushClipRect(viewportOrigin, {viewportOrigin.x + viewInfo.viewportWidth, viewportOrigin.y + viewInfo.viewportHeight}, true);
     if (showGrid_) {
         for (int gridIndex = -10; gridIndex <= 10; ++gridIndex) {
@@ -173,7 +215,7 @@ void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
                 }
                 const float screenLength = std::hypot(screenEnd.x - screenOrigin.x, screenEnd.y - screenOrigin.y);
                 if (screenLength < 12) { continue; }
-                const bool hovered = !inputState.WantCaptureMouse &&
+                const bool hovered = imageHovered &&
                     SceneViewMath::DistanceToSegment(mousePosition, screenOrigin, screenEnd) < 7;
                 ImU32 color = axisColors[axisIndex];
                 if (hovered || (dragging_ && MathUtility::Dot(dragAxis_, axisDirections[axisIndex]) > 0.99f)) {
@@ -200,7 +242,7 @@ void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
     }
     drawList.PopClipRect();
 
-    if (!dragging_ && !clickedGizmo && !inputState.WantCaptureMouse && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    if (!dragging_ && !clickedGizmo && imageHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         Vector3 rayOrigin{};
         Vector3 rayDirection{};
         float rayLength = 0;
@@ -221,6 +263,8 @@ void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
             selection.Select(closestObject);
         }
     }
+    scene.SetEditorCameraInput(imageHovered && !dragging_ && !ImGui::IsAnyItemActive());
+    ImGui::End();
 #else
     (void)scene;
     (void)selection;
