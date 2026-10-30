@@ -21,6 +21,7 @@ public:
 		emitterId_ = CreateObject(SceneObjectType::Particle);
 		CreateObject(SceneObjectType::Particle); // 複数EmitterのGPUリソースが共存できることも確認する。
 		modelChildId_ = AddObject("axis.obj");
+		CreateObject(SceneObjectType::Camera);
 		std::string hierarchyError;
 		if (!SetObjectParent(emitterId_, hierarchyParentId_, hierarchyError)) {
 			valid_ = false;
@@ -104,6 +105,9 @@ public:
 					*object.active = frameNumber_ == 80;
 				}
 			}
+		}
+		if (frameNumber_ >= 80) {
+			SetEditorGameView(true);
 		}
 		GameScene::UpdateEditorFrame(input, false);
 		if (frameNumber_ == 25) {

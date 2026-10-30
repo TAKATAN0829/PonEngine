@@ -9,5 +9,5 @@ public:
 	//=============================================================================================//
 	// 描画処理
 
-	static void Draw(const EditableObjectView& object, bool* particleEditorOpen = nullptr);
+	static void Draw(const EditableObjectView& object, bool* particleEditorOpen = nullptr, IEditableScene* scene = nullptr);
 };

@@ -92,7 +92,7 @@ bool SceneObjects::Validate(const SceneObjectData& object) {
 	if (object.shininess < 1 || object.shininess > 500) {
 		return false;
 	}
-	if (object.type < SceneObjectType::Model || object.type > SceneObjectType::Particle) {
+	if (object.type < SceneObjectType::Model || object.type > SceneObjectType::Camera) {
 		return false;
 	}
 	// 同じ光源でも、強度・範囲・減衰は別の値として検証する。
@@ -110,6 +110,20 @@ bool SceneObjects::Validate(const SceneObjectData& object) {
 			return false;
 		}
 	}
+	if (!std::isfinite(object.camera.fieldOfView) || object.camera.fieldOfView < 0.0174532925f || object.camera.fieldOfView > 3.12413936f) {
+		return false;
+	}
+	if (!std::isfinite(object.camera.nearClip) || object.camera.nearClip < 0.001f) {
+		return false;
+	}
+	if (!std::isfinite(object.camera.farClip) || object.camera.farClip <= object.camera.nearClip || object.camera.farClip > 1000000) {
+		return false;
+	}
+	if (object.mainCamera) {
+		if (object.type != SceneObjectType::Camera) {
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -122,7 +136,7 @@ EditableObjectView SceneObjects::GetEditableObject(size_t index) {
 	return {object.id, object.name.c_str(), &object.transform, &object.color, &object.enableLighting,
 		&object.shininess, &object.model, &object.useRootNodeMatrix, &object.name,
 		&object.active, &object.hasMeshRenderer, object.type, &object.lightIntensity,
-		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId};
+		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId, &object.camera, object.mainCamera};
 }
 
 // 読取専用の比較では文字列を含むシーン全体を複製しない。
@@ -135,7 +149,7 @@ const SceneObjectData* SceneObjects::GetObjectData(size_t index) const {
 
 // GPUリソースを作らず、種類に応じた編集用データだけを追加する。
 SceneObjectId SceneObjects::CreateObject(SceneObjectType type) {
-	if (type < SceneObjectType::Model || type > SceneObjectType::Particle) {
+	if (type < SceneObjectType::Model || type > SceneObjectType::Camera) {
 		return kInvalidSceneObjectId;
 	}
 	if (!CanCreateType(type)) {
@@ -158,6 +172,11 @@ SceneObjectId SceneObjects::CreateObject(SceneObjectType type) {
 	}
 	if (type == SceneObjectType::Particle) {
 		typeName = "Particle";
+	}
+	if (type == SceneObjectType::Camera) {
+		typeName = "Camera";
+		object.transform.translate = {0,0,-30};
+		object.mainCamera = GetMainCameraId() == kInvalidSceneObjectId;
 	}
 	object.name = typeName + " #" + std::to_string(createdId);
 	return createdId;
@@ -204,6 +223,8 @@ SceneObjectId SceneObjects::DuplicateObject(SceneObjectId id) {
 	std::vector<SceneObjectData> replaced = objects_;
 	for (SceneObjectData& copy : copies) {
 		copy.id = newIds.at(copy.id);
+		copy.mainCamera = false;
+		// 複製でメイン指定を増やさない。
 		if (copy.parentId != kInvalidSceneObjectId) {
 			if (newIds.contains(copy.parentId)) {
 				copy.parentId = newIds.at(copy.parentId);
@@ -290,6 +311,7 @@ bool SceneObjects::ReplaceObjects(std::vector<SceneObjectData> objects, std::str
 	SceneObjectId nextId = nextId_;
 	size_t lightCount = 0;
 	size_t particleCount = 0;
+	size_t mainCameraCount = 0;
 	for (const SceneObjectData& object : objects) {
 		if (!Validate(object)) {
 			error = "Invalid object data or unsupported model.";
@@ -304,6 +326,12 @@ bool SceneObjects::ReplaceObjects(std::vector<SceneObjectData> objects, std::str
 		}
 		if (object.type == SceneObjectType::Particle) {
 			++particleCount;
+		}
+		if (object.mainCamera) {
+			if (++mainCameraCount > 1) {
+				error = "Only one main camera is allowed.";
+				return false;
+			}
 		}
 		if (lightCount > 8 || particleCount > 32) {
 			error = "Scene supports up to 8 point lights and 32 particle emitters.";
@@ -472,4 +500,69 @@ bool SceneObjects::SetObjectParent(SceneObjectId childId, SceneObjectId parentId
 	replaced[childIndex].parentId = parentId;
 	replaced[childIndex].transform = localTransform;
 	return ReplaceObjects(std::move(replaced), error);
+}
+
+// 0を指定するとメイン指定を解除する。失敗時は指定を変更しない。
+bool SceneObjects::SetMainCamera(SceneObjectId id) {
+	if (id != kInvalidSceneObjectId) {
+		const size_t objectIndex = FindObjectIndex(id);
+		if (objectIndex == objects_.size()) {
+			return false;
+		}
+		if (objects_[objectIndex].type != SceneObjectType::Camera) {
+			return false;
+		}
+	}
+	for (SceneObjectData& object : objects_) {
+		object.mainCamera = object.id == id;
+	}
+	return true;
+}
+
+SceneObjectId SceneObjects::GetMainCameraId() const {
+	for (const SceneObjectData& object : objects_) {
+		if (object.mainCamera) {
+			return object.id;
+		}
+	}
+	return kInvalidSceneObjectId;
+}
+
+// カメラの向きは親から継承し、拡縮やせん断は視野へ持ち込まない。
+bool SceneObjects::GetGameCameraView(float aspectRatio, SceneCameraView& view) const {
+	if (!std::isfinite(aspectRatio) || aspectRatio <= 0) {
+		return false;
+	}
+	const SceneObjectId cameraId = GetMainCameraId();
+	if (!IsObjectActive(cameraId)) {
+		return false;
+	}
+	if (!Validate(objects_[FindObjectIndex(cameraId)])) {
+		return false;
+	}
+	Matrix4x4 world{};
+	if (!GetObjectWorldMatrix(cameraId, world)) {
+		return false;
+	}
+	Vector3 forward = {world.m[2][0], world.m[2][1], world.m[2][2]};
+	Vector3 up = {world.m[1][0], world.m[1][1], world.m[1][2]};
+	if (MathUtility::Length(forward) < 0.000001f) {
+		return false;
+	}
+	forward = MathUtility::Normalize(forward);
+	Vector3 right = CrossProduct(up, forward);
+	if (MathUtility::Length(right) < 0.000001f) {
+		return false;
+	}
+	right = MathUtility::Normalize(right);
+	up = CrossProduct(forward, right);
+	view.cameraWorld = MathUtility::MakeIdentity4x4();
+	view.cameraWorld.m[0][0] = right.x; view.cameraWorld.m[0][1] = right.y; view.cameraWorld.m[0][2] = right.z;
+	view.cameraWorld.m[1][0] = up.x; view.cameraWorld.m[1][1] = up.y; view.cameraWorld.m[1][2] = up.z;
+	view.cameraWorld.m[2][0] = forward.x; view.cameraWorld.m[2][1] = forward.y; view.cameraWorld.m[2][2] = forward.z;
+	view.cameraWorld.m[3][0] = world.m[3][0]; view.cameraWorld.m[3][1] = world.m[3][1]; view.cameraWorld.m[3][2] = world.m[3][2];
+	const SceneCameraSettings& lens = objects_[FindObjectIndex(cameraId)].camera;
+	const Matrix4x4 projection = MathUtility::MakePerspectiveFovMatrix(lens.fieldOfView, aspectRatio, lens.nearClip, lens.farClip);
+	view.viewProjection = MathUtility::Multiply(MathUtility::Inverse(view.cameraWorld), projection);
+	return true;
 }

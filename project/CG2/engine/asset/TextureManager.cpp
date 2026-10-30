@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include "TextureManager.h"
 
 // C++
@@ -65,7 +66,7 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 	//=============================================================================================//
 	// テクスチャデータを追加して書き込む
 
-	TextureData& textureData = textureDatas_[filePath];
+	TextureData textureData{};
 
 	DirectX::ScratchImage mipImages = LoadTexture(filePath);
 
@@ -97,7 +98,9 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 		textureData.metadata.format,
 		UINT(textureData.metadata.mipLevels));
 
-	return textureData.srvIndex;
+	const uint32_t loadedIndex = textureData.srvIndex;
+    textureDatas_.emplace(filePath, std::move(textureData));
+    return loadedIndex;
 }
 
 //=================================================================================================//
@@ -148,7 +151,7 @@ DirectX::ScratchImage TextureManager::LoadTexture(const std::string& filePath) {
 		nullptr,
 		image);
 
-	assert(SUCCEEDED(hr));
+	if (FAILED(hr)) { throw std::runtime_error("Texture decoding or mip generation failed."); }
 
 	//=============================================================================================//
 	// MipMap作成
@@ -163,7 +166,16 @@ DirectX::ScratchImage TextureManager::LoadTexture(const std::string& filePath) {
 		0,
 		mipImages);
 
-	assert(SUCCEEDED(hr));
+	if (FAILED(hr)) { throw std::runtime_error("Texture decoding or mip generation failed."); }
 
 	return mipImages;
+}
+
+bool TextureManager::TryLoad(const std::string& filePath, std::string& error) {
+    error.clear();
+    if (textureDatas_.contains(filePath)) { return true; }
+    if (srvManager_->IsFull()) { error = "Texture descriptor limit reached."; return false; }
+    try { Load(filePath); }
+    catch (const std::exception& failure) { error = failure.what(); return false; }
+    return true;
 }

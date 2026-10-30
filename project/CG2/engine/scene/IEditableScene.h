@@ -26,7 +26,19 @@ struct EditorToolVisibility {
 };
 
 // 保存・履歴に使う編集用データ。描画用のGPUリソースはGameScene側で別に管理する。
-enum class SceneObjectType { Model, Empty, PointLight, Particle };
+enum class SceneObjectType { Model, Empty, PointLight, Particle, Camera };
+
+// 保存する透視投影の設定。画角はラジアン、描画距離はワールド単位。
+struct SceneCameraSettings {
+	float fieldOfView = 0.785398163f;
+	float nearClip = 0.1f;
+	float farClip = 1000;
+};
+
+struct SceneCameraView {
+	Matrix4x4 cameraWorld{};
+	Matrix4x4 viewProjection{};
+};
 
 struct SceneObjectData {
 	//=============================================================================================//
@@ -53,6 +65,8 @@ struct SceneObjectData {
 	float lightIntensity = 1;
 	float lightRadius = 10;
 	float lightDecay = 1;
+	SceneCameraSettings camera;
+	bool mainCamera = false; // メイン指定はSetMainCamera経由で一つだけにする。
 	ParticleSettings particle; // 発生位置はTransformを使用し、それ以外の設定を個別に保持する。
 };
 
@@ -76,6 +90,8 @@ struct EditableObjectView {
 	float* lightDecay = nullptr;
 	ParticleSettings* particleSettings = nullptr;
 	SceneObjectId parentId = kInvalidSceneObjectId; // 変更はSetObjectParentを通して検証する。
+	SceneCameraSettings* camera = nullptr;
+	bool mainCamera = false;
 };
 
 // Editorに公開する操作の窓口。ゲーム側がパネルの具体的な型を知る必要はない。
@@ -110,6 +126,10 @@ public:
 		error = "This scene does not support parenting.";
 		return false;
 	}
+	// メイン指定と投影をCPU側で解決し、GameViewと実行時で共有する。
+	virtual bool SetMainCamera(SceneObjectId) { return false; }
+	virtual SceneObjectId GetMainCameraId() const { return kInvalidSceneObjectId; }
+	virtual bool GetGameCameraView(float, SceneCameraView&) const { return false; }
 	virtual bool SupportsObjectCollection() const { return false; }
 	virtual std::vector<SceneObjectData> CaptureObjects() const { return {}; }
 

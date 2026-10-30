@@ -367,7 +367,7 @@ void Editor::DrawInspector(IEditableScene& scene) {
 			continue;
 		}
 		if (object.id == selection_.Get()) {
-			InspectorPanel::Draw(object, &toolVisibility_.particleEditor);
+			InspectorPanel::Draw(object, &toolVisibility_.particleEditor, &scene);
 			return;
 		}
 	}

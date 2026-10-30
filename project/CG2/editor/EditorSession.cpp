@@ -10,6 +10,8 @@ bool EditorSession::AreObjectsEqual(const SceneObjectData& firstObject, const Sc
 		firstObject.hasMeshRenderer == secondObject.hasMeshRenderer &&
 		firstObject.type == secondObject.type && firstObject.lightIntensity == secondObject.lightIntensity &&
 		firstObject.lightRadius == secondObject.lightRadius && firstObject.lightDecay == secondObject.lightDecay &&
+		firstObject.mainCamera == secondObject.mainCamera && firstObject.camera.fieldOfView == secondObject.camera.fieldOfView &&
+		firstObject.camera.nearClip == secondObject.camera.nearClip && firstObject.camera.farClip == secondObject.camera.farClip &&
 		EqualParticleSettings(firstObject.particle, secondObject.particle) &&
 		firstObject.enableLighting == secondObject.enableLighting && firstObject.shininess == secondObject.shininess &&
 		firstObject.useRootNodeMatrix == secondObject.useRootNodeMatrix &&

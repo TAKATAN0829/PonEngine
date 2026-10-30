@@ -181,7 +181,7 @@ bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, s
 	outputFile << std::setprecision(std::numeric_limits<float>::max_digits10);
 	unsigned formatVersion = 1;
 	if (collection) {
-		formatVersion = 5;
+		formatVersion = 6;
 	}
 	outputFile << "PON_SCENE " << formatVersion << '\n' << records.size() << '\n';
 	for (const Record& record : records) {
@@ -195,6 +195,8 @@ bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, s
 			<< ' ' << record.active << ' ' << record.meshRenderer;
 				outputFile << ' ' << static_cast<int>(record.components.type) << ' ' << record.components.lightIntensity
 			<< ' ' << record.components.lightRadius << ' ' << record.components.lightDecay << ' ' << record.components.parentId << ' ';
+				outputFile << record.components.camera.fieldOfView << ' ' << record.components.camera.nearClip << ' '
+			<< record.components.camera.farClip << ' ' << record.components.mainCamera << ' ';
 				if (record.components.type == SceneObjectType::Particle) {
 				ParticlePresetFile::WriteSettings(outputFile, record.components.particle);
 			}
@@ -233,7 +235,7 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 		error = "Incomplete scene header.";
 		return false;
 	}
-	if (magic != "PON_SCENE" || version < 1 || version > 5) {
+	if (magic != "PON_SCENE" || version < 1 || version > 6) {
 		error = "Unsupported scene format.";
 		return false;
 	}
@@ -284,12 +286,21 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 					error = "Incomplete scene object type.";
 					return false;
 				}
-				if (objectType < 0 || objectType > static_cast<int>(SceneObjectType::Particle)) {
+				if (objectType < 0 || objectType > static_cast<int>(SceneObjectType::Camera)) {
 					error = "Invalid scene object type.";
 					return false;
 				}
 				if (version >= 5) {
 					inputFile >> record.components.parentId;
+				}
+				if (version >= 6) {
+					int mainCamera = 0;
+					inputFile >> record.components.camera.fieldOfView >> record.components.camera.nearClip >> record.components.camera.farClip >> mainCamera;
+					if (mainCamera != 0 && mainCamera != 1) {
+						error = "Invalid main camera flag.";
+						return false;
+					}
+					record.components.mainCamera = mainCamera != 0;
 				}
 				record.components.type = static_cast<SceneObjectType>(objectType);
 				if (record.components.type == SceneObjectType::Particle) {

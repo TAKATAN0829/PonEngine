@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <limits>
 
+void RunCameraTests(const std::filesystem::path& directory);
 void RunHierarchyTests(const std::filesystem::path& directory);
 void RunEditorSessionTests();
 void RunSceneViewMathTests();
@@ -247,6 +248,7 @@ int main() {
 			"replacement roundtrip failed");
 		TestCollections(directory);
 		RunHierarchyTests(directory);
+		RunCameraTests(directory);
 		RunEditorSessionTests();
 		RunSceneViewMathTests();
 		RunParticlePresetTests();

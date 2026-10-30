@@ -98,6 +98,10 @@ namespace {
 				markerColor = IM_COL32(100,210,255,255);
 				markerName = "Particle";
 			}
+			if (object.type == SceneObjectType::Camera) {
+				markerColor = IM_COL32(170,220,180,255);
+				markerName = "Camera";
+			}
 			drawList.AddCircle(position, 7, markerColor, 12, 2);
 			drawList.AddLine({position.x-10,position.y}, {position.x+10,position.y}, markerColor);
 			drawList.AddLine({position.x,position.y-10}, {position.x,position.y+10}, markerColor);
@@ -217,7 +221,12 @@ void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
 		}
 		ImGui::EndDisabled();
 	} else {
-		ImGui::TextUnformatted("ゲームカメラ / Playで動作確認");
+		SceneCameraView gameCamera{};
+		if (scene.GetGameCameraView(static_cast<float>(width_) / static_cast<float>(height_), gameCamera)) {
+			ImGui::TextUnformatted("Main Camera / Playで動作確認");
+		} else {
+			ImGui::TextDisabled("メインカメラ未指定・無効：既定の視点を使用中");
+		}
 	}
 	if (!ResizeViewport(scene, ImGui::GetContentRegionAvail())) {
 		ImGui::End();

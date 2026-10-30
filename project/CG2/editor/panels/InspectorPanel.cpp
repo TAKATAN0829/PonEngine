@@ -26,6 +26,33 @@ namespace {
 		}
 	}
 
+	// メイン指定はシーンを通し、複数カメラが同時にメインにならないようにする。
+	void DrawCameraComponent(const EditableObjectView& object, IEditableScene* scene) {
+		if (object.camera == nullptr) {
+			return;
+		}
+		if (!ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
+			return;
+		}
+		bool mainCamera = object.mainCamera;
+		if (ImGui::Checkbox("Main Camera", &mainCamera)) {
+			if (scene != nullptr) {
+				if (mainCamera) {
+					scene->SetMainCamera(object.id);
+				}
+				else {
+					scene->SetMainCamera(kInvalidSceneObjectId);
+				}
+			}
+		}
+		ImGui::SliderAngle("Field of View", &object.camera->fieldOfView, 1, 179);
+		ImGui::DragFloat("Near Clip", &object.camera->nearClip, 0.01f, 0.001f, object.camera->farClip * 0.99f,
+			"%.3f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::DragFloat("Far Clip", &object.camera->farClip, 1, object.camera->nearClip * 1.01f, 1000000,
+			"%.1f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::TextWrapped("GameViewはメインカメラを使用します。拡縮は視野へ反映しません。");
+	}
+
 	// 描画Componentの有無と設定を編集する。削除してもモデル設定は保持する。
 	void DrawMeshRendererComponent(const EditableObjectView& object) {
 		if (object.hasMeshRenderer != nullptr) {
@@ -72,7 +99,7 @@ namespace {
 #endif
 
 // 選択対象の名前・有効状態・各Componentを編集し、未選択時は案内を表示する。
-void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditorOpen) {
+void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditorOpen, IEditableScene* scene) {
 #ifdef USE_IMGUI
 	if (ImGui::Begin("Inspector")) {
 		if (object.id == kInvalidSceneObjectId) {
@@ -111,6 +138,9 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditor
 					}
 				}
 			}
+			if (object.type == SceneObjectType::Camera) {
+				DrawCameraComponent(object, scene);
+			}
 			if (object.type == SceneObjectType::Particle) {
 				ImGui::TextWrapped("発生設定はParticle Editorで編集できます。設定はシーンに保存されます。");
 				if (particleEditorOpen != nullptr) {
@@ -125,5 +155,6 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditor
 #else
 	(void)object;
 	(void)particleEditorOpen;
+	(void)scene;
 #endif
 }

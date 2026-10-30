@@ -33,6 +33,13 @@ public:
 
 
 	//=============================================================================================//
+	// Getter・Setter / メインカメラ
+
+	bool SetMainCamera(SceneObjectId id) override;
+	SceneObjectId GetMainCameraId() const override;
+	bool GetGameCameraView(float aspectRatio, SceneCameraView& view) const override;
+
+	//=============================================================================================//
 	// メンバ関数 / 追加・複製・削除
 
 	SceneObjectId AddObject(const std::string& model) override;

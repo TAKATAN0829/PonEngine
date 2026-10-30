@@ -15,6 +15,9 @@
 // 初期化処理
 
 void GameScene::Initialize(const SceneContext& context) {
+#ifndef USE_IMGUI
+	gameView_ = true; // Releaseも保存したメインカメラを使う。
+#endif
 
 	//=============================================================================================//
 	// Camera初期化
@@ -207,6 +210,11 @@ void GameScene::UpdateObject() {
 	if (gameView_) {
 		cameraMatrix = MathUtility::Inverse(camera_->GetViewMatrix());
 		viewProjection = camera_->GetViewProjectionMatrix();
+		SceneCameraView cameraView{};
+		if (GetGameCameraView(static_cast<float>(viewportWidth_) / static_cast<float>(viewportHeight_), cameraView)) {
+			cameraMatrix = cameraView.cameraWorld;
+			viewProjection = cameraView.viewProjection;
+		}
 	}
 	object3dCommon_->SetCameraPosition({cameraMatrix.m[3][0], cameraMatrix.m[3][1], cameraMatrix.m[3][2]});
 	UpdateModels(viewProjection);

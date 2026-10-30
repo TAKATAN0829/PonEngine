@@ -39,6 +39,8 @@ public:
 	// Texture読み込み(読み込み済みなら番号を返す)
 
 	uint32_t Load(const std::string& filePath);
+    // Projectのプレビューでは不正な画像をエラーとして返す。
+    bool TryLoad(const std::string& filePath, std::string& error);
 
 	//=============================================================================================//
 	// メタデータ取得

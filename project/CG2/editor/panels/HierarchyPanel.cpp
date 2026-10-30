@@ -42,6 +42,9 @@ void HierarchyPanel::DrawCreateMenu(IEditableScene& scene, EditorSelection& sele
 		createdId = scene.CreateObject(SceneObjectType::Particle);
 	}
 	ImGui::EndDisabled();
+	if (ImGui::MenuItem("Camera")) {
+		createdId = scene.CreateObject(SceneObjectType::Camera);
+	}
 	ImGui::Separator();
 	if (ImGui::MenuItem("Plane")) {
 		createdId = scene.AddObject("plane.gltf");
