@@ -1,3 +1,4 @@
+#include "FrameProfiler.h"
 #include "Object3d.h"
 
 // C++
@@ -175,7 +176,7 @@ void Object3d::Draw () {
 	//=============================================================================================//
 	// Model描画
 
-	model_->Draw (material_.get());
+	model_->Draw(material_.get(), &slotMaterials_, animatedMesh_.get());
 }
 
 
@@ -243,6 +244,7 @@ void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& directi
 void Object3d::SetTextureIndex (uint32_t textureIndex) {
 
 	material_->SetTextureIndex (textureIndex);
+	textureOverride_ = true;
 }
 
 
@@ -297,4 +299,114 @@ void Object3d::SetModel(Model* model) {
 	assert(model);
 	model_ = model;
 	material_->SetTextureIndex(model_->GetMaterial()->GetTextureIndex());
+	textureOverride_ = false;
+	slotMaterials_.clear();
+	for (const ModelMaterialInfo& info : model_->GetMaterials()) {
+		std::unique_ptr<Material> slot = std::make_unique<Material>();
+		slot->Initialize(object3dCommon_->GetDxCommon(), object3dCommon_->GetSrvManager());
+		slot->SetColor(info.color);
+		slotMaterials_.push_back(std::move(slot));
+	}
+	animatedMesh_.reset();
+	if (model_->GetAnimation() != nullptr) {
+		animatedMesh_ = std::make_unique<Mesh>();
+		animatedMesh_->Initialize(object3dCommon_->GetDxCommon(), model_->GetVertices());
+	}
+	ResetAnimation();
+	animatedBounds_ = model_->GetLocalBounds();
+	SetMaterials({});
+}
+
+void Object3d::SetMaterials(const std::vector<SceneMaterialSettings>& settings) {
+	for (size_t slotIndex = 0; slotIndex < slotMaterials_.size(); ++slotIndex) {
+		Material& slot = *slotMaterials_[slotIndex];
+		Vector4 color = model_->GetMaterials()[slotIndex].color;
+		uint32_t textureIndex = model_->GetTextureIndex(slotIndex);
+		float shininess = material_->GetShininess();
+		bool lighting = material_->GetEnableLighting();
+		if (textureOverride_) {
+			textureIndex = material_->GetTextureIndex();
+		}
+		for (const SceneMaterialSettings& overrideSettings : settings) {
+			if (overrideSettings.slot != slotIndex) {
+				continue;
+			}
+			color = overrideSettings.color;
+			shininess = overrideSettings.shininess;
+			lighting = lighting && overrideSettings.lighting;
+			if (!overrideSettings.texture.empty()) {
+				textureIndex = TextureManager::GetInstance()->GetSrvIndex("resources/" + overrideSettings.texture);
+			}
+			break;
+		}
+		const Vector4& tint = material_->GetColor();
+		slot.SetColor({color.x * tint.x, color.y * tint.y, color.z * tint.z, color.w * tint.w});
+		slot.SetTextureIndex(textureIndex);
+		slot.SetShininess(shininess);
+		slot.SetEnableLighting(lighting);
+	}
+}
+
+void Object3d::ResetAnimation() {
+	animationTime_ = 0;
+	animationInitialized_ = false;
+}
+
+const AABB& Object3d::GetLocalBounds() const {
+	if (animatedMesh_) {
+		return animatedBounds_;
+	}
+	return model_->GetLocalBounds();
+}
+
+void Object3d::UpdateAnimation(const SceneAnimationSettings& settings, float deltaSeconds, bool playing) {
+	const ModelAnimation* animation = model_->GetAnimation();
+	if (animation == nullptr) {
+		return;
+	}
+	const float previousTime = animationTime_;
+	const bool poseChanged = !animationInitialized_ || settings.clip != animationSettings_.clip || settings.time != animationSettings_.time;
+	if (poseChanged) {
+		animationTime_ = settings.time;
+	}
+	animationInitialized_ = true;
+	animationSettings_ = settings;
+	if (playing) {
+		animationTime_ += deltaSeconds * settings.speed;
+	}
+	if (settings.clip >= 0) {
+		if (static_cast<size_t>(settings.clip) < animation->GetClips().size()) {
+			const float duration = animation->GetClips()[settings.clip].duration;
+			if (settings.loop && duration > 0) {
+				animationTime_ = std::fmod(animationTime_, duration);
+			} else {
+				animationTime_ = (std::min)(animationTime_, duration);
+			}
+		}
+	}
+	// 停止・Pause・終端では、カメラを動かしても同じ頂点を毎フレーム計算し直さない。
+	if (!poseChanged && animationTime_ == previousTime) {
+		return;
+	}
+	FrameProfiler::Scope animationTime(FrameProfiler::Section::Animation);
+	animation->Update(settings.clip, animationTime_, settings.loop, animatedVertices_);
+	animatedMesh_->Update(animatedVertices_);
+	const Vector4& first = animatedVertices_.front().position;
+	animatedBounds_ = {{first.x, first.y, first.z}, {first.x, first.y, first.z}};
+	for (const Mesh::VertexData& vertex : animatedVertices_) {
+		animatedBounds_.min.x = (std::min)(animatedBounds_.min.x, vertex.position.x);
+		animatedBounds_.min.y = (std::min)(animatedBounds_.min.y, vertex.position.y);
+		animatedBounds_.min.z = (std::min)(animatedBounds_.min.z, vertex.position.z);
+		animatedBounds_.max.x = (std::max)(animatedBounds_.max.x, vertex.position.x);
+		animatedBounds_.max.y = (std::max)(animatedBounds_.max.y, vertex.position.y);
+		animatedBounds_.max.z = (std::max)(animatedBounds_.max.z, vertex.position.z);
+	}
+}
+
+// 現在の描画姿勢を表面スナップと共有する。呼出側は参照を保持しない。
+const std::vector<Mesh::VertexData>& Object3d::GetSurfaceVertices() const {
+	if (!animatedVertices_.empty()) {
+		return animatedVertices_;
+	}
+	return model_->GetVertices();
 }

@@ -40,6 +40,8 @@ public:
 
 	void SetTextureIndex(uint32_t textureIndex);
 	uint32_t GetTextureIndex() const { return textureIndex_; }
+	bool GetEnableLighting() const { return materialData_->enableLighting != 0; }
+	float GetShininess() const { return materialData_->shininess; }
 
 	//=============================================================================================//
 	// Lighting有効設定

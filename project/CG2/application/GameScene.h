@@ -3,6 +3,7 @@
 // 自作
 #include "IScene.h"
 #include "SceneObjects.h"
+#include "SceneRenderTarget.h"
 #include <memory>
 #include <unordered_map>
 #include "EngineStructs.h"
@@ -44,9 +45,22 @@ public:
 	//=============================================================================================//
 	// Getter / Editor・Scene表示
 
+	// Projectから要求されたモデルの専用サムネイルを取得する。
+	uint64_t GetModelPreview(const std::string& model, std::string& error) override;
+	// インポートに成功したモデルだけを編集データへ反映できるようにする。
+	bool PrepareModel(const std::string& model, std::string& error) override;
+	// Inspectorへインポート情報だけを公開し、GPU所有権は渡さない。
+	std::vector<ModelMaterialInfo> GetModelMaterials(const std::string& model) const override;
+	std::vector<ModelAnimationInfo> GetModelAnimations(const std::string& model) const override;
+	bool PrepareTexture(const std::string& texture, std::string& error) override;
+	float GetAnimationTime(SceneObjectId objectId) const override;
+	bool IsAnimationPreviewPlaying(SceneObjectId objectId) const override;
+	void SetAnimationPreview(SceneObjectId objectId, bool playing, bool reset) override;
+	bool ReplaceObjects(std::vector<SceneObjectData> objects, std::string& error) override;
 	IEditableScene* GetEditableScene() override { return this; }
 	bool GetEditorViewInfo(EditorViewInfo& viewInfo) const override;
 	bool GetEditableObjectBounds(size_t objectIndex, AABB& worldBounds) const override;
+	bool IntersectObjectSurface(size_t objectIndex, const Vector3& origin, const Vector3& direction, float& distance) const override;
 
 	//=============================================================================================//
 	// Setter / Scene表示・カメラ
@@ -75,12 +89,14 @@ private:
 	//=============================================================================================//
 	// メンバ関数 / 更新
 
-	void UpdateCamera(Input* input);
+	void UpdateCamera();
 	void UpdateObject();
 	void UpdateModels(const Matrix4x4& viewProjection);
 	void UpdateParticles(const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
 	void UpdateEmitter(const SceneObjectData& data, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
 	void UpdateSprite();
+	// 要求された3Dサムネイルを、Scene描画が始まる前に一度だけ描画する。
+	void DrawModelPreviews();
 
 	//=============================================================================================//
 	// Getter / 光源・Particle更新条件
@@ -102,6 +118,15 @@ private:
 	struct RuntimeObject {
 		std::unique_ptr<Object3d> drawable;
 		std::string model;
+		bool animationPreview = false; // Editor内での個別再生。保存・履歴には含めない。
+	};
+
+	// 描画結果と専用描画リソースを一組で保持する。
+	struct ModelPreview {
+		SceneRenderTarget target;
+		std::unique_ptr<Object3d> object;
+		Matrix4x4 world{};
+		bool rendered = false;
 	};
 
 private:
@@ -137,6 +162,8 @@ private:
 
 	// 編集データのIDに対応する描画用リソース。保存ファイルや履歴には含めない。
 	std::unordered_map<SceneObjectId, RuntimeObject> runtimeObjects_;
+	// 3Dサムネイルは最大24件を保持し、通常のシーン描画用とは別に所有する。
+	std::unordered_map<std::string, std::unique_ptr<ModelPreview>> modelPreviews_;
 
 	//=============================================================================================//
 	// メンバ変数 / 再生状態

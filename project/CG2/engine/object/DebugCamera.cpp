@@ -1,7 +1,7 @@
 #include "DebugCamera.h"
 #include "imgui/imgui.h"
 
-#include <dinput.h>
+#include <algorithm>
 
 void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight) {
 
@@ -16,69 +16,45 @@ void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight) {
 	UpdateMatrix();
 }
 
-void DebugCamera::Update(Input* input) {
-
-	Vector3 move{ 0.0f, 0.0f, 0.0f };
-
-	bool allowCameraInput = editorInputEnabled_;
+// UIやギズモが入力を使っている間は、カメラへマウス操作を渡さない。
+void DebugCamera::Update() {
 #ifdef USE_IMGUI
-	// 名前入力やショートカットに使ったキーで、カメラまで動かないようにする。
+	if (!editorInputEnabled_) {
+		return;
+	}
 	const ImGuiIO& inputState = ImGui::GetIO();
-	if (inputState.WantTextInput || inputState.KeyCtrl) {
-		allowCameraInput = false;
+	if (inputState.WantTextInput) {
+		return;
 	}
-#endif
-	if (allowCameraInput) {
-#ifdef USE_IMGUI
-		// UI上では右ドラッグを消費せず、シーンを見ている間だけ視点を回転する。
-		if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+	bool changed = false;
+	if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+		if (inputState.MouseDelta.x != 0 || inputState.MouseDelta.y != 0) {
 			transform_.rotate.x += inputState.MouseDelta.y * rotateSpeed_;
+			transform_.rotate.x = (std::clamp)(transform_.rotate.x, -1.55f, 1.55f);
 			transform_.rotate.y += inputState.MouseDelta.x * rotateSpeed_;
+			changed = true;
 		}
+	}
+	Vector2 panDelta{};
+	if (ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
+		panDelta = {inputState.MouseDelta.x, inputState.MouseDelta.y};
+	}
+	if (panDelta.x != 0 || panDelta.y != 0 || inputState.MouseWheel != 0) {
+		PanAndZoom(panDelta, inputState.MouseWheel);
+		changed = true;
+	}
+	// マウスが動かなければ逆行列も計算し直さない。
+	if (changed) {
+		UpdateMatrix();
+	}
 #endif
-		if (input->IsPressKey(DIK_W)) {
-			move.z += 1.0f;
-		}
+}
 
-		if (input->IsPressKey(DIK_S)) {
-			move.z -= 1.0f;
-		}
-
-		if (input->IsPressKey(DIK_A)) {
-			move.x -= 1.0f;
-		}
-
-		if (input->IsPressKey(DIK_D)) {
-			move.x += 1.0f;
-		}
-
-		if (input->IsPressKey(DIK_Q)) {
-			move.y -= 1.0f;
-		}
-
-		if (input->IsPressKey(DIK_E)) {
-			move.y += 1.0f;
-		}
-	}
-
-	//=============================================================================================//
-	// カメラの向きに合わせて移動
-
-	if (MathUtility::Length(move) != 0.0f) {
-
-		move = MathUtility::Normalize(move);
-
-		Matrix4x4 rotateMatrix =
-		MathUtility::Multiply(MathUtility::MakeRotateXMatrix(transform_.rotate.x),
-			MathUtility::Multiply(MathUtility::MakeRotateYMatrix(transform_.rotate.y), MathUtility::MakeRotateZMatrix(transform_.rotate.z))
-			);
-
-		transform_.translate = MathUtility::Add(transform_.translate,
-			MathUtility::Multiply(moveSpeed_, MathUtility::TransformNormal(move, rotateMatrix)));
-	}
-
-
-	UpdateMatrix();
+// 画面をつかんで動かす中ドラッグと、視線方向へのホイール移動を合成する。
+void DebugCamera::PanAndZoom(const Vector2& mouseDelta, float wheel) {
+	const Matrix4x4 rotation = MathUtility::MakeAffineMatrix({1, 1, 1}, transform_.rotate, {});
+	const Vector3 movement = {-mouseDelta.x * panSpeed_, mouseDelta.y * panSpeed_, wheel * zoomSpeed_};
+	transform_.translate = MathUtility::Add(transform_.translate, MathUtility::TransformNormal(movement, rotation));
 }
 
 //=============================================================================================//
@@ -92,8 +68,9 @@ void DebugCamera::Draw(bool* open) {
 		if (ImGui::DragFloat3("Rotate", &transform_.rotate.x, 0.01f)) {
 			edited = true;
 		}
-		ImGui::DragFloat("MoveSpeed", &moveSpeed_, 0.01f);
-		ImGui::DragFloat("RotateSpeed", &rotateSpeed_, 0.001f);
+		ImGui::DragFloat("Pan Speed", &panSpeed_, 0.001f, 0.001f, 1, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::DragFloat("Zoom Speed", &zoomSpeed_, 0.1f, 0.01f, 100, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::DragFloat("Rotate Speed", &rotateSpeed_, 0.001f, 0.001f, 0.1f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 		if (edited) {
 			UpdateMatrix();
 		}

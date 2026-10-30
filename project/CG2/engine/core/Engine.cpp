@@ -1,3 +1,4 @@
+#include "FrameProfiler.h"
 #include "Engine.h"
 
 // 自作
@@ -115,12 +116,14 @@ void Engine::Initialize(IScene* firstScene) {
 // 実行処理
 
 void Engine::Run(uint32_t frameLimit) {
+	FrameProfiler::Initialize();
 	uint32_t renderedFrames = 0;
 #ifdef USE_IMGUI
 	bool previousPlayState = false;
 #endif
 
 	while (true) {
+		FrameProfiler::BeginFrame();
 
 		//=========================================================================================//
 		// Windowsのメッセージ処理
@@ -157,8 +160,11 @@ void Engine::Run(uint32_t frameLimit) {
 #ifdef USE_IMGUI
 		// 座標やマテリアルをGPUへ送る前に編集し、変更を同じフレームの描画へ反映する。
 		editor_.SetSceneTexture(sceneTarget_.GetTextureHandle());
-		editor_.Draw(sceneManager_->GetEditableScene());
-		editor_.Update(sceneManager_->GetEditableScene());
+		{
+			FrameProfiler::Scope editorTime(FrameProfiler::Section::Editor);
+			editor_.Draw(sceneManager_->GetEditableScene());
+			editor_.Update(sceneManager_->GetEditableScene());
+		}
 		if (winApp_->IsCloseRequested()) {
 			editor_.RequestExit(sceneManager_->GetEditableScene());
 			winApp_->ClearCloseRequest();
@@ -184,9 +190,15 @@ void Engine::Run(uint32_t frameLimit) {
 			sceneManager_->SetPlayState(playing);
 			previousPlayState = playing;
 		}
-		sceneManager_->Update(input_, editor_.ShouldSimulate());
+		{
+			FrameProfiler::Scope sceneTime(FrameProfiler::Section::SceneUpdate);
+			sceneManager_->Update(input_, editor_.ShouldSimulate());
+		}
 #else
-		sceneManager_->Update(input_);
+		{
+			FrameProfiler::Scope sceneTime(FrameProfiler::Section::SceneUpdate);
+			sceneManager_->Update(input_);
+		}
 #endif
 
 		//=========================================================================================//
@@ -201,7 +213,10 @@ void Engine::Run(uint32_t frameLimit) {
 		sceneTarget_.Resize(editor_.GetSceneWidth(), editor_.GetSceneHeight());
 		sceneTarget_.Begin();
 #endif
-		sceneManager_->Draw();
+		{
+			FrameProfiler::Scope renderTime(FrameProfiler::Section::Render);
+			sceneManager_->Draw();
+		}
 #ifdef USE_IMGUI
 		sceneTarget_.End();
 #endif
@@ -209,12 +224,19 @@ void Engine::Run(uint32_t frameLimit) {
 		//=========================================================================================//
 		// ImGui描画
 
-		imGuiSystem_->Draw();
+		{
+			FrameProfiler::Scope uiTime(FrameProfiler::Section::ImGui);
+			imGuiSystem_->Draw();
+		}
 
 		//=========================================================================================//
 		// 描画後処理
 
-		dxCommon_->PostDraw();
+		{
+			FrameProfiler::Scope submitTime(FrameProfiler::Section::Submit);
+			dxCommon_->PostDraw();
+		}
+		FrameProfiler::EndFrame();
 		++renderedFrames;
 		if (frameLimit != 0 && renderedFrames >= frameLimit) {
 			break;

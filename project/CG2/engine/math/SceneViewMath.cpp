@@ -1,9 +1,46 @@
 #include "SceneViewMath.h"
 #include "MathUtility.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <utility>
+
+namespace {
+	Vector3 CrossProduct(const Vector3& first, const Vector3& second) {
+		return {first.y * second.z - first.z * second.y,
+			first.z * second.x - first.x * second.z,
+			first.x * second.y - first.y * second.x};
+	}
+}
+
+// Moller-Trumbore法。頂点の表裏と負の拡縮に依存せず表面へ配置する。
+bool SceneViewMath::IntersectTriangle(const Vector3& origin, const Vector3& direction,
+	const Vector3& first, const Vector3& second, const Vector3& third, float& distance) {
+	const Vector3 firstEdge = MathUtility::Subtract(second, first);
+	const Vector3 secondEdge = MathUtility::Subtract(third, first);
+	const Vector3 perpendicular = CrossProduct(direction, secondEdge);
+	const float determinant = MathUtility::Dot(firstEdge, perpendicular);
+	if (std::abs(determinant) < 0.0000001f) {
+		return false;
+	}
+	const Vector3 offset = MathUtility::Subtract(origin, first);
+	const float horizontal = MathUtility::Dot(offset, perpendicular) / determinant;
+	if (horizontal < 0 || horizontal > 1) {
+		return false;
+	}
+	const Vector3 crossOffset = CrossProduct(offset, firstEdge);
+	const float vertical = MathUtility::Dot(direction, crossOffset) / determinant;
+	if (vertical < 0 || horizontal + vertical > 1) {
+		return false;
+	}
+	const float candidate = MathUtility::Dot(secondEdge, crossOffset) / determinant;
+	if (!std::isfinite(candidate) || candidate < 0) {
+		return false;
+	}
+	distance = candidate;
+	return true;
+}
 
 // 同次座標の除算前に奥行を確認し、背面の点が画面へ反転して現れることを防ぐ。
 bool SceneViewMath::Project(const Vector3& worldPosition, const Matrix4x4& viewProjection,
@@ -95,19 +132,37 @@ AABB SceneViewMath::TransformBounds(const AABB& localBounds, const Matrix4x4& wo
     AABB worldBounds{};
     for (size_t cornerIndex = 0; cornerIndex < 8; ++cornerIndex) {
         Vector3 localCorner = localBounds.min;
-        if ((cornerIndex & 1) != 0) { localCorner.x = localBounds.max.x; }
-        if ((cornerIndex & 2) != 0) { localCorner.y = localBounds.max.y; }
-        if ((cornerIndex & 4) != 0) { localCorner.z = localBounds.max.z; }
+		if ((cornerIndex & 1) != 0) {
+			localCorner.x = localBounds.max.x;
+		}
+		if ((cornerIndex & 2) != 0) {
+			localCorner.y = localBounds.max.y;
+		}
+		if ((cornerIndex & 4) != 0) {
+			localCorner.z = localBounds.max.z;
+		}
         const Vector3 worldCorner = MathUtility::Transform(localCorner, worldMatrix);
         if (cornerIndex == 0) {
             worldBounds = {worldCorner, worldCorner};
         }
-        if (worldCorner.x < worldBounds.min.x) { worldBounds.min.x = worldCorner.x; }
-        if (worldCorner.y < worldBounds.min.y) { worldBounds.min.y = worldCorner.y; }
-        if (worldCorner.z < worldBounds.min.z) { worldBounds.min.z = worldCorner.z; }
-        if (worldCorner.x > worldBounds.max.x) { worldBounds.max.x = worldCorner.x; }
-        if (worldCorner.y > worldBounds.max.y) { worldBounds.max.y = worldCorner.y; }
-        if (worldCorner.z > worldBounds.max.z) { worldBounds.max.z = worldCorner.z; }
+		if (worldCorner.x < worldBounds.min.x) {
+			worldBounds.min.x = worldCorner.x;
+		}
+		if (worldCorner.y < worldBounds.min.y) {
+			worldBounds.min.y = worldCorner.y;
+		}
+		if (worldCorner.z < worldBounds.min.z) {
+			worldBounds.min.z = worldCorner.z;
+		}
+		if (worldCorner.x > worldBounds.max.x) {
+			worldBounds.max.x = worldCorner.x;
+		}
+		if (worldCorner.y > worldBounds.max.y) {
+			worldBounds.max.y = worldCorner.y;
+		}
+		if (worldCorner.z > worldBounds.max.z) {
+			worldBounds.max.z = worldCorner.z;
+		}
     }
     return worldBounds;
 }
@@ -134,9 +189,26 @@ float SceneViewMath::DistanceToSegment(const Vector2& point, const Vector2& star
     if (lengthSquared > 0.0001f) {
         segmentPosition = ((point.x - start.x) * direction.x + (point.y - start.y) * direction.y) / lengthSquared;
     }
-    if (segmentPosition < 0) { segmentPosition = 0; }
-    if (segmentPosition > 1) { segmentPosition = 1; }
+	if (segmentPosition < 0) {
+		segmentPosition = 0;
+	}
+	if (segmentPosition > 1) {
+		segmentPosition = 1;
+	}
     const float horizontalDistance = point.x - start.x - direction.x * segmentPosition;
     const float verticalDistance = point.y - start.y - direction.y * segmentPosition;
     return std::sqrt(horizontalDistance * horizontalDistance + verticalDistance * verticalDistance);
+}
+
+Vector3 SceneViewMath::GetPlacementPosition(const Vector3& origin, const Vector3& direction, float rayLength, float hitDistance) {
+    float distance = (std::min)(10.0f, rayLength);
+    if (hitDistance >= 0 && hitDistance <= rayLength) {
+        distance = hitDistance;
+    } else if (std::abs(direction.y) > 0.0001f) {
+        const float groundDistance = -origin.y / direction.y;
+		if (groundDistance >= 0 && groundDistance <= rayLength) {
+			distance = groundDistance;
+		}
+    }
+    return MathUtility::Add(origin, MathUtility::Multiply(distance, direction));
 }

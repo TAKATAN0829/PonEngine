@@ -79,6 +79,10 @@ private:
 	void DrawToolbar(IEditableScene& scene);
 	void DrawDiscardPrompt(IEditableScene& scene);
 	void DrawInspector(IEditableScene& scene);
+	// 共通Transformは差分、Activeと色は明示した値を選択全体へ反映する。
+	void DrawMultipleInspector(IEditableScene& scene);
+	// 表示メニューから開く、フレーム履歴と処理別時間の画面。
+	void DrawPerformance();
 
 	//=============================================================================================//
 	// メンバ関数 / 入力・再生

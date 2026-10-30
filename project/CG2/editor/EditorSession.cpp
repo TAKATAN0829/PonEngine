@@ -3,9 +3,20 @@
 
 // 保存対象の全プロパティを比較する。UIの選択状態やパネル配置は比較しない。
 bool EditorSession::AreObjectsEqual(const SceneObjectData& firstObject, const SceneObjectData& secondObject) {
+	if (!EqualAnimationSettings(firstObject.animation, secondObject.animation)) {
+		return false;
+	}
+	if (firstObject.materials.size() != secondObject.materials.size()) {
+		return false;
+	}
+	for (size_t slotIndex = 0; slotIndex < firstObject.materials.size(); ++slotIndex) {
+		if (!EqualMaterialSettings(firstObject.materials[slotIndex], secondObject.materials[slotIndex])) {
+			return false;
+		}
+	}
 	const TransformData& firstTransform = firstObject.transform;
 	const TransformData& secondTransform = secondObject.transform;
-	return firstObject.id == secondObject.id && firstObject.parentId == secondObject.parentId && firstObject.name == secondObject.name &&
+	return firstObject.prefabSource == secondObject.prefabSource && firstObject.id == secondObject.id && firstObject.parentId == secondObject.parentId && firstObject.name == secondObject.name &&
 		firstObject.model == secondObject.model && firstObject.active == secondObject.active &&
 		firstObject.hasMeshRenderer == secondObject.hasMeshRenderer &&
 		firstObject.type == secondObject.type && firstObject.lightIntensity == secondObject.lightIntensity &&

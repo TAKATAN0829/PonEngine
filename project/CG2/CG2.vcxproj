@@ -331,7 +331,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="editor\Editor.cpp" />
     <ClCompile Include="editor\panels\HierarchyPanel.cpp" />
     <ClCompile Include="editor\panels\InspectorPanel.cpp" />
-    <ClInclude Include="editor\Editor.h" />
+    <ClInclude Include="editor\Editor.h" /><ClInclude Include="editor\AssetDragPayload.h" />
     <ClInclude Include="editor\EditorSelection.h" />
     <ClInclude Include="editor\panels\HierarchyPanel.h" />
     <ClInclude Include="editor\panels\InspectorPanel.h" />
@@ -368,5 +368,18 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="editor\panels\ParticleEditorPanel.h" />
     <ClCompile Include="editor\panels\UtilityPanels.cpp" />
     <ClInclude Include="editor\panels\UtilityPanels.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\asset\ModelAnimation.cpp" />
+    <ClCompile Include="engine\scene\PrefabFile.cpp" />
+    <ClCompile Include="editor\panels\InspectorAssets.cpp" />
+    <ClInclude Include="engine\asset\ModelAnimation.h" />
+    <ClInclude Include="engine\scene\PrefabFile.h" />
+    <ClInclude Include="engine\scene\SceneAssetSettings.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\EditorTools.cpp" />
+    <ClCompile Include="editor\EditorSelection.cpp" />
+    <ClInclude Include="engine\core\FrameProfiler.h" />
   </ItemGroup>
 </Project>

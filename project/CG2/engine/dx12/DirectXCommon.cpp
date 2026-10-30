@@ -1,3 +1,4 @@
+#include "FrameProfiler.h"
 #include "DirectXCommon.h"
 
 // C++
@@ -386,7 +387,10 @@ void DirectXCommon::PostDraw() {
 	commandQueue_->ExecuteCommandLists(1, commandLists);
 
 	// SwapChainPresent
-	swapChain_->Present(1, 0);
+	{
+		FrameProfiler::Scope presentTime(FrameProfiler::Section::Present);
+		swapChain_->Present(1, 0);
+	}
 
 	// FenceValue加算
 	fenceValue_++;
@@ -399,11 +403,15 @@ void DirectXCommon::PostDraw() {
 
 		fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
 
+		FrameProfiler::Scope waitTime(FrameProfiler::Section::GpuWait);
 		WaitForSingleObject(fenceEvent_, INFINITE);
 	}
 
 	// FPS固定
-	UpdateFixFPS();
+	{
+		FrameProfiler::Scope limiterTime(FrameProfiler::Section::FrameLimit);
+		UpdateFixFPS();
+	}
 
 	// CommandAllocatorReset
 	hr = commandAllocator_->Reset();
@@ -549,8 +557,12 @@ void DirectXCommon::ResizeIfNeeded() {
     GetClientRect(winApp_->GetHwnd(), &clientArea);
     const uint32_t width = static_cast<uint32_t>(clientArea.right);
     const uint32_t height = static_cast<uint32_t>(clientArea.bottom);
-    if (width == 0 || height == 0 || (width == renderWidth_ && height == renderHeight_)) { return; }
-    for (Microsoft::WRL::ComPtr<ID3D12Resource>& buffer : swapChainResources_) { buffer.Reset(); }
+	if (width == 0 || height == 0 || (width == renderWidth_ && height == renderHeight_)) {
+		return;
+	}
+	for (Microsoft::WRL::ComPtr<ID3D12Resource>& buffer : swapChainResources_) {
+		buffer.Reset();
+	}
     depthStencilResource_.Reset();
     const HRESULT resizeResult = swapChain_->ResizeBuffers(kBufferCount, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
     assert(SUCCEEDED(resizeResult));
@@ -569,7 +581,9 @@ void DirectXCommon::ResizeIfNeeded() {
 // 起動試験で実デバイスの検証結果を調べ、描画エラーをビルド成功だけで見逃さない。
 bool DirectXCommon::HasValidationErrors() const {
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> information;
-    if (FAILED(device_.As(&information))) { return false; }
+	if (FAILED(device_.As(&information))) {
+		return false;
+	}
     const UINT64 messageCount = information->GetNumStoredMessagesAllowedByRetrievalFilter();
     for (UINT64 messageIndex = 0; messageIndex < messageCount; ++messageIndex) {
         SIZE_T messageSize = 0;

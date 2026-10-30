@@ -1,6 +1,10 @@
+#include "FrameProfiler.h"
 #include "HierarchyPanel.h"
 #include "../EditorSelection.h"
+#include "../AssetDragPayload.h"
+#include "PrefabFile.h"
 #include <cstring>
+#include <cstdio>
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
@@ -71,21 +75,42 @@ void HierarchyPanel::DrawContextMenu(IEditableScene& scene, EditorSelection& sel
 	}
 	DrawCreateMenu(scene, selection);
 	if (contextTarget_ != kInvalidSceneObjectId) {
+		DrawPrefabSaveMenu(scene);
+		for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
+			const SceneObjectData* object = scene.GetObjectData(objectIndex);
+			if (object == nullptr) {
+				continue;
+			}
+			if (object->id != contextTarget_) {
+				continue;
+			}
+			if (object->prefabSource.empty()) {
+				continue;
+			}
+			if (ImGui::BeginMenu("Prefab")) {
+				ImGui::TextDisabled("Source: %s", object->prefabSource.c_str());
+				ImGui::TextWrapped("Applyは元Assetを上書きします（ファイル変更はUndo対象外）。他の配置はRevertで更新します。");
+				if (ImGui::MenuItem("Apply / 元Assetを上書き")) {
+					if (PrefabFile::Apply(scene, contextTarget_, status_)) {
+						status_ = "Prefab Assetを更新しました。";
+					}
+				}
+				if (ImGui::MenuItem("Revert / Assetから子孫ごと復元")) {
+					if (PrefabFile::Revert(scene, contextTarget_, status_)) {
+						selection.Select(contextTarget_);
+						status_ = "Prefabを復元しました（ルートTransformは維持）。";
+					}
+				}
+				ImGui::EndMenu();
+			}
+			break;
+		}
 		ImGui::Separator();
 		if (ImGui::MenuItem("複製", "Ctrl+D")) {
-			const SceneObjectId copiedId = scene.DuplicateObject(contextTarget_);
-			if (copiedId != kInvalidSceneObjectId) {
-				selection.Select(copiedId);
-				status_.clear();
-			} else {
-				status_ = "複製できません。子を含めたオブジェクト・光源・Particleの上限を確認してください。";
-			}
+			selection.Duplicate(scene, status_);
 		}
 		if (ImGui::MenuItem("削除", "Delete")) {
-			if (scene.RemoveObject(contextTarget_)) {
-				selection.Clear();
-				status_.clear();
-			}
+			selection.Remove(scene, status_);
 		}
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetTooltip("子オブジェクトもまとめて削除します。Ctrl+Zで元に戻せます。");
@@ -125,6 +150,18 @@ void HierarchyPanel::AcceptParentDrop(SceneObjectId parentId, HierarchyRequest& 
 				request.requested = true;
 			}
 		}
+		const ImGuiPayload* modelPayload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kType);
+		if (modelPayload == nullptr) {
+			modelPayload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kPrefabType);
+			if (modelPayload != nullptr) {
+				request.prefab = true;
+			}
+		}
+		if (modelPayload != nullptr) {
+			if (ModelAssetPayload::Read(modelPayload->Data, modelPayload->DataSize, request.model)) {
+				request.parentId = parentId;
+			}
+		}
 		ImGui::EndDragDropTarget();
 	}
 #else
@@ -145,7 +182,7 @@ void HierarchyPanel::DrawBranch(IEditableScene& scene, EditorSelection& selectio
 		const std::string identifier = std::to_string(object.id);
 		ImGui::PushID(identifier.c_str());
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
-		if (selection.Get() == object.id) {
+		if (selection.Contains(object.id)) {
 			flags |= ImGuiTreeNodeFlags_Selected;
 		}
 		if (!children.contains(object.id)) {
@@ -160,7 +197,11 @@ void HierarchyPanel::DrawBranch(IEditableScene& scene, EditorSelection& selectio
 		}
 		if (ImGui::IsItemClicked()) {
 			if (!ImGui::IsItemToggledOpen()) {
+				if (ImGui::GetIO().KeyCtrl) {
+					selection.Toggle(object.id);
+				} else {
 				selection.Select(object.id);
+				}
 			}
 		}
 		// Windowsのメニューと同じく、右ボタンを離したときに開く。
@@ -194,6 +235,7 @@ void HierarchyPanel::DrawBranch(IEditableScene& scene, EditorSelection& selectio
 }
 
 void HierarchyPanel::Draw(IEditableScene* scene, EditorSelection& selection) {
+	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Hierarchy);
 #ifdef USE_IMGUI
 	if (!ImGui::Begin("Hierarchy")) {
 		ImGui::End();
@@ -209,7 +251,10 @@ void HierarchyPanel::Draw(IEditableScene* scene, EditorSelection& selection) {
 		ImGui::End();
 		return;
 	}
-	ImGui::TextDisabled("Objects: %zu", scene->GetEditableObjectCount());
+	ImGui::TextDisabled("Objects: %zu  Selected: %zu", scene->GetEditableObjectCount(), selection.GetIds().size());
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Ctrl+クリックで複数選択 / Ctrl+Dで一括複製 / Deleteで一括削除");
+	}
 	ImGui::Separator();
 	HierarchyRequest request;
 	ChildIndices children;
@@ -244,10 +289,28 @@ void HierarchyPanel::Draw(IEditableScene* scene, EditorSelection& selection) {
 			selection.Select(request.childId);
 		}
 	}
+	if (!request.model.empty()) {
+		Vector3 position{};
+		if (request.parentId != kInvalidSceneObjectId) {
+			position = scene->GetObjectWorldPosition(request.parentId);
+		}
+		SceneObjectId placedId = 0;
+		if (request.prefab) {
+			placedId = scene->PlacePrefab(request.model, request.parentId, position, status_);
+		} else {
+			placedId = scene->PlaceModel(request.model, request.parentId, position, status_);
+		}
+		if (placedId != kInvalidSceneObjectId) {
+			selection.Select(placedId);
+		}
+	}
 	// PopupのIDは各オブジェクトのPushIDの外側で統一する。
 	if (request.contextRequested) {
 		contextTarget_ = request.contextObjectId;
+		std::snprintf(prefabName_, sizeof(prefabName_), "Prefab_%llu", static_cast<unsigned long long>(contextTarget_));
+		if (!selection.Contains(contextTarget_)) {
 		selection.Select(contextTarget_);
+		}
 		ImGui::OpenPopup("HierarchyContext");
 	}
 	DrawContextMenu(*scene, selection);
@@ -255,5 +318,41 @@ void HierarchyPanel::Draw(IEditableScene* scene, EditorSelection& selection) {
 #else
 	(void)scene;
 	(void)selection;
+#endif
+}
+
+// 子孫をまとめて保存する。入力にディレクトリを許さず、resources/prefabs内へ置く。
+void HierarchyPanel::DrawPrefabSaveMenu(IEditableScene& scene) {
+#ifdef USE_IMGUI
+	if (!ImGui::BeginMenu("Prefabとして保存")) {
+		return;
+	}
+	ImGui::InputText("File Name", prefabName_, sizeof(prefabName_));
+	if (ImGui::MenuItem("保存（同名は上書き）")) {
+		const std::string name = prefabName_;
+		if (name.empty() || name.find_first_of("\\/:*?\"<>|") != std::string::npos || name == "." || name == "..") {
+			status_ = "ファイル名に使えない文字が含まれています。";
+		} else {
+			const std::filesystem::path path = PrefabFile::ResolveSource("prefabs/" + name + ".ponprefab", status_);
+			if (path.empty()) {
+				ImGui::EndMenu();
+				return;
+			}
+			if (PrefabFile::Save(scene, contextTarget_, path, status_)) {
+				std::vector<SceneObjectData> connected = scene.CaptureObjects();
+				for (SceneObjectData& object : connected) {
+					if (object.id == contextTarget_) {
+						object.prefabSource = "prefabs/" + name + ".ponprefab";
+					}
+				}
+				if (scene.ReplaceObjects(std::move(connected), status_)) {
+					status_ = "Prefabを保存し、元Assetへ接続しました。右クリックのPrefabからApply/Revertできます。";
+				}
+			}
+		}
+	}
+	ImGui::EndMenu();
+#else
+	(void)scene;
 #endif
 }

@@ -10,6 +10,9 @@
 
 void RunCameraTests(const std::filesystem::path& directory);
 void RunHierarchyTests(const std::filesystem::path& directory);
+void RunEditorWorkflowTests(const std::filesystem::path& directory);
+void RunAssetWorkflowTests(const std::filesystem::path& directory);
+void RunPlacementTests();
 void RunEditorSessionTests();
 void RunSceneViewMathTests();
 void RunParticlePresetTests();
@@ -249,6 +252,9 @@ int main() {
 		TestCollections(directory);
 		RunHierarchyTests(directory);
 		RunCameraTests(directory);
+		RunPlacementTests();
+		RunAssetWorkflowTests(directory);
+		RunEditorWorkflowTests(directory);
 		RunEditorSessionTests();
 		RunSceneViewMathTests();
 		RunParticlePresetTests();

@@ -36,7 +36,7 @@ private:
 	void DrawAsset(const AssetEntry& entry, IEditableScene& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
 	void DrawAssetActions(const AssetEntry& entry, IEditableScene& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
 	void DrawConsole();
-	Preview GetPreview(const AssetEntry& entry);
+	Preview GetPreview(const AssetEntry& entry, IEditableScene& scene);
 
 private:
 	//=============================================================================================//

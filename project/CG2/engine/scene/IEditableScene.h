@@ -6,6 +6,7 @@
 #include <vector>
 #include "EngineStructs.h"
 #include "ParticleSettings.h"
+#include "SceneAssetSettings.h"
 
 using SceneObjectId = uint64_t;
 inline constexpr SceneObjectId kInvalidSceneObjectId = 0;
@@ -23,6 +24,7 @@ struct EditorToolVisibility {
 	bool particleEditor = false;
 	bool worldSettings = false;
 	bool camera = false;
+	bool performance = false; // 表示メニューから必要なときだけ開く。
 };
 
 // 保存・履歴に使う編集用データ。描画用のGPUリソースはGameScene側で別に管理する。
@@ -68,6 +70,10 @@ struct SceneObjectData {
 	SceneCameraSettings camera;
 	bool mainCamera = false; // メイン指定はSetMainCamera経由で一つだけにする。
 	ParticleSettings particle; // 発生位置はTransformを使用し、それ以外の設定を個別に保持する。
+	std::vector<SceneMaterialSettings> materials; // 空のスロットはモデル既定値を使用する。
+	SceneAnimationSettings animation;
+	// Prefabルートだけがresources相対の元Assetを保持する。子は独立した編集データ。
+	std::string prefabSource;
 };
 
 // シーンが所有する値への借用参照。追加・削除・読込の後は取得し直す必要がある。
@@ -92,6 +98,8 @@ struct EditableObjectView {
 	SceneObjectId parentId = kInvalidSceneObjectId; // 変更はSetObjectParentを通して検証する。
 	SceneCameraSettings* camera = nullptr;
 	bool mainCamera = false;
+	std::vector<SceneMaterialSettings>* materials = nullptr;
+	SceneAnimationSettings* animation = nullptr;
 };
 
 // Editorに公開する操作の窓口。ゲーム側がパネルの具体的な型を知る必要はない。
@@ -111,6 +119,31 @@ public:
 	// 履歴比較用の読み取り専用参照。一覧変更後には取得し直す。
 	// 公開できないシーンはnullptrを返し、CaptureObjectsでの比較へ切り替える。
 	virtual const SceneObjectData* GetObjectData(size_t index) const { (void)index; return nullptr; }
+	// ID検索を公開し、選択の検証で毎フレーム一覧のコピーを作らない。
+	virtual const SceneObjectData* GetObjectDataById(SceneObjectId identifier) const {
+		for (size_t objectIndex = 0; objectIndex < GetEditableObjectCount(); ++objectIndex) {
+			const SceneObjectData* object = GetObjectData(objectIndex);
+			if (object != nullptr) {
+				if (object->id == identifier) {
+					return object;
+				}
+			}
+		}
+		return nullptr;
+	}
+	// 採番済みIDはUndoや削除の後にも再利用しない。未対応実装は最大IDから求める。
+	virtual SceneObjectId GetNextObjectId() const {
+		SceneObjectId nextIdentifier = 1;
+		for (size_t objectIndex = 0; objectIndex < GetEditableObjectCount(); ++objectIndex) {
+			const SceneObjectData* object = GetObjectData(objectIndex);
+			if (object != nullptr) {
+				if (object->id >= nextIdentifier) {
+					nextIdentifier = object->id + 1;
+				}
+			}
+		}
+		return nextIdentifier;
+	}
 	// 親子変換は保存データと共通の行列で扱う。GPU側の参照は公開しない。
 	virtual bool GetObjectWorldMatrix(SceneObjectId, Matrix4x4&) const { return false; }
 	Vector3 GetObjectWorldPosition(SceneObjectId id) const {
@@ -120,6 +153,7 @@ public:
 		}
 		return {world.m[3][0], world.m[3][1], world.m[3][2]};
 	}
+	virtual bool SetObjectWorldTransform(SceneObjectId, const Matrix4x4&) { return false; }
 	virtual bool SetObjectWorldPosition(SceneObjectId, const Vector3&) { return false; }
 	virtual bool IsObjectActive(SceneObjectId) const { return false; }
 	virtual bool SetObjectParent(SceneObjectId, SceneObjectId, std::string& error) {
@@ -139,6 +173,8 @@ public:
 	// 対応するカメラや形状を持たないシーンではfalseを返す。
 	virtual bool GetEditorViewInfo(EditorViewInfo&) const { return false; }
 	virtual bool GetEditableObjectBounds(size_t, AABB&) const { return false; }
+	// 表面スナップはメッシュを持つ対象だけを調べる。距離はワールド単位。
+	virtual bool IntersectObjectSurface(size_t, const Vector3&, const Vector3&, float&) const { return false; }
 
 	//=============================================================================================//
 	// 描画処理 / 任意の補助画面
@@ -169,6 +205,24 @@ public:
 	//=============================================================================================//
 	// メンバ関数 / オブジェクト操作
 
+	// 3Dプレビュー用の画像ハンドルを返す。描画を持たないシーンは0を返す。
+	virtual uint64_t GetModelPreview(const std::string&, std::string&) { return 0; }
+	// 実行側でモデルを準備し、失敗理由を返す。CPUだけのシーンは準備を省略する。
+	virtual bool PrepareModel(const std::string&, std::string& error) { error.clear(); return true; }
+	// Inspectorは描画実装に触れず、モデルの編集可能な情報だけを取得する。
+	virtual std::vector<ModelMaterialInfo> GetModelMaterials(const std::string&) const { return {}; }
+	virtual std::vector<ModelAnimationInfo> GetModelAnimations(const std::string&) const { return {}; }
+	virtual bool PrepareTexture(const std::string&, std::string& error) { error.clear(); return true; }
+	virtual void SetAnimationPreview(SceneObjectId, bool, bool) {}
+	virtual float GetAnimationTime(SceneObjectId) const { return 0; }
+	virtual bool IsAnimationPreviewPlaying(SceneObjectId) const { return false; }
+	// Prefabを新しいIDの独立した階層として追加する。
+	virtual SceneObjectId PlacePrefab(const std::string&, SceneObjectId, const Vector3&, std::string&) { return 0; }
+	// 配置に必要な変換・親・モデルを先に検証し、失敗時は一覧を変更しない。
+	virtual SceneObjectId PlaceModel(const std::string&, SceneObjectId, const Vector3&, std::string& error) {
+		error = "This scene does not support model placement.";
+		return kInvalidSceneObjectId;
+	}
 	virtual SceneObjectId AddObject(const std::string&) { return kInvalidSceneObjectId; }
 	virtual SceneObjectId CreateObject(SceneObjectType) { return kInvalidSceneObjectId; }
 	virtual SceneObjectId DuplicateObject(SceneObjectId) { return kInvalidSceneObjectId; }

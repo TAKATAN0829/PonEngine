@@ -3,7 +3,6 @@
 // 自作
 #include "MathUtility.h"
 #include "EngineStructs.h"
-#include "Input.h"
 
 class DebugCamera {
 public:
@@ -15,8 +14,8 @@ public:
 	//=============================================================================================//
 	// 更新処理
 
-	// 移動・視点操作を反映し、ビュー行列を更新する。
-	void Update(Input* input);
+	// Scene画像上のマウスだけで回転・平行移動・前後移動を行う。
+	void Update();
 
 	//=============================================================================================//
 	// 描画処理
@@ -49,6 +48,7 @@ private:
 
 	void UpdateMatrix(); // 位置・回転をビューへ反映する。
 	void UpdateProjectionMatrix(); // 初期化・表示サイズ変更時だけ更新する。
+	void PanAndZoom(const Vector2& mouseDelta, float wheel); // カメラの向きに合わせて移動する。
 
 private:
 	//=============================================================================================//
@@ -69,7 +69,8 @@ private:
 	//=============================================================================================//
 	// メンバ変数 / 操作設定
 
-	float moveSpeed_ = 0.2f;
-	float rotateSpeed_ = 0.01f;
+	float panSpeed_ = 0.02f; // 中ドラッグ1ピクセルあたりの移動量。
+	float zoomSpeed_ = 2.0f; // ホイール1段あたりの前後移動量。
+	float rotateSpeed_ = 0.005f; // 右ドラッグ1ピクセルあたりの回転量。
 	bool editorInputEnabled_ = true; // Scene画像の上にいる間だけ操作を許可する。
 };

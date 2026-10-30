@@ -1,5 +1,7 @@
+#include "FrameProfiler.h"
 #include "SceneViewPanel.h"
 #include "../EditorSelection.h"
+#include "../AssetDragPayload.h"
 #include "SceneViewMath.h"
 #include "MathUtility.h"
 
@@ -31,6 +33,40 @@ namespace {
 			SceneViewMath::Project(end, viewInfo.viewProjection, viewInfo.viewportWidth, viewInfo.viewportHeight, screenEnd)) {
 			drawList.AddLine(ToDrawPosition(screenStart, viewportOrigin), ToDrawPosition(screenEnd, viewportOrigin), color, thickness);
 		}
+	}
+
+	// 選択軸に直交する二軸を使い、回転リング上の一点を求める。
+	Vector3 GetRotationRingPoint(const Vector3& origin, float radius, size_t axisIndex, int segment) {
+		const float angle = static_cast<float>(segment) * 6.283185307f / 48;
+		const Vector3 horizontal = MathUtility::Multiply(std::cos(angle), kAxisDirections[(axisIndex + 1) % 3]);
+		const Vector3 vertical = MathUtility::Multiply(std::sin(angle), kAxisDirections[(axisIndex + 2) % 3]);
+		return MathUtility::Add(origin, MathUtility::Multiply(radius, MathUtility::Add(horizontal, vertical)));
+	}
+
+	// リングを線分として描き、画面に投影できた部分だけをクリック対象にする。
+	bool DrawRotationRing(const EditorViewInfo& viewInfo, const ImVec2& viewportOrigin,
+		const Vector3& origin, float radius, size_t axisIndex, const Vector2& mousePosition, bool imageHovered) {
+		bool hovered = false;
+		for (int segment = 0; segment < 48; ++segment) {
+			const Vector3 first = GetRotationRingPoint(origin, radius, axisIndex, segment);
+			const Vector3 second = GetRotationRingPoint(origin, radius, axisIndex, segment + 1);
+			DrawWorldLine(*ImGui::GetWindowDrawList(), viewInfo, viewportOrigin, first, second, kAxisColors[axisIndex], 2);
+			if (!imageHovered) {
+				continue;
+			}
+			Vector2 screenFirst{};
+			Vector2 screenSecond{};
+			if (!SceneViewMath::Project(first, viewInfo.viewProjection, viewInfo.viewportWidth, viewInfo.viewportHeight, screenFirst)) {
+				continue;
+			}
+			if (!SceneViewMath::Project(second, viewInfo.viewProjection, viewInfo.viewportWidth, viewInfo.viewportHeight, screenSecond)) {
+				continue;
+			}
+			if (SceneViewMath::DistanceToSegment(mousePosition, screenFirst, screenSecond) < 6) {
+				hovered = true;
+			}
+		}
+		return hovered;
 	}
 
 	// モデルのワールドAABBの十二辺を表示し、クリック判定に使う範囲を確認できるようにする。
@@ -128,7 +164,6 @@ EditableObjectView SceneViewPanel::FindObject(IEditableScene& scene, SceneObject
 void SceneViewPanel::Initialize() {
 	ResetInteraction();
 	dragStartPosition_ = {};
-	dragStartLocalPosition_ = {};
 	dragAxis_ = {};
 	dragStartDistance_ = 0;
 	forceScene_ = false;
@@ -138,6 +173,7 @@ void SceneViewPanel::Initialize() {
 void SceneViewPanel::ResetInteraction() {
 	dragging_ = false;
 	draggedObject_ = kInvalidSceneObjectId;
+	dragObjects_.clear();
 }
 
 // 毎回開始位置を基準に計算し、フレームごとの加算誤差やスナップのずれを防ぐ。
@@ -151,8 +187,36 @@ void SceneViewPanel::Update(IEditableScene& scene, const EditorViewInfo& viewInf
 	}
 
 	if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
-		object.transform->translate = dragStartLocalPosition_;
-		ResetInteraction();
+		CancelDrag(scene);
+		return;
+	}
+	if (tool_ == TransformTool::Rotate) {
+		Vector2 center{};
+		if (SceneViewMath::Project(dragStartPosition_,viewInfo.viewProjection,viewInfo.viewportWidth,viewInfo.viewportHeight,center)) {
+			float angle = std::remainder(std::atan2(mousePosition.y-center.y,mousePosition.x-center.x)-dragStartAngle_,6.283185307f);
+			const Vector3 toCamera = MathUtility::Subtract(viewInfo.cameraPosition,dragStartPosition_);
+			if (MathUtility::Length(toCamera) > 0.001f) {
+				if (std::abs(MathUtility::Dot(MathUtility::Normalize(toCamera),dragAxis_)) < 0.2f) {
+					angle = (mousePosition.x-dragStartMouse_.x-mousePosition.y+dragStartMouse_.y) * 0.01f;
+				}
+			}
+			if (ImGui::GetIO().KeyCtrl) {
+				angle = std::round(angle / 0.261799388f) * 0.261799388f;
+			}
+			Matrix4x4 rotation = MathUtility::MakeRotateXMatrix(angle);
+			if (dragAxis_.y > 0.5f) {
+				rotation = MathUtility::MakeRotateYMatrix(angle);
+			}
+			if (dragAxis_.z > 0.5f) {
+				rotation = MathUtility::MakeRotateZMatrix(angle);
+			}
+			Matrix4x4 delta = MathUtility::MakeTranslateMatrix(MathUtility::Multiply(-1.0f, dragStartPosition_));
+			delta = MathUtility::Multiply(MathUtility::Multiply(delta, rotation), MathUtility::MakeTranslateMatrix(dragStartPosition_));
+			ApplyDragTransform(scene, delta);
+		}
+		if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+			ResetInteraction();
+		}
 		return;
 	}
 	Vector3 rayOrigin{};
@@ -167,13 +231,47 @@ void SceneViewPanel::Update(IEditableScene& scene, const EditorViewInfo& viewInf
 					movement = std::round(movement / snapDistance_) * snapDistance_;
 				}
 			}
-			scene.SetObjectWorldPosition(object.id, MathUtility::Add(dragStartPosition_, MathUtility::Multiply(movement, dragAxis_)));
+			if (tool_ == TransformTool::Scale) {
+				const float factor = (std::clamp)(1.0f + movement / dragAxisLength_,0.01f,100.0f);
+				if (groupDrag_) {
+					// ワールドの任意軸へ拡縮する。TRSで表せないせん断は全体を拒否する。
+					Matrix4x4 scale = MathUtility::MakeIdentity4x4();
+					const float axisValues[] = {dragAxis_.x, dragAxis_.y, dragAxis_.z};
+					for (size_t row = 0; row < 3; ++row) {
+						for (size_t column = 0; column < 3; ++column) {
+							scale.m[row][column] += (factor - 1) * axisValues[row] * axisValues[column];
+						}
+					}
+					Matrix4x4 delta = MathUtility::MakeTranslateMatrix(MathUtility::Multiply(-1.0f, dragStartPosition_));
+					delta = MathUtility::Multiply(MathUtility::Multiply(delta, scale), MathUtility::MakeTranslateMatrix(dragStartPosition_));
+					ApplyDragTransform(scene, delta);
+				} else {
+					object.transform->scale = dragStartTransform_.scale;
+					if (dragAxisIndex_ == 0) {
+						object.transform->scale.x *= factor;
+					}
+					if (dragAxisIndex_ == 1) {
+						object.transform->scale.y *= factor;
+					}
+					if (dragAxisIndex_ == 2) {
+						object.transform->scale.z *= factor;
+					}
+				}
+			} else {
+				for (const DragObject& target : dragObjects_) {
+					if (!scene.SetObjectWorldPosition(target.identifier, MathUtility::Add(target.position, MathUtility::Multiply(movement, dragAxis_)))) {
+						placementStatus_ = "親のTransformを逆変換できないため、一括移動を中止しました。";
+						CancelDrag(scene);
+						return;
+					}
+				}
+			}
 		}
 	}
 	if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
 		ResetInteraction();
 	} else {
-		// 移動中のWASDでカメラが動き、操作軸がずれることを防ぐ。
+		// ギズモ操作中のUndoなどで、編集中の対象が切り替わることを防ぐ。
 		ImGui::SetNextFrameWantCaptureKeyboard(true);
 	}
 #else
@@ -185,6 +283,7 @@ void SceneViewPanel::Update(IEditableScene& scene, const EditorViewInfo& viewInf
 
 // パネル操作中のクリックは拾わず、背景のモデル選択とワールド軸の移動だけを扱う。
 void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
+	FrameProfiler::Scope sectionTime(FrameProfiler::Section::SceneView);
 #ifdef USE_IMGUI
 	scene.SetEditorCameraInput(false);
 	if (!ImGui::Begin("Scene Viewport", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
@@ -210,13 +309,20 @@ void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
 	}
 	EditableObjectView selectedObject = FindObject(scene, selection.Get());
 	if (!gameView_) {
+		int selectedTool = static_cast<int>(tool_);
+		ImGui::SetNextItemWidth(120);
+		if (ImGui::Combo("##TransformTool", &selectedTool, "Move\0Rotate\0Scale\0")) {
+			CancelDrag(scene);
+			tool_ = static_cast<TransformTool>(selectedTool);
+		}
+		ImGui::SameLine();
 		ImGui::Checkbox("Grid", &showGrid_);
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(95);
 		ImGui::DragFloat("Snap", &snapDistance_, 0.1f, 0.1f, 100, "%.1f", ImGuiSliderFlags_AlwaysClamp);
 		ImGui::SameLine();
 		ImGui::BeginDisabled(selectedObject.transform == nullptr || dragging_);
-		if (ImGui::Button("注視 F")) {
+		if (ImGui::Button("注視")) {
 			scene.FocusEditorCamera(scene.GetObjectWorldPosition(selectedObject.id));
 		}
 		ImGui::EndDisabled();
@@ -228,6 +334,9 @@ void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
 			ImGui::TextDisabled("メインカメラ未指定・無効：既定の視点を使用中");
 		}
 	}
+	if (!placementStatus_.empty()) {
+		ImGui::TextWrapped("%s", placementStatus_.c_str());
+	}
 	if (!ResizeViewport(scene, ImGui::GetContentRegionAvail())) {
 		ImGui::End();
 		return;
@@ -236,21 +345,18 @@ void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
 	// 画像・クリック・ギズモはすべて同じ矩形を使う。
 	ImGui::Image(ImTextureRef(static_cast<ImTextureID>(textureHandle_)),
 		{static_cast<float>(width_), static_cast<float>(height_)});
+	if (!gameView_) {
+		if (AcceptModelDrop(scene, selection, viewportOrigin)) {
+			ResetInteraction();
+			ImGui::End();
+			return;
+			// 配列の再配置前に借用した選択データは以降使わない。
+		}
+	}
 	const bool imageHovered = ImGui::IsItemHovered() && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId);
 	if (gameView_) {
 		ImGui::End();
 		return;
-	}
-	if (selectedObject.transform != nullptr) {
-		if (imageHovered && !dragging_) {
-			if (!ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive()) {
-				if (!ImGui::GetIO().KeyCtrl) {
-					if (ImGui::IsKeyPressed(ImGuiKey_F, false)) {
-						scene.FocusEditorCamera(scene.GetObjectWorldPosition(selectedObject.id));
-					}
-				}
-			}
-		}
 	}
 	EditorViewInfo viewInfo;
 	if (!scene.GetEditorViewInfo(viewInfo)) {
@@ -288,6 +394,72 @@ void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
 }
 
 #ifdef USE_IMGUI
+// Projectのモデルだけを受け取り、描画中の面またはグリッドへ配置する。
+bool SceneViewPanel::AcceptModelDrop(IEditableScene& scene, EditorSelection& selection, const ImVec2& viewportOrigin) {
+	if (!ImGui::BeginDragDropTarget()) {
+		return false;
+	}
+	const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kType);
+	bool prefab = false;
+	if (payload == nullptr) {
+		payload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kPrefabType);
+		prefab = payload != nullptr;
+	}
+	std::string model;
+	if (payload != nullptr) {
+		ModelAssetPayload::Read(payload->Data, payload->DataSize, model);
+	}
+	ImGui::EndDragDropTarget();
+	if (model.empty()) {
+		return false;
+	}
+	EditorViewInfo view;
+	if (!scene.GetEditorViewInfo(view)) {
+		return false;
+	}
+	Vector3 origin{};
+	Vector3 direction{};
+	float rayLength = 0;
+	const Vector2 mouse = {ImGui::GetIO().MousePos.x - viewportOrigin.x, ImGui::GetIO().MousePos.y - viewportOrigin.y};
+	if (!SceneViewMath::CreateRay(mouse, view.viewProjection, view.viewportWidth, view.viewportHeight, origin, direction, &rayLength)) {
+		return false;
+	}
+	float nearest = rayLength + 1;
+	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
+		const EditableObjectView object = scene.GetEditableObject(objectIndex);
+		if (object.hasMeshRenderer == nullptr) {
+			continue;
+		}
+		if (!*object.hasMeshRenderer) {
+			continue;
+		}
+		AABB bounds{};
+		float distance = 0;
+		if (scene.GetEditableObjectBounds(objectIndex, bounds)) {
+			if (SceneViewMath::IntersectBounds(origin, direction, bounds, distance)) {
+				if (!scene.IntersectObjectSurface(objectIndex, origin, direction, distance)) {
+					continue;
+				}
+				if (distance < nearest) {
+					nearest = distance;
+				}
+			}
+		}
+	}
+	const Vector3 position = SceneViewMath::GetPlacementPosition(origin, direction, rayLength, nearest);
+	SceneObjectId placedId = 0;
+	if (prefab) {
+		placedId = scene.PlacePrefab(model, kInvalidSceneObjectId, position, placementStatus_);
+	} else {
+		placedId = scene.PlaceModel(model, kInvalidSceneObjectId, position, placementStatus_);
+	}
+	if (placedId == kInvalidSceneObjectId) {
+		return false;
+	}
+	selection.Select(placedId);
+	return true;
+}
+
 //=============================================================================================//
 // メンバ関数 / 表示サイズ更新
 
@@ -325,15 +497,24 @@ bool SceneViewPanel::DrawGizmo(IEditableScene& scene, EditorSelection& selection
 	ImDrawList& drawList = *ImGui::GetWindowDrawList();
 	bool clickedGizmo = false;
 	const EditableObjectView selectedObject = FindObject(scene, selection.Get());
+	if (tool_ != TransformTool::Move) {
+		if (selectedObject.type == SceneObjectType::PointLight || selectedObject.type == SceneObjectType::Particle) {
+			return false;
+		}
+	}
+	if (tool_ == TransformTool::Scale) {
+		if (selectedObject.type == SceneObjectType::Camera) {
+			return false;
+		}
+	}
 	if (selectedObject.transform != nullptr) {
 		// 範囲はモデルの形状から求め、原点付近を固定半径で選ぶ方法は使わない。
 		for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
-			if (scene.GetEditableObject(objectIndex).id == selection.Get()) {
+			if (selection.Contains(scene.GetEditableObject(objectIndex).id)) {
 				AABB bounds;
 				if (scene.GetEditableObjectBounds(objectIndex, bounds)) {
 					DrawSelectionBounds(drawList, viewInfo, viewportOrigin, bounds);
 				}
-				break;
 			}
 		}
 
@@ -345,16 +526,32 @@ bool SceneViewPanel::DrawGizmo(IEditableScene& scene, EditorSelection& selection
 		Vector2 screenOrigin{};
 		if (SceneViewMath::Project(axisOrigin, viewInfo.viewProjection, viewInfo.viewportWidth, viewInfo.viewportHeight, screenOrigin)) {
 			for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {
-				const Vector3 axisEnd = MathUtility::Add(axisOrigin, MathUtility::Multiply(axisLength, kAxisDirections[axisIndex]));
+				Vector3 axisDirection = kAxisDirections[axisIndex];
+				if (tool_ == TransformTool::Scale) {
+					Matrix4x4 world{};
+					if (scene.GetObjectWorldMatrix(selectedObject.id,world)) {
+						axisDirection = {world.m[axisIndex][0],world.m[axisIndex][1],world.m[axisIndex][2]};
+						if (MathUtility::Length(axisDirection) < 0.000001f) {
+							continue;
+						}
+						axisDirection = MathUtility::Normalize(axisDirection);
+					}
+				}
+				const Vector3 axisEnd = MathUtility::Add(axisOrigin, MathUtility::Multiply(axisLength, axisDirection));
 				Vector2 screenEnd{};
 				if (!SceneViewMath::Project(axisEnd, viewInfo.viewProjection, viewInfo.viewportWidth, viewInfo.viewportHeight, screenEnd)) {
 					continue;
 				}
-				if (std::hypot(screenEnd.x - screenOrigin.x, screenEnd.y - screenOrigin.y) < 12) {
-					continue;
+				if (tool_ != TransformTool::Rotate) {
+					if (std::hypot(screenEnd.x-screenOrigin.x,screenEnd.y-screenOrigin.y) < 12) {
+						continue;
+					}
 				}
-				const bool hovered = imageHovered &&
+				bool hovered = imageHovered &&
 					SceneViewMath::DistanceToSegment(mousePosition, screenOrigin, screenEnd) < 7;
+				if (tool_ == TransformTool::Rotate) {
+					hovered = DrawRotationRing(viewInfo, viewportOrigin, axisOrigin, axisLength, axisIndex, mousePosition, imageHovered);
+				}
 				ImU32 color = kAxisColors[axisIndex];
 				if (hovered) {
 					color = IM_COL32(255, 230, 90, 255);
@@ -364,7 +561,9 @@ bool SceneViewPanel::DrawGizmo(IEditableScene& scene, EditorSelection& selection
 						color = IM_COL32(255, 230, 90, 255);
 					}
 				}
-				drawList.AddLine(ToDrawPosition(screenOrigin, viewportOrigin), ToDrawPosition(screenEnd, viewportOrigin), color, 3);
+				if (tool_ != TransformTool::Rotate) {
+					drawList.AddLine(ToDrawPosition(screenOrigin, viewportOrigin), ToDrawPosition(screenEnd, viewportOrigin), color, 3);
+				}
 				drawList.AddCircleFilled(ToDrawPosition(screenEnd, viewportOrigin), 5, color);
 				drawList.AddText(ToDrawPosition(screenEnd, viewportOrigin), color, kAxisNames[axisIndex]);
 				if (hovered) {
@@ -374,13 +573,33 @@ bool SceneViewPanel::DrawGizmo(IEditableScene& scene, EditorSelection& selection
 							Vector3 rayDirection{};
 							if (SceneViewMath::CreateRay(mousePosition, viewInfo.viewProjection, viewInfo.viewportWidth, viewInfo.viewportHeight,
 								rayOrigin, rayDirection)) {
-								if (SceneViewMath::GetAxisDistance(rayOrigin, rayDirection,
-									axisOrigin, kAxisDirections[axisIndex], dragStartDistance_)) {
+								bool canStart = tool_ == TransformTool::Rotate;
+								if (!canStart) {
+									canStart = SceneViewMath::GetAxisDistance(rayOrigin,rayDirection,axisOrigin,axisDirection,dragStartDistance_);
+								}
+								if (canStart) {
+									// ドラッグ開始時だけ所有値を取得し、毎フレームのシーン複製を避ける。
+									dragObjects_.clear();
+									for (SceneObjectId identifier : selection.GetRoots(scene)) {
+										const EditableObjectView target = FindObject(scene, identifier);
+										if (target.transform != nullptr) {
+											Matrix4x4 world{};
+											if (scene.GetObjectWorldMatrix(identifier, world)) {
+												dragObjects_.push_back({identifier, *target.transform, scene.GetObjectWorldPosition(identifier), world});
+											}
+										}
+									}
+									groupDrag_ = selection.GetIds().size() > 1;
 									dragging_ = true;
 									draggedObject_ = selectedObject.id;
 									dragStartPosition_ = axisOrigin;
-									dragStartLocalPosition_ = selectedObject.transform->translate;
-									dragAxis_ = kAxisDirections[axisIndex];
+									dragStartTransform_ = *selectedObject.transform;
+									scene.GetObjectWorldMatrix(selectedObject.id,dragStartWorld_);
+									dragStartMouse_ = mousePosition;
+									dragStartAngle_ = std::atan2(mousePosition.y-screenOrigin.y,mousePosition.x-screenOrigin.x);
+									dragAxisLength_ = axisLength;
+									dragAxis_ = axisDirection;
+									dragAxisIndex_ = axisIndex;
 									clickedGizmo = true;
 								}
 							}
@@ -418,16 +637,40 @@ void SceneViewPanel::PickObject(IEditableScene& scene, EditorSelection& selectio
 				}
 			}
 		}
+		if (ImGui::GetIO().KeyCtrl) {
+			selection.Toggle(closestObject);
+		} else {
 		selection.Select(closestObject);
+		}
 	}
 }
 #endif
 
 // 操作開始位置へ戻してから移動状態を解除する。
 void SceneViewPanel::CancelDrag(IEditableScene& scene) {
-	const EditableObjectView object = FindObject(scene, draggedObject_);
+	for (const DragObject& target : dragObjects_) {
+		const EditableObjectView object = FindObject(scene, target.identifier);
 	if (object.transform != nullptr) {
-		object.transform->translate = dragStartLocalPosition_;
+			*object.transform = target.local;
+		}
 	}
 	ResetInteraction();
+}
+
+// グループ操作は同じワールド差分を各ルートへ適用する。
+bool SceneViewPanel::ApplyDragTransform(IEditableScene& scene, const Matrix4x4& delta) {
+	for (const DragObject& target : dragObjects_) {
+		if (!scene.SetObjectWorldTransform(target.identifier, MathUtility::Multiply(target.world, delta))) {
+			for (const DragObject& restore : dragObjects_) {
+				const EditableObjectView object = FindObject(scene, restore.identifier);
+				if (object.transform != nullptr) {
+					*object.transform = restore.local;
+				}
+			}
+			placementStatus_ = "親の非均等拡縮などでせん断が発生するため、この一括変換は適用できません。";
+			return false;
+		}
+	}
+	placementStatus_.clear();
+	return true;
 }

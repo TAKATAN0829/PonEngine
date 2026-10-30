@@ -14,6 +14,44 @@
 #include <vector>
 
 namespace {
+	// 形式7のアセット設定。件数と0/1フラグを読込時点で制限する。
+	bool ReadAssetSettings(std::istream& input, SceneObjectData& object) {
+		size_t materialCount = 0;
+		input >> materialCount;
+		if (!input || materialCount > 256) {
+			return false;
+		}
+		object.materials.resize(materialCount);
+		for (SceneMaterialSettings& material : object.materials) {
+			int lighting = 0;
+			input >> material.slot >> std::quoted(material.texture) >> material.color.x >> material.color.y >> material.color.z >> material.color.w >> material.shininess >> lighting;
+			if (lighting != 0 && lighting != 1) {
+				return false;
+			}
+			material.lighting = lighting != 0;
+		}
+		int autoplay = 0;
+		int loop = 0;
+		input >> object.animation.clip >> autoplay >> loop >> object.animation.speed >> object.animation.time;
+		if (autoplay != 0 && autoplay != 1) {
+			return false;
+		}
+		if (loop != 0 && loop != 1) {
+			return false;
+		}
+		object.animation.autoplay = autoplay != 0;
+		object.animation.loop = loop != 0;
+		return static_cast<bool>(input);
+	}
+
+	void WriteAssetSettings(std::ostream& output, const SceneObjectData& object) {
+		output << ' ' << object.materials.size();
+		for (const SceneMaterialSettings& material : object.materials) {
+			output << ' ' << material.slot << ' ' << std::quoted(material.texture) << ' ' << material.color.x << ' ' << material.color.y << ' ' << material.color.z << ' ' << material.color.w << ' ' << material.shininess << ' ' << material.lighting;
+		}
+		output << ' ' << object.animation.clip << ' ' << object.animation.autoplay << ' ' << object.animation.loop << ' ' << object.animation.speed << ' ' << object.animation.time;
+	}
+
 	struct Record {
 		SceneObjectId id{};
 		unsigned mask{}; // 下位4ビットがTransform・色・ライティング・光沢の有無を表す。
@@ -181,7 +219,7 @@ bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, s
 	outputFile << std::setprecision(std::numeric_limits<float>::max_digits10);
 	unsigned formatVersion = 1;
 	if (collection) {
-		formatVersion = 6;
+		formatVersion = 8;
 	}
 	outputFile << "PON_SCENE " << formatVersion << '\n' << records.size() << '\n';
 	for (const Record& record : records) {
@@ -200,6 +238,8 @@ bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, s
 				if (record.components.type == SceneObjectType::Particle) {
 				ParticlePresetFile::WriteSettings(outputFile, record.components.particle);
 			}
+			WriteAssetSettings(outputFile, record.components);
+			outputFile << ' ' << std::quoted(record.components.prefabSource);
 		}
 		outputFile << '\n';
 	}
@@ -235,7 +275,7 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 		error = "Incomplete scene header.";
 		return false;
 	}
-	if (magic != "PON_SCENE" || version < 1 || version > 6) {
+	if (magic != "PON_SCENE" || version < 1 || version > 8) {
 		error = "Unsupported scene format.";
 		return false;
 	}
@@ -309,6 +349,15 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 						return false;
 					}
 				}
+			}
+			if (version >= 7) {
+				if (!ReadAssetSettings(inputFile, record.components)) {
+					error = "Invalid material or animation settings.";
+					return false;
+				}
+			}
+			if (version >= 8) {
+				inputFile >> std::quoted(record.components.prefabSource);
 			}
 			if (!inputFile) {
 				error = "Incomplete scene object data.";

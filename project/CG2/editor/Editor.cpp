@@ -1,3 +1,4 @@
+#include "FrameProfiler.h"
 #include "Editor.h"
 #include "panels/HierarchyPanel.h"
 #include "panels/InspectorPanel.h"
@@ -296,16 +297,11 @@ void Editor::HandleShortcuts(IEditableScene& scene) {
 			session_.Redo(scene, fileStatus_);
 		}
 		if (ImGui::IsKeyPressed(ImGuiKey_D, false)) {
-			const SceneObjectId duplicateId = scene.DuplicateObject(selection_.Get());
-			if (duplicateId != kInvalidSceneObjectId) {
-				selection_.Select(duplicateId);
-			}
+			selection_.Duplicate(scene, fileStatus_);
 		}
 	}
 	if (ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
-		if (scene.RemoveObject(selection_.Get())) {
-			selection_.Clear();
-		}
+		selection_.Remove(scene, fileStatus_);
 	}
 #else
 	(void)scene;
@@ -318,6 +314,7 @@ void Editor::HandleShortcuts(IEditableScene& scene) {
 void Editor::Initialize(IEditableScene* scene) {
 	scene_ = scene;
 	HierarchyPanel::Initialize();
+	InspectorPanel::Initialize();
 	sceneView_.Initialize();
 	selection_.Clear();
 	fileStatus_.clear();
@@ -337,6 +334,7 @@ void Editor::Initialize(IEditableScene* scene) {
 // 更新処理
 
 void Editor::Update(IEditableScene* scene) {
+	FrameProfiler::Scope sectionTime(FrameProfiler::Section::History);
 	if (scene == nullptr) {
 		return;
 	}
@@ -361,6 +359,12 @@ void Editor::Update(IEditableScene* scene) {
 // メンバ関数 / Inspector描画
 
 void Editor::DrawInspector(IEditableScene& scene) {
+	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Inspector);
+	selection_.Prune(scene);
+	if (selection_.GetIds().size() > 1) {
+		DrawMultipleInspector(scene);
+		return;
+	}
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const EditableObjectView object = scene.GetEditableObject(objectIndex);
 		if (object.id == kInvalidSceneObjectId) {
@@ -398,6 +402,7 @@ void Editor::Draw(IEditableScene* scene) {
 	if (!sceneAvailable) {
 		HierarchyPanel::Draw(scene, selection_);
 		InspectorPanel::Draw({});
+		DrawPerformance();
 		return;
 	}
 	if (menuAction == EditorMenuAction::NewScene) {
@@ -423,5 +428,6 @@ void Editor::Draw(IEditableScene* scene) {
 	sceneView_.Draw(*scene, selection_);
 	DrawInspector(*scene);
 	scene->DrawEditorTools(toolVisibility_);
+	DrawPerformance();
 	DrawDiscardPrompt(*scene);
 }

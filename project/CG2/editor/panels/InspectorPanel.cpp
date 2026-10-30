@@ -74,12 +74,20 @@ namespace {
 		}
 		if (object.model != nullptr) {
 			const char* models[] = {"plane.gltf", "axis.obj"};
-			int modelIndex = 0;
-			if (*object.model == "axis.obj") {
-				modelIndex = 1;
-			}
-			if (ImGui::Combo("Model", &modelIndex, models, IM_ARRAYSIZE(models))) {
-				*object.model = models[modelIndex];
+			// Projectから適用した任意モデルも、実際の参照先を表示する。
+			if (ImGui::BeginCombo("Model", object.model->c_str())) {
+				for (const char* modelName : models) {
+					if (ImGui::Selectable(modelName, *object.model == modelName)) {
+						*object.model = modelName;
+						if (object.materials != nullptr) {
+							object.materials->clear();
+						}
+						if (object.animation != nullptr) {
+							*object.animation = {};
+						}
+					}
+				}
+				ImGui::EndCombo();
 			}
 		}
 		if (object.useRootNodeMatrix != nullptr) {
@@ -126,6 +134,14 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditor
 			DrawTransformComponent(object.transform, object.type == SceneObjectType::PointLight || object.type == SceneObjectType::Particle);
 			if (object.type == SceneObjectType::Model || object.type == SceneObjectType::Empty) {
 				DrawMeshRendererComponent(object);
+				if (scene != nullptr) {
+					if (object.hasMeshRenderer != nullptr) {
+						if (*object.hasMeshRenderer) {
+							DrawMaterials(object, *scene);
+							DrawAnimation(object, *scene);
+						}
+					}
+				}
 			}
 			if (object.type == SceneObjectType::PointLight) {
 				if (object.lightIntensity != nullptr) {

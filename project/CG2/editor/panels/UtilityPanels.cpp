@@ -1,6 +1,10 @@
+#include "FrameProfiler.h"
 #include "UtilityPanels.h"
+#include "PrefabFile.h"
 #include "../EditorSelection.h"
+#include "../AssetDragPayload.h"
 #include "LogSystem.h"
+#include "SceneObjects.h"
 #include <algorithm>
 #include <cctype>
 #ifdef USE_IMGUI
@@ -80,7 +84,7 @@ void UtilityPanels::Update() {
 	std::sort(entries_.begin(), entries_.end(), CompareEntries);
 }
 
-UtilityPanels::Preview UtilityPanels::GetPreview(const AssetEntry& entry) {
+UtilityPanels::Preview UtilityPanels::GetPreview(const AssetEntry& entry, IEditableScene& scene) {
 #ifdef USE_IMGUI
 	const std::string key = PathText(entry.path);
 	if (previews_.contains(key)) {
@@ -88,6 +92,19 @@ UtilityPanels::Preview UtilityPanels::GetPreview(const AssetEntry& entry) {
 	}
 	if (entry.directory) {
 		return {};
+	}
+	const std::string model = PathText(entry.path.lexically_relative(root_));
+	if (SceneObjects::IsSupportedModel(model)) {
+		if (previewLoadedThisFrame_) {
+			return {};
+		}
+		previewLoadedThisFrame_ = true;
+		Preview modelPreview;
+		modelPreview.handle = scene.GetModelPreview(model,status_);
+		modelPreview.width = 128;
+		modelPreview.height = 128;
+		previews_[key] = modelPreview;
+		return modelPreview;
 	}
 	if (entry.extension != ".png" && entry.extension != ".jpg" && entry.extension != ".jpeg" && entry.extension != ".bmp") {
 		return {};
@@ -109,6 +126,7 @@ UtilityPanels::Preview UtilityPanels::GetPreview(const AssetEntry& entry) {
 	return preview;
 #else
 	(void)entry;
+	(void)scene;
 	return {};
 #endif
 }
@@ -122,17 +140,33 @@ void UtilityPanels::DrawAssetActions(const AssetEntry& entry, IEditableScene& sc
 		return;
 	}
 	const std::string relative = PathText(entry.path.lexically_relative(root_));
-	if (relative == "plane.gltf" || relative == "axis.obj") {
+	if (entry.extension == ".ponprefab") {
+		if (ImGui::MenuItem("Prefabをシーンに配置")) {
+			scene.PlacePrefab(relative, 0, {}, status_);
+		}
+		return;
+	}
+	if (SceneObjects::IsSupportedModel(relative)) {
 		if (ImGui::MenuItem("シーンに配置")) {
-			scene.AddObject(relative);
+			if (scene.PrepareModel(relative, status_)) {
+				scene.AddObject(relative);
+			}
 		}
 		if (ImGui::MenuItem("選択中のMesh Rendererへ適用")) {
 			for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 				const EditableObjectView object = scene.GetEditableObject(objectIndex);
 				if (object.id == selection.Get()) {
 					if (object.type == SceneObjectType::Model || object.type == SceneObjectType::Empty) {
-						*object.model = relative;
-						*object.hasMeshRenderer = true;
+						if (scene.PrepareModel(relative, status_)) {
+							*object.model = relative;
+							*object.hasMeshRenderer = true;
+							if (object.materials != nullptr) {
+								object.materials->clear();
+							}
+							if (object.animation != nullptr) {
+								*object.animation = {};
+							}
+						}
 					}
 					break;
 				}
@@ -159,6 +193,26 @@ void UtilityPanels::DrawAsset(const AssetEntry& entry, IEditableScene& scene, co
 	if (ImGui::IsItemClicked()) {
 		selected_ = entry.path;
 	}
+	if (!entry.directory) {
+		const std::string model = PathText(entry.path.lexically_relative(root_));
+		const char* payloadType = nullptr;
+		if (SceneObjects::IsSupportedModel(model)) {
+			payloadType = ModelAssetPayload::kType;
+		} else if (entry.extension == ".ponprefab") {
+			payloadType = ModelAssetPayload::kPrefabType;
+		} else if (entry.extension == ".png" || entry.extension == ".jpg" || entry.extension == ".jpeg" || entry.extension == ".bmp") {
+			payloadType = ModelAssetPayload::kTextureType;
+		}
+		if (payloadType != nullptr && model.size() < sizeof(ModelAssetPayload::model)) {
+			if (ImGui::BeginDragDropSource()) {
+				ModelAssetPayload payload;
+				std::memcpy(payload.model, model.c_str(), model.size() + 1);
+				ImGui::SetDragDropPayload(payloadType, &payload, sizeof(payload));
+				ImGui::Text("配置: %s", entry.name.c_str());
+				ImGui::EndDragDropSource();
+			}
+		}
+	}
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("%s", entry.name.c_str());
 		if (entry.directory) {
@@ -178,7 +232,7 @@ void UtilityPanels::DrawAsset(const AssetEntry& entry, IEditableScene& scene, co
 		return;
 	}
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
-	const Preview preview = GetPreview(entry);
+	const Preview preview = GetPreview(entry, scene);
 	if (preview.handle != 0) {
 		const float scale = (std::min)(64.0f / preview.width, 64.0f / preview.height);
 		const ImVec2 size = {preview.width * scale, preview.height * scale};
@@ -198,6 +252,9 @@ void UtilityPanels::DrawAsset(const AssetEntry& entry, IEditableScene& scene, co
 		}
 		if (entry.extension == ".ponparticle") {
 			typeName = "FX";
+		}
+		if (entry.extension == ".ponprefab") {
+			typeName = "PREFAB";
 		}
 		if (entry.extension == ".wav") {
 			typeName = "AUDIO";
@@ -293,6 +350,7 @@ void UtilityPanels::DrawConsole() {
 }
 
 void UtilityPanels::Draw(IEditableScene& scene, const EditorSelection& selection, EditorToolVisibility& visibility) {
+	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Project);
 	if (!initialized_) {
 		Initialize();
 	}

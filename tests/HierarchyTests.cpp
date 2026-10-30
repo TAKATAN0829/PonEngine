@@ -133,6 +133,19 @@ void RunHierarchyTests(const std::filesystem::path& directory) {
 	deepObjects.pop_back();
 	RequireHierarchy(nested.ReplaceObjects(deepObjects,error) && nested.GetObjectWorldMatrix(64,changedWorld), "64-level hierarchy rejected");
 
+	SceneObjects manipulated;
+	const SceneObjectId manipulatedId = manipulated.AddObject("plane.gltf");
+	const Matrix4x4 rotated = MathUtility::MakeAffineMatrix({1,2,3},{0.4f,0.5f,0.6f},{3,4,5});
+	RequireHierarchy(manipulated.SetObjectWorldTransform(manipulatedId,rotated), "Rotation gizmo transform rejected");
+	RequireHierarchy(manipulated.GetObjectWorldMatrix(manipulatedId,changedWorld), "Rotation gizmo matrix missing");
+	RequireMatrixNear(rotated,changedWorld);
+	session.Initialize(manipulated);
+	manipulated.GetEditableObject(0).transform->scale.x *= 2;
+	session.Update(manipulated,false);
+	RequireHierarchy(session.Undo(manipulated,error), "Scale gizmo undo failed");
+	RequireHierarchy(manipulated.GetObjectWorldMatrix(manipulatedId,changedWorld), "Scale undo matrix missing");
+	RequireMatrixNear(rotated,changedWorld);
+
 	// 形式4のレコードには親IDがなく、従来どおり最上位へ復元する。
 	const std::filesystem::path legacyPath = directory / "hierarchy-version-four.ponscene";
 	std::ofstream legacyFile(legacyPath);

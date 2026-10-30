@@ -1,3 +1,4 @@
+#include "FrameProfiler.h"
 #include "ImGuiSystem.h"
 
 // C++
@@ -182,6 +183,24 @@ void ImGuiSystem::Draw() {
 
 	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
+	// バックエンドが発行する有効なUI描画命令を別カウンターへ記録する。
+	const ImDrawData* drawData = ImGui::GetDrawData();
+	for (int listIndex = 0; listIndex < drawData->CmdListsCount; ++listIndex) {
+		const ImDrawList* drawList = drawData->CmdLists[listIndex];
+		for (const ImDrawCmd& command : drawList->CmdBuffer) {
+			if (command.UserCallback != nullptr || command.ElemCount == 0) {
+				continue;
+			}
+			// バックエンドと同じく、表示領域でクリップされた命令を除外する。
+			const float left = (std::max)(0.0f, (command.ClipRect.x - drawData->DisplayPos.x) * drawData->FramebufferScale.x);
+			const float top = (std::max)(0.0f, (command.ClipRect.y - drawData->DisplayPos.y) * drawData->FramebufferScale.y);
+			const float right = (std::min)(drawData->DisplaySize.x * drawData->FramebufferScale.x, (command.ClipRect.z - drawData->DisplayPos.x) * drawData->FramebufferScale.x);
+			const float bottom = (std::min)(drawData->DisplaySize.y * drawData->FramebufferScale.y, (command.ClipRect.w - drawData->DisplayPos.y) * drawData->FramebufferScale.y);
+			if (right > left && bottom > top) {
+				FrameProfiler::RecordUiDraw();
+			}
+		}
+	}
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 #endif
 }

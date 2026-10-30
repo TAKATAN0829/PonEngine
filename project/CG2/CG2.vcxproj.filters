@@ -334,4 +334,9 @@
     <ClCompile Include="editor\panels\UtilityPanels.cpp"><Filter>editor\panels</Filter></ClCompile>
     <ClInclude Include="editor\panels\UtilityPanels.h"><Filter>editor\panels</Filter></ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\EditorSelection.cpp"><Filter>editor</Filter></ClCompile>
+    <ClCompile Include="editor\EditorTools.cpp"><Filter>editor</Filter></ClCompile>
+    <ClInclude Include="engine\core\FrameProfiler.h"><Filter>engine\core</Filter></ClInclude>
+  </ItemGroup>
 </Project>

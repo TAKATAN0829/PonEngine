@@ -1,3 +1,4 @@
+#include "FrameProfiler.h"
 #include "GameScene.h"
 #include "WinApp.h"
 #include "SceneFile.h"
@@ -5,7 +6,9 @@
 #include "LogSystem.h"
 #include "ModelManager.h"
 #include "SceneViewMath.h"
+#include "TextureManager.h"
 #include <unordered_set>
+#include <limits>
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
@@ -98,10 +101,10 @@ void GameScene::Initialize(const SceneContext& context) {
 //=================================================================================================//
 // 更新処理
 
-void GameScene::Update(Input* input) {
+void GameScene::Update(Input*) {
 
 	// Camera更新
-	UpdateCamera(input);
+	UpdateCamera();
 
 	// Object更新
 	UpdateObject();
@@ -157,6 +160,10 @@ void GameScene::Draw() {
 // 終了処理
 
 void GameScene::Finalize() {
+	for (std::pair<const std::string,std::unique_ptr<ModelPreview>>& entry : modelPreviews_) {
+		entry.second->target.Finalize();
+	}
+	modelPreviews_.clear();
 
 	//=============================================================================================//
 	// Particle解放
@@ -191,13 +198,13 @@ void GameScene::Finalize() {
 //=================================================================================================//
 // Camera更新
 
-void GameScene::UpdateCamera(Input* input) {
+void GameScene::UpdateCamera() {
 
 	camera_->SetTransform(cameraTransform_);
 
 	camera_->Update();
 
-	debugCamera_->Update(input);
+	debugCamera_->Update();
 }
 
 //=================================================================================================//
@@ -217,8 +224,18 @@ void GameScene::UpdateObject() {
 		}
 	}
 	object3dCommon_->SetCameraPosition({cameraMatrix.m[3][0], cameraMatrix.m[3][1], cameraMatrix.m[3][2]});
-	UpdateModels(viewProjection);
-	UpdateParticles(viewProjection, cameraMatrix);
+	{
+		FrameProfiler::Scope sectionTime(FrameProfiler::Section::Previews);
+		DrawModelPreviews();
+	}
+	{
+		FrameProfiler::Scope sectionTime(FrameProfiler::Section::Models);
+		UpdateModels(viewProjection);
+	}
+	{
+		FrameProfiler::Scope sectionTime(FrameProfiler::Section::Particles);
+		UpdateParticles(viewProjection, cameraMatrix);
+	}
 	UpdateSprite();
 }
 
@@ -281,6 +298,15 @@ void GameScene::UpdateModels(const Matrix4x4& viewProjection) {
 		object.SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
 		object.SetPointLights(pointLights);
 		object.SetSpotLight(spotLight_);
+		object.SetMaterials(data.materials);
+		bool animate = runtime.animationPreview;
+		if (playing_) {
+			animate = simulationEnabled_ && data.animation.autoplay;
+		}
+#ifndef USE_IMGUI
+		animate = simulationEnabled_ && data.animation.autoplay;
+#endif
+		object.UpdateAnimation(data.animation, 1.0f / 60.0f, animate);
 		Matrix4x4 world{};
 		if (GetObjectWorldMatrix(data.id, world)) {
 			object.Update(viewProjection, world);
@@ -476,7 +502,7 @@ void GameScene::UpdateEditorFrame(Input* input, bool simulate) {
 	if (simulate) {
 		Update(input);
 	} else {
-		UpdateCamera(input);
+		UpdateCamera();
 		UpdateObject();
 	}
 }
@@ -484,6 +510,10 @@ void GameScene::UpdateEditorFrame(Input* input, bool simulate) {
 // 再生開始・停止時に粒子と発生タイマーを消し、毎回同じ状態から確認できるようにする。
 void GameScene::OnPlayStateChanged(bool playing) {
 	playing_ = playing;
+	for (std::pair<const SceneObjectId, RuntimeObject>& entry : runtimeObjects_) {
+		entry.second.animationPreview = false;
+		entry.second.drawable->ResetAnimation();
+	}
 	ResetParticlePreview();
 }
 
@@ -528,7 +558,11 @@ bool GameScene::GetEditableObjectBounds(size_t objectIndex, AABB& worldBounds) c
 	if (object.useRootNodeMatrix) {
 		worldMatrix = MathUtility::Multiply(model->GetRootNode().localMatrix, worldMatrix);
 	}
-	worldBounds = SceneViewMath::TransformBounds(model->GetLocalBounds(), worldMatrix);
+	const AABB* localBounds = &model->GetLocalBounds();
+	if (runtimeObjects_.contains(object.id)) {
+		localBounds = &runtimeObjects_.at(object.id).drawable->GetLocalBounds();
+	}
+	worldBounds = SceneViewMath::TransformBounds(*localBounds, worldMatrix);
 	return true;
 }
 
@@ -590,4 +624,208 @@ void GameScene::DrawEditorTools(EditorToolVisibility& visibility) {
 	if (visibility.camera) {
 		debugCamera_->Draw(&visibility.camera);
 	}
+}
+
+bool GameScene::PrepareModel(const std::string& model, std::string& error) {
+	if (!SceneObjects::IsSupportedModel(model)) {
+		error = "Unsupported model path.";
+		return false;
+	}
+	return ModelManager::GetInstance()->TryLoadModel(model,error);
+}
+
+bool GameScene::ReplaceObjects(std::vector<SceneObjectData> objects, std::string& error) {
+	SceneObjects validator;
+	if (!validator.ReplaceObjects(objects,error)) {
+		return false;
+	}
+	for (const SceneObjectData& object : objects) {
+		// Mesh Rendererを外して保存したモデルも、後から再追加できるよう準備する。
+		if (!PrepareModel(object.model, error)) {
+			return false;
+		}
+		const size_t materialCount = GetModelMaterials(object.model).size();
+		for (const SceneMaterialSettings& material : object.materials) {
+			if (material.slot >= materialCount) {
+				error = "Material slot does not exist in this model.";
+				return false;
+			}
+			if (!material.texture.empty()) {
+				if (!PrepareTexture(material.texture, error)) {
+					return false;
+				}
+			}
+		}
+	}
+	return SceneObjects::ReplaceObjects(std::move(objects),error);
+}
+
+std::vector<ModelMaterialInfo> GameScene::GetModelMaterials(const std::string& model) const {
+	const Model* loaded = ModelManager::GetInstance()->FindModel(model);
+	if (loaded == nullptr) {
+		return {};
+	}
+	return loaded->GetMaterials();
+}
+
+std::vector<ModelAnimationInfo> GameScene::GetModelAnimations(const std::string& model) const {
+	const Model* loaded = ModelManager::GetInstance()->FindModel(model);
+	if (loaded == nullptr) {
+		return {};
+	}
+	if (loaded->GetAnimation() == nullptr) {
+		return {};
+	}
+	return loaded->GetAnimation()->GetClips();
+}
+
+bool GameScene::PrepareTexture(const std::string& texture, std::string& error) {
+	error.clear();
+	const std::filesystem::path relative(std::u8string(texture.begin(), texture.end()));
+	if (texture.empty() || texture.size() > 255 || texture.find('\0') != std::string::npos || relative.is_absolute() || relative.has_root_name()) {
+		error = "Invalid texture path.";
+		return false;
+	}
+	for (const std::filesystem::path& part : relative) {
+		if (part == "..") {
+			error = "Texture must be inside resources.";
+			return false;
+		}
+	}
+	std::error_code fileError;
+	const std::filesystem::path root = std::filesystem::weakly_canonical("resources", fileError);
+	const std::filesystem::path resolved = std::filesystem::weakly_canonical(root / relative, fileError);
+	const std::filesystem::path inside = resolved.lexically_relative(root);
+	if (fileError || inside.empty()) {
+		error = "Cannot resolve texture path.";
+		return false;
+	}
+	if (*inside.begin() == "..") {
+		error = "Texture must be inside resources.";
+		return false;
+	}
+	return TextureManager::GetInstance()->TryLoad("resources/" + texture, error);
+}
+
+void GameScene::SetAnimationPreview(SceneObjectId objectId, bool playing, bool reset) {
+	if (!runtimeObjects_.contains(objectId)) {
+		return;
+	}
+	RuntimeObject& runtime = runtimeObjects_.at(objectId);
+	runtime.animationPreview = playing;
+	if (reset) {
+		runtime.drawable->ResetAnimation();
+	}
+}
+
+float GameScene::GetAnimationTime(SceneObjectId objectId) const {
+	if (!runtimeObjects_.contains(objectId)) {
+		return 0;
+	}
+	return runtimeObjects_.at(objectId).drawable->GetAnimationTime();
+}
+
+bool GameScene::IsAnimationPreviewPlaying(SceneObjectId objectId) const {
+	if (!runtimeObjects_.contains(objectId)) {
+		return false;
+	}
+	return runtimeObjects_.at(objectId).animationPreview;
+}
+
+uint64_t GameScene::GetModelPreview(const std::string& model, std::string& error) {
+	if (modelPreviews_.contains(model)) {
+		return modelPreviews_.at(model)->target.GetTextureHandle();
+	}
+	if (modelPreviews_.size() >= 24) {
+		return 0;
+	}
+	if (!PrepareModel(model,error)) {
+		return 0;
+	}
+	std::unique_ptr<ModelPreview> preview = std::make_unique<ModelPreview>();
+	preview->target.Initialize(object3dCommon_->GetDxCommon(),object3dCommon_->GetSrvManager());
+	preview->target.Resize(128,128);
+	preview->object = std::make_unique<Object3d>();
+	preview->object->Initialize(object3dCommon_);
+	Model* loadedModel = ModelManager::GetInstance()->FindModel(model);
+	preview->object->SetModel(loadedModel);
+	preview->object->SetTexture("resources/white1x1.png");
+	preview->object->SetEnableLighting(false);
+	preview->object->SetMaterials({});
+	const AABB bounds = SceneViewMath::TransformBounds(loadedModel->GetLocalBounds(),loadedModel->GetRootNode().localMatrix);
+	const float diameter = (std::max)({bounds.max.x-bounds.min.x,bounds.max.y-bounds.min.y,bounds.max.z-bounds.min.z,0.001f});
+	const float scale = 1.2f / diameter;
+	const Vector3 center = MathUtility::Multiply(0.5f,MathUtility::Add(bounds.min,bounds.max));
+	preview->world = MathUtility::MakeAffineMatrix({scale,scale,scale},{},MathUtility::Multiply(-scale,center));
+	preview->world = MathUtility::Multiply(preview->world,MathUtility::MakeAffineMatrix({1,1,1},{0.2f,0.4f,0},{}));
+	const uint64_t handle = preview->target.GetTextureHandle();
+	modelPreviews_[model] = std::move(preview);
+	return handle;
+}
+
+void GameScene::DrawModelPreviews() {
+	for (std::pair<const std::string,std::unique_ptr<ModelPreview>>& entry : modelPreviews_) {
+		ModelPreview& preview = *entry.second;
+		if (preview.rendered) {
+			continue;
+		}
+		const Matrix4x4 cameraWorld = MathUtility::MakeAffineMatrix({1,1,1},{},{0,0,-3});
+		const Matrix4x4 projection = MathUtility::MakePerspectiveFovMatrix(0.785398163f,1,0.1f,100);
+		preview.object->Update(MathUtility::Multiply(MathUtility::Inverse(cameraWorld),projection),preview.world);
+		preview.target.Begin();
+		object3dCommon_->DrawSettingCommon();
+		preview.object->Draw();
+		preview.target.End();
+		preview.rendered = true;
+	}
+}
+
+// AABBで絞った候補だけを、描画と同じ頂点・ワールド行列で判定する。
+bool GameScene::IntersectObjectSurface(size_t objectIndex, const Vector3& origin, const Vector3& direction, float& distance) const {
+	if (objectIndex >= GetObjects().size()) {
+		return false;
+	}
+	const SceneObjectData& data = GetObjects()[objectIndex];
+	if (!data.hasMeshRenderer) {
+		return false;
+	}
+	if (!IsObjectActive(data.id)) {
+		return false;
+	}
+	const Model* model = ModelManager::GetInstance()->FindModel(data.model);
+	if (model == nullptr) {
+		return false;
+	}
+	Matrix4x4 world{};
+	if (!GetObjectWorldMatrix(data.id, world)) {
+		return false;
+	}
+	if (data.useRootNodeMatrix) {
+		world = MathUtility::Multiply(model->GetRootNode().localMatrix, world);
+	}
+	const std::vector<Mesh::VertexData>* vertices = &model->GetVertices();
+	if (runtimeObjects_.contains(data.id)) {
+		vertices = &runtimeObjects_.at(data.id).drawable->GetSurfaceVertices();
+	}
+	bool hit = false;
+	float nearest = (std::numeric_limits<float>::max)();
+	for (size_t vertexIndex = 0; vertexIndex + 2 < vertices->size(); vertexIndex += 3) {
+		const Vector4& first = (*vertices)[vertexIndex].position;
+		const Vector4& second = (*vertices)[vertexIndex + 1].position;
+		const Vector4& third = (*vertices)[vertexIndex + 2].position;
+		float candidate = 0;
+		if (SceneViewMath::IntersectTriangle(origin, direction,
+			MathUtility::Transform({first.x, first.y, first.z}, world),
+			MathUtility::Transform({second.x, second.y, second.z}, world),
+			MathUtility::Transform({third.x, third.y, third.z}, world), candidate)) {
+			if (candidate < nearest) {
+				nearest = candidate;
+				hit = true;
+			}
+		}
+	}
+	if (hit) {
+		distance = nearest;
+	}
+	return hit;
 }

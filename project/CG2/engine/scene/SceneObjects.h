@@ -18,6 +18,9 @@ public:
 	size_t GetEditableObjectCount() const override { return objects_.size(); }
 	EditableObjectView GetEditableObject(size_t index) override;
 	const SceneObjectData* GetObjectData(size_t index) const override;
+	// 既存のID検索表を使い、複数選択・親参照の確認を一定時間で行う。
+	const SceneObjectData* GetObjectDataById(SceneObjectId identifier) const override;
+	SceneObjectId GetNextObjectId() const override { return nextId_; }
 	const std::vector<SceneObjectData>& GetObjects() const { return objects_; }
 	std::vector<SceneObjectData> CaptureObjects() const override { return objects_; }
 	bool SupportsObjectCollection() const override { return true; }
@@ -26,6 +29,10 @@ public:
 	// Getter・Setter / 親子変換
 
 	bool GetObjectWorldMatrix(SceneObjectId id, Matrix4x4& world) const override;
+	// 親を考慮してローカルTRSへ戻す。せん断や特異な変換では編集しない。
+	bool SetObjectWorldTransform(SceneObjectId id, const Matrix4x4& world) override;
+	// resources内のPrefabを検証して一括配置する。
+	SceneObjectId PlacePrefab(const std::string& prefab, SceneObjectId parentId, const Vector3& position, std::string& error) override;
 	bool SetObjectWorldPosition(SceneObjectId id, const Vector3& position) override;
 	bool IsObjectActive(SceneObjectId id) const override;
 	// ワールド変換を維持し、循環・未登録の親・TRSで表せない変換は拒否する。
@@ -42,6 +49,7 @@ public:
 	//=============================================================================================//
 	// メンバ関数 / 追加・複製・削除
 
+	SceneObjectId PlaceModel(const std::string& model, SceneObjectId parentId, const Vector3& position, std::string& error) override;
 	SceneObjectId AddObject(const std::string& model) override;
 	SceneObjectId CreateObject(SceneObjectType type) override;
 	SceneObjectId DuplicateObject(SceneObjectId id) override;

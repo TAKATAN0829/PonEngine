@@ -34,6 +34,8 @@ public:
 	// モデルファイル読み込み
 
 	void LoadModel (const std::string& filePath);
+	// インポート失敗をエラーとして返し、未完成のモデルをキャッシュしない。
+	bool TryLoadModel(const std::string& filePath, std::string& error);
 
 	//=============================================================================================//
 	// モデル検索

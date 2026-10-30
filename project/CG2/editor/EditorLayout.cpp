@@ -50,6 +50,7 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 			ImGui::MenuItem("Particle Editor", nullptr, &visibility.particleEditor);
 			ImGui::MenuItem("World Settings", nullptr, &visibility.worldSettings);
 			ImGui::MenuItem("Camera", nullptr, &visibility.camera);
+			ImGui::MenuItem("Performance / パフォーマンス", nullptr, &visibility.performance);
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();

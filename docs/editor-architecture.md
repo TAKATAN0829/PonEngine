@@ -35,7 +35,7 @@ ImGuiフレーム開始 → Editorで値を編集 → GameSceneの更新 → シ
 
 ## 現在の範囲と次の課題
 
-既定ではPlaneとAxisの二体を作成する。モデルの種類は読み込み済みのplane.gltfとaxis.objに限定し、最大10,000体まで扱う。ライト、パーティクル、カメラの既存デバッグUIはそのまま使える。回転・拡縮ギズモ、任意アセットの取り込み、ユーザースクリプトはまだ実装していない。埋込みScene/Gameビュー、ドッキング、Particle Editorは実装済み。
+既定ではPlaneとAxisの二体を作成する。resources内のOBJ・glTF・GLB・FBXをモデルとして読み込み、最大10,000体まで扱う。ライト、パーティクル、カメラの既存デバッグUIはそのまま使える。移動・回転・拡縮ギズモ、Projectからのモデル配置、3Dサムネイルに対応する。複数マテリアル・Prefab・ボーンアニメーションに対応する。ユーザースクリプトは未対応。埋込みScene/Gameビュー、ドッキング、Particle Editorは実装済み。
 
 シーン切替はまだ存在しないため、現在はシーンインターフェースのアドレス変更で選択を解除する。シーンの再生成・切替を導入する際は、同じアドレスが再利用されても識別できるシーン世代番号や明示的な切替通知を追加する。
 
@@ -61,7 +61,7 @@ Pauseはシミュレーションだけを止め、Stepは一度だけ1フレー�
 
 Inspectorは必須のTransformと、追加・削除できるMesh Rendererを表示する。Remove Mesh Rendererはモデル設定を保ったまま描画Componentだけを外し、Add Mesh Rendererで戻す。Activeを外したオブジェクトも描画しない。名前・モデル・色・光沢・有効状態・Componentの有無は保存、Undo/Redo、Stop時の復元対象。
 
-ライトとSpriteはWorld Settingsへ集約し、再生中は編集を無効にしている。Particleは専用Editorと独立したプリセット保存に対応する。ライト・Spriteの保存や、Particle設定の履歴対応は今後の範囲。DebugCameraはEditor用カメラとして扱い、キーボード入力をUIが使う間やCtrlキーを押している間は移動しない。
+ライトとSpriteはWorld Settingsへ集約し、再生中は編集を無効にしている。Particleは専用Editorと独立したプリセット保存に対応する。ライト・Spriteの保存や、Particle設定の履歴対応は今後の範囲。DebugCameraはEditor用カメラとして扱い、Scene画像上のマウスだけで操作する。文字入力・ギズモ・ポップアップ・他パネルの操作中は入力を渡さない。
 
 ## 履歴と未保存変更
 
@@ -79,7 +79,7 @@ Sceneパネルは、専用レンダーターゲットの画像に選択枠とワ
 
 選択すると黄色の範囲枠と移動軸が現れる。軸を左ドラッグして移動し、CtrlでMove Snapの間隔へ合わせる。Escでドラッグ開始位置へ戻す。移動中は履歴の確定を待ち、マウスを離した時点で一件のUndo操作にする。視線に平行で画面上の長さがない軸は操作対象から外すため、その軸を動かす場合はカメラを横へ移すかInspectorを使う。
 
-FまたはFocus Selectionで選択位置を注視する。背景上の右ドラッグでカメラを回転し、WASDとQEで移動する。Gridで原点のXZ平面の補助線を表示・非表示にできる。移動ギズモを操作中はカメラ移動と編集ショートカットを抑止する。
+注視ボタンで選択位置を注視する。背景上の右ドラッグでカメラを回転し、中ボタンドラッグで平行移動、ホイールで前後移動する。WASD・QE・Fによるカメラ操作は行わない。Gridで原点のXZ平面の補助線を表示・非表示にできる。移動ギズモを操作中はカメラ移動と編集ショートカットを抑止する。
 
 SceneViewMathは画面投影、レイ生成、交差判定、範囲の変換、軸上の移動量を担当し、GPUやImGuiから独立してテストする。SceneViewPanelは描画と入力だけを担当する。表示領域はSceneパネルの画像サイズに追従する。SceneRenderTargetが専用RTV/DSV/SRVを所有し、描画後にバックバッファを復元してImGuiへ画像を渡す。SRV番号はリサイズしても維持する。バックバッファもウィンドウサイズに追従する。
 
@@ -167,3 +167,28 @@ Hierarchyの操作ボタンは右クリックメニューへまとめる。行�
 形式6にSceneCameraSettingsとmainCameraを追加する。SetMainCameraで一意に指定し、複製先はメイン指定を引き継がない。GetGameCameraViewは親子変換から位置・向きを解決し、カメラ基底を正規化して拡縮を視野に持ち込まない。GameViewとReleaseで同じ計算を共有する。
 
 UtilityPanelsはInitialize/Update/Drawでフォルダ一覧を管理する。ファイル走査は初期化・フォルダ変更・明示更新時に限り、毎フレームはキャッシュ済み一覧を描く。resources外への移動とシンボリックリンクの追跡は行わない。画像は可視タイルから一フレーム一件だけ読み込み、TextureManager所有のSRVを借用する。TryLoadは画像デコード失敗を返し、不完全なTextureDataをキャッシュへ登録しない。
+
+## アセット編集・Prefab・アニメーション
+
+SceneAssetSettingsはGPUに依存しないスロット上書きと再生設定を定義する。SceneFile形式7、EditorSession、PrefabFileが同じデータを使う。PrefabはSceneFileの検証と原子的保存を再利用し、一つのルートだけを許可する。Instantiateは一時SceneObjectsでID・親・配置・個数上限を検証し、最後にIEditableScene.ReplaceObjectsへ渡す。GameSceneはモデルと画像を準備してから編集データを置き換える。
+
+Modelは共有する元頂点・マテリアル情報・描画範囲・ModelAnimationを所有する。Object3dはスロットごとのMaterial、再生時計、変形用Meshを個別に所有する。ModelAnimationはAssimpのノード階層・キー・ボーンと逆バインド行列を保持し、位置・回転・拡縮を補間してCPUスキニングする。頂点と法線を変形し、描画時と選択時で同じ範囲を使う。プレビューの再生時計は履歴に含めず、開始・停止時にリセットする。共有のModelの頂点は更新しない。
+
+AssetWorkflowTestsは保存・履歴・Prefabの再配置と失敗時の非変更を検証する。EditorGraphicsTestsは自作glTFで複数スロット、ボーンの移動・回転・拡縮、ループ・終端、独立した再生速度とPauseを確認する。
+
+
+## 複数選択・表面スナップ・Prefab接続
+
+EditorSelectionは順序付きID一覧と選択判定用ハッシュ集合を持つ。SceneObjectsのID検索を公開し、選択確認のために毎フレーム一覧やハッシュ表を作り直さない。一括複製・削除は子孫を一度だけ列挙し、所有スナップショットを一回置換する。SceneObjectsの次回採番値を使い、削除済みIDを再利用しない。
+
+表面スナップはAABBで候補を絞り、Object3dの現在のスキニング済み頂点またはModelの元頂点と、描画と同じRootNode・ワールド行列で三角形交差を求める。三角形走査はドロップ確定時だけ実施する。通常クリックの選択は引き続きAABBで判定する。テクスチャの透明部分は表面判定へ反映しない。
+
+形式8はルートのprefabSourceをresources相対パスとして保存する。Applyは原子的なPrefab保存を再利用し、Revertは一時シーン内で子孫を入れ替えてからリソースを検証する。ルートID・親・Transformを維持し、子孫IDは再採番する。参照先は正規化してresources内であることを確認する。自動追従・入れ子Prefab・個別Override管理は行わない。
+
+## CPUフレーム計測
+
+FrameProfilerはsteady_clockと固定長600サンプルで計測し、RAII Scopeで区間時間を積算する。Engineのフレーム境界でリセット／確定し、MeshのDrawIndexedInstanced直前で描画回数・三角形・インスタンスを記録する。ImGuiは描画領域とクリップを考慮してコマンド数を別集計する。モデル読込とテクスチャ読込は別区間で、親区間への二重積算を避ける。
+
+DirectXCommonのPresent、フェンス待機、FPS制限も別区間に分ける。計測はCPU側の経過時間であり、GPUタイムスタンプではない。フレーム全体には入力処理や区間外の描画先準備も含む。履歴停止はゲームを止めず、ピークはリング外へ流れた後も保持する。表示メニューから任意に開く画面で詳細と履歴CSVを確認する。
+
+EditorWorkflowTestsは選択ルートの重複排除、一括操作の履歴・上限失敗・ID非再利用、三角形交差、Prefabリンクの保存・Apply・Revertと失敗時の非変更、計測リング・カウンター・CSVを検証する。実GPU試験では表面判定、任意表示のPerformance画面、描画カウンターも確認する。

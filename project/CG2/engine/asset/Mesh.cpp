@@ -1,3 +1,4 @@
+#include "FrameProfiler.h"
 #include "Mesh.h"
 
 // C++
@@ -89,12 +90,28 @@ void Mesh::Draw(uint32_t instanceCount) {
 	//=============================================================================================//
 	// 描画
 
+	FrameProfiler::RecordDraw(indexCount_, instanceCount);
 	commandList->DrawIndexedInstanced(
 		indexCount_,
 		instanceCount,
 		0,
 		0,
 		0);
+}
+
+void Mesh::Update(const std::vector<VertexData>& vertices) {
+	assert(vertices.size() == vertexCount_);
+	std::memcpy(vertexData_, vertices.data(), sizeof(VertexData) * vertexCount_);
+}
+
+void Mesh::DrawRange(uint32_t firstIndex, uint32_t indexCount) {
+	assert(firstIndex <= indexCount_);
+	assert(indexCount <= indexCount_ - firstIndex);
+	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
+	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
+	commandList->IASetIndexBuffer(&indexBufferView_);
+	FrameProfiler::RecordDraw(indexCount, 1);
+	commandList->DrawIndexedInstanced(indexCount, 1, firstIndex, 0, 0);
 }
 
 //=================================================================================================//

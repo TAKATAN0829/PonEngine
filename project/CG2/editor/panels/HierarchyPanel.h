@@ -28,6 +28,8 @@ private:
 		SceneObjectId childId = kInvalidSceneObjectId;
 		SceneObjectId parentId = kInvalidSceneObjectId;
 		bool requested = false;
+		std::string model; // Projectからのモデル配置要求。
+		bool prefab = false; // 同じ固定長パスをPrefab配置にも使う。
 		bool contextRequested = false; // 行のIDスコープを抜けてからメニューを開く。
 		SceneObjectId contextObjectId = kInvalidSceneObjectId;
 	};
@@ -37,6 +39,7 @@ private:
 
 	static void DrawCreateMenu(IEditableScene& scene, EditorSelection& selection);
 	static void DrawContextMenu(IEditableScene& scene, EditorSelection& selection);
+	static void DrawPrefabSaveMenu(IEditableScene& scene);
 	static void DrawBranch(IEditableScene& scene, EditorSelection& selection, const ChildIndices& children,
 		SceneObjectId parentId, HierarchyRequest& request);
 	// 描画中は参照を無効化しないよう、ドロップ結果だけを記録する。
@@ -48,4 +51,5 @@ private:
 
 	inline static SceneObjectId contextTarget_ = kInvalidSceneObjectId; // 右クリックした対象。
 	inline static std::string status_; // シーン切替時に初期化する。
+	inline static char prefabName_[128] = "Prefab"; // 保存先のファイル名だけを入力する。
 };

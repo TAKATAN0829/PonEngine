@@ -1,10 +1,13 @@
 #include "SceneObjects.h"
+#include "PrefabFile.h"
 
 #include <array>
+#include <filesystem>
 #include <cmath>
 #include <limits>
 #include <unordered_set>
 #include <algorithm>
+#include <cctype>
 #include "MathUtility.h"
 
 namespace {
@@ -62,13 +65,92 @@ namespace {
 	}
 }
 
-// 読み込み済みのモデルだけを許可し、不明なアセットへの参照を防ぐ。
+SceneObjectId SceneObjects::PlacePrefab(const std::string& prefab, SceneObjectId parentId, const Vector3& position, std::string& error) {
+	const std::filesystem::path relative(std::u8string(prefab.begin(), prefab.end()));
+	if (relative.is_absolute() || relative.has_root_name() || relative.extension() != ".ponprefab") {
+		error = "Invalid prefab path.";
+		return 0;
+	}
+	for (const std::filesystem::path& part : relative) {
+		if (part == "..") {
+			error = "Prefab must be inside resources.";
+			return 0;
+		}
+	}
+	std::error_code fileError;
+	const std::filesystem::path root = std::filesystem::weakly_canonical("resources", fileError);
+	const std::filesystem::path resolved = std::filesystem::weakly_canonical(root / relative, fileError);
+	if (fileError || resolved.lexically_relative(root).empty()) {
+		error = "Cannot resolve prefab path.";
+		return 0;
+	}
+	if (*resolved.lexically_relative(root).begin() == "..") {
+		error = "Prefab must be inside resources.";
+		return 0;
+	}
+	return PrefabFile::Instantiate(*this, resolved, parentId, position, error);
+}
+
+// 対応形式とresources内の実ファイルを検証し、外部への参照を防ぐ。
 bool SceneObjects::IsSupportedModel(const std::string& model) {
-	return model == "plane.gltf" || model == "axis.obj";
+	if (model == "plane.gltf" || model == "axis.obj") {
+		return true;
+	}
+	if (model.empty() || model.find('\0') != std::string::npos) {
+		return false;
+	}
+	const std::filesystem::path path = std::filesystem::path(std::u8string(model.begin(),model.end()));
+	if (path.is_absolute() || path.has_root_name()) {
+		return false;
+	}
+	for (const std::filesystem::path& part : path) {
+		if (part == "..") {
+			return false;
+		}
+	}
+	std::string extension = path.extension().string();
+	for (char& character : extension) {
+		character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
+	}
+	if (extension != ".obj" && extension != ".gltf" && extension != ".glb" && extension != ".fbx") {
+		return false;
+	}
+	std::error_code error;
+	std::filesystem::path root = "resources";
+	if (!std::filesystem::is_directory(root,error)) {
+		root = "project/CG2/resources";
+	}
+	root = std::filesystem::weakly_canonical(root,error);
+	const std::filesystem::path resolved = std::filesystem::weakly_canonical(root / path,error);
+	if (error) {
+		return false;
+	}
+	const std::filesystem::path relative = resolved.lexically_relative(root);
+	if (relative.empty()) {
+		return false;
+	}
+	if (*relative.begin() == "..") {
+		return false;
+	}
+	return std::filesystem::is_regular_file(resolved,error);
 }
 
 // 保存や復元に使えない数値・名前・ID・モデル指定を検出する。
 bool SceneObjects::Validate(const SceneObjectData& object) {
+	if (!object.prefabSource.empty()) {
+		if (object.prefabSource.find('\0') != std::string::npos) {
+			return false;
+		}
+		const std::filesystem::path source(std::u8string(object.prefabSource.begin(), object.prefabSource.end()));
+		if (object.prefabSource.size() > 512 || source.is_absolute() || source.has_root_name() || source.extension() != ".ponprefab") {
+			return false;
+		}
+		for (const std::filesystem::path& part : source) {
+			if (part == "..") {
+				return false;
+			}
+		}
+	}
 	const TransformData& transform = object.transform;
 	const Vector4& color = object.color;
 	const std::array<float, 14> values = {transform.scale.x, transform.scale.y, transform.scale.z,
@@ -87,6 +169,44 @@ bool SceneObjects::Validate(const SceneObjectData& object) {
 		return false;
 	}
 	if (!IsSupportedModel(object.model)) {
+		return false;
+	}
+	if (object.materials.size() > 256) {
+		return false;
+	}
+	std::unordered_set<uint32_t> materialSlots;
+	for (const SceneMaterialSettings& material : object.materials) {
+		if (material.slot >= 256 || !materialSlots.insert(material.slot).second) {
+			return false;
+		}
+		if (!std::isfinite(material.shininess) || material.shininess < 1 || material.shininess > 500) {
+			return false;
+		}
+		if (!std::isfinite(material.color.x) || !std::isfinite(material.color.y) || !std::isfinite(material.color.z) || !std::isfinite(material.color.w)) {
+			return false;
+		}
+		if (!material.texture.empty()) {
+			if (material.texture.size() > 255 || material.texture.find('\0') != std::string::npos) {
+				return false;
+			}
+			const std::filesystem::path texturePath(std::u8string(material.texture.begin(), material.texture.end()));
+			if (texturePath.is_absolute() || texturePath.has_root_name()) {
+				return false;
+			}
+			for (const std::filesystem::path& part : texturePath) {
+				if (part == "..") {
+					return false;
+				}
+			}
+		}
+	}
+	if (object.animation.clip < 0 || object.animation.clip > 4095) {
+		return false;
+	}
+	if (!std::isfinite(object.animation.speed) || object.animation.speed < 0 || object.animation.speed > 10) {
+		return false;
+	}
+	if (!std::isfinite(object.animation.time) || object.animation.time < 0 || object.animation.time > 86400) {
 		return false;
 	}
 	if (object.shininess < 1 || object.shininess > 500) {
@@ -136,7 +256,8 @@ EditableObjectView SceneObjects::GetEditableObject(size_t index) {
 	return {object.id, object.name.c_str(), &object.transform, &object.color, &object.enableLighting,
 		&object.shininess, &object.model, &object.useRootNodeMatrix, &object.name,
 		&object.active, &object.hasMeshRenderer, object.type, &object.lightIntensity,
-		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId, &object.camera, object.mainCamera};
+		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId, &object.camera, object.mainCamera,
+		&object.materials, &object.animation};
 }
 
 // 読取専用の比較では文字列を含むシーン全体を複製しない。
@@ -145,6 +266,10 @@ const SceneObjectData* SceneObjects::GetObjectData(size_t index) const {
 		return nullptr;
 	}
 	return &objects_[index];
+}
+
+const SceneObjectData* SceneObjects::GetObjectDataById(SceneObjectId identifier) const {
+	return GetObjectData(FindObjectIndex(identifier));
 }
 
 // GPUリソースを作らず、種類に応じた編集用データだけを追加する。
@@ -191,6 +316,10 @@ SceneObjectId SceneObjects::AddObject(const std::string& model) {
 		return kInvalidSceneObjectId;
 	}
 	if (nextId_ == (std::numeric_limits<SceneObjectId>::max)()) {
+		return kInvalidSceneObjectId;
+	}
+	std::string importError;
+	if (!PrepareModel(model, importError)) {
 		return kInvalidSceneObjectId;
 	}
 	SceneObjectData object;
@@ -564,5 +693,73 @@ bool SceneObjects::GetGameCameraView(float aspectRatio, SceneCameraView& view) c
 	const SceneCameraSettings& lens = objects_[FindObjectIndex(cameraId)].camera;
 	const Matrix4x4 projection = MathUtility::MakePerspectiveFovMatrix(lens.fieldOfView, aspectRatio, lens.nearClip, lens.farClip);
 	view.viewProjection = MathUtility::Multiply(MathUtility::Inverse(view.cameraWorld), projection);
+	return true;
+}
+
+// ドロップ配置は一括検証してから追加し、失敗した途中のオブジェクトを残さない。
+SceneObjectId SceneObjects::PlaceModel(const std::string& model, SceneObjectId parentId, const Vector3& position, std::string& error) {
+	error.clear();
+	if (!IsSupportedModel(model)) {
+		error = "このモデルはまだ読み込まれていません。";
+		return kInvalidSceneObjectId;
+	}
+	if (objects_.size() >= kMaxObjects) {
+		error = "オブジェクト数の上限です。";
+		return kInvalidSceneObjectId;
+	}
+	if (nextId_ == (std::numeric_limits<SceneObjectId>::max)()) {
+		error = "IDの上限です。";
+		return kInvalidSceneObjectId;
+	}
+	if (!PrepareModel(model,error)) {
+		return kInvalidSceneObjectId;
+	}
+	SceneObjectData object;
+	object.id = nextId_;
+	object.name = model + " #" + std::to_string(object.id);
+	object.model = model;
+	object.parentId = parentId;
+	object.transform.translate = position;
+	if (parentId != kInvalidSceneObjectId) {
+		Matrix4x4 parentWorld{};
+		if (!GetObjectWorldMatrix(parentId, parentWorld)) {
+			error = "親が見つかりません。";
+			return kInvalidSceneObjectId;
+		}
+		if (!IsInvertibleAffine(parentWorld)) {
+			error = "親の拡縮が0に近いため配置できません。";
+			return kInvalidSceneObjectId;
+		}
+		object.transform.translate = MathUtility::Transform(position, MathUtility::Inverse(parentWorld));
+	}
+	std::vector<SceneObjectData> replaced = objects_;
+	replaced.push_back(object);
+	if (!ReplaceObjects(std::move(replaced), error)) {
+		return kInvalidSceneObjectId;
+	}
+	return object.id;
+}
+
+bool SceneObjects::SetObjectWorldTransform(SceneObjectId id, const Matrix4x4& world) {
+	const size_t index = FindObjectIndex(id);
+	if (index == objects_.size()) {
+		return false;
+	}
+	Matrix4x4 local = world;
+	if (objects_[index].parentId != 0) {
+		Matrix4x4 parent{};
+		if (!GetObjectWorldMatrix(objects_[index].parentId,parent)) {
+			return false;
+		}
+		if (!IsInvertibleAffine(parent)) {
+			return false;
+		}
+		local = MathUtility::Multiply(world,MathUtility::Inverse(parent));
+	}
+	TransformData transform{};
+	if (!DecomposeAffine(local,transform)) {
+		return false;
+	}
+	objects_[index].transform = transform;
 	return true;
 }

@@ -8,6 +8,7 @@ if ($LASTEXITCODE -ne 0) { throw '描画試験のビルドに失敗しました�
 $runtimeDirectory = Join-Path $repositoryRoot 'generated/editor-graphics-tests/runtime'
 New-Item -ItemType Directory -Force $runtimeDirectory | Out-Null
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'project/CG2/resources') -Destination $runtimeDirectory -Recurse -Force
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'fixtures') -Destination (Join-Path $runtimeDirectory 'resources') -Recurse -Force
 Push-Location -LiteralPath $runtimeDirectory
 try {
     & (Join-Path $repositoryRoot 'generated/editor-graphics-tests/bin/EditorGraphicsTests.exe')

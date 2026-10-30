@@ -46,11 +46,17 @@ public:
 	// 初期化(頂点データ)
 
 	void Initialize(DirectXCommon* dxCommon, const std::vector<VertexData>& vertices);
+	//=============================================================================================//
+	// 更新処理 / インスタンス専用の変形頂点
+
+	void Update(const std::vector<VertexData>& vertices);
 
 	//=============================================================================================//
 	// 描画処理
 
 	void Draw (uint32_t instanceCount = 1);
+	// 複数マテリアルの範囲だけを、同じ頂点バッファから描画する。
+	void DrawRange(uint32_t firstIndex, uint32_t indexCount);
 
 private:
 
@@ -155,5 +161,5 @@ private:
 	// IndexData
 
 	uint32_t* indexData_ = nullptr;
-	
+
 };

@@ -1,3 +1,4 @@
+#include "FrameProfiler.h"
 #include <stdexcept>
 #include "TextureManager.h"
 
@@ -66,6 +67,7 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 	//=============================================================================================//
 	// テクスチャデータを追加して書き込む
 
+	FrameProfiler::Scope loadTime(FrameProfiler::Section::TextureLoad);
 	TextureData textureData{};
 
 	DirectX::ScratchImage mipImages = LoadTexture(filePath);
@@ -151,7 +153,9 @@ DirectX::ScratchImage TextureManager::LoadTexture(const std::string& filePath) {
 		nullptr,
 		image);
 
-	if (FAILED(hr)) { throw std::runtime_error("Texture decoding or mip generation failed."); }
+	if (FAILED(hr)) {
+		throw std::runtime_error("Texture decoding or mip generation failed.");
+	}
 
 	//=============================================================================================//
 	// MipMap作成
@@ -166,15 +170,22 @@ DirectX::ScratchImage TextureManager::LoadTexture(const std::string& filePath) {
 		0,
 		mipImages);
 
-	if (FAILED(hr)) { throw std::runtime_error("Texture decoding or mip generation failed."); }
+	if (FAILED(hr)) {
+		throw std::runtime_error("Texture decoding or mip generation failed.");
+	}
 
 	return mipImages;
 }
 
 bool TextureManager::TryLoad(const std::string& filePath, std::string& error) {
     error.clear();
-    if (textureDatas_.contains(filePath)) { return true; }
-    if (srvManager_->IsFull()) { error = "Texture descriptor limit reached."; return false; }
+	if (textureDatas_.contains(filePath)) {
+		return true;
+	}
+	if (srvManager_->IsFull()) {
+		error = "Texture descriptor limit reached.";
+		return false;
+	}
     try { Load(filePath); }
     catch (const std::exception& failure) { error = failure.what(); return false; }
     return true;

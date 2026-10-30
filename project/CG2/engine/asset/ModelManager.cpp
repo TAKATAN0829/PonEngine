@@ -1,3 +1,5 @@
+#include "FrameProfiler.h"
+#include <exception>
 #include "ModelManager.h"
 
 // 自作
@@ -45,6 +47,7 @@ void ModelManager::LoadModel(const std::string& filePath) {
 		return;
 	}
 
+	FrameProfiler::Scope loadTime(FrameProfiler::Section::ModelLoad);
 	std::unique_ptr<Model> model = std::make_unique<Model>();
 
 	model->Initialize(modelCommon_, kDirectoryPath, filePath);
@@ -63,4 +66,17 @@ Model* ModelManager::FindModel(const std::string& filePath) {
 	}
 
 	return nullptr;
+}
+
+// 壊れたアセットはキャッシュに登録せず、UIへ理由を返す。
+bool ModelManager::TryLoadModel(const std::string& filePath, std::string& error) {
+	error.clear();
+	try {
+		LoadModel(filePath);
+	}
+	catch (const std::exception& failure) {
+		error = failure.what();
+		return false;
+	}
+	return true;
 }
