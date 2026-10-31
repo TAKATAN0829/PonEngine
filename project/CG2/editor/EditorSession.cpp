@@ -3,6 +3,15 @@
 
 // 保存対象の全プロパティを比較する。UIの選択状態やパネル配置は比較しない。
 bool EditorSession::AreObjectsEqual(const SceneObjectData& firstObject, const SceneObjectData& secondObject) {
+	if (!EqualBodySettings(firstObject.body,secondObject.body)) {
+		return false;
+	}
+	if (!EqualColliderSettings(firstObject.collider, secondObject.collider)) {
+		return false;
+	}
+	if (!EqualMotionSettings(firstObject.motion, secondObject.motion)) {
+		return false;
+	}
 	if (!EqualAnimationSettings(firstObject.animation, secondObject.animation)) {
 		return false;
 	}
@@ -187,6 +196,10 @@ bool EditorSession::BeginPlay(IEditableScene& scene, std::string& error) {
 			error = "Fix invalid object values before entering play mode.";
 			return false;
 		}
+	}
+	SceneObjects validator;
+	if (!validator.ReplaceObjects(objects,error)) {
+		return false;
 	}
 	Update(scene, false);
 	playSnapshot_ = objects;

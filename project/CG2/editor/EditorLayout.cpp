@@ -1,4 +1,6 @@
 #include "EditorLayout.h"
+#include "FrameProfiler.h"
+#include <cstdio>
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
@@ -55,7 +57,7 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 		}
 		ImGui::EndMenuBar();
 	}
-	const ImGuiID dockSpaceId = ImGui::GetID("PonEngineDockspaceV4");
+	const ImGuiID dockSpaceId = ImGui::GetID("PonEngineDockspaceV5");
 	if (resetRequested_) {
 		ImGui::DockBuilderRemoveNode(dockSpaceId);
 	}
@@ -64,9 +66,9 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 		ImGui::DockBuilderAddNode(dockSpaceId, ImGuiDockNodeFlags_DockSpace);
 		ImGui::DockBuilderSetNodeSize(dockSpaceId, viewport->WorkSize);
 		ImGuiID mainNode = dockSpaceId;
-		const ImGuiID bottomNode = ImGui::DockBuilderSplitNode(mainNode, ImGuiDir_Down, 0.24f, nullptr, &mainNode);
-		const ImGuiID leftNode = ImGui::DockBuilderSplitNode(mainNode, ImGuiDir_Left, 0.20f, nullptr, &mainNode);
-		const ImGuiID rightNode = ImGui::DockBuilderSplitNode(mainNode, ImGuiDir_Right, 0.28f, nullptr, &mainNode);
+		const ImGuiID bottomNode = ImGui::DockBuilderSplitNode(mainNode, ImGuiDir_Down, 0.23f, nullptr, &mainNode);
+		const ImGuiID leftNode = ImGui::DockBuilderSplitNode(mainNode, ImGuiDir_Left, 0.165f, nullptr, &mainNode);
+		const ImGuiID rightNode = ImGui::DockBuilderSplitNode(mainNode, ImGuiDir_Right, 0.29f, nullptr, &mainNode);
 		ImGui::DockBuilderDockWindow("Hierarchy", leftNode);
 		// 外側のViewportタブを隠し、中のSceneView/GameViewだけを表示する。
 		ImGui::DockBuilderGetNode(mainNode)->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
@@ -91,7 +93,7 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 // 再生操作の下を作業領域として使い、専用Toolbarタブは作らない。
 void EditorLayout::Draw(const std::string& status) {
 #ifdef USE_IMGUI
-	const ImGuiID dockSpaceId = ImGui::GetID("PonEngineDockspaceV4");
+	const ImGuiID dockSpaceId = ImGui::GetID("PonEngineDockspaceV5");
 	// 結果通知は再生バーに混在させず、画面下部へ一行で表示する。
 	const float statusHeight = ImGui::GetTextLineHeightWithSpacing() + 4;
 	ImVec2 dockSize = ImGui::GetContentRegionAvail();
@@ -101,7 +103,41 @@ void EditorLayout::Draw(const std::string& status) {
 	}
 	// 中央は内側の2タブで切り替えるため、別の画面が重なって隠れないようにする。
 	ImGui::DockSpace(dockSpaceId, dockSize, ImGuiDockNodeFlags_NoDockingOverCentralNode);
-	ImGui::TextUnformatted(status.c_str());
+	const ImVec2 origin = ImGui::GetCursorScreenPos();
+	const float width = ImGui::GetContentRegionAvail().x;
+	ImGui::GetWindowDrawList()->AddRectFilled(origin,{origin.x+width,origin.y+statusHeight},ImGui::GetColorU32(ImGuiCol_MenuBarBg));
+	char statistics[96] = "FPS --";
+	const FrameProfiler::Sample& sample = FrameProfiler::GetLatest();
+	if (sample.frameMilliseconds > 0) {
+		if (sample.gpuTimingValid) {
+			std::snprintf(statistics,sizeof(statistics),"%.0f FPS  |  %.2f ms  |  GPU %.2f ms",1000.0f/sample.frameMilliseconds,sample.frameMilliseconds,sample.gpuMilliseconds);
+		} else {
+			std::snprintf(statistics,sizeof(statistics),"%.0f FPS  |  %.2f ms",1000.0f/sample.frameMilliseconds,sample.frameMilliseconds);
+		}
+	}
+	const float statisticsWidth = ImGui::CalcTextSize(statistics).x;
+	float messageWidth = width-16;
+	const bool showStatistics = width > statisticsWidth+120;
+	if (showStatistics) {
+		messageWidth -= statisticsWidth+20;
+	}
+	ImGui::SetCursorScreenPos({origin.x+8,origin.y+2});
+	ImGui::PushClipRect(origin,{origin.x+messageWidth,origin.y+statusHeight},true);
+	if (status.empty()) {
+		ImGui::TextDisabled("Ready");
+	} else {
+		ImGui::TextUnformatted(status.c_str());
+	}
+	ImGui::PopClipRect();
+	if (!status.empty()) {
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("%s",status.c_str());
+		}
+	}
+	if (showStatistics) {
+		ImGui::SetCursorScreenPos({origin.x+width-statisticsWidth-8,origin.y+2});
+		ImGui::TextDisabled("%s",statistics);
+	}
 	ImGui::End();
 #else
 	(void)status;

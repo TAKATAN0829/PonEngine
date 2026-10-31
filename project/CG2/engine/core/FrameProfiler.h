@@ -1,9 +1,10 @@
-﻿#pragma once
+#pragma once
 #include <array>
 #include <chrono>
 #include <cstdint>
 #include <fstream>
 #include <string>
+#include <cmath>
 
 // CPU時間と描画負荷の固定長履歴。記録中に文字列・配列の動的確保を行わない。
 class FrameProfiler {
@@ -11,10 +12,12 @@ public:
 	//=============================================================================================//
 	// 型 / 計測区間・一フレームの記録
 
-	enum class Section { Editor, History, Project, Hierarchy, Inspector, SceneView, ModelLoad, TextureLoad, SceneUpdate, Models, Animation, Particles, Previews, Render, ImGui, Submit, Present, GpuWait, FrameLimit, Count };
+	enum class Section { Editor, History, Project, Hierarchy, Inspector, SceneView, ModelLoad, TextureLoad, SceneUpdate, Motion, Physics, Collision, Models, Animation, Particles, Previews, Render, ImGui, Submit, Present, GpuWait, FrameLimit, Count };
 	struct Sample {
 		uint64_t number = 0;
 		float frameMilliseconds = 0;
+		float gpuMilliseconds = 0; // 同じフレームのGPUタイムスタンプ差分。Present待機は含めない。
+		bool gpuTimingValid = false; // 未対応・取得失敗と0msを区別する。
 		std::array<float, static_cast<size_t>(Section::Count)> milliseconds{};
 		uint64_t drawCalls = 0; // Mesh経由の実際のD3D12描画命令数。インスタンス数とは分ける。
 		uint64_t triangles = 0;
@@ -83,7 +86,7 @@ public:
 	}
 	static bool IsPaused() { return paused_; }
 	static const char* GetSectionName(Section section) {
-		static constexpr const char* names[] = {"Editor UI / history (total)", "  History / shortcuts", "  Project / Console", "  Hierarchy", "  Inspector", "  SceneView UI / picking", "Model load (incl. textures)", "  Texture load", "Scene update (total)", "  Models (incl. animation)", "    CPU animation", "  Particles", "  Asset previews", "Scene draw recording", "ImGui draw recording", "Submit / reset (total)", "  Present / VSync", "  GPU fence wait", "  FPS limiter"};
+		static constexpr const char* names[] = {"Editor UI / history (total)", "  History / shortcuts", "  Project / Console", "  Hierarchy", "  Inspector", "  SceneView UI / picking", "Model load (incl. textures)", "  Texture load", "Scene update (total)", "  Motion components", "  Physics / gravity / response", "  Collision detection", "  Models (incl. animation)", "    CPU animation", "  Particles", "  Asset previews", "Scene draw recording", "ImGui draw recording", "Submit / reset (total)", "  Present / VSync", "  GPU fence wait", "  FPS limiter"};
 		return names[static_cast<size_t>(section)];
 	}
 
@@ -98,10 +101,20 @@ public:
 		current_.instances += instances;
 	}
 	static void RecordUiDraw() { ++current_.uiDrawCalls; }
+	// フェンス完了後だけ呼ぶ。異常値は履歴へ混ぜず、未取得として表示する。
+	static void SetGpuMilliseconds(float milliseconds) {
+		current_.gpuTimingValid = false;
+		current_.gpuMilliseconds = 0;
+		if (!std::isfinite(milliseconds) || milliseconds < 0) {
+			return;
+		}
+		current_.gpuMilliseconds = milliseconds;
+		current_.gpuTimingValid = true;
+	}
 	// 選択フレームの内訳も同じCSVへ保存し、後から原因を比較できるようにする。
 	static bool ExportCsv(const std::string& path) {
 		std::ofstream output(path, std::ios::trunc);
-		output << "frame,frame_ms,draw_calls,ui_draw_calls,triangles,instances";
+		output << "frame,frame_ms,draw_calls,ui_draw_calls,triangles,instances,gpu_valid,gpu_ms";
 		for (size_t sectionIndex = 0; sectionIndex < static_cast<size_t>(Section::Count); ++sectionIndex) {
 			output << ',' << GetSectionName(static_cast<Section>(sectionIndex));
 		}
@@ -109,6 +122,10 @@ public:
 		for (size_t sampleIndex = 0; sampleIndex < count_; ++sampleIndex) {
 			const Sample& sample = GetSample(sampleIndex);
 			output << sample.number << ',' << sample.frameMilliseconds << ',' << sample.drawCalls << ',' << sample.uiDrawCalls << ',' << sample.triangles << ',' << sample.instances;
+			output << ',' << sample.gpuTimingValid << ',';
+			if (sample.gpuTimingValid) {
+				output << sample.gpuMilliseconds;
+			}
 			for (float duration : sample.milliseconds) {
 				output << ',' << duration;
 			}

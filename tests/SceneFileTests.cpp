@@ -10,6 +10,9 @@
 
 void RunCameraTests(const std::filesystem::path& directory);
 void RunHierarchyTests(const std::filesystem::path& directory);
+void RunPhysicsTests(const std::filesystem::path& directory);
+void RunCollisionTests(const std::filesystem::path& directory);
+void RunMotionTests(const std::filesystem::path& directory);
 void RunEditorWorkflowTests(const std::filesystem::path& directory);
 void RunAssetWorkflowTests(const std::filesystem::path& directory);
 void RunPlacementTests();
@@ -255,6 +258,9 @@ int main() {
 		RunPlacementTests();
 		RunAssetWorkflowTests(directory);
 		RunEditorWorkflowTests(directory);
+		RunMotionTests(directory);
+		RunCollisionTests(directory);
+		RunPhysicsTests(directory);
 		RunEditorSessionTests();
 		RunSceneViewMathTests();
 		RunParticlePresetTests();

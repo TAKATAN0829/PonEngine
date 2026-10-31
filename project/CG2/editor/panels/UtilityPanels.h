@@ -24,6 +24,11 @@ private:
 		std::string extension;
 		bool directory = false;
 	};
+	struct FolderEntry {
+		std::filesystem::path path;
+		size_t depth = 0;
+		bool children = false;
+	};
 	struct Preview {
 		uint64_t handle = 0;
 		float width = 1;
@@ -36,6 +41,8 @@ private:
 	void DrawAsset(const AssetEntry& entry, IEditableScene& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
 	void DrawAssetActions(const AssetEntry& entry, IEditableScene& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
 	void DrawConsole();
+	void CacheFolders(const std::filesystem::path& directory, size_t depth);
+	void DrawFolders();
 	Preview GetPreview(const AssetEntry& entry, IEditableScene& scene);
 
 private:
@@ -48,6 +55,9 @@ private:
 	std::vector<AssetEntry> entries_;
 	std::unordered_map<std::string, Preview> previews_; // TextureManagerが画像を所有する。
 	char search_[128]{};
+	char consoleSearch_[128]{};
+	std::vector<FolderEntry> folders_; // 更新・移動時だけ構築し、毎フレーム走査しない。
+	bool revealFolder_ = true;
 	std::string status_;
 	bool initialized_ = false;
 	bool refreshRequested_ = false;

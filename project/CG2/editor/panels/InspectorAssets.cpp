@@ -1,3 +1,4 @@
+#include "../EditorProperties.h"
 #include "InspectorPanel.h"
 #include "../AssetDragPayload.h"
 #ifdef USE_IMGUI
@@ -11,7 +12,7 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableSc
 	if (object.materials == nullptr || object.model == nullptr) {
 		return;
 	}
-	if (!ImGui::CollapsingHeader("Materials", ImGuiTreeNodeFlags_DefaultOpen)) {
+	if (!EditorProperties::Header("Materials","スロットごとの上書き設定です。Texture欄へProjectの画像をドロップできます。右クリックで既定値へ戻せます。")) {
 		return;
 	}
 	const std::vector<ModelMaterialInfo> imported = scene.GetModelMaterials(*object.model);
@@ -32,12 +33,16 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableSc
 				break;
 			}
 		}
-		bool changed = ImGui::ColorEdit4("Color", &settings.color.x);
-		if (ImGui::DragFloat("Shininess", &settings.shininess, 0.1f, 1, 500, "%.1f", ImGuiSliderFlags_AlwaysClamp)) {
-			changed = true;
-		}
-		if (ImGui::Checkbox("Lighting", &settings.lighting)) {
-			changed = true;
+		bool changed = false;
+		if (EditorProperties::Begin("MaterialFields")) {
+			changed = EditorProperties::Color("Color",&settings.color);
+			if (EditorProperties::Float("Shininess",&settings.shininess,0.1f,1,500,"%.1f")) {
+				changed = true;
+			}
+			if (EditorProperties::Toggle("Lighting",&settings.lighting)) {
+				changed = true;
+			}
+			EditorProperties::End();
 		}
 		std::string textureLabel = settings.texture;
 		if (textureLabel.empty()) {
@@ -46,8 +51,13 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableSc
 		if (textureLabel.empty()) {
 			textureLabel = "White";
 		}
-		ImGui::TextWrapped("Texture: %s", textureLabel.c_str());
-		ImGui::Button("Projectの画像をここへドロップ##Texture", {-1, 0});
+		ImGui::TextDisabled("Texture");
+		ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign,{0,0.5f});
+		ImGui::Button((textureLabel+"##Texture").c_str(),{-1,0});
+		ImGui::PopStyleVar();
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("%s\nProjectの画像をドロップして変更できます。",textureLabel.c_str());
+		}
 		if (ImGui::BeginDragDropTarget()) {
 			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kTextureType);
 			std::string texture;
@@ -107,7 +117,10 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableSc
 	if (clips.empty()) {
 		return;
 	}
-	if (!ImGui::CollapsingHeader("Animation", ImGuiTreeNodeFlags_DefaultOpen)) {
+	if (!EditorProperties::Header("Animation","保存する再生設定とプレビューの時計は別管理です。Previewを右クリックして停止・巻き戻しできます。")) {
+		return;
+	}
+	if (!EditorProperties::Begin("AnimationFields")) {
 		return;
 	}
 	SceneAnimationSettings& settings = *object.animation;
@@ -115,7 +128,8 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableSc
 	if (static_cast<size_t>(settings.clip) < clips.size()) {
 		selected = clips[settings.clip].name.c_str();
 	}
-	if (ImGui::BeginCombo("Clip", selected)) {
+	EditorProperties::Row("Clip");
+	if (ImGui::BeginCombo("##Clip", selected)) {
 		for (size_t clipIndex = 0; clipIndex < clips.size(); ++clipIndex) {
 			ImGui::PushID(static_cast<int>(clipIndex));
 			if (ImGui::Selectable(clips[clipIndex].name.c_str(), settings.clip == static_cast<int>(clipIndex))) {
@@ -127,11 +141,11 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableSc
 		}
 		ImGui::EndCombo();
 	}
-	ImGui::Checkbox("Play On Start", &settings.autoplay);
-	ImGui::Checkbox("Loop", &settings.loop);
-	ImGui::DragFloat("Speed", &settings.speed, 0.05f, 0, 10, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+	EditorProperties::Toggle("Auto Play",&settings.autoplay);
+	EditorProperties::Toggle("Loop",&settings.loop);
+	EditorProperties::Float("Speed",&settings.speed,0.05f,0,10);
 	bool previewPlaying = scene.IsAnimationPreviewPlaying(object.id);
-	if (ImGui::Checkbox("Preview / Pause", &previewPlaying)) {
+	if (EditorProperties::Toggle("Preview",&previewPlaying)) {
 		scene.SetAnimationPreview(object.id, previewPlaying, false);
 	}
 	if (ImGui::BeginPopupContextItem("AnimationActions")) {
@@ -143,12 +157,15 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableSc
 	if (static_cast<size_t>(settings.clip) < clips.size()) {
 		const float duration = clips[settings.clip].duration;
 		float position = scene.GetAnimationTime(object.id);
-		if (ImGui::SliderFloat("Time", &position, 0, duration, "%.3f s", ImGuiSliderFlags_AlwaysClamp)) {
+		EditorProperties::Row("Time");
+		if (ImGui::SliderFloat("##Time", &position, 0, duration, "%.3f s", ImGuiSliderFlags_AlwaysClamp)) {
 			settings.time = position;
 			scene.SetAnimationPreview(object.id, false, true);
 		}
-		ImGui::Text("Duration: %.3f s", duration);
+		EditorProperties::Row("Length");
+		ImGui::Text("%.3f s",duration);
 	}
+	EditorProperties::End();
 #else
 	(void)object;
 	(void)scene;

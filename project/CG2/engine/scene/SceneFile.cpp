@@ -52,6 +52,85 @@ namespace {
 		output << ' ' << object.animation.clip << ' ' << object.animation.autoplay << ' ' << object.animation.loop << ' ' << object.animation.speed << ' ' << object.animation.time;
 	}
 
+	// 形式9の動作Component。存在と有効のフラグは0/1以外を拒否する。
+	bool ReadMotionSettings(std::istream& input, SceneMotionSettings& settings) {
+		int flags[4]{};
+		input >> flags[0] >> flags[1] >> settings.rotationDegreesPerSecond.x >> settings.rotationDegreesPerSecond.y >> settings.rotationDegreesPerSecond.z;
+		input >> flags[2] >> flags[3] >> settings.movementOffset.x >> settings.movementOffset.y >> settings.movementOffset.z >> settings.movementPeriod;
+		if (!input) {
+			return false;
+		}
+		for (int flag : flags) {
+			if (flag != 0 && flag != 1) {
+				return false;
+			}
+		}
+		settings.hasRotation = flags[0] != 0;
+		settings.rotationEnabled = flags[1] != 0;
+		settings.hasMovement = flags[2] != 0;
+		settings.movementEnabled = flags[3] != 0;
+		return ValidateMotionSettings(settings);
+	}
+
+	void WriteMotionSettings(std::ostream& output, const SceneMotionSettings& settings) {
+		output << ' ' << settings.hasRotation << ' ' << settings.rotationEnabled << ' ' << settings.rotationDegreesPerSecond.x << ' ' << settings.rotationDegreesPerSecond.y << ' ' << settings.rotationDegreesPerSecond.z;
+		output << ' ' << settings.hasMovement << ' ' << settings.movementEnabled << ' ' << settings.movementOffset.x << ' ' << settings.movementOffset.y << ' ' << settings.movementOffset.z << ' ' << settings.movementPeriod;
+	}
+
+	bool ReadColliderSettings(std::istream& input, SceneColliderSettings& settings) {
+		int present = 0;
+		int enabled = 0;
+		int shape = 0;
+		input >> present >> enabled >> shape >> settings.center.x >> settings.center.y >> settings.center.z;
+		input >> settings.size.x >> settings.size.y >> settings.size.z >> settings.radius;
+		if (!input) {
+			return false;
+		}
+		if ((present != 0 && present != 1) || (enabled != 0 && enabled != 1)) {
+			return false;
+		}
+		settings.present = present != 0;
+		settings.enabled = enabled != 0;
+		settings.shape = static_cast<ColliderShape>(shape);
+		return ValidateColliderSettings(settings);
+	}
+	void WriteColliderSettings(std::ostream& output, const SceneColliderSettings& settings) {
+		output << ' ' << settings.present << ' ' << settings.enabled << ' ' << static_cast<int>(settings.shape) << ' ' << settings.center.x << ' ' << settings.center.y << ' ' << settings.center.z;
+		output << ' ' << settings.size.x << ' ' << settings.size.y << ' ' << settings.size.z << ' ' << settings.radius;
+	}
+
+	// 形式11。TriggerとRigidbodyは旧Collider設定の後ろへ追加する。
+	bool ReadBodySettings(std::istream& input, SceneObjectData& object) {
+		int trigger = 0;
+		int present = 0;
+		int enabled = 0;
+		int mode = 0;
+		int gravity = 0;
+		input >> trigger >> present >> enabled >> mode >> gravity;
+		input >> object.body.mass >> object.body.gravityScale >> object.body.restitution >> object.body.friction >> object.body.linearDamping;
+		input >> object.body.initialVelocity.x >> object.body.initialVelocity.y >> object.body.initialVelocity.z;
+		if (!input) {
+			return false;
+		}
+		const int flags[] = {trigger,present,enabled,gravity};
+		for (int flag : flags) {
+			if (flag != 0 && flag != 1) {
+				return false;
+			}
+		}
+		object.collider.trigger = trigger != 0;
+		object.body.present = present != 0;
+		object.body.enabled = enabled != 0;
+		object.body.mode = static_cast<BodyMode>(mode);
+		object.body.useGravity = gravity != 0;
+		return ValidateBodySettings(object.body);
+	}
+	void WriteBodySettings(std::ostream& output, const SceneObjectData& object) {
+		output << ' ' << object.collider.trigger << ' ' << object.body.present << ' ' << object.body.enabled << ' ' << static_cast<int>(object.body.mode) << ' ' << object.body.useGravity;
+		output << ' ' << object.body.mass << ' ' << object.body.gravityScale << ' ' << object.body.restitution << ' ' << object.body.friction << ' ' << object.body.linearDamping;
+		output << ' ' << object.body.initialVelocity.x << ' ' << object.body.initialVelocity.y << ' ' << object.body.initialVelocity.z;
+	}
+
 	struct Record {
 		SceneObjectId id{};
 		unsigned mask{}; // 下位4ビットがTransform・色・ライティング・光沢の有無を表す。
@@ -219,7 +298,7 @@ bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, s
 	outputFile << std::setprecision(std::numeric_limits<float>::max_digits10);
 	unsigned formatVersion = 1;
 	if (collection) {
-		formatVersion = 8;
+		formatVersion = 11;
 	}
 	outputFile << "PON_SCENE " << formatVersion << '\n' << records.size() << '\n';
 	for (const Record& record : records) {
@@ -240,6 +319,9 @@ bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, s
 			}
 			WriteAssetSettings(outputFile, record.components);
 			outputFile << ' ' << std::quoted(record.components.prefabSource);
+			WriteMotionSettings(outputFile, record.components.motion);
+			WriteColliderSettings(outputFile, record.components.collider);
+			WriteBodySettings(outputFile, record.components);
 		}
 		outputFile << '\n';
 	}
@@ -275,7 +357,7 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 		error = "Incomplete scene header.";
 		return false;
 	}
-	if (magic != "PON_SCENE" || version < 1 || version > 8) {
+	if (magic != "PON_SCENE" || version < 1 || version > 11) {
 		error = "Unsupported scene format.";
 		return false;
 	}
@@ -358,6 +440,24 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 			}
 			if (version >= 8) {
 				inputFile >> std::quoted(record.components.prefabSource);
+			}
+			if (version >= 9) {
+				if (!ReadMotionSettings(inputFile, record.components.motion)) {
+					error = "Invalid motion component settings.";
+					return false;
+				}
+			}
+			if (version >= 10) {
+				if (!ReadColliderSettings(inputFile, record.components.collider)) {
+					error = "Invalid collider settings.";
+					return false;
+				}
+			}
+			if (version >= 11) {
+				if (!ReadBodySettings(inputFile,record.components)) {
+					error = "Invalid Rigidbody settings.";
+					return false;
+				}
 			}
 			if (!inputFile) {
 				error = "Incomplete scene object data.";

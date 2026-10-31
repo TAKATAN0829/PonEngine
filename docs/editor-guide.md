@@ -153,9 +153,65 @@ HierarchyまたはSceneViewでCtrl+クリックすると選択を追加・解除
 
 - FPS、フレーム時間、DrawCall数、UI描画コマンド数、送信三角形数、延べインスタンス数を確認できる。DrawCallはMeshが実際に発行した命令を集計し、モデル・Sprite・Particle・Assetプレビューを含む。三角形数はインスタンス数を含む送信量で、画面上の可視ピクセル数ではない。
 - CPU内訳はEditor、履歴、Project／Console、Hierarchy、Inspector、SceneView、モデル／テクスチャ読込、シーン更新、モデル更新、CPUアニメーション、Particle、Assetプレビュー、描画命令記録を表示する。子区間は親の時間に含むため、全行を足し合わせない。
-- Present／VSync、GPU完了待ち、60fps制限の待機を別々に表示する。待機時間が長いだけでGPU負荷とは断定しない。GPUそのものの実行時間はまだ計測していない。
+- Present／VSync、GPU完了待ち、60fps制限の待機を別々に表示する。待機時間が長いだけでGPU負荷とは断定しない。GPU executionには同じフレームのGPUタイムスタンプ差分を表示する。PreDrawからPresent直前の描画命令までのGPU上の経過時間で、Scene・UI・プレビュー・フレーム内転送を含む。Present／VSyncやFPS制限のCPU待機は含まない。未対応・取得失敗はN/Aと表示する。CPU時間と足し合わせない。
 - グラフをクリックすると履歴だけを一時停止し、そのフレームの内訳を調べられる。ゲームは継続する。「最も重かったフレーム」は600フレームより前でもリセットまで保持する。CSV出力は現在の履歴を作業ディレクトリのperformance-capture.csvへ保存する。
 
 Models／CPU animationが伸びたらモデル数・頂点数・再生数、Particlesが伸びたら発生数、Project／読込が伸びたら新規Assetやプレビュー、DrawCallが増えたらオブジェクト・マテリアルスロット・Emitter数を確認する。これは絞り込みの手掛かりで、原因の自動断定は行わない。
 
 保存形式8でPrefabの元Assetパスを追加した。形式1〜7も読み込める。
+
+GPU executionは履歴・ピーク記録・CSVにも保存する。CSVのgpu_validが0の場合、gpu_msは空欄とし、未取得を0msと区別する。GPU時間が増えた場合は三角形数・DrawCall・画面解像度等を比較し、CPU時間が増えた場合はCPU区間の内訳を確認する。GPU内の描画別内訳や使用率はまだ計測していない。
+
+
+## 回転・往復移動Component
+
+1. Hierarchyで対象を単体選択し、Inspectorの空白を右クリックする。
+2. 「Componentを追加」からRotation（自動回転）またはPing Pong（往復移動）を選ぶ。両方を同時に付けられる。
+3. Rotationは各ローカルEuler角の速度を度/秒で指定する。Ping Pongは開始位置からの変位と一往復の秒数を指定する。変位は親の座標系で、半周期で終点、全周期で開始位置へ戻る。両端では滑らかに折り返す。
+4. 再生すると動き、Pauseで停止、Stepで一更新だけ進む。停止すると再生前のTransformとComponent設定へ戻る。再度再生すると時計も最初から始まる。
+
+各ComponentのEnabledで一時的に止め、見出しの右クリックから削除できる。Activeが無効な対象とその子は動かず、往復移動の時計も進まない。往復移動は最初に有効になったゲーム更新時の位置を開始点とする。
+
+設定はシーン・Prefab・複製・Undo/Redoで保持する。実行中の開始位置と時計は保存しない。保存形式9で追加し、形式1〜8は動作Componentなしで読み込む。エンジンの既存の固定更新に合わせ、一更新は1/60秒として進行する。往復移動中の位置はComponentが更新するため、他の位置操作との重ね合わせは未対応。PerformanceのCPU内訳「Motion components」で更新負荷を確認できる。
+
+
+## Box / Sphere Collider
+
+対象を単体選択してInspectorの空白を右クリックし、「Componentを追加」からBox ColliderまたはSphere Colliderを選ぶ。一つのオブジェクトに一つのColliderを付け、Shapeで種類を切り替える。Center、Boxの全幅Size、SphereのRadiusはTransformに対するローカル値として指定する。見出しの右クリックで削除、Enabledで一時的に無効化できる。
+
+SceneViewでは選択中のColliderだけを表示する。通常は緑、直前のゲーム更新で接触中なら赤、無効なColliderや階層なら灰色。GameViewには補助線を表示しない。Boxは親子の回転・拡縮・せん断を含む形状で判定し、AABBは候補を絞るためだけに使う。Sphereは非均等拡縮時に最大拡縮の球、せん断時に安全側の外接球とする。表示と判定には同じワールド形状を使う。Boxの拡縮が0に近い場合など、形状が退化する場合は判定対象から外す。
+
+再生中、Consoleの[Collision Enter]に接触開始、[Collision Exit]に終了をIDと名前で表示する。接触中は毎フレーム通知しない。Pauseでは判定結果を維持し、Stepで一更新、Stopで履歴を初期化する。Activeが無効な親の子、Enabledが無効なColliderは判定せず、次のゲーム更新で接触終了になる。
+
+押し戻し・重力・摩擦・反発はRigidbodyで設定する。レイヤーフィルタと高速移動の連続判定は未対応。同じ有効なRigidbodyに属する子Collider同士は判定しない。最大256個（無効なものを含む）とし、同時通知は一更新32件まで表示して残り件数をまとめる。PerformanceのCPU内訳「Collision detection」で判定と通知の負荷を確認できる。
+
+Collider設定は保存形式10、Prefab、複製、Undo/Redoに含まれる。形式1〜9はColliderなしで読み込む。接触履歴は保存しない。
+
+
+## Rigidbody・重力・押し戻し
+
+床・壁にはColliderを付ける。自身にも親にも有効なRigidbodyがなければ固定物となる。落下させる物体にはColliderとRigidbodyを付け、ModeをDynamic、Use Gravityを有効にして再生する。RigidbodyもInspectorの空白の右クリック→Componentを追加から選び、見出しの右クリックで削除できる。
+
+- Static: 重力や接触で動かない。床の摩擦・反発を調整したい場合に付ける。
+- Dynamic: 重力・初速・衝突で並進移動する。質量に応じて押し戻しを分配する。往復移動Componentからの位置更新は無視する。
+- Kinematic: Transformや往復移動Componentで動かす床・壁に使う。重力では動かず、接触相手のDynamicを押せる。
+
+Gravity ScaleでワールドY方向の重力-9.8を調整し、Initial Velocityはワールド単位/秒の初速を再生開始時に適用する。Massは正の質量、Restitutionは反発、Frictionは接触時の摩擦、Linear Dampingは速度の減衰を指定する。物理速度は最大1000単位/秒に制限する。低速の接地では反発を抑え、静止時の細かな跳ねを減らす。
+
+ColliderのTriggerを有効にすると、開始・終了通知だけを行って押し戻しを省略する。重力はそのまま適用する。Rigidbodyを持たない子Colliderは最も近い有効な親Rigidbodyの一部として動き、同じRigidbody内では衝突しない。
+
+Pauseでは位置と速度を維持し、Stepで一更新進める。停止すると編集前のTransform・設定へ戻り、速度と接触履歴を破棄する。設定は保存形式11、Prefab、Undo/Redoに含む。形式1〜10はRigidbodyなし・Trigger無効で読み込む。PerformanceのPhysics / gravity / responseで更新負荷を確認する。
+
+並進物理の基盤で、角速度・トルク・回転への衝撃・ジョイント・スリープ・連続衝突判定は未対応。Dynamicは動かない親の下に置く。Dynamicの子階層へ別の有効なRigidbodyを置く構成と、Kinematicの下にDynamicを置く構成は再生・保存前に拒否する。子Colliderを複数使う場合は親だけにRigidbodyを付ける。固定1/60秒の更新を4分割して解決するが、速い物体や薄い床ではすり抜ける可能性がある。
+
+再生中に不正なRigidbody設定や未対応の親子構成へ変更すると、物理更新だけを止めてConsoleの[Physics]に理由を出す。設定を直すと再開する。
+
+## Editorの画面とプロパティ編集
+
+Unityに近い落ち着いたグレー、細いツールバー、角の少ない入力欄に統一した。フォント倍率は0.85固定。通常表示はHierarchy / Inspector / Project / Console / SceneView / GameViewの6タブで、追加ツールは「表示 / View」から開く。新しい初期配置では左がHierarchy、中央がSceneViewとGameView、右がInspector、下がProjectとConsoleになる。配置は引き続きドッキングで調整できる。
+
+Inspectorは左に項目名、右に入力欄を揃える。TransformのPosition / Rotation / Scaleは各3軸を一行に表示し、Rotationは度数で編集する。保存とエンジン内部の回転単位は従来どおりラジアン。見出しの「?」に説明をまとめ、TransformのリセットとComponentの削除は見出しの右クリック、追加はInspectorの空白の右クリックから行う。
+
+SceneViewの「View / 表示」メニューからGrid、Snap、選択対象へフォーカスを操作する。Projectは左のフォルダツリーと右のAssetプレビューに分かれ、境界をドラッグして幅を調整できる。画像やモデルのドラッグ＆ドロップは従来どおり利用できる。
+
+Consoleは検索でログを絞り込める。一覧には各ログの先頭行を表示し、ホバーで全文を確認、右クリックで全文をコピーできる。画面最下部には操作結果とFPS・フレーム時間・GPU時間を表示する。

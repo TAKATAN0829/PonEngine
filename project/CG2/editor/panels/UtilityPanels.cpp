@@ -7,6 +7,7 @@
 #include "SceneObjects.h"
 #include <algorithm>
 #include <cctype>
+#include <limits>
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
 #include "TextureManager.h"
@@ -48,6 +49,7 @@ void UtilityPanels::OpenDirectory(const std::filesystem::path& path) {
 		return;
 	}
 	directory_ = canonical;
+	revealFolder_ = true;
 	selected_.clear();
 	search_[0] = '\0';
 	refreshRequested_ = true;
@@ -82,6 +84,8 @@ void UtilityPanels::Update() {
 		status_ = error.message();
 	}
 	std::sort(entries_.begin(), entries_.end(), CompareEntries);
+	folders_.clear();
+	CacheFolders(root_,0);
 }
 
 UtilityPanels::Preview UtilityPanels::GetPreview(const AssetEntry& entry, IEditableScene& scene) {
@@ -273,11 +277,22 @@ void UtilityPanels::DrawAsset(const AssetEntry& entry, IEditableScene& scene, co
 
 void UtilityPanels::DrawProject(IEditableScene& scene, const EditorSelection& selection, EditorToolVisibility& visibility) {
 #ifdef USE_IMGUI
-	if (ImGui::Begin("Project")) {
-		ImGui::TextDisabled("resources / %s", PathText(directory_.lexically_relative(root_)).c_str());
+	if (ImGui::Begin("Project",nullptr,ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+		const ImVec2 headerOrigin = ImGui::GetCursorScreenPos();
+		const float searchWidth = (std::min)(200.0f,ImGui::GetContentRegionAvail().x*0.4f);
+		const float availableWidth = ImGui::GetContentRegionAvail().x;
+		std::string relative = PathText(directory_.lexically_relative(root_));
+		if (relative == ".") {
+			relative.clear();
+		}
+		ImGui::PushClipRect(headerOrigin,{headerOrigin.x+availableWidth-searchWidth-8,headerOrigin.y+ImGui::GetFrameHeight()},true);
+		ImGui::AlignTextToFramePadding();
+		ImGui::TextDisabled("resources / %s",relative.c_str());
+		ImGui::PopClipRect();
 		ImGui::SameLine();
-		ImGui::SetNextItemWidth(150);
-		ImGui::InputTextWithHint("##AssetSearch", "検索", search_, sizeof(search_));
+		ImGui::SetCursorScreenPos({headerOrigin.x+availableWidth-searchWidth,headerOrigin.y});
+		ImGui::SetNextItemWidth(searchWidth);
+		ImGui::InputTextWithHint("##AssetSearch", "Assetsを検索", search_, sizeof(search_));
 		if (ImGui::BeginPopupContextWindow("ProjectContext", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
 			if (ImGui::MenuItem("resourcesへ戻る")) {
 				OpenDirectory(root_);
@@ -291,7 +306,20 @@ void UtilityPanels::DrawProject(IEditableScene& scene, const EditorSelection& se
 			ImGui::EndPopup();
 		}
 		ImGui::Separator();
-		ImGui::BeginChild("AssetGrid", {0,0});
+		const float bodyHeight = (std::max)(1.0f,ImGui::GetContentRegionAvail().y-2*ImGui::GetStyle().CellPadding.y);
+		if (!ImGui::BeginTable("ProjectSplit",2,ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp,{0,0})) {
+			ImGui::End();
+			return;
+		}
+		ImGui::TableSetupColumn("Folders",ImGuiTableColumnFlags_WidthFixed,170);
+		ImGui::TableSetupColumn("Assets",ImGuiTableColumnFlags_WidthStretch);
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::BeginChild("FolderTree",{0,bodyHeight});
+		DrawFolders();
+		ImGui::EndChild();
+		ImGui::TableSetColumnIndex(1);
+		ImGui::BeginChild("AssetGrid", {0,bodyHeight});
 		int column = 0;
 		int columns = static_cast<int>(ImGui::GetContentRegionAvail().x / 102);
 		if (columns < 1) {
@@ -327,6 +355,7 @@ void UtilityPanels::DrawProject(IEditableScene& scene, const EditorSelection& se
 			ImGui::TextWrapped("%s", status_.c_str());
 		}
 		ImGui::EndChild();
+		ImGui::EndTable();
 	}
 	ImGui::End();
 #else
@@ -337,11 +366,45 @@ void UtilityPanels::DrawProject(IEditableScene& scene, const EditorSelection& se
 void UtilityPanels::DrawConsole() {
 #ifdef USE_IMGUI
 	if (ImGui::Begin("Console")) {
-		ImGui::Text("Engine log / %zu messages", LogSystem::GetRecentMessages().size());
+		ImGui::SetNextItemWidth((std::min)(250.0f,ImGui::GetContentRegionAvail().x*0.6f));
+		ImGui::InputTextWithHint("##LogSearch","ログを検索",consoleSearch_,sizeof(consoleSearch_));
+		ImGui::SameLine();
+		ImGui::TextDisabled("%zu messages",LogSystem::GetRecentMessages().size());
 		ImGui::Separator();
 		ImGui::BeginChild("ConsoleMessages");
-		for (const std::string& message : LogSystem::GetRecentMessages()) {
-			ImGui::TextUnformatted(message.c_str());
+		if (ImGui::BeginTable("LogRows",2,ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+			ImGui::TableSetupColumn("#",ImGuiTableColumnFlags_WidthFixed,38);
+			ImGui::TableSetupColumn("Message",ImGuiTableColumnFlags_WidthStretch);
+			size_t messageIndex = 0;
+			for (const std::string& message : LogSystem::GetRecentMessages()) {
+				++messageIndex;
+				if (consoleSearch_[0] != '\0') {
+					if (message.find(consoleSearch_) == std::string::npos) {
+						continue;
+					}
+				}
+				ImGui::PushID(static_cast<int>(messageIndex));
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::TextDisabled("%zu",messageIndex);
+				ImGui::TableSetColumnIndex(1);
+				size_t lineEnd = message.find('\n');
+				if (lineEnd == std::string::npos) {
+					lineEnd = message.size();
+				}
+				ImGui::TextUnformatted(message.data(),message.data()+lineEnd);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("%s",message.c_str());
+				}
+				if (ImGui::BeginPopupContextItem("LogActions")) {
+					if (ImGui::MenuItem("全文をコピー")) {
+						ImGui::SetClipboardText(message.c_str());
+					}
+					ImGui::EndPopup();
+				}
+				ImGui::PopID();
+			}
+			ImGui::EndTable();
 		}
 		ImGui::EndChild();
 	}
@@ -358,4 +421,88 @@ void UtilityPanels::Draw(IEditableScene& scene, const EditorSelection& selection
 	previewLoadedThisFrame_ = false;
 	DrawProject(scene, selection, visibility);
 	DrawConsole();
+}
+
+// ツリーの構築は明示更新時だけ行い、深さと件数を制限する。シンボリックリンクは辿らない。
+void UtilityPanels::CacheFolders(const std::filesystem::path& directory, size_t depth) {
+	if (folders_.size() >= 512 || depth > 12) {
+		return;
+	}
+	const size_t folderIndex = folders_.size();
+	folders_.push_back({directory,depth,false});
+	std::error_code error;
+	std::vector<std::filesystem::path> children;
+	std::filesystem::directory_iterator iterator(directory,error);
+	const std::filesystem::directory_iterator end;
+	while (!error && iterator != end) {
+		if (!iterator->is_symlink(error)) {
+			if (iterator->is_directory(error)) {
+				children.push_back(iterator->path());
+			}
+		}
+		iterator.increment(error);
+	}
+	std::sort(children.begin(),children.end());
+	folders_[folderIndex].children = !children.empty() && depth < 12;
+	for (const std::filesystem::path& child : children) {
+		CacheFolders(child,depth+1);
+		if (folders_.size() >= 512) {
+			break;
+		}
+	}
+}
+
+void UtilityPanels::DrawFolders() {
+#ifdef USE_IMGUI
+	std::filesystem::path requested;
+	size_t collapsedDepth = (std::numeric_limits<size_t>::max)();
+	for (const FolderEntry& folder : folders_) {
+		if (folder.depth > collapsedDepth) {
+			continue;
+		}
+		collapsedDepth = (std::numeric_limits<size_t>::max)();
+		const std::string identifier = PathText(folder.path);
+		const std::string name = PathText(folder.path.filename());
+		ImGui::PushID(identifier.c_str());
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+		if (folder.depth == 0) {
+			flags |= ImGuiTreeNodeFlags_DefaultOpen;
+		}
+		if (!folder.children) {
+			flags |= ImGuiTreeNodeFlags_Leaf;
+		}
+		if (folder.path == directory_) {
+			flags |= ImGuiTreeNodeFlags_Selected;
+		}
+		if (revealFolder_) {
+			const std::filesystem::path relative = directory_.lexically_relative(folder.path);
+			if (!relative.empty()) {
+				if (*relative.begin() != "..") {
+					ImGui::SetNextItemOpen(true);
+				}
+			}
+		}
+		const float indent = static_cast<float>(folder.depth)*12;
+		if (indent > 0) {
+			ImGui::Indent(indent);
+		}
+		const bool open = ImGui::TreeNodeEx(name.c_str(),flags);
+		if (ImGui::IsItemClicked()) {
+			if (!ImGui::IsItemToggledOpen()) {
+				requested = folder.path;
+			}
+		}
+		if (indent > 0) {
+			ImGui::Unindent(indent);
+		}
+		if (!open) {
+			collapsedDepth = folder.depth;
+		}
+		ImGui::PopID();
+	}
+	revealFolder_ = false;
+	if (!requested.empty()) {
+		OpenDirectory(requested);
+	}
+#endif
 }

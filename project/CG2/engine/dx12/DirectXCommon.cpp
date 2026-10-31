@@ -38,6 +38,7 @@ void DirectXCommon::Initialize(WinApp* winApp) {
 
 	// Command系初期化
 	InitializeCommand();
+	InitializeGpuTiming();
 
 	// SwapChain初期化
 	InitializeSwapChain();
@@ -301,6 +302,9 @@ void DirectXCommon::InitializeFence() {
 
 void DirectXCommon::PreDraw() {
 	ResizeIfNeeded();
+	if (timestampFrequency_ != 0) {
+		commandList_->EndQuery(timestampHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0);
+	}
 
 	// BackBufferIndex取得
 	backBufferIndex_ = swapChain_->GetCurrentBackBufferIndex();
@@ -376,6 +380,10 @@ void DirectXCommon::PostDraw() {
 	commandList_->ResourceBarrier(1, &barrier);
 
 	// CommandList閉じる
+	if (timestampFrequency_ != 0) {
+		commandList_->EndQuery(timestampHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 1);
+		commandList_->ResolveQueryData(timestampHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, timestampReadback_.Get(), 0);
+	}
 	HRESULT hr = commandList_->Close();
 
 	assert(SUCCEEDED(hr));
@@ -406,6 +414,9 @@ void DirectXCommon::PostDraw() {
 		FrameProfiler::Scope waitTime(FrameProfiler::Section::GpuWait);
 		WaitForSingleObject(fenceEvent_, INFINITE);
 	}
+
+	// 既存のフレーム待機が完了したので、追加の待機なしで結果を読み取る。
+	ReadGpuTiming();
 
 	// FPS固定
 	{
@@ -469,6 +480,9 @@ void DirectXCommon::UpdateFixFPS() {
 // 終了処理
 
 void DirectXCommon::Finalize() {
+	timestampReadback_.Reset();
+	timestampHeap_.Reset();
+	timestampFrequency_ = 0;
 
 	// FenceEvent解放
 	if (fenceEvent_ != nullptr) {
@@ -596,4 +610,64 @@ bool DirectXCommon::HasValidationErrors() const {
         }
     }
     return false;
+}
+
+// 同じ直接実行キューの2タイムスタンプを使い、CPU待機とGPU処理を分ける。
+void DirectXCommon::InitializeGpuTiming() {
+	timestampFrequency_ = 0;
+	uint64_t frequency = 0;
+	if (FAILED(commandQueue_->GetTimestampFrequency(&frequency))) {
+		return;
+	}
+	if (frequency == 0) {
+		return;
+	}
+	D3D12_QUERY_HEAP_DESC queryDescription{};
+	queryDescription.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+	queryDescription.Count = 2;
+	if (FAILED(device_->CreateQueryHeap(&queryDescription, IID_PPV_ARGS(&timestampHeap_)))) {
+		return;
+	}
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_READBACK;
+	D3D12_RESOURCE_DESC bufferDescription{};
+	bufferDescription.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bufferDescription.Width = sizeof(uint64_t) * 2;
+	bufferDescription.Height = 1;
+	bufferDescription.DepthOrArraySize = 1;
+	bufferDescription.MipLevels = 1;
+	bufferDescription.SampleDesc.Count = 1;
+	bufferDescription.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	if (FAILED(device_->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &bufferDescription,
+		D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&timestampReadback_)))) {
+		timestampHeap_.Reset();
+		return;
+	}
+	timestampFrequency_ = frequency;
+}
+
+// PostDrawで元から行っているフェンス待機の後に読むため、追加の同期は不要。
+void DirectXCommon::ReadGpuTiming() {
+	if (timestampFrequency_ == 0) {
+		return;
+	}
+	// デバイス喪失時の完了値は有効なタイムスタンプとして使わない。
+	if (fence_->GetCompletedValue() == UINT64_MAX) {
+		return;
+	}
+	if (fence_->GetCompletedValue() < fenceValue_) {
+		return;
+	}
+	void* mappedData = nullptr;
+	const D3D12_RANGE readRange = {0, sizeof(uint64_t) * 2};
+	if (FAILED(timestampReadback_->Map(0, &readRange, &mappedData))) {
+		return;
+	}
+	const uint64_t* timestamps = static_cast<const uint64_t*>(mappedData);
+	if (timestamps[1] >= timestamps[0]) {
+		const double milliseconds = static_cast<double>(timestamps[1] - timestamps[0]) * 1000.0 / static_cast<double>(timestampFrequency_);
+		FrameProfiler::SetGpuMilliseconds(static_cast<float>(milliseconds));
+	}
+	const D3D12_RANGE writtenRange = {0, 0};
+	timestampReadback_->Unmap(0, &writtenRange);
 }

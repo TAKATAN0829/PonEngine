@@ -129,6 +129,7 @@ namespace {
 		FrameProfiler::Initialize();
 		for (size_t frameIndex = 0; frameIndex < 605; ++frameIndex) {
 			FrameProfiler::BeginFrame();
+			FrameProfiler::SetGpuMilliseconds(0.5f);
 			{
 				FrameProfiler::Scope section(FrameProfiler::Section::Models);
 				FrameProfiler::RecordDraw(6, 10);
@@ -140,6 +141,7 @@ namespace {
 		RequireWorkflow(FrameProfiler::GetCount() == 600 && FrameProfiler::GetSample(0).number == 6, "Profiler ring buffer incorrect");
 		RequireWorkflow(FrameProfiler::GetLatest().drawCalls == 2 && FrameProfiler::GetLatest().triangles == 21 && FrameProfiler::GetLatest().instances == 11, "Draw counters confused calls/instances");
 		RequireWorkflow(FrameProfiler::GetLatest().uiDrawCalls == 1, "UI counter missing");
+		RequireWorkflow(FrameProfiler::GetLatest().gpuTimingValid && FrameProfiler::GetLatest().gpuMilliseconds == 0.5f, "GPU duration was not retained in frame history");
 		const uint64_t latest = FrameProfiler::GetLatest().number;
 		FrameProfiler::SetPaused(true);
 		FrameProfiler::BeginFrame();
@@ -151,11 +153,26 @@ namespace {
 		std::string record;
 		size_t records = 0;
 		while (std::getline(capture, record)) {
+			if (records == 0) {
+				RequireWorkflow(record.find("gpu_valid,gpu_ms") != std::string::npos, "GPU columns missing from CSV");
+			}
 			++records;
 		}
 		RequireWorkflow(records == 601, "CSV history row count incorrect");
 		FrameProfiler::ResetPeak();
 		RequireWorkflow(FrameProfiler::GetPeak().number == 0, "Peak reset failed");
+		FrameProfiler::SetPaused(false);
+		FrameProfiler::BeginFrame();
+		FrameProfiler::SetGpuMilliseconds(-1);
+		FrameProfiler::EndFrame();
+		RequireWorkflow(!FrameProfiler::GetLatest().gpuTimingValid, "Invalid GPU time was accepted");
+		FrameProfiler::BeginFrame();
+		FrameProfiler::SetGpuMilliseconds(0);
+		FrameProfiler::EndFrame();
+		RequireWorkflow(FrameProfiler::GetLatest().gpuTimingValid && FrameProfiler::GetLatest().gpuMilliseconds == 0, "Valid zero GPU time was treated as missing");
+		FrameProfiler::BeginFrame();
+		FrameProfiler::EndFrame();
+		RequireWorkflow(!FrameProfiler::GetLatest().gpuTimingValid, "A missing GPU sample reused the previous frame");
 	}
 }
 

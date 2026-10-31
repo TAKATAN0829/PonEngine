@@ -17,14 +17,14 @@ namespace {
 	// フォントの収録文字や画像ファイルに依存しない図形アイコンを描く。
 	bool DrawPlaybackButton (const char* identifier, PlaybackIcon icon, const char* hint, bool active) {
 		if (active) {
-			ImGui::PushStyleColor (ImGuiCol_Button, { 0.15f,0.46f,0.31f,1 });
+			ImGui::PushStyleColor (ImGuiCol_Button, { 0.045f,0.10f,0.17f,1 });
 		}
-		const bool clicked = ImGui::Button (identifier, { 38,24 });
+		const bool clicked = ImGui::Button (identifier, { 30,22 });
 		if (active) {
 			ImGui::PopStyleColor ();
 		}
 		const ImVec2 minimum = ImGui::GetItemRectMin ();
-		const ImVec2 center = { minimum.x + 19, minimum.y + 12 };
+		const ImVec2 center = { minimum.x + 15, minimum.y + 11 };
 		const ImU32 color = ImGui::GetColorU32 (ImGuiCol_Text);
 		ImDrawList* drawList = ImGui::GetWindowDrawList ();
 		if (icon == PlaybackIcon::Play || icon == PlaybackIcon::Step) {
@@ -167,10 +167,17 @@ void Editor::DrawToolbar (IEditableScene& scene) {
 	// シーン管理はメニューへ分離し、中央には再生操作だけを置く。
 	// この行だけ縦の項目間隔を詰め、下の作業領域を広く保つ。
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {ImGui::GetStyle().ItemSpacing.x, 2});
-	const float controlsWidth = 3 * 38.0f + 2 * ImGui::GetStyle ().ItemSpacing.x;
+	const float controlsWidth = 3 * 30.0f + 2 * ImGui::GetStyle ().ItemSpacing.x;
 	const float availableWidth = ImGui::GetContentRegionAvail ().x;
+	const float toolbarStart = ImGui::GetCursorPosX();
+	const ImVec2 toolbarOrigin = ImGui::GetCursorScreenPos();
+	ImGui::GetWindowDrawList()->AddRectFilled(toolbarOrigin,{toolbarOrigin.x+availableWidth,toolbarOrigin.y+24},ImGui::GetColorU32(ImGuiCol_MenuBarBg));
+	ImGui::SetCursorPosX(toolbarStart+10);
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextDisabled("Scene  /  GameScene");
+	ImGui::SameLine();
 	if (availableWidth > controlsWidth) {
-		ImGui::SetCursorPosX (ImGui::GetCursorPosX () + (availableWidth - controlsWidth) * 0.5f);
+		ImGui::SetCursorPosX (toolbarStart + (availableWidth - controlsWidth) * 0.5f);
 	}
 	PlaybackIcon playIcon = PlaybackIcon::Play;
 	const char* playHint = "再生 (Ctrl+P)";
@@ -193,6 +200,18 @@ void Editor::DrawToolbar (IEditableScene& scene) {
 		session_.RequestStep ();
 	}
 	ImGui::EndDisabled ();
+	if (availableWidth > 440) {
+		ImGui::SameLine();
+		ImGui::SetCursorPosX(toolbarStart+availableWidth-90);
+		const char* mode = "EDIT MODE";
+		if (session_.IsPlaying()) {
+			mode = "PLAY MODE";
+			if (session_.IsPaused()) {
+				mode = "PAUSED";
+			}
+		}
+		ImGui::TextDisabled("%s",mode);
+	}
 	ImGui::PopStyleVar();
 
 #else

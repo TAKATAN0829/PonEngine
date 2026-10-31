@@ -310,22 +310,27 @@ void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
 	EditableObjectView selectedObject = FindObject(scene, selection.Get());
 	if (!gameView_) {
 		int selectedTool = static_cast<int>(tool_);
-		ImGui::SetNextItemWidth(120);
+		ImGui::SetNextItemWidth(100);
 		if (ImGui::Combo("##TransformTool", &selectedTool, "Move\0Rotate\0Scale\0")) {
 			CancelDrag(scene);
 			tool_ = static_cast<TransformTool>(selectedTool);
 		}
 		ImGui::SameLine();
-		ImGui::Checkbox("Grid", &showGrid_);
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(95);
-		ImGui::DragFloat("Snap", &snapDistance_, 0.1f, 0.1f, 100, "%.1f", ImGuiSliderFlags_AlwaysClamp);
-		ImGui::SameLine();
-		ImGui::BeginDisabled(selectedObject.transform == nullptr || dragging_);
-		if (ImGui::Button("注視")) {
-			scene.FocusEditorCamera(scene.GetObjectWorldPosition(selectedObject.id));
+		if (ImGui::Button("View / 表示")) {
+			ImGui::OpenPopup("SceneViewOptions");
 		}
-		ImGui::EndDisabled();
+		if (ImGui::BeginPopup("SceneViewOptions")) {
+			ImGui::MenuItem("Grid",nullptr,&showGrid_);
+			ImGui::SetNextItemWidth(100);
+			ImGui::DragFloat("Snap",&snapDistance_,0.1f,0.1f,100,"%.1f",ImGuiSliderFlags_AlwaysClamp);
+			if (ImGui::MenuItem("選択対象を注視",nullptr,false,selectedObject.transform != nullptr && !dragging_)) {
+				scene.FocusEditorCamera(scene.GetObjectWorldPosition(selectedObject.id));
+			}
+			ImGui::EndPopup();
+		}
+		ImGui::SameLine();
+		ImGui::AlignTextToFramePadding();
+		ImGui::TextDisabled("Scene Camera");
 	} else {
 		SceneCameraView gameCamera{};
 		if (scene.GetGameCameraView(static_cast<float>(width_) / static_cast<float>(height_), gameCamera)) {
@@ -375,6 +380,7 @@ void SceneViewPanel::Draw(IEditableScene& scene, EditorSelection& selection) {
 		DrawGrid(drawList, viewInfo, viewportOrigin);
 	}
 	DrawObjectMarkers(scene, drawList, viewInfo, viewportOrigin);
+	DrawColliders(scene, selection, viewInfo, viewportOrigin);
 	const bool clickedGizmo = DrawGizmo(scene, selection, viewInfo, viewportOrigin, mousePosition, imageHovered);
 	drawList.PopClipRect();
 

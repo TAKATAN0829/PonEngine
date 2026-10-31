@@ -1,9 +1,12 @@
 #include "FrameProfiler.h"
 #include "Engine.h"
+#include "DirectXTex/DirectXTex.h"
 #include "GameScene.h"
 #include "LogSystem.h"
 #include "SceneRenderTarget.h"
 #include "DebugCamera.h"
+#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/panels/InspectorPanel.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 #include <iostream>
@@ -16,6 +19,7 @@ class GraphicsTestScene : public GameScene {
 public:
 	void Initialize(const SceneContext& context) override {
 		GameScene::Initialize(context);
+		previewGraphics_ = context.object3dCommon->GetDxCommon();
 		VerifyAnimatedAsset();
 		VerifyMessageQueue();
 		resizeTarget_.Initialize(context.object3dCommon->GetDxCommon(), context.object3dCommon->GetSrvManager());
@@ -87,6 +91,9 @@ public:
 		}
 		if (frameNumber_ == 1) {
 			VerifySurfaceGeometry();
+			VerifyPhysicsSimulation();
+			VerifyColliderSimulation();
+			VerifyMotionSimulation();
 		}
 		VerifyAnimationPlayback();
 		// 毎フレーム異なる寸法へ作り直しても、画像ハンドルが変わらずBarrier違反が出ないことを確認する。
@@ -164,6 +171,12 @@ public:
 			if (sample.number == 0 || sample.drawCalls == 0 || sample.uiDrawCalls == 0 || sample.frameMilliseconds <= 0) {
 				valid_ = false;
 			}
+			if (!sample.gpuTimingValid) {
+				throw std::runtime_error("GPU timestamps were not collected after fence completion.");
+			}
+			if (!std::isfinite(sample.gpuMilliseconds) || sample.gpuMilliseconds < 0) {
+				throw std::runtime_error("GPU timestamp duration is invalid.");
+			}
 		}
 		const size_t liveCount = GetParticleCount();
 		if (frameNumber_ == 10) {
@@ -219,8 +232,165 @@ public:
 			valid_ = false;
 		}
 	}
+	void CapturePreview() const {
+		DirectX::ScratchImage preview;
+		if (FAILED(DirectX::CaptureTexture(previewGraphics_->GetCommandQueue(),previewGraphics_->GetPresentedBuffer(),false,preview,D3D12_RESOURCE_STATE_PRESENT,D3D12_RESOURCE_STATE_PRESENT))) {
+			throw std::runtime_error("Editor preview capture failed.");
+		}
+		if (FAILED(DirectX::SaveToWICFile(*preview.GetImage(0,0,0),DirectX::WIC_FLAGS_NONE,DirectX::GetWICCodec(DirectX::WIC_CODEC_PNG),L"editor-ui.png"))) {
+			throw std::runtime_error("Editor preview PNG save failed.");
+		}
+	}
 	bool Passed() const { return valid_ && sawParticles_ && frameNumber_ >= 80; }
 private:
+	// 本番の更新経路で落下・接地・Pause・停止時の復元を確認する。
+	void VerifyPhysicsSimulation() {
+		const std::vector<SceneObjectData> original = CaptureObjects();
+		SceneObjectData floor;
+		floor.id = 900100;
+		floor.collider.present = true;
+		floor.collider.size = {20,1,20};
+		floor.transform.translate.y = -0.5f;
+		SceneObjectData ball;
+		ball.id = 900101;
+		ball.collider.present = true;
+		ball.collider.shape = ColliderShape::Sphere;
+		ball.body.present = true;
+		ball.transform.translate.y = 3;
+		std::string error;
+		if (!ReplaceObjects({floor,ball},error)) {
+			throw std::runtime_error(error);
+		}
+		EditorSession session;
+		session.Initialize(*this);
+		if (!session.BeginPlay(*this,error)) {
+			throw std::runtime_error(error);
+		}
+		OnPlayStateChanged(true);
+		for (size_t frame = 0; frame < 180; ++frame) {
+			GameScene::UpdateEditorFrame(nullptr,true);
+		}
+		if (std::abs(GetObjectWorldPosition(ball.id).y-0.5f) > 0.002f || !IsColliderTouching(ball.id)) {
+			throw std::runtime_error("GameScene gravity did not land body on floor.");
+		}
+		const float height = GetObjectWorldPosition(ball.id).y;
+		session.TogglePause();
+		GameScene::UpdateEditorFrame(nullptr,session.ShouldSimulate());
+		if (GetObjectWorldPosition(ball.id).y != height) {
+			throw std::runtime_error("Physics advanced during Pause.");
+		}
+		if (!session.Stop(*this,error)) {
+			throw std::runtime_error(error);
+		}
+		OnPlayStateChanged(false);
+		if (GetObjectWorldPosition(ball.id).y != 3 || IsColliderTouching(ball.id)) {
+			throw std::runtime_error("Physics Stop did not restore position and clear contacts.");
+		}
+		if (!ReplaceObjects(original,error)) {
+			throw std::runtime_error(error);
+		}
+	}
+	// 本番のGameScene経路で接触・Pause・Console通知・リセットを確認する。
+	void VerifyColliderSimulation() {
+		const std::vector<SceneObjectData> original = CaptureObjects();
+		SceneObjectData first;
+		first.id = 900001;
+		first.collider.present = true;
+		SceneObjectData second = first;
+		second.id = 900002;
+		second.collider.shape = ColliderShape::Sphere;
+		second.transform.translate.x = 0.5f;
+		std::string error;
+		if (!ReplaceObjects({first,second},error)) {
+			throw std::runtime_error(error);
+		}
+		OnPlayStateChanged(true);
+		GameScene::UpdateEditorFrame(nullptr,true);
+		if (!IsColliderTouching(first.id) || !IsColliderTouching(second.id)) {
+			throw std::runtime_error("GameScene collision did not enter.");
+		}
+		const size_t enterMessages = CountCollisionMessages("[Collision Enter] 900001");
+		if (enterMessages == 0) {
+			throw std::runtime_error("Collision Enter was not logged.");
+		}
+		GameScene::UpdateEditorFrame(nullptr,true);
+		if (CountCollisionMessages("[Collision Enter] 900001") != enterMessages) {
+			throw std::runtime_error("Collision Stay repeated Enter logs.");
+		}
+		GetEditableObject(1).collider->enabled = false;
+		GameScene::UpdateEditorFrame(nullptr,false);
+		if (!IsColliderTouching(first.id)) {
+			throw std::runtime_error("Paused collision changed contacts.");
+		}
+		GameScene::UpdateEditorFrame(nullptr,true);
+		if (IsColliderTouching(first.id) || CountCollisionMessages("[Collision Exit] 900001") == 0) {
+			throw std::runtime_error("Collision Exit was not detected or logged.");
+		}
+		OnPlayStateChanged(false);
+		if (IsColliderTouching(first.id)) {
+			throw std::runtime_error("Stop retained collision contacts.");
+		}
+		if (!ReplaceObjects(original,error)) {
+			throw std::runtime_error(error);
+		}
+	}
+	static size_t CountCollisionMessages(const std::string& prefix) {
+		size_t count = 0;
+		for (const std::string& message : LogSystem::GetRecentMessages()) {
+			if (message.find(prefix) != std::string::npos) {
+				++count;
+			}
+		}
+		return count;
+	}
+	// 本番のGameScene経路でPlay・Pause・Step・StopとInspector描画を確認する。
+	void VerifyMotionSimulation() {
+		const std::vector<SceneObjectData> original = CaptureObjects();
+		SceneObjectData moving;
+		moving.id = 999999;
+		moving.motion.hasRotation = true;
+		moving.motion.hasMovement = true;
+		moving.collider.present = true;
+		moving.collider.shape = ColliderShape::Sphere;
+		moving.body.present = true;
+		moving.body.mode = BodyMode::Kinematic;
+		std::string error;
+		if (!ReplaceObjects({moving}, error)) {
+			throw std::runtime_error(error);
+		}
+		EditorSession session;
+		session.Initialize(*this);
+		if (!session.BeginPlay(*this, error)) {
+			throw std::runtime_error(error);
+		}
+		OnPlayStateChanged(true);
+		GameScene::UpdateEditorFrame(nullptr, session.ShouldSimulate());
+		const TransformData advanced = GetObjectData(0)->transform;
+		if (advanced.translate.y <= 0 || advanced.rotate.y <= 0) {
+			throw std::runtime_error("GameScene did not run motion components.");
+		}
+		InspectorPanel::Draw(GetEditableObject(0), nullptr, this);
+		session.TogglePause();
+		GameScene::UpdateEditorFrame(nullptr, session.ShouldSimulate());
+		if (GetObjectData(0)->transform.translate.y != advanced.translate.y || GetObjectData(0)->transform.rotate.y != advanced.rotate.y) {
+			throw std::runtime_error("Paused motion kept advancing.");
+		}
+		session.RequestStep();
+		GameScene::UpdateEditorFrame(nullptr, session.ShouldSimulate());
+		if (GetObjectData(0)->transform.translate.y <= advanced.translate.y) {
+			throw std::runtime_error("Step did not advance motion.");
+		}
+		if (!session.Stop(*this, error)) {
+			throw std::runtime_error(error);
+		}
+		OnPlayStateChanged(false);
+		if (GetObjectData(0)->transform.translate.y != 0 || GetObjectData(0)->transform.rotate.y != 0) {
+			throw std::runtime_error("Motion Stop did not restore editing transform.");
+		}
+		if (!ReplaceObjects(original, error)) {
+			throw std::runtime_error(error);
+		}
+	}
 	// OS入力は送らず、ImGuiのマウス状態を一時的に差し替えてカメラ単体を確認する。
 	void VerifySurfaceGeometry() {
 		const std::vector<SceneObjectData> original = CaptureObjects();
@@ -461,6 +631,7 @@ private:
 		}
 	}
 
+	DirectXCommon* previewGraphics_ = nullptr; // テスト用。Engineの寿命中だけ借用する。
 	SceneObjectId hierarchyParentId_ = kInvalidSceneObjectId;
 	SceneObjectId lightChildId_ = kInvalidSceneObjectId;
 	SceneObjectId modelChildId_ = kInvalidSceneObjectId;
@@ -488,6 +659,7 @@ int main() {
 		GraphicsTestScene* scene = new GraphicsTestScene();
 		engine.Initialize(scene);
 		engine.Run(90);
+		scene->CapturePreview();
 		const bool passed = scene->Passed() && !engine.HasGraphicsErrors();
 		engine.Finalize();
 		LogSystem::Finalize();

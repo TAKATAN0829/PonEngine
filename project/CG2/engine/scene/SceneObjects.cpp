@@ -137,6 +137,15 @@ bool SceneObjects::IsSupportedModel(const std::string& model) {
 
 // 保存や復元に使えない数値・名前・ID・モデル指定を検出する。
 bool SceneObjects::Validate(const SceneObjectData& object) {
+	if (!ValidateBodySettings(object.body)) {
+		return false;
+	}
+	if (!ValidateColliderSettings(object.collider)) {
+		return false;
+	}
+	if (!ValidateMotionSettings(object.motion)) {
+		return false;
+	}
 	if (!object.prefabSource.empty()) {
 		if (object.prefabSource.find('\0') != std::string::npos) {
 			return false;
@@ -257,7 +266,7 @@ EditableObjectView SceneObjects::GetEditableObject(size_t index) {
 		&object.shininess, &object.model, &object.useRootNodeMatrix, &object.name,
 		&object.active, &object.hasMeshRenderer, object.type, &object.lightIntensity,
 		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId, &object.camera, object.mainCamera,
-		&object.materials, &object.animation};
+		&object.materials, &object.animation, &object.body, &object.collider, &object.motion};
 }
 
 // 読取専用の比較では文字列を含むシーン全体を複製しない。
@@ -441,7 +450,14 @@ bool SceneObjects::ReplaceObjects(std::vector<SceneObjectData> objects, std::str
 	size_t lightCount = 0;
 	size_t particleCount = 0;
 	size_t mainCameraCount = 0;
+	size_t colliderCount = 0;
 	for (const SceneObjectData& object : objects) {
+		if (object.collider.present) {
+			if (++colliderCount > kMaxSceneColliders) {
+				error = "Scene supports up to 256 colliders.";
+				return false;
+			}
+		}
 		if (!Validate(object)) {
 			error = "Invalid object data or unsupported model.";
 			return false;
@@ -519,6 +535,20 @@ bool SceneObjects::ValidateHierarchy(const std::vector<SceneObjectData>& objects
 			if (found == indices.end()) {
 				error = "Parent object does not exist.";
 				return false;
+			}
+			// Dynamicの子はColliderだけで構成し、独立したRigidbodyの二重移動を防ぐ。
+			if (object.body.present && object.body.enabled) {
+				const SceneBodySettings& parentBody = objects[found->second].body;
+				if (parentBody.present && parentBody.enabled && parentBody.mode == BodyMode::Dynamic) {
+					error = "Rigidbody cannot have a Dynamic Rigidbody ancestor. Use child Colliders without another Rigidbody.";
+					return false;
+				}
+				if (object.body.mode == BodyMode::Dynamic) {
+					if (parentBody.present && parentBody.enabled && parentBody.mode == BodyMode::Kinematic) {
+						error = "Dynamic Rigidbody requires a stationary parent. Put the Dynamic body outside the Kinematic hierarchy.";
+						return false;
+					}
+				}
 			}
 			parentId = objects[found->second].parentId;
 		}

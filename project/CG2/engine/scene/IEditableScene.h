@@ -7,6 +7,9 @@
 #include "EngineStructs.h"
 #include "ParticleSettings.h"
 #include "SceneAssetSettings.h"
+#include "SceneMotionSettings.h"
+#include "SceneColliderSettings.h"
+#include "SceneBodySettings.h"
 
 using SceneObjectId = uint64_t;
 inline constexpr SceneObjectId kInvalidSceneObjectId = 0;
@@ -74,6 +77,9 @@ struct SceneObjectData {
 	SceneAnimationSettings animation;
 	// Prefabルートだけがresources相対の元Assetを保持する。子は独立した編集データ。
 	std::string prefabSource;
+	SceneMotionSettings motion; // ゲーム再生時だけTransformへ反映する動作設定。
+	SceneColliderSettings collider; // モデルやボーン形状とは独立した接触範囲。
+	SceneBodySettings body; // 質量・重力・接触特性。実行速度は保存しない。
 };
 
 // シーンが所有する値への借用参照。追加・削除・読込の後は取得し直す必要がある。
@@ -100,6 +106,9 @@ struct EditableObjectView {
 	bool mainCamera = false;
 	std::vector<SceneMaterialSettings>* materials = nullptr;
 	SceneAnimationSettings* animation = nullptr;
+	SceneBodySettings* body = nullptr; // 実行中の速度への参照は公開しない。
+	SceneColliderSettings* collider = nullptr; // 借用参照。構造変更後は取得し直す。
+	SceneMotionSettings* motion = nullptr; // 借用参照。フレームをまたいで保持しない。
 };
 
 // Editorに公開する操作の窓口。ゲーム側がパネルの具体的な型を知る必要はない。
@@ -131,6 +140,22 @@ public:
 		}
 		return nullptr;
 	}
+	// 子Colliderを最も近い有効な親Rigidbodyへ結び付ける。0は固定Collider。
+	SceneObjectId GetBodyOwner(SceneObjectId identifier) const {
+		for (size_t depth = 0; depth < 64; ++depth) {
+			const SceneObjectData* object = GetObjectDataById(identifier);
+			if (object == nullptr) {
+				return 0;
+			}
+			if (object->body.present) {
+				if (object->body.enabled) {
+					return object->id;
+				}
+			}
+			identifier = object->parentId;
+		}
+		return 0;
+	}
 	// 採番済みIDはUndoや削除の後にも再利用しない。未対応実装は最大IDから求める。
 	virtual SceneObjectId GetNextObjectId() const {
 		SceneObjectId nextIdentifier = 1;
@@ -156,6 +181,7 @@ public:
 	virtual bool SetObjectWorldTransform(SceneObjectId, const Matrix4x4&) { return false; }
 	virtual bool SetObjectWorldPosition(SceneObjectId, const Vector3&) { return false; }
 	virtual bool IsObjectActive(SceneObjectId) const { return false; }
+	virtual bool IsColliderTouching(SceneObjectId) const { return false; }
 	virtual bool SetObjectParent(SceneObjectId, SceneObjectId, std::string& error) {
 		error = "This scene does not support parenting.";
 		return false;

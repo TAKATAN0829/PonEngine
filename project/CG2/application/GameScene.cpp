@@ -18,6 +18,9 @@
 // 初期化処理
 
 void GameScene::Initialize(const SceneContext& context) {
+	motion_.Initialize();
+	collision_.Initialize();
+	physics_.Finalize();
 #ifndef USE_IMGUI
 	gameView_ = true; // Releaseも保存したメインカメラを使う。
 #endif
@@ -96,13 +99,31 @@ void GameScene::Initialize(const SceneContext& context) {
 	sprite_ = new Sprite();
 
 	sprite_->Initialize(spriteCommon_, "resources/uvChecker.png");
+	// Releaseでも最初のKinematic移動より前に初期位置を取得する。
+	physics_.Initialize(*this);
 }
 
 //=================================================================================================//
 // 更新処理
 
 void GameScene::Update(Input*) {
+	// ゲーム更新からだけ呼び、Pause・編集時のカメラ操作では時計を進めない。
+	{
+		FrameProfiler::Scope motionTime(FrameProfiler::Section::Motion);
+		motion_.Update(*this, 1.0f / 60.0f);
+	}
 
+	{
+		FrameProfiler::Scope physicsTime(FrameProfiler::Section::Physics);
+		physics_.Update(*this,1.0f / 60.0f);
+		if (physics_.GetError() != physicsStatusLogged_) {
+			physicsStatusLogged_ = physics_.GetError();
+			if (!physicsStatusLogged_.empty()) {
+				LogSystem::Log("[Physics] " + physicsStatusLogged_ + "\n");
+			}
+		}
+	}
+	UpdateCollisions();
 	// Camera更新
 	UpdateCamera();
 
@@ -160,6 +181,9 @@ void GameScene::Draw() {
 // 終了処理
 
 void GameScene::Finalize() {
+	motion_.Finalize();
+	collision_.Finalize();
+	physics_.Finalize();
 	for (std::pair<const std::string,std::unique_ptr<ModelPreview>>& entry : modelPreviews_) {
 		entry.second->target.Finalize();
 	}
@@ -510,6 +534,13 @@ void GameScene::UpdateEditorFrame(Input* input, bool simulate) {
 // 再生開始・停止時に粒子と発生タイマーを消し、毎回同じ状態から確認できるようにする。
 void GameScene::OnPlayStateChanged(bool playing) {
 	playing_ = playing;
+	physicsStatusLogged_.clear();
+	motion_.Initialize();
+	collision_.Initialize();
+	physics_.Finalize();
+	if (playing) {
+		physics_.Initialize(*this);
+	}
 	for (std::pair<const SceneObjectId, RuntimeObject>& entry : runtimeObjects_) {
 		entry.second.animationPreview = false;
 		entry.second.drawable->ResetAnimation();
@@ -828,4 +859,32 @@ bool GameScene::IntersectObjectSurface(size_t objectIndex, const Vector3& origin
 		distance = nearest;
 	}
 	return hit;
+}
+
+// 接触は動作更新後に検出する。Stayを出さず、大量の同時変化もログを間引く。
+void GameScene::UpdateCollisions() {
+	FrameProfiler::Scope collisionTime(FrameProfiler::Section::Collision);
+	collision_.Update(*this);
+	const std::vector<SceneContactEvent>& events = collision_.GetEvents();
+	for (size_t eventIndex = 0; eventIndex < (std::min)(events.size(),size_t{32}); ++eventIndex) {
+		const SceneContactEvent& event = events[eventIndex];
+		std::string message = "[Collision Exit] ";
+		if (event.entering) {
+			message = "[Collision Enter] ";
+		}
+		message += std::to_string(event.first);
+		const SceneObjectData* first = GetObjectDataById(event.first);
+		if (first != nullptr) {
+			message += " (" + first->name + ")";
+		}
+		message += " <-> " + std::to_string(event.second);
+		const SceneObjectData* second = GetObjectDataById(event.second);
+		if (second != nullptr) {
+			message += " (" + second->name + ")";
+		}
+		LogSystem::Log(message + "\n");
+	}
+	if (events.size() > 32) {
+		LogSystem::Log("[Collision] " + std::to_string(events.size()-32) + " additional transitions omitted this frame.\n");
+	}
 }

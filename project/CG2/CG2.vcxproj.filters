@@ -339,4 +339,29 @@
     <ClCompile Include="editor\EditorTools.cpp"><Filter>editor</Filter></ClCompile>
     <ClInclude Include="engine\core\FrameProfiler.h"><Filter>engine\core</Filter></ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneMotion.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClCompile Include="editor\panels\InspectorMotion.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClInclude Include="engine\scene\SceneMotion.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClInclude Include="engine\scene\SceneMotionSettings.h"><Filter>engine\scene</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneCollision.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClCompile Include="editor\panels\InspectorCollider.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClCompile Include="editor\panels\SceneViewCollider.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClInclude Include="engine\scene\SceneCollision.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClInclude Include="engine\scene\SceneColliderSettings.h"><Filter>engine\scene</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\ScenePhysics.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClCompile Include="editor\panels\InspectorBody.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClInclude Include="engine\scene\ScenePhysics.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClInclude Include="engine\scene\SceneBodySettings.h"><Filter>engine\scene</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\EditorTheme.cpp"><Filter>editor</Filter></ClCompile>
+    <ClCompile Include="editor\EditorProperties.cpp"><Filter>editor</Filter></ClCompile>
+    <ClInclude Include="editor\EditorTheme.h"><Filter>editor</Filter></ClInclude>
+    <ClInclude Include="editor\EditorProperties.h"><Filter>editor</Filter></ClInclude>
+  </ItemGroup>
 </Project>

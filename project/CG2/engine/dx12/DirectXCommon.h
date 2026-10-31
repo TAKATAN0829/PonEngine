@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 // Windows
 #include <Windows.h>
@@ -57,8 +57,19 @@ public:
 	ID3D12GraphicsCommandList* GetCommandList() { return commandList_.Get(); }
 
 	ID3D12CommandQueue* GetCommandQueue() { return commandQueue_.Get(); }
+	// PostDraw完了後・次のPreDraw前だけ参照可能。所有権は移さない。
+	ID3D12Resource* GetPresentedBuffer() const { return swapChainResources_[backBufferIndex_].Get(); }
 
 private:
+	//=============================================================================================//
+	// メンバ関数 / GPU実行時間
+
+	// タイムスタンプ用のQueryHeapと読取専用バッファを初期化する。
+	// 非対応・確保失敗時は描画を継続し、計測値を未取得として扱う。
+	void InitializeGpuTiming();
+	// GPU完了済みの結果だけを読み、同じフレームの記録へ渡す。追加待機はしない。
+	void ReadGpuTiming();
+
 	void ResizeIfNeeded();
 	uint32_t renderWidth_ = 0;
 	uint32_t renderHeight_ = 0;
@@ -221,4 +232,11 @@ private:
 	// DepthStencilResource
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilResource_;
+
+	//=============================================================================================//
+	// メンバ変数 / GPUタイムスタンプ
+
+	Microsoft::WRL::ComPtr<ID3D12QueryHeap> timestampHeap_; // フレームの開始・終了の2点。
+	Microsoft::WRL::ComPtr<ID3D12Resource> timestampReadback_; // フェンス完了後にCPUから読む。
+	uint64_t timestampFrequency_ = 0; // コマンドキューのticks/秒。0は計測無効。
 };

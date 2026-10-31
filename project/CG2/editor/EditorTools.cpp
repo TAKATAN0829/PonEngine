@@ -1,3 +1,4 @@
+#include "EditorProperties.h"
 #include "Editor.h"
 #include "FrameProfiler.h"
 #ifdef USE_IMGUI
@@ -16,6 +17,11 @@ namespace {
 		ImGui::Text("FPS: %.1f   DrawCall: %llu   UI: %llu", framesPerSecond,
 			static_cast<unsigned long long>(sample.drawCalls), static_cast<unsigned long long>(sample.uiDrawCalls));
 		ImGui::Text("Triangles: %llu   Instances: %llu", static_cast<unsigned long long>(sample.triangles), static_cast<unsigned long long>(sample.instances));
+		if (sample.gpuTimingValid) {
+			ImGui::Text("GPU execution: %.3f ms", sample.gpuMilliseconds);
+		} else {
+			ImGui::TextDisabled("GPU execution: N/A（未対応または計測結果未取得）");
+		}
 		if (ImGui::BeginTable("CpuBreakdown", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH)) {
 			ImGui::TableSetupColumn("CPU区間（子区間は親に含む）");
 			ImGui::TableSetupColumn("ms");
@@ -94,7 +100,7 @@ void Editor::DrawPerformance() {
 	}
 	DrawPerformanceDetails(*sample);
 	ImGui::TextWrapped("DrawCallはモデル・Sprite・Particle・Assetプレビューの発行回数です。UIは別集計。Trianglesはインスタンス数を含む送信量です。");
-	ImGui::TextWrapped("時間はCPU計測です。PresentはVSync、GPU fence waitは完了待ち、FPS limiterは60fps制限の待機です。これらの待機だけでGPU負荷は断定できません。区間外の入力・描画先の準備等もFrame timeには含まれます。");
+	ImGui::TextWrapped("表はCPU時間、GPU executionは同じフレームのGPUタイムスタンプ計測です。GPU時間にはScene・UI・プレビュー等の命令を含み、Present/VSyncやFPS制限のCPU待機は含みません。CPUとGPUは並行動作するため足し合わせないでください。GPU時間だけではGPU内のどの描画が重いかは断定できません。");
 	if (ImGui::Button("CSV出力")) {
 		if (FrameProfiler::ExportCsv("performance-capture.csv")) {
 			exportStatus = "作業ディレクトリのperformance-capture.csvに保存しました。";
@@ -120,7 +126,10 @@ void Editor::DrawMultipleInspector(IEditableScene& scene) {
 		return;
 	}
 	ImGui::Text("選択: %zu objects", selection_.GetIds().size());
-	ImGui::TextWrapped("主選択の値を表示します。変更した項目だけを反映します。Transformはローカル差分を選択ルートへ、色とActiveは選択全体へ適用します。");
+	ImGui::TextDisabled("主選択を基準に一括編集");
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Transformはローカル差分を選択ルートへ、色とActiveは選択全体へ適用します。");
+	}
 	EditableObjectView primary;
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		if (scene.GetEditableObject(objectIndex).id == selection_.Get()) {
@@ -138,13 +147,23 @@ void Editor::DrawMultipleInspector(IEditableScene& scene) {
 	}
 	const TransformData original = *primary.transform;
 	TransformData edited = original;
-	bool transformChanged = ImGui::DragFloat3("Position (local)", &edited.translate.x, 0.05f);
-	transformChanged |= ImGui::DragFloat3("Rotation (radians)", &edited.rotate.x, 0.01f);
-	transformChanged |= ImGui::DragFloat3("Scale", &edited.scale.x, 0.01f);
+	bool transformChanged = false;
 	bool active = *primary.active;
-	const bool activeChanged = ImGui::Checkbox("Active (all)", &active);
 	Vector4 color = *primary.color;
-	const bool colorChanged = ImGui::ColorEdit4("Color (all)", &color.x);
+	bool activeChanged = false;
+	bool colorChanged = false;
+	if (EditorProperties::Begin("MultipleFields")) {
+		transformChanged = EditorProperties::Vector("Position",&edited.translate,0.05f);
+		Vector3 degrees = MathUtility::Multiply(57.2957795f,edited.rotate);
+		if (EditorProperties::Vector("Rotation",&degrees,0.5f)) {
+			edited.rotate = MathUtility::Multiply(0.0174532925f,degrees);
+			transformChanged = true;
+		}
+		transformChanged |= EditorProperties::Vector("Scale",&edited.scale,0.01f);
+		activeChanged = EditorProperties::Toggle("Active",&active);
+		colorChanged = EditorProperties::Color("Color",&color);
+		EditorProperties::End();
+	}
 	if (transformChanged || activeChanged || colorChanged) {
 		std::unordered_set<SceneObjectId> roots;
 		for (SceneObjectId identifier : selection_.GetRoots(scene)) {

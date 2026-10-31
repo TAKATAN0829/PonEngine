@@ -251,7 +251,7 @@ void HierarchyPanel::Draw(IEditableScene* scene, EditorSelection& selection) {
 		ImGui::End();
 		return;
 	}
-	ImGui::TextDisabled("Objects: %zu  Selected: %zu", scene->GetEditableObjectCount(), selection.GetIds().size());
+	ImGui::TextDisabled("Scene  /  %zu objects",scene->GetEditableObjectCount());
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("Ctrl+クリックで複数選択 / Ctrl+Dで一括複製 / Deleteで一括削除");
 	}

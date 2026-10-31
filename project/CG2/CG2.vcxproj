@@ -382,4 +382,29 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="editor\EditorSelection.cpp" />
     <ClInclude Include="engine\core\FrameProfiler.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneMotion.cpp" />
+    <ClCompile Include="editor\panels\InspectorMotion.cpp" />
+    <ClInclude Include="engine\scene\SceneMotion.h" />
+    <ClInclude Include="engine\scene\SceneMotionSettings.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneCollision.cpp" />
+    <ClCompile Include="editor\panels\InspectorCollider.cpp" />
+    <ClCompile Include="editor\panels\SceneViewCollider.cpp" />
+    <ClInclude Include="engine\scene\SceneCollision.h" />
+    <ClInclude Include="engine\scene\SceneColliderSettings.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\ScenePhysics.cpp" />
+    <ClCompile Include="editor\panels\InspectorBody.cpp" />
+    <ClInclude Include="engine\scene\ScenePhysics.h" />
+    <ClInclude Include="engine\scene\SceneBodySettings.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\EditorTheme.cpp" />
+    <ClCompile Include="editor\EditorProperties.cpp" />
+    <ClInclude Include="editor\EditorTheme.h" />
+    <ClInclude Include="editor\EditorProperties.h" />
+  </ItemGroup>
 </Project>

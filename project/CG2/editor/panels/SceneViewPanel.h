@@ -59,6 +59,8 @@ private:
 	//=============================================================================================//
 	// メンバ関数 / サイズ・ギズモ・選択
 
+	// 選択中のColliderだけを描き、GameViewへは表示しない。
+	void DrawColliders(IEditableScene& scene, const EditorSelection& selection, const EditorViewInfo& viewInfo, const ImVec2& origin);
 	bool AcceptModelDrop(IEditableScene& scene, EditorSelection& selection, const ImVec2& viewportOrigin);
 	bool ResizeViewport(IEditableScene& scene, const ImVec2& availableSize);
 	bool DrawGizmo(IEditableScene& scene, EditorSelection& selection, const EditorViewInfo& viewInfo,

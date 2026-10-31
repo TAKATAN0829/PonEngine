@@ -19,6 +19,10 @@ private:
 	//=============================================================================================//
 	// メンバ関数 / アセットComponent編集
 
+	// 空白の右クリックから追加し、各Componentの見出しから削除する。
+	static void DrawMotionComponents(const EditableObjectView& object, IEditableScene* scene);
+	static void DrawColliderComponent(const EditableObjectView& object);
+	static void DrawBodyComponent(const EditableObjectView& object);
 	static void DrawMaterials(const EditableObjectView& object, IEditableScene& scene);
 	static void DrawAnimation(const EditableObjectView& object, IEditableScene& scene);
 

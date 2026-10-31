@@ -3,6 +3,9 @@
 // 自作
 #include "IScene.h"
 #include "SceneObjects.h"
+#include "SceneMotion.h"
+#include "SceneCollision.h"
+#include "ScenePhysics.h"
 #include "SceneRenderTarget.h"
 #include <memory>
 #include <unordered_map>
@@ -44,6 +47,9 @@ public:
 
 	//=============================================================================================//
 	// Getter / Editor・Scene表示
+
+	// 接触色は保存対象外の最新ゲーム更新結果から取得する。
+	bool IsColliderTouching(SceneObjectId identifier) const override { return collision_.IsTouching(identifier); }
 
 	// Projectから要求されたモデルの専用サムネイルを取得する。
 	uint64_t GetModelPreview(const std::string& model, std::string& error) override;
@@ -89,6 +95,8 @@ private:
 	//=============================================================================================//
 	// メンバ関数 / 更新
 
+	// 動作Componentを反映した後に接触を調べ、開始・終了をConsoleへ通知する。
+	void UpdateCollisions();
 	void UpdateCamera();
 	void UpdateObject();
 	void UpdateModels(const Matrix4x4& viewProjection);
@@ -168,6 +176,10 @@ private:
 	//=============================================================================================//
 	// メンバ変数 / 再生状態
 
+	ScenePhysics physics_; // 重力・速度・押し戻し。保存対象外の実行状態。
+	std::string physicsStatusLogged_; // 再生中に設定が不正になった場合の同じ通知を繰り返さない。
+	SceneCollision collision_; // 前回の接触ペア。保存・履歴の対象外。
+	SceneMotion motion_; // 保存対象外の開始位置と往復移動の時計。
 	bool simulationEnabled_ = true; // このフレームに時間経過を進めるかどうか。
 	bool playing_ = false; // Pause中もtrueとなる、再生モード自体の状態。
 
