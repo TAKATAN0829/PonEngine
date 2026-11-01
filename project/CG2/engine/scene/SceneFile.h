@@ -24,5 +24,6 @@ public:
 	// メンバ関数 / シーン読込
 
 	// 全件検証に成功した場合だけ、現在の編集データへ反映する。
-	static bool Load(IEditableScene& scene, const std::filesystem::path& path, std::string& error);
+	// Editor/ゲームの旧シーン読込では固定ライトを移行する。Prefab等の部分読込では追加しない。
+	static bool Load(IEditableScene& scene, const std::filesystem::path& path, std::string& error, bool migrateLegacyLights = false);
 };

@@ -203,7 +203,8 @@ namespace {
 		legacy << line << '\n';
 		while (std::getline(current,line)) {
 			size_t end = line.size();
-			for (size_t field = 0; field < 13; ++field) {
+			// Body13項目とLight角度2項目を除き、形式10へ戻す。
+			for (size_t field = 0; field < 15; ++field) {
 				end = line.rfind(' ',end-1);
 			}
 			legacy << line.substr(0,end) << '\n';

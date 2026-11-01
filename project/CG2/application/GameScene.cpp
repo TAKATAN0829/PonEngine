@@ -2,11 +2,13 @@
 #include "GameScene.h"
 #include "WinApp.h"
 #include "SceneFile.h"
+#include "SceneLighting.h"
 #include "ParticlePresetFile.h"
 #include "LogSystem.h"
 #include "ModelManager.h"
 #include "SceneViewMath.h"
 #include "TextureManager.h"
+#include "ParticleRenderer.h"
 #include <unordered_set>
 #include <limits>
 
@@ -83,12 +85,20 @@ void GameScene::Initialize(const SceneContext& context) {
 	// Releaseでも保存した編集用データを読み込み、制作時の配置をゲームへ引き継ぐ。
 	std::error_code fileError;
 	const bool hasSavedScene = std::filesystem::exists(SceneFile::kDefaultPath, fileError);
+	bool loadedScene = false;
 	if (fileError) {
 		LogSystem::Log("Scene file check failed: " + fileError.message() + "\n");
 	} else if (hasSavedScene) {
 		std::string error;
-		if (!SceneFile::Load(*this, SceneFile::kDefaultPath, error)) {
+		loadedScene = SceneFile::Load(*this, SceneFile::kDefaultPath, error,true);
+		if (!loadedScene) {
 			LogSystem::Log("Scene load failed: " + error + "\n");
+		}
+	}
+	if (!loadedScene) {
+		std::vector<SceneObjectData> initial = CaptureObjects();
+		if (!SceneLighting::AddLegacyDefaults(initial,sceneError) || !ReplaceObjects(std::move(initial),sceneError)) {
+			LogSystem::Log("Default lights: "+sceneError+"\n");
 		}
 	}
 	//=============================================================================================//
@@ -156,10 +166,12 @@ void GameScene::Draw() {
 	//=============================================================================================//
 	// Particle描画
 
+	particleRenderer_->BeginPass();
 	particle_->Draw();
 	for (const std::pair<const SceneObjectId, std::unique_ptr<Particle>>& entry : runtimeParticles_) {
 		entry.second->Draw();
 	}
+	particleRenderer_->EndPass();
 
 	//=============================================================================================//
 	// Sprite描画
@@ -264,35 +276,12 @@ void GameScene::UpdateObject() {
 }
 
 //=============================================================================================//
-// Getter / 描画用の点光源一覧
-
-std::vector<PointLight> GameScene::GetPointLights() const {
-	std::vector<PointLight> lights = {pointLight_};
-	for (const SceneObjectData& data : GetObjects()) {
-		if (!IsObjectActive(data.id)) {
-			continue;
-		}
-		if (data.type == SceneObjectType::PointLight) {
-			PointLight light{};
-			light.position = GetObjectWorldPosition(data.id);
-			light.color = data.color;
-			light.intensity = data.lightIntensity;
-			light.radius = data.lightRadius;
-			light.decay = data.lightDecay;
-			lights.push_back(light);
-		}
-	}
-	return lights;
-}
-
-//=============================================================================================//
 // 更新処理 / モデル
 
 void GameScene::UpdateModels(const Matrix4x4& viewProjection) {
 	// 前フレームのGPU完了後、描画命令を記録する前に不要なリソースを破棄する。
-	const std::vector<PointLight> pointLights = GetPointLights();
+	const SceneLightCollection lights = SceneLighting::Collect(*this);
 	std::unordered_set<SceneObjectId> liveIds;
-	spotLight_.direction = MathUtility::Normalize(spotLight_.direction);
 	for (const SceneObjectData& data : GetObjects()) {
 		if (!IsObjectActive(data.id)) {
 			continue;
@@ -319,9 +308,7 @@ void GameScene::UpdateModels(const Matrix4x4& viewProjection) {
 		object.SetEnableLighting(data.enableLighting);
 		object.SetShininess(data.shininess);
 		object.SetUseRootNodeMatrix(data.useRootNodeMatrix);
-		object.SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
-		object.SetPointLights(pointLights);
-		object.SetSpotLight(spotLight_);
+		object.SetSceneLights(lights);
 		object.SetMaterials(data.materials);
 		bool animate = runtime.animationPreview;
 		if (playing_) {
@@ -470,40 +457,7 @@ void GameScene::DrawWorldSettings(bool* open) {
 		ImGui::End();
 		return;
 	}
-	if (ImGui::CollapsingHeader("DirectionalLight")) {
-
-		ImGui::BeginDisabled(playing_);
-		ImGui::ColorEdit4("Color", &lightColor_.x);
-		ImGui::SliderFloat3("Direction", &lightDirection_.x, -1.0f, 1.0f);
-		ImGui::DragFloat("Intensity", &lightIntensity_, 0.01f, 0.0f, 10.0f);
-		ImGui::EndDisabled();
-
-	}
-	if (ImGui::CollapsingHeader("PointLight")) {
-
-		ImGui::BeginDisabled(playing_);
-		ImGui::ColorEdit4("Color", &pointLight_.color.x);
-		ImGui::DragFloat3("Position", &pointLight_.position.x, 0.1f);
-		ImGui::DragFloat("Intensity", &pointLight_.intensity, 0.01f, 0.0f, 10.0f);
-		ImGui::DragFloat("Radius", &pointLight_.radius, 0.1f, 0.01f, 100.0f);
-		ImGui::DragFloat("Decay", &pointLight_.decay, 0.01f, 0.0f, 10.0f);
-		ImGui::EndDisabled();
-
-	}
-	if (ImGui::CollapsingHeader("SpotLight")) {
-
-		ImGui::BeginDisabled(playing_);
-		ImGui::ColorEdit4("Color", &spotLight_.color.x);
-		ImGui::DragFloat3("Position", &spotLight_.position.x, 0.1f);
-		ImGui::DragFloat("Intensity", &spotLight_.intensity, 0.01f, 0.0f, 10.0f);
-		ImGui::SliderFloat3("Direction", &spotLight_.direction.x, -1.0f, 1.0f);
-		ImGui::DragFloat("Distance", &spotLight_.distance, 0.1f, 0.01f, 100.0f);
-		ImGui::DragFloat("Decay", &spotLight_.decay, 0.01f, 0.0f, 10.0f);
-		ImGui::SliderFloat("CosAngle", &spotLight_.cosAngle, 0.0f, 1.0f);
-		ImGui::SliderFloat("CosFalloffStart", &spotLight_.cosFalloffStart, 0.0f, 1.0f);
-		ImGui::EndDisabled();
-
-	}
+	ImGui::TextWrapped("ライトはHierarchyの右クリック → 新規作成 → Lightから作成し、Inspectorで編集します。");
 	if (ImGui::CollapsingHeader("Sprite")) {
 
 		ImGui::BeginDisabled(playing_);

@@ -210,4 +210,6 @@ private:
 	ParticleSettings settings_;
 	bool descriptorAllocated_ = false;
 	std::string appliedTexture_;
+	bool useBrightnessAlpha_ = false; // Alphaのない画像は黒背景を透明にする。画像変更時だけ判定。
+	Matrix4x4 inverseViewProjection_{}; // 深度から交差距離を復元する。Updateで描画カメラに合わせる。
 };

@@ -5,7 +5,8 @@
 #include "EditorSession.h"
 #include "panels/SceneViewPanel.h"
 #include "panels/ParticleEditorPanel.h"
-#include "panels/UtilityPanels.h"
+#include "panels/ProjectPanel.h"
+#include "panels/ConsolePanel.h"
 #include "EditorLayout.h"
 
 // C++
@@ -105,7 +106,8 @@ private:
 
 	SceneViewPanel sceneView_; // 画像上の選択と移動操作。
 	ParticleEditorPanel particleEditor_; // Emitter設定とプレビュー。
-	UtilityPanels utilityPanels_; // アセット一覧とログ表示。
+	ProjectPanel projectPanel_; // フォルダ・Assetの選択とプレビュー。
+	ConsolePanel consolePanel_; // ログの検索・表示。
 	EditorToolVisibility toolVisibility_; // 補助画面は初期状態ではすべて閉じる。
 	EditorLayout layout_; // メニュー・初期ドッキング・通知欄。
 

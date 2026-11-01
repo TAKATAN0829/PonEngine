@@ -1,5 +1,6 @@
-#include "../EditorProperties.h"
+﻿#include "../EditorProperties.h"
 #include "InspectorPanel.h"
+#include "ScenePrimitives.h"
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
@@ -7,7 +8,8 @@
 
 namespace {
 	// 必須のTransformを編集する。リセット時は位置・回転をゼロ、拡縮を一に戻す。
-	void DrawTransformComponent(TransformData* transform, bool positionOnly) {
+	void DrawTransformComponent(TransformData* transform, SceneObjectType type) {
+		const bool positionOnly = type == SceneObjectType::PointLight || type == SceneObjectType::Particle;
 		if (transform == nullptr) {
 			return;
 		}
@@ -30,6 +32,8 @@ namespace {
 		if (EditorProperties::Vector("Rotation",&degrees,0.5f,-180,180)) {
 			transform->rotate = MathUtility::Multiply(0.0174532925f,degrees);
 		}
+		ImGui::EndDisabled();
+		ImGui::BeginDisabled(positionOnly || type == SceneObjectType::Camera || type == SceneObjectType::SpotLight || type == SceneObjectType::DirectionalLight);
 		EditorProperties::Vector("Scale",&transform->scale,0.01f);
 		ImGui::EndDisabled();
 		EditorProperties::End();
@@ -94,7 +98,7 @@ namespace {
 			return;
 		}
 		if (object.model != nullptr) {
-			const char* models[] = {"plane.gltf", "axis.obj"};
+			const char* models[] = {"plane.gltf", "axis.obj", ScenePrimitives::kCubeModel, ScenePrimitives::kSphereModel};
 			// Projectから適用した任意モデルも、実際の参照先を表示する。
 			EditorProperties::Row("Model");
 			if (ImGui::BeginCombo("##Model", object.model->c_str())) {
@@ -159,7 +163,7 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditor
 			}
 			ImGui::TextDisabled("Object  /  ID %llu",static_cast<unsigned long long>(object.id));
 			ImGui::Separator();
-			DrawTransformComponent(object.transform, object.type == SceneObjectType::PointLight || object.type == SceneObjectType::Particle);
+			DrawTransformComponent(object.transform,object.type);
 			DrawMotionComponents(object, scene);
 			DrawColliderComponent(object);
 			DrawBodyComponent(object);
@@ -174,20 +178,7 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditor
 					}
 				}
 			}
-			if (object.type == SceneObjectType::PointLight) {
-				if (object.lightIntensity != nullptr) {
-					// 光源の位置は共通Transform、色と減衰はLight Componentが所有する。
-					if (EditorProperties::Header("Point Light","位置はTransform、色と減衰はLight Componentが所有します。")) {
-						if (EditorProperties::Begin("LightFields")) {
-							EditorProperties::Color("Color",object.color);
-							EditorProperties::Float("Intensity",object.lightIntensity,0.05f,0,100);
-							EditorProperties::Float("Radius",object.lightRadius,0.1f,0.01f,1000);
-							EditorProperties::Float("Decay",object.lightDecay,0.05f,0.01f,100);
-							EditorProperties::End();
-						}
-					}
-				}
-			}
+			DrawLightComponent(object);
 			if (object.type == SceneObjectType::Camera) {
 				DrawCameraComponent(object, scene);
 			}

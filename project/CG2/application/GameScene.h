@@ -107,9 +107,8 @@ private:
 	void DrawModelPreviews();
 
 	//=============================================================================================//
-	// Getter / 光源・Particle更新条件
+	// Getter / Particle更新条件
 
-	std::vector<PointLight> GetPointLights() const;
 	bool IsParticlePreviewTarget(SceneObjectId objectId) const;
 	bool ShouldSimulateEmitter(SceneObjectId objectId, bool gameEmissionEnabled) const;
 	bool ShouldEmitEmitter(SceneObjectId objectId, bool gameEmissionEnabled) const;
@@ -212,37 +211,4 @@ private:
 
 	Vector2 spriteSize_ = { 256.f,256.f };
 
-	//=============================================================================================//
-	// 平行光源
-
-	Vector4 lightColor_ = { 1.0f,1.0f,1.0f,1.0f };
-
-	Vector3 lightDirection_ = { 0.0f,-1.0f,0.0f };
-
-	float lightIntensity_ = 1.0f;
-
-	//=============================================================================================//
-	// 点光源
-
-	PointLight pointLight_ = {
-		{ 1.0f,1.0f,1.0f,1.0f },
-		{ 0.0f,2.0f,0.0f },
-		1.0f,
-		10.0f,
-		1.0f
-	};
-
-	//=============================================================================================//
-	// スポットライト
-
-	SpotLight spotLight_ = {
-		{ 1.0f,1.0f,1.0f,1.0f },
-		{ 2.0f,1.25f,0.0f },
-		4.0f,
-		{ -1.0f,-1.0f,0.0f },
-		7.0f,
-		2.0f,
-		0.5f,
-		1.0f
-	};
 };

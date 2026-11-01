@@ -73,6 +73,7 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 	DirectX::ScratchImage mipImages = LoadTexture(filePath);
 
 	textureData.metadata = mipImages.GetMetadata();
+	textureData.hasTransparency = !mipImages.IsAlphaAllOpaque();
 
 	textureData.resource = ResourceManager::CreateTextureResource(dxCommon_->GetDevice(), textureData.metadata);
 
@@ -103,6 +104,10 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 	const uint32_t loadedIndex = textureData.srvIndex;
     textureDatas_.emplace(filePath, std::move(textureData));
     return loadedIndex;
+}
+
+bool TextureManager::HasTransparency(const std::string& filePath) const {
+	return textureDatas_.at(filePath).hasTransparency;
 }
 
 //=================================================================================================//

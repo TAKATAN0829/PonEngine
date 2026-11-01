@@ -2,6 +2,7 @@
 #include "IEditableScene.h"
 #include "SceneObjects.h"
 #include "ParticlePresetFile.h"
+#include "SceneLighting.h"
 
 #include <Windows.h>
 #include <array>
@@ -298,7 +299,7 @@ bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, s
 	outputFile << std::setprecision(std::numeric_limits<float>::max_digits10);
 	unsigned formatVersion = 1;
 	if (collection) {
-		formatVersion = 11;
+		formatVersion = 13;
 	}
 	outputFile << "PON_SCENE " << formatVersion << '\n' << records.size() << '\n';
 	for (const Record& record : records) {
@@ -322,6 +323,7 @@ bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, s
 			WriteMotionSettings(outputFile, record.components.motion);
 			WriteColliderSettings(outputFile, record.components.collider);
 			WriteBodySettings(outputFile, record.components);
+			outputFile << ' ' << record.components.light.outerAngle << ' ' << record.components.light.innerAngle;
 		}
 		outputFile << '\n';
 	}
@@ -341,7 +343,7 @@ bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, s
 }
 
 // 対応する保存形式を読み込み、全件の整合性を確認してからシーンへ反映する。
-bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, std::string& error) {
+bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, std::string& error, bool migrateLegacyLights) {
 	error.clear();
 	std::ifstream inputFile(path);
 	inputFile.imbue(std::locale::classic());
@@ -357,7 +359,7 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 		error = "Incomplete scene header.";
 		return false;
 	}
-	if (magic != "PON_SCENE" || version < 1 || version > 11) {
+	if (magic != "PON_SCENE" || version < 1 || version > 13) {
 		error = "Unsupported scene format.";
 		return false;
 	}
@@ -408,7 +410,11 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 					error = "Incomplete scene object type.";
 					return false;
 				}
-				if (objectType < 0 || objectType > static_cast<int>(SceneObjectType::Camera)) {
+				int maximumType = static_cast<int>(SceneObjectType::Camera);
+				if (version >= 13) {
+					maximumType = static_cast<int>(SceneObjectType::DirectionalLight);
+				}
+				if (objectType < 0 || objectType > maximumType) {
 					error = "Invalid scene object type.";
 					return false;
 				}
@@ -426,7 +432,11 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 				}
 				record.components.type = static_cast<SceneObjectType>(objectType);
 				if (record.components.type == SceneObjectType::Particle) {
-					if (!ParticlePresetFile::ReadSettings(inputFile, record.components.particle)) {
+					unsigned particleVersion = 1;
+					if (version >= 12) {
+						particleVersion = 2;
+					}
+					if (!ParticlePresetFile::ReadSettings(inputFile, record.components.particle,particleVersion)) {
 						error = "Invalid scene particle settings.";
 						return false;
 					}
@@ -458,6 +468,9 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 					error = "Invalid Rigidbody settings.";
 					return false;
 				}
+			}
+			if (version >= 13) {
+				inputFile >> record.components.light.outerAngle >> record.components.light.innerAngle;
 			}
 			if (!inputFile) {
 				error = "Incomplete scene object data.";
@@ -514,6 +527,23 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 		if (inputFile.bad() || !inputFile.eof()) {
 			error = "Unexpected data after scene records.";
 			return false;
+		}
+		if (migrateLegacyLights) {
+			if (version < 13) {
+				if (version == 1) {
+					// 形式1は既存IDへ適用するため、ファイルにない現在のライトを持ち越さない。
+					std::vector<SceneObjectData> legacyObjects;
+					for (const SceneObjectData& object : objects) {
+						if (ids.contains(object.id)) {
+							legacyObjects.push_back(object);
+						}
+					}
+					objects = std::move(legacyObjects);
+				}
+				if (!SceneLighting::AddLegacyDefaults(objects,error,scene.GetNextObjectId())) {
+					return false;
+				}
+			}
 		}
 		return scene.ReplaceObjects(std::move(objects), error);
 	}

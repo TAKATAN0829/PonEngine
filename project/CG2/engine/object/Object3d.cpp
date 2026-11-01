@@ -1,4 +1,4 @@
-#include "FrameProfiler.h"
+﻿#include "FrameProfiler.h"
 #include "Object3d.h"
 
 // C++
@@ -56,15 +56,10 @@ void Object3d::CreateTransformationMatrixData () {
 
 void Object3d::CreateDirectionalLightData () {
 
-	directionalLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (DirectionalLight), "directionalLightResource");
+	directionalLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (DirectionalLightBuffer), "directionalLightResource");
 
 	directionalLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&directionalLightData_));
-
-	directionalLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
-
-	directionalLightData_->direction = { 0.0f,-1.0f,0.0f };
-
-	directionalLightData_->intensity = 1.0f;
+	*directionalLightData_ = {};
 }
 
 
@@ -78,16 +73,6 @@ void Object3d::CreatePointLightData () {
 	pointLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&pointLightData_));
 
 	*pointLightData_ = {};
-	pointLightData_->count = 1;
-	pointLightData_->lights[0].color = { 1.0f,1.0f,1.0f,1.0f };
-
-	pointLightData_->lights[0].position = { 0.0f,2.0f,0.0f };
-
-	pointLightData_->lights[0].intensity = 1.0f;
-
-	pointLightData_->lights[0].radius = 10.0f;
-
-	pointLightData_->lights[0].decay = 1.0f;
 }
 
 
@@ -96,25 +81,10 @@ void Object3d::CreatePointLightData () {
 
 void Object3d::CreateSpotLightData () {
 
-	spotLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (SpotLight), "spotLightResource");
+	spotLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (SpotLightBuffer), "spotLightResource");
 
 	spotLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&spotLightData_));
-
-	spotLightData_->color = { 1.0f,1.0f,1.0f,1.0f };
-
-	spotLightData_->position = { 2.0f,1.25f,0.0f };
-
-	spotLightData_->distance = 7.0f;
-
-	spotLightData_->direction = MathUtility::Normalize ({ -1.0f,-1.0f,0.0f });
-
-	spotLightData_->intensity = 4.0f;
-
-	spotLightData_->decay = 2.0f;
-
-	spotLightData_->cosAngle = std::cos (std::numbers::pi_v<float> / 3.0f);
-
-	spotLightData_->cosFalloffStart = 1.0f;
+	*spotLightData_ = {};
 }
 
 
@@ -229,12 +199,13 @@ void Object3d::SetUVTransform (const Matrix4x4& uvTransform) {
 // DirectionalLight設定
 
 void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity) {
+	directionalLightData_->count = 1;
 
-	directionalLightData_->color = color;
+	directionalLightData_->lights[0].color = color;
 
-	directionalLightData_->direction = MathUtility::Normalize (direction);
+	directionalLightData_->lights[0].direction = MathUtility::Normalize (direction);
 
-	directionalLightData_->intensity = intensity;
+	directionalLightData_->lights[0].intensity = intensity;
 }
 
 

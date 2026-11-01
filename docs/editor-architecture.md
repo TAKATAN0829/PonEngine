@@ -2,7 +2,9 @@
 
 Debug / Development で起動し、Hierarchy のモデルを選択すると、Inspector でモデル種類・位置・回転・拡縮・色・ライティング・光沢・RootNode行列の適用を編集できる。Clear Selection で選択を解除する。パネルは既存のDockSpaceにドッキングできる。
 
-HierarchyのAdd Plane / Add Axisで追加、Duplicateで選択対象を複製、Deleteで削除する。追加・複製後は新しい対象を選択する。複製は同じ位置に作られるため、Inspectorで位置を変更すると分離できる。最後のモデルを削除して空のシーンにすることもできる。
+Hierarchyの右クリック→新規作成から追加し、複製・削除も右クリックメニューで行う。Cube・Sphere・Planeは3D Objectのサブメニューにまとめる。追加・複製後は新しい対象を選択する。複製は同じ位置に作られるため、Inspectorで位置を変更すると分離できる。最後のモデルを削除して空のシーンにすることもできる。
+
+ScenePrimitivesはCube・Sphereの作成時だけ使う関数群で、通常のSceneObjectType::ModelにOBJパスと初期Colliderを設定する。resources/primitivesのメッシュは既存のModelManagerで読み込み、専用の保存形式や描画経路を増やさない。作成時にだけシーンの値を複製し、ReplaceObjectsでモデル読込・ID・Collider上限を検証してから置換する。失敗時はシーンを変更しない。毎フレームの処理にはスナップショット作成を追加しない。
 
 ## 依存と責務
 
@@ -106,7 +108,15 @@ EditorSessionは種類別の値も比較し、複製・Undo/Redo・再生終了�
 SceneFileの形式4は種類とComponent値を保存する。形式1〜3ではModelとして復元し、既存シーンとの互換性を保つ。
 ParticlePresetFileの設定部分の読込・書込を共有し、シーン内Emitterとプリセットで項目の並びを統一する。
 
-GameSceneは最大8個の配置点光源をWorld Settingsの光源へ加算し、PointLightBufferを各メッシュに転送する。
+GameSceneはSceneLightingでHierarchy内の有効なPoint / Spot / Directionalを収集し、固定長の各LightBufferをメッシュへ渡す。World Settingsの固定ライトは廃止した。旧シーンの移行と現在の上限は「ライトの統合」を参照。
+
+## ライトの統合
+
+SceneObjectTypeの既存数値0〜4を維持し、SpotLight=5 / DirectionalLight=6を追加する。SceneLightSettingsはSpotの内角・外角（全開角・度数）を保存する。既存の色・強度・範囲・減衰とTransformを共有し、別の位置・方向状態を重複所有しない。
+
+SceneLighting.cppが種類・上限・検証・ワールド方向・GPU用一覧の収集・旧固定値の移行を担当する。InspectorLights.cppは編集UI、SceneLights.hlsliはライト配列と共通の照明計算を担当する。GameSceneは収集したSceneLightCollectionを各モデルへ適用する。固定長のDirectional 4 / Point 9 / Spot 8を使い、収集時のベクター確保を不要にする。SpotのCPU要素はHLSL配列と同じ64バイトに揃え、各Bufferをstatic_assertとGPUの色比較で確認する。
+
+Scene形式13ではSpot角度を各レコードの末尾に追加する。Editor・GameSceneの通常読込だけでSceneFile::LoadのmigrateLegacyLightsを有効にし、形式1〜12には旧Directional・Point・Spotを1個ずつ追加する。部分データやPrefabの読込には追加しない。移行はローカル配列を検証してから一括置換し、IDは採番済みの範囲を再利用しない。形式1の再読込でも現在の移行ライトを持ち越さず、形式13は再移行しない。
 C++とHLSLで先頭16バイト、各光源48バイトの配置を一致させる。
 最大32個のEmitterはID別に実行用Particleを所有し、削除・無効化・終了時にSRVを解放する。
 Particle Editorは選択IDから毎フレーム設定を取得し、一覧再配置後の借用参照を持ち越さない。
@@ -166,7 +176,7 @@ Hierarchyの操作ボタンは右クリックメニューへまとめる。行�
 
 形式6にSceneCameraSettingsとmainCameraを追加する。SetMainCameraで一意に指定し、複製先はメイン指定を引き継がない。GetGameCameraViewは親子変換から位置・向きを解決し、カメラ基底を正規化して拡縮を視野に持ち込まない。GameViewとReleaseで同じ計算を共有する。
 
-UtilityPanelsはInitialize/Update/Drawでフォルダ一覧を管理する。ファイル走査は初期化・フォルダ変更・明示更新時に限り、毎フレームはキャッシュ済み一覧を描く。resources外への移動とシンボリックリンクの追跡は行わない。画像は可視タイルから一フレーム一件だけ読み込み、TextureManager所有のSRVを借用する。TryLoadは画像デコード失敗を返し、不完全なTextureDataをキャッシュへ登録しない。
+ProjectPanelはInitialize/Update/Drawでフォルダ一覧を管理する。ファイル走査は初期化・フォルダ変更・明示更新時に限り、毎フレームはキャッシュ済み一覧を描く。resources外への移動とシンボリックリンクの追跡は行わない。画像は可視タイルから一フレーム一件だけ読み込み、TextureManager所有のSRVを借用する。TryLoadは画像デコード失敗を返し、不完全なTextureDataをキャッシュへ登録しない。
 
 ## アセット編集・Prefab・アニメーション
 
@@ -229,3 +239,25 @@ ScenePhysicsはSceneMotionの後、接触通知と描画用行列の更新の前
 子ColliderはIEditableScene.GetBodyOwnerで最も近い有効なRigidbodyへ結び付け、同じ所有者の接触は解決・通知ともに除外する。Triggerは通知だけを行う。速度・前回位置はIDに対応するScenePhysicsの実行状態に保持し、シーンファイル・Prefab・履歴へ入れない。Play時に初速を取得し、Stopで破棄する。
 
 PhysicsTestsはBox/Sphereの着地、壁、質量比、反発、摩擦、Trigger、親座標への変換、子Collider、動く床、重力オフ、無効化、坂、保存・履歴・停止・旧形式互換を検証する。実GPU試験でも本番のGameScene経路で落下・接地・Pause・停止時の復元とRigidbodyのInspectorを確認する。
+
+
+## Editorパネルの責務と実装ファイル
+
+EditorはProjectPanelとConsolePanelを個別に所有し、両者を束ねるUtilityPanelsは廃止した。ProjectPanelはディレクトリ・選択・Assetプレビューを所有し、ConsolePanelはログ検索条件だけを所有する。ConsoleはLogSystemのログを描画中だけ借用し、Projectの更新処理やキャッシュに依存しない。外部リソースを初期化する必要がないため、Consoleに空のInitialize/Updateは設けない。
+
+| 対象 | ファイル | 担当 |
+|---|---|---|
+| Project | ProjectPanel.cpp | 初期化、フォルダ走査、キャッシュ更新、描画の入口 |
+| Project | ProjectView.cpp | 検索、フォルダツリー、一覧の配置、共通のフォルダ操作メニュー |
+| Project | ProjectAssets.cpp | Assetタイル、プレビュー、右クリック、ドラッグ＆ドロップ |
+| Console | ConsolePanel.cpp | ログ検索、一覧、全文確認、コピー |
+| SceneView | SceneViewPanel.cpp | タブ、画像サイズ、各操作の呼出し順 |
+| SceneView | SceneViewGizmo.cpp | 軸・リング・選択枠の描画、ヒット判定、ドラッグ開始 |
+| SceneView | SceneViewTransform.cpp | 移動・回転・拡縮の更新、キャンセル、一括操作の復元 |
+| SceneView | SceneViewPicking.cpp | ID検索、レイ選択、モデル・Prefabのドロップ配置 |
+| SceneView | SceneViewOverlay.cpp | グリッド、オブジェクトの種類別マーカー |
+| SceneView | SceneViewCollider.cpp / SceneViewGuides.cpp | Collider、カメラ・ライトの補助表示 |
+
+SceneViewの選択・ドラッグ・スナップ・タブは互いに関係するため、状態の所有者はSceneViewPanel一つに保ち、同じクラスの実装を責務別に分けた。SceneViewDrawing.hは画面位置への変換とワールド線分の共通描画だけを提供する。ImGui依存の描画はEditor内に置き、GPU非依存のSceneViewMathへ逆向きの依存を追加しない。各ヘッダーには担当ファイルとメンバ関数／変数の分類を記す。
+
+今回の分割では保存形式と操作仕様を変更しない。CPUの保存・履歴テスト、実マウス入力を通すSceneViewテスト、実GPUの描画テストを使って確認する。Projectの計測範囲はProjectPanel自身の更新・描画とし、独立したConsoleの処理は含めない。

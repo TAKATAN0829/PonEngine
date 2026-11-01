@@ -25,6 +25,8 @@ private:
 	static void DrawBodyComponent(const EditableObjectView& object);
 	static void DrawMaterials(const EditableObjectView& object, IEditableScene& scene);
 	static void DrawAnimation(const EditableObjectView& object, IEditableScene& scene);
+	// Point / Spot / Directionalの共通設定と角度を編集する（InspectorLights.cpp）。
+	static void DrawLightComponent(const EditableObjectView& object);
 
 private:
 	//=============================================================================================//

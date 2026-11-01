@@ -94,7 +94,7 @@ void Editor::PerformSceneAction (IEditableScene& scene) {
 	std::string error;
 	bool succeeded = false;
 	if (pendingAction_ == SceneAction::LoadScene) {
-		succeeded = SceneFile::Load (scene, SceneFile::kDefaultPath, error);
+		succeeded = SceneFile::Load (scene, SceneFile::kDefaultPath, error,true);
 		if (succeeded) {
 			session_.Initialize(scene);
 			fileStatus_ = "Scene loaded.";
@@ -443,7 +443,8 @@ void Editor::Draw(IEditableScene* scene) {
 		sceneView_.ShowScene();
 		scene->FocusEditorCamera(particleEditor_.GetFocusPosition());
 	}
-	utilityPanels_.Draw(*scene, selection_, toolVisibility_);
+	projectPanel_.Draw(*scene, selection_, toolVisibility_);
+	consolePanel_.Draw();
 	sceneView_.Draw(*scene, selection_);
 	DrawInspector(*scene);
 	scene->DrawEditorTools(toolVisibility_);

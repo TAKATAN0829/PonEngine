@@ -26,11 +26,11 @@ Particle Editor・World Settings・Cameraは「表示 / View」から必要な�
 
 ## SceneとGame
 
-- Scene：Editor用カメラで配置を編集する。モデルをクリックして選択し、XYZ軸をドラッグして移動する。
+- Scene：Editor用カメラで配置を編集する。モデルをクリックして選択し、Move / Rotate / Scaleのギズモで操作する。
 - Game：ゲームカメラとSpriteを含めた表示を確認する。
 - Scene画像のサイズ変更に合わせて描画先・投影行列・クリック判定も更新する。
-- Scene上の右ドラッグで視点回転、中ボタンドラッグで平行移動、ホイールで前後移動。「注視」ボタンで選択対象へカメラを移す。カメラのキーボード操作は行わない。
-- Ctrlを押して移動するとSnapの間隔へ合わせ、Escで移動開始位置へ戻す。
+- Scene上の右ドラッグで視点回転、中ボタンドラッグで平行移動、ホイールで前後移動。SceneView内の「View / 表示」→「選択対象を注視」で視点を合わせる。カメラのキーボード操作は行わない。
+- Ctrlを押してギズモを操作すると、距離・角度・倍率を各Snapの刻みへ合わせる。Escで操作開始時の値へ戻す。
 - 描画されないオブジェクトはHierarchyから選択する。
 
 ## Particle Editor
@@ -59,7 +59,7 @@ Particle Editor・World Settings・Cameraは「表示 / View」から必要な�
 
 ## ProjectとConsole
 
-Projectのモデルボタンは、Hierarchyで選択中のオブジェクトへ読み込み済みのモデルを適用する。Consoleにはシェーダー・保存・読込などの実ログを表示する。アセットのインポートやログの全履歴検索は今後の機能。
+ProjectはフォルダツリーとAssetプレビューを表示する。モデルは右クリックからシーン配置・選択中のMesh Rendererへの適用を選び、SceneViewやHierarchyへのドラッグでも配置できる。独自のモデルはresources以下へ関連ファイルを置き、Projectの「更新」で一覧へ反映する。自動監視・再インポートは未対応。Consoleには実ログを表示し、検索・全文確認・コピーができる。永続的なログの全履歴検索には未対応。
 
 ## 開発者向け検証
 
@@ -76,8 +76,10 @@ StartupTestsはソリューション全体を再ビルドし、本番のWinMain�
 
 ## オブジェクトの追加
 
-Hierarchyの空白部分を右クリックし、「新規作成」から空オブジェクト、点光源、Particle、Plane、Axisを追加できる。
-空オブジェクトにはInspectorからMesh Rendererを付けられる。点光源は位置、色、強度、範囲、減衰を編集できる（最大8個）。
+Hierarchyの空白部分を右クリックし、「新規作成」から空オブジェクト、Light、Particle、Camera、Axisを追加できる。「3D Object / 基本形状」にはCube・Sphere・Planeがある。
+
+Cubeは一辺1、Sphereは直径1で、原点へ追加する。CubeにはBox Collider、SphereにはSphere Colliderを初期で付ける。重力を使う場合はInspectorからRigidbodyを追加する。通常のModelとして扱うため、Transform・Material編集、複製、親子付け、保存・再読込、Prefab、Undo/Redoの操作は他のモデルと共通。基本形状の追加によるScene保存形式の変更はなく、形式13を使う。
+空オブジェクトにはInspectorからMesh Rendererを付けられる。ライトは「新規作成」→「Light / ライト」からPoint（最大9個）、Spot（最大8個）、Directional（最大4個）を追加する。
 Particleは選択してParticle Editorで編集する（最大32個、各100粒子）。発生位置はTransformと共通で、Emitterの回転・拡縮は未対応。設定はシーン保存・Undo/Redo・停止時の復元に含まれる。
 Particle Editorの「プリセット書出し」は選択したEmitterを共通プリセットへ書き出す操作で、シーン保存とは別。
 Scene内ではメッシュを持たないオブジェクトにも位置マーカーを表示する。
@@ -92,7 +94,7 @@ Undo/RedoはCtrl+Z、Ctrl+YまたはCtrl+Shift+Z。新規はCtrl+N、読込はCt
 
 オブジェクトを別のオブジェクトへドラッグ＆ドロップすると、その子にできる。右クリックメニューの「親を外す」、またはHierarchyの空白部分へドロップすると親を解除する。親子付け・解除は見た目の位置・回転・拡縮を維持する。
 
-子のInspectorに表示するTransformは親に対するローカル値。SceneViewの移動ギズモと注視ボタンはワールド座標を使う。親を動かすと子のモデル、点光源、Particleの発生位置も追従する。Particleは発生済みの粒子をワールド空間に残す。
+子のInspectorに表示するTransformは親に対するローカル値。SceneViewの移動ギズモと選択対象への注視はワールド座標を使う。親を動かすと子のモデル、点光源、Particleの発生位置も追従する。Particleは発生済みの粒子をワールド空間に残す。
 
 親を無効にすると子孫も非表示になる。親の複製・削除は子孫もまとめて対象とし、Ctrl+Zで一回の操作として戻せる。保存・読込・再生停止時の復元にも親子関係を含める。
 
@@ -119,11 +121,11 @@ Hierarchyのオブジェクト上へドロップすると、その子として�
 
 ## 移動・回転・拡縮ギズモ
 
-SceneViewのツール選択でMove／Rotate／Scaleを切り替える。移動はワールド軸、回転はワールド軸のリング、拡縮はローカル軸をドラッグする。Ctrlで移動・拡縮の距離を指定間隔へ、回転を15度刻みへ揃える。Escで操作前へ戻し、確定後はCtrl+Z／Ctrl+YでUndo／Redoできる。非一様拡縮の親によってせん断が必要になる回転は拒否する。LightとParticleは移動のみ、Cameraは移動と回転を使う。
+SceneViewのツール選択でMove／Rotate／Scaleを切り替える。移動はワールド軸、回転はワールド軸のリング、拡縮はローカル軸をドラッグする。Ctrlで距離・角度・倍率を個別の刻みへ揃え、値は「View / 表示」で変更できる。回転の初期刻みは15度。Escで操作前へ戻し、確定後はCtrl+Z／Ctrl+YでUndo／Redoできる。非一様拡縮の親によってせん断が必要になる回転は拒否する。LightとParticleは移動のみ、Cameraは移動と回転を使う。
 
 ## マテリアルとテクスチャ
 
-InspectorのMaterialsを開くと、モデル内のスロットごとに色・光沢・ライティングを変更できる。スロットを展開し、ProjectのPNG／JPEG／BMPを「画像をここへドロップ」欄へドラッグすると画像を適用する。欄の右クリックからモデル既定値へ戻す、または白画像へ変更できる。Mesh RendererのColorは全体に乗算する色で、Lightingを外すと全スロットのライティングが無効になる。モデルを変更するとスロットの上書きとアニメーション設定を初期化する。
+InspectorのMaterialsを開くと、モデル内のスロットごとに色・光沢・ライティングを変更できる。スロットを展開し、ProjectのPNG／JPEG／BMPをTexture欄へドラッグすると画像を適用する。欄の右クリックからモデル既定値へ戻す、または白画像へ変更できる。Mesh RendererのColorは全体に乗算する色で、Lightingを外すと全スロットのライティングが無効になる。モデルを変更するとスロットの上書きとアニメーション設定を初期化する。
 
 変更したスロットだけをシーン・Prefabに保存する。他のオブジェクトと同じモデルを使っていても編集値は共有しない。画像が読み込めない場合は既存設定を維持し、理由を表示する。保存形式7に設定を追加し、形式1〜6の読み込みも維持している。
 
@@ -152,7 +154,7 @@ HierarchyまたはSceneViewでCtrl+クリックすると選択を追加・解除
 上部の「表示 / View」→「Performance / パフォーマンス」で開く。通常の6タブには追加せず、閉じていても直近600フレームを固定長バッファへ記録する。
 
 - FPS、フレーム時間、DrawCall数、UI描画コマンド数、送信三角形数、延べインスタンス数を確認できる。DrawCallはMeshが実際に発行した命令を集計し、モデル・Sprite・Particle・Assetプレビューを含む。三角形数はインスタンス数を含む送信量で、画面上の可視ピクセル数ではない。
-- CPU内訳はEditor、履歴、Project／Console、Hierarchy、Inspector、SceneView、モデル／テクスチャ読込、シーン更新、モデル更新、CPUアニメーション、Particle、Assetプレビュー、描画命令記録を表示する。子区間は親の時間に含むため、全行を足し合わせない。
+- CPU内訳はEditor、履歴、Project、Hierarchy、Inspector、SceneView、モデル／テクスチャ読込、シーン更新、モデル更新、CPUアニメーション、Particle、Assetプレビュー、描画命令記録を表示する。ConsoleはEditor全体の時間に含み、Projectの区間には含めない。子区間は親の時間に含むため、全行を足し合わせない。
 - Present／VSync、GPU完了待ち、60fps制限の待機を別々に表示する。待機時間が長いだけでGPU負荷とは断定しない。GPU executionには同じフレームのGPUタイムスタンプ差分を表示する。PreDrawからPresent直前の描画命令までのGPU上の経過時間で、Scene・UI・プレビュー・フレーム内転送を含む。Present／VSyncやFPS制限のCPU待機は含まない。未対応・取得失敗はN/Aと表示する。CPU時間と足し合わせない。
 - グラフをクリックすると履歴だけを一時停止し、そのフレームの内訳を調べられる。ゲームは継続する。「最も重かったフレーム」は600フレームより前でもリセットまで保持する。CSV出力は現在の履歴を作業ディレクトリのperformance-capture.csvへ保存する。
 
@@ -215,3 +217,39 @@ Inspectorは左に項目名、右に入力欄を揃える。TransformのPosition
 SceneViewの「View / 表示」メニューからGrid、Snap、選択対象へフォーカスを操作する。Projectは左のフォルダツリーと右のAssetプレビューに分かれ、境界をドラッグして幅を調整できる。画像やモデルのドラッグ＆ドロップは従来どおり利用できる。
 
 Consoleは検索でログを絞り込める。一覧には各ログの先頭行を表示し、ホバーで全文を確認、右クリックで全文をコピーできる。画面最下部には操作結果とFPS・フレーム時間・GPU時間を表示する。
+
+## SceneViewでの配置と補助表示
+
+Moveは矢印、Rotateはリング、Scaleは四角い端点で区別する。ギズモの大きさは画面上の約80pxを基準にし、対象へ近づいたり画角を変えたりしても操作しやすくした。軸が重なる位置ではマウスに最も近い軸を一つだけ黄色にし、ドラッグ中はその軸を強調する。真横から見る移動・拡縮軸は操作を避け、カメラを回してから掴む。
+
+Ctrlを押しながらドラッグすると、開始値からの変化量をスナップする。「View / 表示」メニューでMoveの距離、Rotateの角度（度数）、Scaleの倍率刻みを別々に変更できる。「Snap / 常時スナップ」を有効にするとCtrlなしで揃う。初期値は距離1・角度15度・倍率0.1。Escでドラッグ開始時のTransformへ戻す。
+
+Cameraを選択すると現在のSceneView/GameViewと同じ縦横比で近・遠クリップ面の視錐台を表示し、Point Lightを選択すると実描画と同じワールド半径の球を3本の円で表示する。複数選択にも対応し、非選択・無効な対象やGameViewには描かない。「View / 表示」→「Camera / Light Guides」で表示を切り替えられる。補助線はクリップ面をまたいでも見える部分を維持する。
+
+制作時はProjectからモデルをSceneViewへドロップし、Inspectorの空白を右クリックしてCollider・Rigidbodyを追加する。床にはBox Collider、落下させる対象にはColliderとDynamic Rigidbodyを付け、再生して接地を確認する。停止して編集時の配置へ戻してからシーンを保存すれば、再読込してもモデル参照・配置・Component設定を復元できる。
+
+## Particleの透明度と合成
+
+Particleでは、画像に透明な画素があれば画像のAlphaを使う。全画素が不透明な画像はRGBの明るさをマスクへ移し、黒い部分を透明にする。標準のcircle.pngもこの方式で黒い四角い背景を除去する。この判定は画像読込時に一度だけ行い、モデル・Sprite・Projectの画像表示には適用しない。
+
+発光にはAdd、煙や半透明の粒にはNormalを使う。色のAlphaと寿命フェードはScreen・Multiplyなどにも反映する。Lighten/Darkenは比較する背景色によって効果の現れ方が変わる。Noneは半透明合成を行わないため、柔らかく背景へ馴染ませる用途には使わない。
+
+## Soft Particles・寿命変化・用途別プリセット
+
+「表示 / View」→「Particle Editor」を開き、Hierarchyで対象のParticleを選ぶ。「プリセット」から炎 / Fire、煙 / Smoke、火花 / Sparksを選択できる。炎は発光しながら赤く縮み、煙はNormal合成で広がりながら薄くなる。火花は小さい粒が飛び、重力で落ちながら縮む。選択時に発生位置は移動しない。プリセットの反映後はプレビューを開始するか、「一度だけ発生」で確認する。
+
+AppearanceのSoft Particlesを有効にすると、モデルと交差する部分を深度差に応じて薄くする。「交差をぼかす距離」はワールド単位で、広げるほど境界を柔らかくする。SceneView、GameView、Releaseのゲーム描画に対応する。「Particleだけを表示」ではモデルの深度を書かないため交差フェードは発生しない。深度はモデル描画後に読取専用へ切り替え、コピーや追加のGPU待機を行わない。Particle同士の交差には適用しない。
+
+Lifetimeの「サイズ・色を変化させる」を有効にし、開始／終了サイズ倍率、終了色、フェードインを調整する。開始色はAppearanceの色を使い、サイズは粒子の大きさへ倍率を掛ける。寿命全体で線形補間し、フェードインは寿命に対する割合で指定する。無効なら従来どおりサイズ固定・寿命によるAlpha減衰となる。
+
+設定はシーン保存、Prefab、複製、Undo/Redo、プリセット書出しに含む。Particle拡張はScene 12・Particle 2で追加し、現在のScene書出しはライト拡張を含む13。旧形式も読み込め、新しい見た目設定は無効で補完して従来の見た目を維持する。内蔵プリセットの書出し先は従来どおりDefault.ponparticleで、個別Emitterの配置・設定を残す場合はシーンも保存する。
+
+## ライトの作成・編集と旧シーン移行
+
+Hierarchyの右クリック→新規作成→LightからPoint / Spot / Directionalを作る。InspectorでColor / Intensityを編集し、Point / SpotはRange / Decayも設定する。SpotのOuter Angleは円錐全体の開き角、Inner Angleは減衰しない中心の開き角で、単位は度数。内角は外角以下に保つ。同じ角度にすると境界が硬くなる。
+
+Spot / DirectionalはTransformの回転でローカル+Zを照射方向にし、回転ギズモでも編集できる。SceneViewではSpotを円錐、Directionalを方向矢印で表示する。Transformの拡縮は範囲へ掛けない。親のActiveを無効にすると子のライトも消える。向きを取得できないゼロ拡縮の階層ではSpot / Directionalを描画へ渡さない。
+
+ライトの作成・削除・複製・親子付け・設定は、Scene保存・Prefab・Undo/Redoと再生停止時の復元に含む。上限は無効なライトも含めてPoint 9・Spot 8・Directional 4。World Settingsでのライト編集は廃止し、Hierarchyへ統一した。ライトを全部削除すると隠れた固定ライトは残らない。Lightingが有効なモデルを照らす光源がなければ黒くなる。
+
+EditorとReleaseで旧Scene 1〜12を読み込むと、以前の固定ライト3個を(Migrated)という名前でメモリ内に追加する。旧既定値の見た目を保つための移行で、以前に保存されなかったWorld Settingsの変更値は復元しない。Scene 13へ保存した後は再追加しない。Prefab・データだけの読込には移行ライトを追加しない。移行に必要なIDや個数の余裕がなければ、読込を失敗させて現在のシーンを維持する。影・環境光の生成には未対応。

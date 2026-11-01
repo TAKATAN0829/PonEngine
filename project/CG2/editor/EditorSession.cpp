@@ -3,6 +3,9 @@
 
 // 保存対象の全プロパティを比較する。UIの選択状態やパネル配置は比較しない。
 bool EditorSession::AreObjectsEqual(const SceneObjectData& firstObject, const SceneObjectData& secondObject) {
+	if (!EqualLightSettings(firstObject.light,secondObject.light)) {
+		return false;
+	}
 	if (!EqualBodySettings(firstObject.body,secondObject.body)) {
 		return false;
 	}

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "IEditableScene.h"
 
@@ -41,30 +41,66 @@ public:
 private:
 
 	//=============================================================================================//
+	// 型 / ギズモとドラッグ開始値
+
+	enum class TransformTool { Move, Rotate, Scale };
+	// 選択ルートの初期値だけを保存し、親子を重複して動かさない。
+	struct DragObject {
+		SceneObjectId identifier = 0;
+		TransformData local{};
+		Vector3 position{};
+		Matrix4x4 world{};
+	};
+
+	//=============================================================================================//
 	// 更新処理 / ドラッグ
 
 	// パネル内の座標を使い、開始位置からの移動量を求める。
 	void Update(IEditableScene& scene, const EditorViewInfo& viewInfo, const Vector2& mousePosition);
 
 	//=============================================================================================//
-	// Getter / ID検索
+	// メンバ関数 / Transform更新・復元（SceneViewTransform.cpp）
 
 	// 位置を戻してからドラッグを解除する。
 	void CancelDrag(IEditableScene& scene);
 	// 一括変換に失敗した場合は全対象を開始値へ戻し、部分的な操作を残さない。
 	bool ApplyDragTransform(IEditableScene& scene, const Matrix4x4& delta);
+
+	//=============================================================================================//
+	// メンバ関数 / ID検索・選択・Asset配置（SceneViewPicking.cpp）
+
 	static EditableObjectView FindObject(IEditableScene& scene, SceneObjectId objectId);
 
 #ifdef USE_IMGUI
 	//=============================================================================================//
-	// メンバ関数 / サイズ・ギズモ・選択
+	// メンバ関数 / 表示領域（SceneViewPanel.cpp）
+
+	bool ResizeViewport(IEditableScene& scene, const ImVec2& availableSize);
+
+	//=============================================================================================//
+	// メンバ関数 / 補助表示（SceneViewOverlay・Collider・Guides.cpp）
+
+	void DrawOverlay(IEditableScene& scene, const EditorViewInfo& viewInfo, const ImVec2& origin);
 
 	// 選択中のColliderだけを描き、GameViewへは表示しない。
 	void DrawColliders(IEditableScene& scene, const EditorSelection& selection, const EditorViewInfo& viewInfo, const ImVec2& origin);
-	bool AcceptModelDrop(IEditableScene& scene, EditorSelection& selection, const ImVec2& viewportOrigin);
-	bool ResizeViewport(IEditableScene& scene, const ImVec2& availableSize);
+	// カメラの近・遠平面と光源の影響球は、選択中だけSceneViewへ描く。
+	void DrawGuides(IEditableScene& scene, const EditorSelection& selection, const EditorViewInfo& viewInfo, const ImVec2& origin);
+
+	//=============================================================================================//
+	// メンバ関数 / ギズモ描画・操作開始（SceneViewGizmo.cpp）
+
+	// 最も近い一軸を確定してから、全選択ルートの開始値を保存する。
+	bool BeginDrag(IEditableScene& scene, EditorSelection& selection, const EditorViewInfo& viewInfo,
+		const Vector2& mousePosition, const Vector2& screenOrigin, const Vector3& axisOrigin,
+		const Vector3& axisDirection, float axisLength, size_t axisIndex);
 	bool DrawGizmo(IEditableScene& scene, EditorSelection& selection, const EditorViewInfo& viewInfo,
 		const ImVec2& viewportOrigin, const Vector2& mousePosition, bool imageHovered);
+
+	//=============================================================================================//
+	// メンバ関数 / 選択・配置（SceneViewPicking.cpp）
+
+	bool AcceptModelDrop(IEditableScene& scene, EditorSelection& selection, const ImVec2& viewportOrigin);
 	void PickObject(IEditableScene& scene, EditorSelection& selection, const EditorViewInfo& viewInfo, const Vector2& mousePosition);
 #endif
 
@@ -74,15 +110,7 @@ private:
 	// メンバ変数 / ドラッグ状態
 
 	std::string placementStatus_; // ドロップ失敗の理由。
-	enum class TransformTool { Move, Rotate, Scale };
 	TransformTool tool_ = TransformTool::Move;
-	// 選択ルートの初期値だけを保存し、親子を重複して動かさない。
-	struct DragObject {
-		SceneObjectId identifier = 0;
-		TransformData local{};
-		Vector3 position{};
-		Matrix4x4 world{};
-	};
 	std::vector<DragObject> dragObjects_;
 	TransformData dragStartTransform_{};
 	Matrix4x4 dragStartWorld_{};
@@ -101,7 +129,11 @@ private:
 	// メンバ変数 / 補助表示
 
 	float snapDistance_ = 1; // Ctrl操作時に揃える間隔。
+	float snapAngle_ = 15; // 回転は度数で指定し、適用時だけラジアンへ変換する。
+	float snapScale_ = 0.1f; // 拡縮は開始値に対する倍率の刻み。
+	bool snapEnabled_ = false; // 常時有効、またはCtrlを押している間にスナップする。
 	bool showGrid_ = true;
+	bool showGuides_ = true; // 選択中カメラ・ライトの補助線。
 
 	//=============================================================================================//
 	// メンバ変数 / 表示画像

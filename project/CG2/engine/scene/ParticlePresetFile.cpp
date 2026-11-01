@@ -30,7 +30,7 @@ bool ParticlePresetFile::Save(const ParticleSettings& settings, const std::files
 	temporaryPath += L".tmp";
 	std::ofstream output(temporaryPath);
 	output.imbue(std::locale::classic());
-	output << std::setprecision(std::numeric_limits<float>::max_digits10) << "PON_PARTICLE 1\n";
+	output << std::setprecision(std::numeric_limits<float>::max_digits10) << "PON_PARTICLE 2\n";
 	WriteSettings(output, settings);
 	output.close();
 	if (!output) {
@@ -55,11 +55,11 @@ bool ParticlePresetFile::Load(ParticleSettings& settings, const std::filesystem:
 	int version = 0;
 	input >> identifier >> version;
 	ParticleSettings loaded;
-	if (identifier != "PON_PARTICLE" || version != 1) {
+	if (identifier != "PON_PARTICLE" || version < 1 || version > 2) {
 		error = "Unsupported particle preset format.";
 		return false;
 	}
-	if (!ReadSettings(input, loaded)) {
+	if (!ReadSettings(input, loaded,version)) {
 		error = "Invalid particle preset format.";
 		return false;
 	}
@@ -88,10 +88,16 @@ void ParticlePresetFile::WriteSettings(std::ostream& output, const ParticleSetti
 	output << settings.spawnCount << ' ' << settings.interval << ' ' << settings.lifetimeMinimum << ' ' << settings.lifetimeMaximum << ' '
 	<< settings.randomColor << ' ' << settings.billboard << ' ' << settings.accelerationEnabled << ' '
 		<< static_cast<int>(settings.blendMode) << ' ' << std::quoted(settings.texture) << '\n';
-	}
+	output << settings.lifetimeAppearance << ' ' << settings.startSize << ' ' << settings.endSize << ' '
+		<< settings.endColor.x << ' ' << settings.endColor.y << ' ' << settings.endColor.z << ' ' << settings.endColor.w << ' '
+		<< settings.fadeIn << ' ' << settings.softParticles << ' ' << settings.softDistance << '\n';
+}
 
 // 一時値を検証してから反映するため、不完全な入力でも呼出元の設定は変えない。
-bool ParticlePresetFile::ReadSettings(std::istream& input, ParticleSettings& settings) {
+bool ParticlePresetFile::ReadSettings(std::istream& input, ParticleSettings& settings, unsigned version) {
+	if (version < 1 || version > 2) {
+		return false;
+	}
 	ParticleSettings loaded;
 	int randomColor = 0;
 	int billboard = 0;
@@ -125,6 +131,20 @@ bool ParticlePresetFile::ReadSettings(std::istream& input, ParticleSettings& set
 	loaded.billboard = billboard != 0;
 	loaded.accelerationEnabled = acceleration != 0;
 	loaded.blendMode = static_cast<BlendMode>(blendMode);
+	if (version >= 2) {
+		int lifetimeAppearance = 0;
+		int softParticles = 0;
+		input >> lifetimeAppearance >> loaded.startSize >> loaded.endSize >> loaded.endColor.x >> loaded.endColor.y
+			>> loaded.endColor.z >> loaded.endColor.w >> loaded.fadeIn >> softParticles >> loaded.softDistance;
+		if (!input) {
+			return false;
+		}
+		if (lifetimeAppearance < 0 || lifetimeAppearance > 1 || softParticles < 0 || softParticles > 1) {
+			return false;
+		}
+		loaded.lifetimeAppearance = lifetimeAppearance != 0;
+		loaded.softParticles = softParticles != 0;
+	}
 	if (!ValidateParticleSettings(loaded)) {
 		return false;
 	}

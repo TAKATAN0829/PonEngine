@@ -1,8 +1,10 @@
-#include "FrameProfiler.h"
+﻿#include "FrameProfiler.h"
 #include "HierarchyPanel.h"
 #include "../EditorSelection.h"
 #include "../AssetDragPayload.h"
 #include "PrefabFile.h"
+#include "SceneLighting.h"
+#include "ScenePrimitives.h"
 #include <cstring>
 #include <cstdio>
 
@@ -22,11 +24,19 @@ void HierarchyPanel::DrawCreateMenu(IEditableScene& scene, EditorSelection& sele
 		return;
 	}
 	size_t lightCount = 0;
+	size_t spotCount = 0;
+	size_t directionalCount = 0;
 	size_t particleCount = 0;
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const EditableObjectView object = scene.GetEditableObject(objectIndex);
 		if (object.type == SceneObjectType::PointLight) {
 			++lightCount;
+		}
+		if (object.type == SceneObjectType::SpotLight) {
+			++spotCount;
+		}
+		if (object.type == SceneObjectType::DirectionalLight) {
+			++directionalCount;
 		}
 		if (object.type == SceneObjectType::Particle) {
 			++particleCount;
@@ -36,11 +46,24 @@ void HierarchyPanel::DrawCreateMenu(IEditableScene& scene, EditorSelection& sele
 	if (ImGui::MenuItem("空オブジェクト / Empty")) {
 		createdId = scene.CreateObject(SceneObjectType::Empty);
 	}
-	ImGui::BeginDisabled(lightCount >= 8);
-	if (ImGui::MenuItem("点光源 / Point Light（最大8個）")) {
-		createdId = scene.CreateObject(SceneObjectType::PointLight);
+	if (ImGui::BeginMenu("Light / ライト")) {
+		ImGui::BeginDisabled(lightCount >= kMaxPointLights);
+		if (ImGui::MenuItem("Point Light / 点光源（最大9個）")) {
+			createdId = scene.CreateObject(SceneObjectType::PointLight);
+		}
+		ImGui::EndDisabled();
+		ImGui::BeginDisabled(spotCount >= kMaxSpotLights);
+		if (ImGui::MenuItem("Spot Light / スポット（最大8個）")) {
+			createdId = scene.CreateObject(SceneObjectType::SpotLight);
+		}
+		ImGui::EndDisabled();
+		ImGui::BeginDisabled(directionalCount >= kMaxDirectionalLights);
+		if (ImGui::MenuItem("Directional Light / 平行光源（最大4個）")) {
+			createdId = scene.CreateObject(SceneObjectType::DirectionalLight);
+		}
+		ImGui::EndDisabled();
+		ImGui::EndMenu();
 	}
-	ImGui::EndDisabled();
 	ImGui::BeginDisabled(particleCount >= 32);
 	if (ImGui::MenuItem("Particle（最大32個）")) {
 		createdId = scene.CreateObject(SceneObjectType::Particle);
@@ -50,8 +73,17 @@ void HierarchyPanel::DrawCreateMenu(IEditableScene& scene, EditorSelection& sele
 		createdId = scene.CreateObject(SceneObjectType::Camera);
 	}
 	ImGui::Separator();
-	if (ImGui::MenuItem("Plane")) {
-		createdId = scene.AddObject("plane.gltf");
+	if (ImGui::BeginMenu("3D Object / 基本形状")) {
+		if (ImGui::MenuItem("Cube / 立方体")) {
+			createdId = ScenePrimitives::Create(scene,ScenePrimitiveType::Cube,status_);
+		}
+		if (ImGui::MenuItem("Sphere / 球")) {
+			createdId = ScenePrimitives::Create(scene,ScenePrimitiveType::Sphere,status_);
+		}
+		if (ImGui::MenuItem("Plane")) {
+			createdId = scene.AddObject("plane.gltf");
+		}
+		ImGui::EndMenu();
 	}
 	if (ImGui::MenuItem("Axis")) {
 		createdId = scene.AddObject("axis.obj");

@@ -21,6 +21,10 @@ void RunCameraTests(const std::filesystem::path& directory) {
 	const SceneObjectId secondId = scene.CreateObject(SceneObjectType::Camera);
 	const SceneObjectId parentId = scene.CreateObject(SceneObjectType::Empty);
 	RequireCamera(scene.GetMainCameraId() == firstId, "First camera was not main");
+	RequireCamera(scene.GetCameraView(secondId,1,view),"Non-main camera guide unavailable");
+	RequireCamera(scene.GetMainCameraId() == firstId,"Guide changed main camera");
+	RequireCamera(!scene.GetCameraView(parentId,1,view),"Empty object became camera guide");
+	RequireCamera(!scene.GetCameraView(999999,1,view),"Missing guide camera accepted");
 	RequireCamera(scene.GetGameCameraView(1, view) && std::abs(view.cameraWorld.m[3][2]+30) < 0.001f, "Default camera view incorrect");
 	const float squareProjection = view.viewProjection.m[0][0];
 	RequireCamera(scene.GetGameCameraView(2,view) && std::abs(view.viewProjection.m[0][0] * 2-squareProjection) < 0.001f,
@@ -41,6 +45,14 @@ void RunCameraTests(const std::filesystem::path& directory) {
 	RequireCamera(scene.GetGameCameraView(1,view), "Parented camera did not resolve");
 	const float forwardLength = std::sqrt(view.cameraWorld.m[2][0]*view.cameraWorld.m[2][0]+view.cameraWorld.m[2][1]*view.cameraWorld.m[2][1]+view.cameraWorld.m[2][2]*view.cameraWorld.m[2][2]);
 	RequireCamera(std::abs(forwardLength-1) < 0.001f, "Parent scale distorted camera view");
+	SceneCameraView guide{};
+	RequireCamera(scene.GetCameraView(secondId,1,guide),"Parented camera guide unavailable");
+	for (size_t rowIndex = 0; rowIndex < 4; ++rowIndex) {
+		for (size_t columnIndex = 0; columnIndex < 4; ++columnIndex) {
+			RequireCamera(std::abs(guide.viewProjection.m[rowIndex][columnIndex]-view.viewProjection.m[rowIndex][columnIndex]) < 0.0001f,
+				"Guide differs from game camera projection");
+		}
+	}
 	*scene.GetEditableObject(2).active = false;
 	RequireCamera(!scene.GetGameCameraView(1,view), "Disabled parent camera remained active");
 	*scene.GetEditableObject(2).active = true;

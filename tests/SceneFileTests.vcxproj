@@ -18,4 +18,12 @@
     <ClCompile Include="..\project\CG2\engine\scene\ScenePhysics.cpp" />
     <ClCompile Include="PhysicsTests.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\project\CG2\engine\scene\SceneLighting.cpp" />
+    <ClCompile Include="LightingTests.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\project\CG2\engine\scene\ScenePrimitives.cpp" />
+    <ClCompile Include="PrimitiveTests.cpp" />
+  </ItemGroup>
 </Project>

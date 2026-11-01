@@ -71,6 +71,7 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 // 更新処理
 
 void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate, bool emit) {
+	inverseViewProjection_ = MathUtility::Inverse(viewProjectionMatrix);
 	// 一時停止中は発生・移動・経過時間を止め、カメラに合わせた描画データだけを更新する。
 
 	// 頻度による発生
@@ -121,7 +122,9 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 
 		if (numInstance_ < kNumMaxInstance) {
 
-			Matrix4x4 scaleMatrix = MathUtility::MakeScaleMatrix(particleIterator->transform.scale);
+			const ParticleAppearance appearance = EvaluateParticleAppearance(settings_,particleIterator->color,
+				particleIterator->currentTime/particleIterator->lifeTime);
+			Matrix4x4 scaleMatrix = MathUtility::MakeScaleMatrix(MathUtility::Multiply(appearance.size,particleIterator->transform.scale));
 
 			Matrix4x4 translateMatrix = MathUtility::MakeTranslateMatrix(particleIterator->transform.translate);
 
@@ -131,13 +134,7 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 
 			instancingData_[numInstance_].World = worldMatrix;
 
-			instancingData_[numInstance_].color = particleIterator->color;
-
-			float remainingAlpha = 1.0f - particleIterator->currentTime / particleIterator->lifeTime;
-			if (remainingAlpha < 0) {
-				remainingAlpha = 0;
-			}
-			instancingData_[numInstance_].color.w = particleIterator->color.w * remainingAlpha;
+			instancingData_[numInstance_].color = appearance.color;
 
 			++numInstance_;
 		}
@@ -157,7 +154,11 @@ void Particle::Draw() {
 	//=============================================================================================//
 	// 描画前設定
 
-	renderer_->PreDraw(blendMode_);
+	float softDistance = 0;
+	if (settings_.softParticles) {
+		softDistance = settings_.softDistance;
+	}
+	renderer_->PreDraw(blendMode_,useBrightnessAlpha_,inverseViewProjection_,softDistance);
 
 	//=============================================================================================//
 	// Material・Texture設定
@@ -209,6 +210,7 @@ void Particle::SetTexture(const std::string& filePath) {
 
 	material_->SetTextureIndex(textureIndex);
 	appliedTexture_ = filePath;
+	useBrightnessAlpha_ = !TextureManager::GetInstance()->HasTransparency(filePath);
 }
 
 //=================================================================================================//

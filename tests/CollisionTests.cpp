@@ -118,7 +118,8 @@ namespace {
 		legacy << line << '\n';
 		std::getline(current,line);
 		size_t end = line.size();
-		for (size_t field = 0; field < 23; ++field) {
+		// Collider10項目＋Body13項目＋Light角度2項目を除き、形式9へ戻す。
+		for (size_t field = 0; field < 25; ++field) {
 			end = line.rfind(' ',end-1);
 		}
 		legacy << line.substr(0,end) << '\n';

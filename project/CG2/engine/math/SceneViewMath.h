@@ -7,6 +7,19 @@
 // 画面上の選択と移動操作に使う計算。ImGuiやGPUリソースには依存しない。
 class SceneViewMath {
 public:
+    //=============================================================================================//
+    // メンバ関数 / 補助表示の投影
+
+    // 近・遠クリップ面をまたぐ線分も、見える区間だけ画面へ投影する。
+    static bool ProjectLine(const Vector3& start, const Vector3& end, const Matrix4x4& viewProjection,
+        float viewportWidth, float viewportHeight, Vector2& screenStart, Vector2& screenEnd);
+    // 対象と同じ奥行で、指定ピクセル幅に相当するワールド長を求める。
+    static float GetHandleLength(const Vector3& origin, const Matrix4x4& viewProjection,
+        float viewportWidth, float viewportHeight, float pixelLength);
+
+    //=============================================================================================//
+    // メンバ関数 / 配置・選択・軸操作
+
     // 形状の手前面、XZ平面、視線の10単位先の順で配置位置を選ぶ。
     static Vector3 GetPlacementPosition(const Vector3& origin, const Vector3& direction, float rayLength, float hitDistance);
     // ワールド座標を左上原点の画面座標へ変換する。カメラの背面や奥行範囲外は拒否する。

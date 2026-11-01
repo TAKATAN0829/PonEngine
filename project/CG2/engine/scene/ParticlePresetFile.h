@@ -24,5 +24,5 @@ public:
 
 	// シーン内Emitterも同じ項目順で保存し、読込は一時値を検証してから反映する。
 	static void WriteSettings(std::ostream& output, const ParticleSettings& settings);
-	static bool ReadSettings(std::istream& input, ParticleSettings& settings);
+	static bool ReadSettings(std::istream& input, ParticleSettings& settings, unsigned version = 2);
 };

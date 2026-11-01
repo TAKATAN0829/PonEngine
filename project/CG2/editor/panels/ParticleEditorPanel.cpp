@@ -67,12 +67,37 @@ namespace {
 			if (ImGui::Combo("画像", &textureIndex, textures, 3)) {
 				settings.texture = textures[textureIndex];
 			}
+			ImGui::TextDisabled("画像の透明度を使用 / 不透明画像は明るさをマスクに使用");
 			const char* blends[] = {"None", "Normal", "Add", "Subtract", "Multiply", "Screen", "Lighten", "Darken", "Invert"};
 			int blendIndex = static_cast<int>(settings.blendMode);
 			if (ImGui::Combo("合成", &blendIndex, blends, kCountOfBlendMode)) {
 				settings.blendMode = static_cast<BlendMode>(blendIndex);
 			}
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("発光はAdd、煙や半透明の粒はNormal。Noneは半透明合成を行いません。");
+			}
+			ImGui::Checkbox("Soft Particles",&settings.softParticles);
+			ImGui::BeginDisabled(!settings.softParticles);
+			ImGui::DragFloat("交差をぼかす距離",&settings.softDistance,0.01f,0.001f,100,"%.3f",ImGuiSliderFlags_AlwaysClamp);
+			ImGui::EndDisabled();
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+				ImGui::SetTooltip("モデルとの交差をワールド距離でぼかします。Particleだけの表示では深度がないため効果は出ません。");
+			}
 		}
+	}
+
+	// 開始色はAppearance、終了色とサイズ倍率は寿命で補間する。
+	void DrawLifetimeSettings(ParticleSettings& settings) {
+		if (!ImGui::CollapsingHeader("Lifetime / 寿命による変化",ImGuiTreeNodeFlags_DefaultOpen)) {
+			return;
+		}
+		ImGui::Checkbox("サイズ・色を変化させる",&settings.lifetimeAppearance);
+		ImGui::BeginDisabled(!settings.lifetimeAppearance);
+		ImGui::DragFloat("開始サイズ倍率",&settings.startSize,0.01f,0.001f,100,"%.2f",ImGuiSliderFlags_AlwaysClamp);
+		ImGui::DragFloat("終了サイズ倍率",&settings.endSize,0.01f,0,100,"%.2f",ImGuiSliderFlags_AlwaysClamp);
+		ImGui::ColorEdit4("終了色",&settings.endColor.x);
+		ImGui::SliderFloat("フェードイン（寿命比）",&settings.fadeIn,0,1,"%.2f");
+		ImGui::EndDisabled();
 	}
 }
 #endif
@@ -146,6 +171,18 @@ void ParticleEditorPanel::ApplyPendingAction(IEditableScene& scene) {
 		*settings = ParticleSettings{};
 		scene.ResetParticlePreview();
 		status_ = "既定値に戻しました。保存すると次回も使用できます。";
+	} else {
+		ParticlePresetKind kind = ParticlePresetKind::Fire;
+		if (pendingAction_ == PresetAction::Smoke) {
+			kind = ParticlePresetKind::Smoke;
+		} else if (pendingAction_ == PresetAction::Sparks) {
+			kind = ParticlePresetKind::Sparks;
+		}
+		const Vector3 emitterPosition = settings->emitterPosition;
+		*settings = MakeParticlePreset(kind);
+		settings->emitterPosition = emitterPosition; // プリセット選択で配置を移動しない。
+		scene.ResetParticlePreview();
+		status_ = "プリセットを適用しました。プレビューで確認し、必要に応じて保存してください。";
 	}
 	pendingAction_ = PresetAction::None;
 }
@@ -296,8 +333,24 @@ void ParticleEditorPanel::Draw(IEditableScene& scene, bool gamePlaying, SceneObj
 				pendingAction_ = PresetAction::Load;
 			}
 			ImGui::SameLine();
-			if (ImGui::Button("既定値")) {
-				pendingAction_ = PresetAction::Defaults;
+			if (ImGui::Button("プリセット")) {
+				ImGui::OpenPopup("ParticlePresets");
+			}
+			if (ImGui::BeginPopup("ParticlePresets")) {
+				if (ImGui::MenuItem("炎 / Fire")) {
+					pendingAction_ = PresetAction::Fire;
+				}
+				if (ImGui::MenuItem("煙 / Smoke")) {
+					pendingAction_ = PresetAction::Smoke;
+				}
+				if (ImGui::MenuItem("火花 / Sparks")) {
+					pendingAction_ = PresetAction::Sparks;
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("既定値")) {
+					pendingAction_ = PresetAction::Defaults;
+				}
+				ImGui::EndPopup();
 			}
 			if (!openPrompt_) {
 				if (pendingAction_ != PresetAction::None) {
@@ -338,6 +391,7 @@ void ParticleEditorPanel::Draw(IEditableScene& scene, bool gamePlaying, SceneObj
 			DrawEmitterSettings(*settings, emitterTransform);
 			DrawMotionSettings(*settings);
 			DrawAppearanceSettings(*settings);
+			DrawLifetimeSettings(*settings);
 			ImGui::EndDisabled();
 			if (!ValidateParticleSettings(*settings)) {
 				ImGui::TextWrapped("最小値と最大値などを確認してください。不正な設定は実行・保存しません。");

@@ -315,6 +315,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     </None>
     <None Include="resources\shaders\Object3d.hlsli" />
     <None Include="resources\shaders\Particle.hlsli" />
+    <None Include="resources\shaders\SceneLights.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
@@ -366,8 +367,19 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="editor\EditorLayout.h" />
     <ClCompile Include="editor\panels\ParticleEditorPanel.cpp" />
     <ClInclude Include="editor\panels\ParticleEditorPanel.h" />
-    <ClCompile Include="editor\panels\UtilityPanels.cpp" />
-    <ClInclude Include="editor\panels\UtilityPanels.h" />
+
+    <ClCompile Include="editor\panels\ProjectPanel.cpp" />
+    <ClCompile Include="editor\panels\ProjectAssets.cpp" />
+    <ClCompile Include="editor\panels\ProjectView.cpp" />
+    <ClCompile Include="editor\panels\ConsolePanel.cpp" />
+    <ClCompile Include="editor\panels\SceneViewGizmo.cpp" />
+    <ClCompile Include="editor\panels\SceneViewTransform.cpp" />
+    <ClCompile Include="editor\panels\SceneViewPicking.cpp" />
+    <ClCompile Include="editor\panels\SceneViewOverlay.cpp" />
+
+    <ClInclude Include="editor\panels\ProjectPanel.h" />
+    <ClInclude Include="editor\panels\ConsolePanel.h" />
+    <ClInclude Include="editor\panels\SceneViewDrawing.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\asset\ModelAnimation.cpp" />
@@ -392,6 +404,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\scene\SceneCollision.cpp" />
     <ClCompile Include="editor\panels\InspectorCollider.cpp" />
     <ClCompile Include="editor\panels\SceneViewCollider.cpp" />
+    <ClCompile Include="editor\panels\SceneViewGuides.cpp" />
     <ClInclude Include="engine\scene\SceneCollision.h" />
     <ClInclude Include="engine\scene\SceneColliderSettings.h" />
   </ItemGroup>
@@ -406,5 +419,18 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="editor\EditorProperties.cpp" />
     <ClInclude Include="editor\EditorTheme.h" />
     <ClInclude Include="editor\EditorProperties.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneLighting.cpp" />
+    <ClInclude Include="engine\scene\SceneLighting.h" />
+    <ClInclude Include="engine\scene\SceneLightSettings.h" />
+    <ClCompile Include="editor\panels\InspectorLights.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\ScenePrimitives.cpp" />
+    <ClInclude Include="engine\scene\ScenePrimitives.h" />
+    <None Include="resources\primitives\Cube.obj" />
+    <None Include="resources\primitives\Sphere.obj" />
+    <None Include="resources\primitives\Primitive.mtl" />
   </ItemGroup>
 </Project>

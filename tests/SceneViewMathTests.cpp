@@ -32,6 +32,23 @@ void RunSceneViewMathTests() {
 	RequireViewCondition(SceneViewMath::Project({}, viewProjection, 1280, 720, screenPosition), "Origin did not project");
 	RequireNear(screenPosition.x, 640, "Horizontal projection is incorrect");
 	RequireNear(screenPosition.y, 360, "Vertical projection is incorrect");
+	// 距離・FOV・表示サイズが変わっても、正面のハンドルは同じピクセル長になる。
+	const float handleLength = SceneViewMath::GetHandleLength({},viewProjection,1280,720,80);
+	RequireViewCondition(SceneViewMath::Project({handleLength,0,0},viewProjection,1280,720,screenPosition),"Handle end did not project");
+	RequireNear(screenPosition.x,720,"Handle pixel length changed");
+	const Matrix4x4 wideProjection = MathUtility::Multiply(MathUtility::Inverse(cameraMatrix),
+		MathUtility::MakePerspectiveFovMatrix(1.3f,800.0f/600.0f,0.1f,100));
+	const float distantLength = SceneViewMath::GetHandleLength({0,0,20},wideProjection,800,600,80);
+	RequireViewCondition(SceneViewMath::Project({distantLength,0,20},wideProjection,800,600,screenPosition),"Distant handle did not project");
+	RequireNear(screenPosition.x,480,"FOV or distance changed handle size");
+	RequireNear(SceneViewMath::GetHandleLength({0,0,-11},viewProjection,1280,720,80),0,"Behind-camera handle accepted");
+	Vector2 lineStart{};
+	Vector2 lineEnd{};
+	RequireViewCondition(SceneViewMath::ProjectLine({0,0,-11},{0,0,200},viewProjection,1280,720,lineStart,lineEnd),"Line crossing both clip planes disappeared");
+	RequireNear(lineStart.x,640,"Clipped line start shifted");
+	RequireNear(lineEnd.y,360,"Clipped line end shifted");
+	RequireViewCondition(!SceneViewMath::ProjectLine({0,0,-12},{0,0,-11},viewProjection,1280,720,lineStart,lineEnd),"Behind-camera line accepted");
+	RequireViewCondition(!SceneViewMath::ProjectLine({0,0,200},{0,0,300},viewProjection,1280,720,lineStart,lineEnd),"Beyond-far line accepted");
 	RequireViewCondition(!SceneViewMath::Project({0,0,-11}, viewProjection, 1280, 720, screenPosition),
 		"Point behind camera was projected");
 	RequireViewCondition(!SceneViewMath::Project({0,0,200}, viewProjection, 1280, 720, screenPosition),

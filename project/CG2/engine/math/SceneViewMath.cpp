@@ -7,11 +7,81 @@
 #include <utility>
 
 namespace {
+	// 同次座標の半空間へ線分のパラメータ範囲を絞る。
+	bool ClipLineInterval(float firstDistance, float secondDistance, float& start, float& end) {
+		if (!std::isfinite(firstDistance) || !std::isfinite(secondDistance)) {
+			return false;
+		}
+		if (firstDistance < 0 && secondDistance < 0) {
+			return false;
+		}
+		if (firstDistance < 0) {
+			start = (std::max)(start, firstDistance / (firstDistance - secondDistance));
+		} else if (secondDistance < 0) {
+			end = (std::min)(end, firstDistance / (firstDistance - secondDistance));
+		}
+		return start <= end;
+	}
+
+	Vector4 ToClipPosition(const Vector3& position, const Matrix4x4& matrix) {
+		return {
+			position.x*matrix.m[0][0]+position.y*matrix.m[1][0]+position.z*matrix.m[2][0]+matrix.m[3][0],
+			position.x*matrix.m[0][1]+position.y*matrix.m[1][1]+position.z*matrix.m[2][1]+matrix.m[3][1],
+			position.x*matrix.m[0][2]+position.y*matrix.m[1][2]+position.z*matrix.m[2][2]+matrix.m[3][2],
+			position.x*matrix.m[0][3]+position.y*matrix.m[1][3]+position.z*matrix.m[2][3]+matrix.m[3][3]};
+	}
+
 	Vector3 CrossProduct(const Vector3& first, const Vector3& second) {
 		return {first.y * second.z - first.z * second.y,
 			first.z * second.x - first.x * second.z,
 			first.x * second.y - first.y * second.x};
 	}
+}
+
+bool SceneViewMath::ProjectLine(const Vector3& start, const Vector3& end, const Matrix4x4& viewProjection,
+	float viewportWidth, float viewportHeight, Vector2& screenStart, Vector2& screenEnd) {
+	if (!std::isfinite(viewportWidth) || !std::isfinite(viewportHeight) || viewportWidth <= 0 || viewportHeight <= 0) {
+		return false;
+	}
+	const Vector4 first = ToClipPosition(start, viewProjection);
+	const Vector4 second = ToClipPosition(end, viewProjection);
+	float startParameter = 0;
+	float endParameter = 1;
+	if (!ClipLineInterval(first.z, second.z, startParameter, endParameter)) {
+		return false;
+	}
+	if (!ClipLineInterval(first.w-first.z, second.w-second.z, startParameter, endParameter)) {
+		return false;
+	}
+	if (!ClipLineInterval(first.w-0.00001f, second.w-0.00001f, startParameter, endParameter)) {
+		return false;
+	}
+	const float firstWeight = first.w+(second.w-first.w)*startParameter;
+	const float secondWeight = first.w+(second.w-first.w)*endParameter;
+	screenStart = {(1+(first.x+(second.x-first.x)*startParameter)/firstWeight)*viewportWidth*0.5f,
+		(1-(first.y+(second.y-first.y)*startParameter)/firstWeight)*viewportHeight*0.5f};
+	screenEnd = {(1+(first.x+(second.x-first.x)*endParameter)/secondWeight)*viewportWidth*0.5f,
+		(1-(first.y+(second.y-first.y)*endParameter)/secondWeight)*viewportHeight*0.5f};
+	return std::isfinite(screenStart.x) && std::isfinite(screenStart.y) && std::isfinite(screenEnd.x) && std::isfinite(screenEnd.y);
+}
+
+float SceneViewMath::GetHandleLength(const Vector3& origin, const Matrix4x4& viewProjection,
+	float viewportWidth, float viewportHeight, float pixelLength) {
+	Vector2 screen{};
+	if (!Project(origin, viewProjection, viewportWidth, viewportHeight, screen)) {
+		return 0;
+	}
+	if (!std::isfinite(pixelLength) || pixelLength <= 0) {
+		return 0;
+	}
+	Vector3 normalized = MathUtility::Transform(origin, viewProjection);
+	normalized.x += pixelLength*2/viewportWidth;
+	const Vector3 offset = MathUtility::Transform(normalized, MathUtility::Inverse(viewProjection));
+	const float length = MathUtility::Length(MathUtility::Subtract(offset, origin));
+	if (!std::isfinite(length)) {
+		return 0;
+	}
+	return length;
 }
 
 // Moller-Trumbore法。頂点の表裏と負の拡縮に依存せず表面へ配置する。

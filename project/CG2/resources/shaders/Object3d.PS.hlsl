@@ -1,6 +1,6 @@
-#include "Object3d.hlsli"
+﻿#include "Object3d.hlsli"
+#include "SceneLights.hlsli"
 
-//=================================================================================================//
 struct Material
 {
     float32_t4 color;
@@ -9,157 +9,32 @@ struct Material
     float32_t shininess;
 };
 ConstantBuffer<Material> gMaterial : register(b0);
-//=================================================================================================//
-//=================================================================================================//
-struct DirectionalLight
-{
-    float32_t4 color; // ライトの色
-    float32_t3 direction; // ライトの向き
-    float intensity; // 輝度
-};
-ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
-//=================================================================================================//
-//=================================================================================================//
-struct Camera
-{
-    float32_t3 worldPosition;
+struct Camera {
+    float3 worldPosition;
 };
 ConstantBuffer<Camera> gCamera : register(b2);
-//=================================================================================================//
-//=================================================================================================//
-struct PointLight
-{
-    float32_t4 color;
-    float32_t3 position;
-    float intensity;
-    float radius;
-    float decay;
+struct PixelShaderOutput {
+    float4 color : SV_TARGET0;
 };
-// C++のPointLightBufferと同じ配置。配列要素は48バイトとなる。
-struct PointLightBuffer {
-    uint count;
-    float3 padding;
-    PointLight lights[9];
-};
-ConstantBuffer<PointLightBuffer> gPointLights : register(b3);
-//=================================================================================================//
-//=================================================================================================//
-struct SpotLight
-{
-    float32_t4 color;
-    float32_t3 position;
-    float32_t intensity;
-    float32_t3 direction;
-    float32_t distance;
-    float32_t decay;
-    float32_t cosAngle;
-    float32_t cosFalloffStart;
-};
-ConstantBuffer<SpotLight> gSpotLight : register(b4);
-//=================================================================================================//
-//=================================================================================================//
-struct PixelShaderOutput
-{
-    float32_t4 color : SV_TARGET0;
-};
-
-Texture2D<float32_t4> gTexture : register(t0);
-
+Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
-//=================================================================================================//
-//=================================================================================================//
-PixelShaderOutput main(VertexShaderOutput input)
-{
+
+PixelShaderOutput main(VertexShaderOutput input) {
     PixelShaderOutput output;
-    float4 transformedUV = mul(float32_t4(input.texcoord, 0.0f, 1.0f), gMaterial.uvTransform);
-    float32_t4 textureColor = gTexture.Sample(gSampler, transformedUV.xy);
-    
-    // textureのα値が0.5以下のときにPixelを棄却
-    if (textureColor.a <= 0.5f)
-    {
+    float4 transformedUV = mul(float4(input.texcoord,0,1),gMaterial.uvTransform);
+    float4 textureColor = gTexture.Sample(gSampler,transformedUV.xy);
+    if (textureColor.a <= 0.5f) {
         discard;
     }
-    
-    if (gMaterial.enableLighting != 0)
-    { // Lightingする場合
-        float32_t3 normal = normalize(input.normal);
-
-        float32_t3 toEye = normalize(gCamera.worldPosition - input.worldPosition);
-
-        //=========================================================================================//
-        // 平行光源
-
-        float NdotL = dot(normal, -gDirectionalLight.direction);
-        float cos = pow(NdotL * 0.5f + 0.5f, 2.0f);
-        float32_t3 halfVector = normalize(-gDirectionalLight.direction + toEye);
-        float specularPow = pow(saturate(dot(normal, halfVector)), gMaterial.shininess);
-
-        float32_t3 diffuseDirectionalLight =
-        gMaterial.color.rgb * textureColor.rgb * gDirectionalLight.color.rgb * cos * gDirectionalLight.intensity;
-        float32_t3 specularDirectionalLight =
-        gDirectionalLight.color.rgb * gDirectionalLight.intensity * specularPow * float32_t3(1.f, 1.f, 1.f);
-
-        //=========================================================================================//
-        // 点光源
-
-        float32_t3 diffusePointLight = float32_t3(0,0,0);
-        float32_t3 specularPointLight = float32_t3(0,0,0);
-        for (uint lightIndex = 0; lightIndex < min(gPointLights.count, 9u); ++lightIndex) {
-            PointLight pointLight = gPointLights.lights[lightIndex];
-        float32_t3 pointLightDirection = normalize(input.worldPosition - pointLight.position);
-        float distance = length(pointLight.position - input.worldPosition);
-        float factor = pow(saturate(-distance / pointLight.radius + 1.0f), pointLight.decay);
-
-        float NdotLPoint = dot(normal, -pointLightDirection);
-        float cosPoint = pow(NdotLPoint * 0.5f + 0.5f, 2.0f);
-        float32_t3 halfVectorPoint = normalize(-pointLightDirection + toEye);
-        float specularPowPoint = pow(saturate(dot(normal, halfVectorPoint)), gMaterial.shininess);
-
-        diffusePointLight +=
-        gMaterial.color.rgb * textureColor.rgb * pointLight.color.rgb * cosPoint * pointLight.intensity * factor;
-        specularPointLight +=
-        pointLight.color.rgb * pointLight.intensity * factor * specularPowPoint * float32_t3(1.f, 1.f, 1.f);
-
-        }
-
-        //=========================================================================================//
-        // スポットライト
-
-        float32_t3 spotLightDirectionOnSurface = normalize(input.worldPosition - gSpotLight.position);
-        float distanceSpot = length(gSpotLight.position - input.worldPosition);
-        float factorSpot = pow(saturate(-distanceSpot / gSpotLight.distance + 1.0f), gSpotLight.decay);
-        float cosAngle = dot(spotLightDirectionOnSurface, gSpotLight.direction);
-        float32_t falloffFactor = saturate((cosAngle - gSpotLight.cosAngle) / (gSpotLight.cosFalloffStart - gSpotLight.cosAngle));
-
-        float NdotLSpot = dot(normal, -spotLightDirectionOnSurface);
-        float cosSpot = pow(NdotLSpot * 0.5f + 0.5f, 2.0f);
-        float32_t3 halfVectorSpot = normalize(-spotLightDirectionOnSurface + toEye);
-        float specularPowSpot = pow(saturate(dot(normal, halfVectorSpot)), gMaterial.shininess);
-
-        float32_t3 diffuseSpotLight =
-        gMaterial.color.rgb * textureColor.rgb * gSpotLight.color.rgb * cosSpot * gSpotLight.intensity * factorSpot * falloffFactor;
-        float32_t3 specularSpotLight =
-        gSpotLight.color.rgb * gSpotLight.intensity * factorSpot * falloffFactor * specularPowSpot * float32_t3(1.f, 1.f, 1.f);
-
-        //=========================================================================================//
-        // 合算
-
-        output.color.rgb = diffuseDirectionalLight + specularDirectionalLight + diffusePointLight + specularPointLight + diffuseSpotLight + specularSpotLight;
-
-        output.color.a = gMaterial.color.a * textureColor.a;
-
+    output.color = gMaterial.color*textureColor;
+    if (gMaterial.enableLighting != 0) {
+        float3 normal = input.normal/max(length(input.normal),0.00001f);
+        float3 toEye = gCamera.worldPosition-input.worldPosition;
+        toEye /= max(length(toEye),0.00001f);
+        output.color.rgb = CalculateSceneLighting(input.worldPosition,normal,toEye,output.color.rgb,gMaterial.shininess);
     }
-    else
-    { // Lightingしない場合
-        output.color = gMaterial.color * textureColor;
-    }
-
-    // output.colorのα値が0.0のときにPixelを棄却
-    if (output.color.a == 0.0)
-    {
+    if (output.color.a == 0) {
         discard;
     }
-
     return output;
 }
-//=================================================================================================//

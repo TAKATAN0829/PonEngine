@@ -16,6 +16,7 @@
 #include <wrl.h>
 
 class WinApp;
+class SrvManager;
 
 class DirectXCommon {
 public:
@@ -37,6 +38,17 @@ public:
 
 	void PreDraw();
 	void BindBackBuffer();
+	//=============================================================================================//
+	// メンバ関数 / Particleの深度参照。Targetの所有者がBegin〜Endの間だけ貸す。
+
+	void InitializeDepthSampling(SrvManager* descriptors, uint32_t descriptorIndex);
+	void FinalizeDepthSampling();
+	void SetDepthTarget(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE renderView,
+		D3D12_CPU_DESCRIPTOR_HANDLE writeView, D3D12_CPU_DESCRIPTOR_HANDLE readView, D3D12_GPU_DESCRIPTOR_HANDLE texture);
+	D3D12_GPU_DESCRIPTOR_HANDLE BeginDepthRead();
+	void EndDepthRead();
+	uint32_t GetDepthWidth() const;
+	uint32_t GetDepthHeight() const;
 	bool HasValidationErrors() const;
 
 	//=============================================================================================//
@@ -61,6 +73,19 @@ public:
 	ID3D12Resource* GetPresentedBuffer() const { return swapChainResources_[backBufferIndex_].Get(); }
 
 private:
+	//=============================================================================================//
+	// メンバ変数 / 描画中Targetの深度。ターゲット切替・PostDrawで借用を解除する。
+
+	SrvManager* depthDescriptors_ = nullptr;
+	uint32_t depthDescriptorIndex_ = 0;
+	D3D12_CPU_DESCRIPTOR_HANDLE depthReadHandle_{};
+	ID3D12Resource* activeDepth_ = nullptr;
+	D3D12_CPU_DESCRIPTOR_HANDLE activeRenderView_{};
+	D3D12_CPU_DESCRIPTOR_HANDLE activeDepthWriteView_{};
+	D3D12_CPU_DESCRIPTOR_HANDLE activeDepthReadView_{};
+	D3D12_GPU_DESCRIPTOR_HANDLE activeDepthTexture_{};
+	bool depthReading_ = false;
+
 	//=============================================================================================//
 	// メンバ関数 / GPU実行時間
 

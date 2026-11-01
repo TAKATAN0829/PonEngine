@@ -46,6 +46,8 @@ public:
 	// メタデータ取得
 
 	const DirectX::TexMetadata& GetMetaData(const std::string& filePath);
+	// 読込時に一度だけ調べる。Particleの不透明画像を輝度マスクとして扱う判定に使う。
+	bool HasTransparency(const std::string& filePath) const;
 
 	//=============================================================================================//
 	// SRV番号取得
@@ -63,6 +65,7 @@ private:
 	// テクスチャ1枚分のデータ
 
 	struct TextureData {
+		bool hasTransparency = false; // 少なくとも一画素のAlphaが1未満。
 		DirectX::TexMetadata metadata;
 		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 		Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource;

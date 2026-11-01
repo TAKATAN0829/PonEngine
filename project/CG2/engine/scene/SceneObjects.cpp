@@ -1,5 +1,6 @@
 #include "SceneObjects.h"
 #include "PrefabFile.h"
+#include "SceneLighting.h"
 
 #include <array>
 #include <filesystem>
@@ -137,6 +138,9 @@ bool SceneObjects::IsSupportedModel(const std::string& model) {
 
 // 保存や復元に使えない数値・名前・ID・モデル指定を検出する。
 bool SceneObjects::Validate(const SceneObjectData& object) {
+	if (!ValidateLightSettings(object.light)) {
+		return false;
+	}
 	if (!ValidateBodySettings(object.body)) {
 		return false;
 	}
@@ -221,7 +225,7 @@ bool SceneObjects::Validate(const SceneObjectData& object) {
 	if (object.shininess < 1 || object.shininess > 500) {
 		return false;
 	}
-	if (object.type < SceneObjectType::Model || object.type > SceneObjectType::Camera) {
+	if (object.type < SceneObjectType::Model || object.type > SceneObjectType::DirectionalLight) {
 		return false;
 	}
 	// 同じ光源でも、強度・範囲・減衰は別の値として検証する。
@@ -266,7 +270,7 @@ EditableObjectView SceneObjects::GetEditableObject(size_t index) {
 		&object.shininess, &object.model, &object.useRootNodeMatrix, &object.name,
 		&object.active, &object.hasMeshRenderer, object.type, &object.lightIntensity,
 		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId, &object.camera, object.mainCamera,
-		&object.materials, &object.animation, &object.body, &object.collider, &object.motion};
+		&object.materials, &object.animation, &object.body, &object.collider, &object.motion, &object.light};
 }
 
 // 読取専用の比較では文字列を含むシーン全体を複製しない。
@@ -283,7 +287,7 @@ const SceneObjectData* SceneObjects::GetObjectDataById(SceneObjectId identifier)
 
 // GPUリソースを作らず、種類に応じた編集用データだけを追加する。
 SceneObjectId SceneObjects::CreateObject(SceneObjectType type) {
-	if (type < SceneObjectType::Model || type > SceneObjectType::Camera) {
+	if (type < SceneObjectType::Model || type > SceneObjectType::DirectionalLight) {
 		return kInvalidSceneObjectId;
 	}
 	if (!CanCreateType(type)) {
@@ -306,6 +310,11 @@ SceneObjectId SceneObjects::CreateObject(SceneObjectType type) {
 	}
 	if (type == SceneObjectType::Particle) {
 		typeName = "Particle";
+	}
+	if (type == SceneObjectType::SpotLight || type == SceneObjectType::DirectionalLight) {
+		typeName = SceneLighting::GetName(type);
+		object.transform.translate.y = 2;
+		object.transform.rotate.x = 1.57079632679f;
 	}
 	if (type == SceneObjectType::Camera) {
 		typeName = "Camera";
@@ -448,6 +457,8 @@ bool SceneObjects::ReplaceObjects(std::vector<SceneObjectData> objects, std::str
 	std::unordered_set<SceneObjectId> ids;
 	SceneObjectId nextId = nextId_;
 	size_t lightCount = 0;
+	size_t spotCount = 0;
+	size_t directionalCount = 0;
 	size_t particleCount = 0;
 	size_t mainCameraCount = 0;
 	size_t colliderCount = 0;
@@ -469,6 +480,12 @@ bool SceneObjects::ReplaceObjects(std::vector<SceneObjectData> objects, std::str
 		if (object.type == SceneObjectType::PointLight) {
 			++lightCount;
 		}
+		if (object.type == SceneObjectType::SpotLight) {
+			++spotCount;
+		}
+		if (object.type == SceneObjectType::DirectionalLight) {
+			++directionalCount;
+		}
 		if (object.type == SceneObjectType::Particle) {
 			++particleCount;
 		}
@@ -478,8 +495,12 @@ bool SceneObjects::ReplaceObjects(std::vector<SceneObjectData> objects, std::str
 				return false;
 			}
 		}
-		if (lightCount > 8 || particleCount > 32) {
-			error = "Scene supports up to 8 point lights and 32 particle emitters.";
+		if (lightCount > kMaxPointLights || spotCount > kMaxSpotLights || directionalCount > kMaxDirectionalLights) {
+			error = "Scene light capacity exceeded (Point:9 / Spot:8 / Directional:4).";
+			return false;
+		}
+		if (particleCount > 32) {
+			error = "Scene supports up to 32 particle emitters.";
 			return false;
 		}
 		if (object.id >= nextId) {
@@ -507,8 +528,8 @@ bool SceneObjects::CanCreateType(SceneObjectType type) const {
 			++count;
 		}
 	}
-	if (type == SceneObjectType::PointLight) {
-		return count < 8;
+	if (SceneLighting::IsLight(type)) {
+		return count < SceneLighting::GetLimit(type);
 	}
 	if (type == SceneObjectType::Particle) {
 		return count < 32;
@@ -689,10 +710,20 @@ SceneObjectId SceneObjects::GetMainCameraId() const {
 
 // カメラの向きは親から継承し、拡縮やせん断は視野へ持ち込まない。
 bool SceneObjects::GetGameCameraView(float aspectRatio, SceneCameraView& view) const {
+	return GetCameraView(GetMainCameraId(), aspectRatio, view);
+}
+
+bool SceneObjects::GetCameraView(SceneObjectId cameraId, float aspectRatio, SceneCameraView& view) const {
 	if (!std::isfinite(aspectRatio) || aspectRatio <= 0) {
 		return false;
 	}
-	const SceneObjectId cameraId = GetMainCameraId();
+	const size_t cameraIndex = FindObjectIndex(cameraId);
+	if (cameraIndex >= objects_.size()) {
+		return false;
+	}
+	if (objects_[cameraIndex].type != SceneObjectType::Camera) {
+		return false;
+	}
 	if (!IsObjectActive(cameraId)) {
 		return false;
 	}

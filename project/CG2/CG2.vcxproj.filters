@@ -284,6 +284,7 @@
     <None Include="resources\shaders\Object3d.hlsli">
       <Filter>shaders</Filter>
     </None>
+    <None Include="resources\shaders\SceneLights.hlsli"><Filter>shaders</Filter></None>
     <None Include="resources\shaders\Particle.hlsli">
       <Filter>shaders</Filter>
     </None>
@@ -331,8 +332,19 @@
     <ClInclude Include="editor\EditorLayout.h"><Filter>editor</Filter></ClInclude>
     <ClCompile Include="editor\panels\ParticleEditorPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
     <ClInclude Include="editor\panels\ParticleEditorPanel.h"><Filter>editor\panels</Filter></ClInclude>
-    <ClCompile Include="editor\panels\UtilityPanels.cpp"><Filter>editor\panels</Filter></ClCompile>
-    <ClInclude Include="editor\panels\UtilityPanels.h"><Filter>editor\panels</Filter></ClInclude>
+
+    <ClCompile Include="editor\panels\ProjectPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClCompile Include="editor\panels\ProjectAssets.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClCompile Include="editor\panels\ProjectView.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClCompile Include="editor\panels\ConsolePanel.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClCompile Include="editor\panels\SceneViewGizmo.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClCompile Include="editor\panels\SceneViewTransform.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClCompile Include="editor\panels\SceneViewPicking.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClCompile Include="editor\panels\SceneViewOverlay.cpp"><Filter>editor\panels</Filter></ClCompile>
+
+    <ClInclude Include="editor\panels\ProjectPanel.h"><Filter>editor\panels</Filter></ClInclude>
+    <ClInclude Include="editor\panels\ConsolePanel.h"><Filter>editor\panels</Filter></ClInclude>
+    <ClInclude Include="editor\panels\SceneViewDrawing.h"><Filter>editor\panels</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="editor\EditorSelection.cpp"><Filter>editor</Filter></ClCompile>
@@ -349,6 +361,7 @@
     <ClCompile Include="engine\scene\SceneCollision.cpp"><Filter>engine\scene</Filter></ClCompile>
     <ClCompile Include="editor\panels\InspectorCollider.cpp"><Filter>editor\panels</Filter></ClCompile>
     <ClCompile Include="editor\panels\SceneViewCollider.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClCompile Include="editor\panels\SceneViewGuides.cpp"><Filter>editor\panels</Filter></ClCompile>
     <ClInclude Include="engine\scene\SceneCollision.h"><Filter>engine\scene</Filter></ClInclude>
     <ClInclude Include="engine\scene\SceneColliderSettings.h"><Filter>engine\scene</Filter></ClInclude>
   </ItemGroup>
@@ -363,5 +376,18 @@
     <ClCompile Include="editor\EditorProperties.cpp"><Filter>editor</Filter></ClCompile>
     <ClInclude Include="editor\EditorTheme.h"><Filter>editor</Filter></ClInclude>
     <ClInclude Include="editor\EditorProperties.h"><Filter>editor</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneLighting.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClInclude Include="engine\scene\SceneLighting.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClInclude Include="engine\scene\SceneLightSettings.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClCompile Include="editor\panels\InspectorLights.cpp"><Filter>editor\panels</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\ScenePrimitives.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClInclude Include="engine\scene\ScenePrimitives.h"><Filter>engine\scene</Filter></ClInclude>
+    <None Include="resources\primitives\Cube.obj" />
+    <None Include="resources\primitives\Sphere.obj" />
+    <None Include="resources\primitives\Primitive.mtl" />
   </ItemGroup>
 </Project>

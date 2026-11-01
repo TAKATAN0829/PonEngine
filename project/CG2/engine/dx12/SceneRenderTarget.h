@@ -40,6 +40,8 @@ public:
 	// Getter / Scene画像
 
 	uint64_t GetTextureHandle() const;
+	// GPU完了後の画像読出し用。End後の状態はPIXEL_SHADER_RESOURCE、所有権は移さない。
+	ID3D12Resource* GetColorResource() const { return color_.Get(); }
 
 private:
 
@@ -53,6 +55,7 @@ private:
 	// メンバ変数 / SRV・サイズ
 
 	uint32_t descriptorIndex_ = 0; // リサイズ中も同じ番号を維持する。
+	uint32_t depthDescriptorIndex_ = 0; // 深度SRVもTargetごとに所有し、同一フレームで上書きしない。
 	uint32_t width_ = 0;
 	uint32_t height_ = 0;
 	bool initialized_ = false; // SRVを解放すべき状態かを表す。

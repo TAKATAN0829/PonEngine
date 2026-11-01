@@ -14,10 +14,12 @@ void SceneRenderTarget::Initialize(DirectXCommon* graphics, SrvManager* descript
 		throw std::runtime_error("Scene RTV heap creation failed");
 	}
 	heapDescription.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	heapDescription.NumDescriptors = 2;
 	if (FAILED(graphics_->GetDevice()->CreateDescriptorHeap(&heapDescription, IID_PPV_ARGS(&depthHeap_)))) {
 		throw std::runtime_error("Scene DSV heap creation failed");
 	}
 	descriptorIndex_ = descriptors_->Allocate();
+	depthDescriptorIndex_ = descriptors_->Allocate();
 	initialized_ = true;
 	Resize(800, 500);
 }
@@ -49,7 +51,7 @@ void SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 		&description, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, &clearValue, IID_PPV_ARGS(&nextColor)))) {
 		throw std::runtime_error("Scene color texture creation failed");
 	}
-	description.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	description.Format = DXGI_FORMAT_R24G8_TYPELESS;
 	description.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	clearValue = {};
 	clearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -71,6 +73,11 @@ void SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 	depthView.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	depthView.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	graphics_->GetDevice()->CreateDepthStencilView(depth_.Get(), &depthView, depthHeap_->GetCPUDescriptorHandleForHeapStart());
+	D3D12_CPU_DESCRIPTOR_HANDLE readView = depthHeap_->GetCPUDescriptorHandleForHeapStart();
+	readView.ptr += graphics_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	depthView.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH | D3D12_DSV_FLAG_READ_ONLY_STENCIL;
+	graphics_->GetDevice()->CreateDepthStencilView(depth_.Get(), &depthView, readView);
+	descriptors_->CreateSRVforTexture2D(depthDescriptorIndex_,depth_.Get(),DXGI_FORMAT_R24_UNORM_X8_TYPELESS,1);
 	descriptors_->CreateSRVforTexture2D(descriptorIndex_, color_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
 }
 
@@ -86,6 +93,9 @@ void SceneRenderTarget::Begin() {
 	commands->ResourceBarrier(1, &barrier);
 	const D3D12_CPU_DESCRIPTOR_HANDLE renderHandle = renderHeap_->GetCPUDescriptorHandleForHeapStart();
 	const D3D12_CPU_DESCRIPTOR_HANDLE depthHandle = depthHeap_->GetCPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE readView = depthHandle;
+	readView.ptr += graphics_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	graphics_->SetDepthTarget(depth_.Get(),renderHandle,depthHandle,readView,descriptors_->GetGPUDescriptorHandle(depthDescriptorIndex_));
 	commands->OMSetRenderTargets(1, &renderHandle, false, &depthHandle);
 	const float clearColor[4] = {0.055f, 0.065f, 0.085f, 1};
 	commands->ClearRenderTargetView(renderHandle, clearColor, 0, nullptr);
@@ -114,6 +124,7 @@ void SceneRenderTarget::Finalize() {
 	depth_.Reset();
 	if (initialized_) {
 		descriptors_->Free(descriptorIndex_);
+		descriptors_->Free(depthDescriptorIndex_);
 	}
 	initialized_ = false;
 	width_ = 0;

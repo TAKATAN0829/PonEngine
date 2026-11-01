@@ -1,4 +1,11 @@
 #include "ParticlePresetFile.h"
+#include "SceneFile.h"
+#include "SceneObjects.h"
+#include "PrefabFile.h"
+#include "../project/CG2/editor/EditorSession.h"
+#include <sstream>
+#include <cmath>
+#include <iomanip>
 #include <fstream>
 #include <iterator>
 #include <limits>
@@ -18,6 +25,7 @@ void RunParticlePresetTests() {
 	const std::filesystem::path directory = "generated/scene-file-tests/particles";
 	const std::filesystem::path presetPath = directory / "test.ponparticle";
 	ParticleSettings settings;
+	settings = MakeParticlePreset(ParticlePresetKind::Smoke);
 	settings.emitterPosition = {1,2,3};
 	settings.spread = {2,0.5f,3};
 	settings.velocityMinimum = {-3,-2,-1};
@@ -75,4 +83,72 @@ void RunParticlePresetTests() {
 	RequireParticleCondition(!ParticlePresetFile::Load(settings, brokenPath, error) && EqualParticleSettings(settings, original),
 		"Unknown particle texture was accepted");
 	RequireParticleCondition(!ParticlePresetFile::Load(settings, directory / "missing", error), "Missing preset was accepted");
+
+	// 旧形式1は新規項目を補完し、従来のサイズ固定・Alpha減衰を維持する。
+	std::string legacy = contents;
+	const size_t extensionStart = legacy.rfind('\n',legacy.size()-2)+1;
+	legacy.erase(extensionStart);
+	legacy.replace(0,std::string("PON_PARTICLE 2").size(),"PON_PARTICLE 1");
+	broken.open(brokenPath);
+	broken << legacy;
+	broken.close();
+	RequireParticleCondition(ParticlePresetFile::Load(settings,brokenPath,error),"Legacy particle preset no longer loads");
+	RequireParticleCondition(!settings.softParticles && !settings.lifetimeAppearance,"Legacy particle appearance changed");
+	const ParticleAppearance oldAppearance = EvaluateParticleAppearance(settings,{1,0.5f,0.2f,0.8f},0.25f);
+	RequireParticleCondition(std::abs(oldAppearance.color.w-0.6f)<0.0001f && oldAppearance.size == 1,"Legacy lifetime fade changed");
+
+	for (ParticlePresetKind kind : {ParticlePresetKind::Fire,ParticlePresetKind::Smoke,ParticlePresetKind::Sparks}) {
+		const ParticleSettings preset = MakeParticlePreset(kind);
+		RequireParticleCondition(ValidateParticleSettings(preset),"Built-in particle preset invalid");
+		const ParticleAppearance birth = EvaluateParticleAppearance(preset,preset.color,0);
+		const ParticleAppearance middle = EvaluateParticleAppearance(preset,preset.color,0.5f);
+		const ParticleAppearance death = EvaluateParticleAppearance(preset,preset.color,1);
+		RequireParticleCondition(std::abs(middle.size-(preset.startSize+preset.endSize)*0.5f)<0.0001f,"Particle size interpolation failed");
+		RequireParticleCondition(std::abs(middle.color.x-(preset.color.x+preset.endColor.x)*0.5f)<0.0001f,"Particle color interpolation failed");
+		RequireParticleCondition(death.color.w == 0 && death.size == preset.endSize,"Particle death appearance incorrect");
+		if (preset.fadeIn > 0) {
+			RequireParticleCondition(birth.color.w == 0,"Particle fade-in pops at birth");
+		}
+	}
+	settings = MakeParticlePreset(ParticlePresetKind::Smoke);
+	settings.softDistance = std::numeric_limits<float>::infinity();
+	RequireParticleCondition(!ValidateParticleSettings(settings),"Non-finite soft distance accepted");
+	settings = original;
+	settings.endColor.x = std::numeric_limits<float>::quiet_NaN();
+	RequireParticleCondition(!ValidateParticleSettings(settings),"Non-finite end color accepted");
+
+	// Scene・Prefab・Undoでも新しい項目を失わず、旧Scene11のParticleも読める。
+	SceneObjects scene;
+	const SceneObjectId emitter = scene.CreateObject(SceneObjectType::Particle);
+	*scene.GetEditableObject(0).particleSettings = original;
+	EditorSession session;
+	session.Initialize(scene);
+	scene.GetEditableObject(0).particleSettings->endSize = 0.12f;
+	session.Update(scene,false);
+	RequireParticleCondition(session.Undo(scene,error) && EqualParticleSettings(*scene.GetEditableObject(0).particleSettings,original),"Particle lifetime undo lost fields");
+	RequireParticleCondition(session.Redo(scene,error),"Particle lifetime redo failed");
+	const std::filesystem::path scenePath = directory/"lifetime.ponscene";
+	RequireParticleCondition(SceneFile::Save(scene,scenePath,error),"Particle lifetime scene save failed");
+	SceneObjects loaded;
+	RequireParticleCondition(SceneFile::Load(loaded,scenePath,error) && EqualParticleSettings(*scene.GetEditableObject(0).particleSettings,*loaded.GetEditableObject(0).particleSettings),"Particle lifetime scene roundtrip failed");
+	const std::filesystem::path prefabPath = directory/"lifetime.ponprefab";
+	RequireParticleCondition(PrefabFile::Save(scene,emitter,prefabPath,error),"Particle lifetime prefab save failed");
+	RequireParticleCondition(PrefabFile::Instantiate(loaded,prefabPath,0,{},error) != 0,"Particle lifetime prefab instantiate failed");
+	RequireParticleCondition(EqualParticleSettings(*scene.GetEditableObject(0).particleSettings,*loaded.GetEditableObject(1).particleSettings),"Prefab lost lifetime appearance");
+	std::ifstream savedScene(scenePath);
+	std::string legacyScene((std::istreambuf_iterator<char>(savedScene)),std::istreambuf_iterator<char>());
+	std::ostringstream serializedParticle;
+	serializedParticle << std::setprecision(std::numeric_limits<float>::max_digits10);
+	ParticlePresetFile::WriteSettings(serializedParticle,*scene.GetEditableObject(0).particleSettings);
+	const std::string particleText = serializedParticle.str();
+	const std::string extension = particleText.substr(particleText.rfind('\n',particleText.size()-2)+1);
+	legacyScene.erase(legacyScene.find(extension),extension.size());
+	const std::string lightExtension = " 60 0\n";
+	legacyScene.erase(legacyScene.rfind(lightExtension),lightExtension.size()-1);
+	legacyScene.replace(0,std::string("PON_SCENE 13").size(),"PON_SCENE 11");
+	std::ofstream oldScene(directory/"legacy11.ponscene");
+	oldScene << legacyScene;
+	oldScene.close();
+	RequireParticleCondition(SceneFile::Load(loaded,directory/"legacy11.ponscene",error),"Scene11 particle compatibility broken");
+	RequireParticleCondition(!loaded.GetEditableObject(0).particleSettings->softParticles && !loaded.GetEditableObject(0).particleSettings->lifetimeAppearance,"Scene11 defaults changed");
 }

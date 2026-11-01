@@ -11,5 +11,8 @@
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'CG2'">
     <ClCompile Remove="main.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)EditorGraphicsTests.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)SceneViewInteractionTests.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)LightingGraphicsTests.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)PrimitiveGraphicsTests.cpp" />
   </ItemGroup>
 </Project>

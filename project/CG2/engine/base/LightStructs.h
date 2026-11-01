@@ -4,6 +4,10 @@
 // 自作
 #include "MathUtility.h"
 
+inline constexpr uint32_t kMaxPointLights = 9; // 従来の配置8個＋固定1個を移行できる数。
+inline constexpr uint32_t kMaxSpotLights = 8;
+inline constexpr uint32_t kMaxDirectionalLights = 4;
+
 //=================================================================================================//
 // 平行光源
 
@@ -12,6 +16,14 @@ struct DirectionalLight {
 	Vector3 direction;
 	float intensity;
 };
+
+struct DirectionalLightBuffer {
+	uint32_t count = 0;
+	float padding[3]{};
+	DirectionalLight lights[kMaxDirectionalLights]{};
+};
+static_assert(sizeof(DirectionalLight) == 32);
+static_assert(sizeof(DirectionalLightBuffer) == 144);
 
 //=================================================================================================//
 // 点光源
@@ -29,7 +41,7 @@ struct PointLight {
 struct PointLightBuffer {
     uint32_t count = 0;
     float padding[3]{};
-    PointLight lights[9]{}; // World Settingsの光源1個と、配置する光源8個。
+    PointLight lights[kMaxPointLights]{};
 };
 static_assert(sizeof(PointLight) == 48);
 static_assert(sizeof(PointLightBuffer) == 448);
@@ -46,5 +58,20 @@ struct SpotLight {
 	float decay;
 	float cosAngle;
 	float cosFalloffStart;
-	float padding[2];
+	float padding[1]; // HLSLの配列要素も64バイトに揃える。
+};
+
+struct SpotLightBuffer {
+	uint32_t count = 0;
+	float padding[3]{};
+	SpotLight lights[kMaxSpotLights]{};
+};
+static_assert(sizeof(SpotLight) == 64);
+static_assert(sizeof(SpotLightBuffer) == 528);
+
+// 毎フレーム一度だけ収集する。固定長なのでライト一覧の動的確保は不要。
+struct SceneLightCollection {
+	DirectionalLightBuffer directional;
+	PointLightBuffer points;
+	SpotLightBuffer spots;
 };

@@ -111,7 +111,7 @@ public:
 	void SetPointLight (const PointLight& pointLight) { pointLightData_->count = 1; pointLightData_->lights[0] = pointLight; }
 	// 最大数は呼出元と保存時にも検証するが、GPU転送時にも配列境界を守る。
 	void SetPointLights(const std::vector<PointLight>& lights) {
-		pointLightData_->count = static_cast<uint32_t>((std::min)(lights.size(), size_t{9}));
+		pointLightData_->count = static_cast<uint32_t>((std::min)(lights.size(), static_cast<size_t>(kMaxPointLights)));
 		for (uint32_t lightIndex = 0; lightIndex < pointLightData_->count; ++lightIndex) {
 			pointLightData_->lights[lightIndex] = lights[lightIndex];
 		}
@@ -120,7 +120,13 @@ public:
 	//=============================================================================================//
 	// SpotLight設定
 
-	void SetSpotLight (const SpotLight& spotLight) { *spotLightData_ = spotLight; }
+	void SetSpotLight (const SpotLight& spotLight) { spotLightData_->count = 1; spotLightData_->lights[0] = spotLight; }
+	// Sceneが一度だけ収集した固定長配列を反映する。隠れた既定光源を追加しない。
+	void SetSceneLights(const SceneLightCollection& lights) {
+		*directionalLightData_ = lights.directional;
+		*pointLightData_ = lights.points;
+		*spotLightData_ = lights.spots;
+	}
 
 	//=============================================================================================//
 	// Texture設定
@@ -204,7 +210,7 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource_ = nullptr;
 
-	DirectionalLight* directionalLightData_ = nullptr;
+	DirectionalLightBuffer* directionalLightData_ = nullptr;
 
 	//=============================================================================================//
 	// 点光源
@@ -218,7 +224,7 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> spotLightResource_ = nullptr;
 
-	SpotLight* spotLightData_ = nullptr;
+	SpotLightBuffer* spotLightData_ = nullptr;
 
 	//=============================================================================================//
 	// BlendMode

@@ -19,6 +19,8 @@ void RunPlacementTests();
 void RunEditorSessionTests();
 void RunSceneViewMathTests();
 void RunParticlePresetTests();
+void RunLightingTests(const std::filesystem::path& directory);
+void RunPrimitiveTests(const std::filesystem::path& directory);
 
 namespace {
 	// 検証条件を満たさなければ、失敗理由をテスト実行元へ通知する。
@@ -130,7 +132,7 @@ namespace {
 		Require(mixedSession.BeginPlay(mixed, error), "cannot play mixed scene");
 		*mixed.GetEditableObject(1).lightIntensity = 99;
 		Require(mixedSession.Stop(mixed, error) && *mixed.GetEditableObject(1).lightIntensity == 3.5f, "light stop restore failed");
-		for (size_t lightIndex = 1; lightIndex < 8; ++lightIndex) {
+		for (size_t lightIndex = 1; lightIndex < 9; ++lightIndex) {
 			Require(mixed.CreateObject(SceneObjectType::PointLight) != 0, "light capacity too small");
 		}
 		Require(mixed.CreateObject(SceneObjectType::PointLight) == 0, "light capacity exceeded");
@@ -264,6 +266,8 @@ int main() {
 		RunEditorSessionTests();
 		RunSceneViewMathTests();
 		RunParticlePresetTests();
+		RunLightingTests(directory);
+		RunPrimitiveTests(directory);
 		std::cout << "Scene, history, viewport and particle preset tests passed\n";
 		return 0;
 	} catch (const std::exception& exception) {

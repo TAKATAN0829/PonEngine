@@ -36,7 +36,33 @@ struct ParticleSettings {
 	bool billboard = true; // 各粒子をカメラの方へ向ける。
 	BlendMode blendMode = kBlendModeAdd;
 	std::string texture = "resources/circle.png";
+
+	//=============================================================================================//
+	// 寿命による見た目 / 既存データは無効で従来のAlpha減衰を維持する。
+
+	bool lifetimeAppearance = false;
+	float startSize = 1; // particleScaleに掛ける発生時の倍率。
+	float endSize = 1; // 消滅時の倍率。0なら縮んで消える。
+	Vector4 endColor = {1,0.65f,0.2f,0};
+	float fadeIn = 0; // 寿命に対するフェードイン区間（0〜1）。
+
+	//=============================================================================================//
+	// モデルとの交差 / ワールド単位で境界をぼかす。
+
+	bool softParticles = false;
+	float softDistance = 0.5f;
 };
+
+enum class ParticlePresetKind { Fire, Smoke, Sparks };
+
+// 実行状態を持たない評価値。CPUテストと実描画で同じ補間を使う。
+struct ParticleAppearance {
+	float size = 1;
+	Vector4 color{};
+};
+
+ParticleAppearance EvaluateParticleAppearance(const ParticleSettings& settings, const Vector4& initialColor, float normalizedAge);
+ParticleSettings MakeParticlePreset(ParticlePresetKind kind);
 
 // 操作中だけの状態。プリセットとシーンファイルの保存対象には含めない。
 struct ParticlePreviewState {

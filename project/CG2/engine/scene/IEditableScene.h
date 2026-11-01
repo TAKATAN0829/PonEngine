@@ -10,6 +10,7 @@
 #include "SceneMotionSettings.h"
 #include "SceneColliderSettings.h"
 #include "SceneBodySettings.h"
+#include "SceneLightSettings.h"
 
 using SceneObjectId = uint64_t;
 inline constexpr SceneObjectId kInvalidSceneObjectId = 0;
@@ -31,7 +32,7 @@ struct EditorToolVisibility {
 };
 
 // 保存・履歴に使う編集用データ。描画用のGPUリソースはGameScene側で別に管理する。
-enum class SceneObjectType { Model, Empty, PointLight, Particle, Camera };
+enum class SceneObjectType { Model, Empty, PointLight, Particle, Camera, SpotLight, DirectionalLight };
 
 // 保存する透視投影の設定。画角はラジアン、描画距離はワールド単位。
 struct SceneCameraSettings {
@@ -80,6 +81,7 @@ struct SceneObjectData {
 	SceneMotionSettings motion; // ゲーム再生時だけTransformへ反映する動作設定。
 	SceneColliderSettings collider; // モデルやボーン形状とは独立した接触範囲。
 	SceneBodySettings body; // 質量・重力・接触特性。実行速度は保存しない。
+	SceneLightSettings light; // Spotの内角・外角。角度は度数で保存する。
 };
 
 // シーンが所有する値への借用参照。追加・削除・読込の後は取得し直す必要がある。
@@ -109,6 +111,7 @@ struct EditableObjectView {
 	SceneBodySettings* body = nullptr; // 実行中の速度への参照は公開しない。
 	SceneColliderSettings* collider = nullptr; // 借用参照。構造変更後は取得し直す。
 	SceneMotionSettings* motion = nullptr; // 借用参照。フレームをまたいで保持しない。
+	SceneLightSettings* light = nullptr; // Light固有設定。構造変更後は取得し直す。
 };
 
 // Editorに公開する操作の窓口。ゲーム側がパネルの具体的な型を知る必要はない。
@@ -189,6 +192,8 @@ public:
 	// メイン指定と投影をCPU側で解決し、GameViewと実行時で共有する。
 	virtual bool SetMainCamera(SceneObjectId) { return false; }
 	virtual SceneObjectId GetMainCameraId() const { return kInvalidSceneObjectId; }
+	// メイン指定に関係なく、指定Cameraの実描画と同じ視野を取得する。
+	virtual bool GetCameraView(SceneObjectId, float, SceneCameraView&) const { return false; }
 	virtual bool GetGameCameraView(float, SceneCameraView&) const { return false; }
 	virtual bool SupportsObjectCollection() const { return false; }
 	virtual std::vector<SceneObjectData> CaptureObjects() const { return {}; }

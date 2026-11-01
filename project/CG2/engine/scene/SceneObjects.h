@@ -45,6 +45,8 @@ public:
 	bool SetMainCamera(SceneObjectId id) override;
 	SceneObjectId GetMainCameraId() const override;
 	bool GetGameCameraView(float aspectRatio, SceneCameraView& view) const override;
+	// 選択中カメラの補助線にも、実描画と同じ拡縮除去を適用する。
+	bool GetCameraView(SceneObjectId cameraId, float aspectRatio, SceneCameraView& view) const override;
 
 	//=============================================================================================//
 	// メンバ関数 / 追加・複製・削除

@@ -1,6 +1,7 @@
 #include "ParticleSettings.h"
 #include <array>
 #include <cmath>
+#include <algorithm>
 
 namespace {
 	// 位置・速度などの三成分を、同じ規則で比較する。
@@ -58,6 +59,21 @@ bool ValidateParticleSettings(const ParticleSettings& settings) {
 	}
 
 	// 表示・合成
+	if (!std::isfinite(settings.startSize) || !std::isfinite(settings.endSize) || !std::isfinite(settings.fadeIn) || !std::isfinite(settings.softDistance)) {
+		return false;
+	}
+	if (settings.startSize < 0.001f || settings.startSize > 100 || settings.endSize < 0 || settings.endSize > 100) {
+		return false;
+	}
+	if (settings.fadeIn < 0 || settings.fadeIn > 1 || settings.softDistance < 0.001f || settings.softDistance > 100) {
+		return false;
+	}
+	const float endChannels[] = {settings.endColor.x,settings.endColor.y,settings.endColor.z,settings.endColor.w};
+	for (float channel : endChannels) {
+		if (!std::isfinite(channel) || channel < 0 || channel > 1) {
+			return false;
+		}
+	}
 	if (!WithinRange(settings.particleScale, 0.001f, 100)) {
 		return false;
 	}
@@ -69,6 +85,15 @@ bool ValidateParticleSettings(const ParticleSettings& settings) {
 
 // 保存対象の設定だけを比較し、プレビュー中の粒子の変化では未保存表示を出さない。
 bool EqualParticleSettings(const ParticleSettings& firstSettings, const ParticleSettings& secondSettings) {
+	if (firstSettings.lifetimeAppearance != secondSettings.lifetimeAppearance || firstSettings.softParticles != secondSettings.softParticles) {
+		return false;
+	}
+	if (firstSettings.startSize != secondSettings.startSize || firstSettings.endSize != secondSettings.endSize || firstSettings.fadeIn != secondSettings.fadeIn || firstSettings.softDistance != secondSettings.softDistance) {
+		return false;
+	}
+	if (firstSettings.endColor.x != secondSettings.endColor.x || firstSettings.endColor.y != secondSettings.endColor.y || firstSettings.endColor.z != secondSettings.endColor.z || firstSettings.endColor.w != secondSettings.endColor.w) {
+		return false;
+	}
 	return EqualVector(firstSettings.emitterPosition, secondSettings.emitterPosition) &&
 		EqualVector(firstSettings.spread, secondSettings.spread) &&
 		EqualVector(firstSettings.velocityMinimum, secondSettings.velocityMinimum) &&
@@ -82,4 +107,64 @@ bool EqualParticleSettings(const ParticleSettings& firstSettings, const Particle
 		firstSettings.randomColor == secondSettings.randomColor && firstSettings.billboard == secondSettings.billboard &&
 		firstSettings.accelerationEnabled == secondSettings.accelerationEnabled &&
 		firstSettings.blendMode == secondSettings.blendMode && firstSettings.texture == secondSettings.texture;
+}
+
+ParticleAppearance EvaluateParticleAppearance(const ParticleSettings& settings, const Vector4& initialColor, float normalizedAge) {
+	const float age = (std::clamp)(normalizedAge,0.0f,1.0f);
+	ParticleAppearance appearance;
+	appearance.color = initialColor;
+	if (!settings.lifetimeAppearance) {
+		appearance.color.w *= 1-age;
+		return appearance;
+	}
+	appearance.size = std::lerp(settings.startSize,settings.endSize,age);
+	appearance.color = {std::lerp(initialColor.x,settings.endColor.x,age),std::lerp(initialColor.y,settings.endColor.y,age),
+		std::lerp(initialColor.z,settings.endColor.z,age),std::lerp(initialColor.w,settings.endColor.w,age)};
+	if (settings.fadeIn > 0) {
+		appearance.color.w *= (std::min)(1.0f,age/settings.fadeIn);
+	}
+	return appearance;
+}
+
+ParticleSettings MakeParticlePreset(ParticlePresetKind kind) {
+	ParticleSettings settings;
+	settings.lifetimeAppearance = true;
+	settings.softParticles = true;
+	settings.spread = {0.2f,0.05f,0.2f};
+	settings.velocityMinimum = {-0.15f,0.6f,-0.15f};
+	settings.velocityMaximum = {0.15f,1.5f,0.15f};
+	settings.particleScale = {0.5f,0.5f,0.5f};
+	settings.color = {1,0.75f,0.15f,0.8f};
+	settings.endColor = {0.8f,0.08f,0.01f,0};
+	settings.startSize = 0.5f;
+	settings.endSize = 0.1f;
+	settings.fadeIn = 0.1f;
+	settings.lifetimeMinimum = 0.6f;
+	settings.lifetimeMaximum = 1.2f;
+	settings.interval = 0.05f;
+	if (kind == ParticlePresetKind::Smoke) {
+		settings.blendMode = kBlendModeNormal;
+		settings.color = {0.25f,0.25f,0.28f,0.35f};
+		settings.endColor = {0.5f,0.5f,0.53f,0};
+		settings.startSize = 0.3f;
+		settings.endSize = 2.5f;
+		settings.fadeIn = 0.2f;
+		settings.lifetimeMinimum = 2;
+		settings.lifetimeMaximum = 4;
+		settings.velocityMaximum.y = 0.8f;
+	} else if (kind == ParticlePresetKind::Sparks) {
+		settings.spread = {0.05f,0.05f,0.05f};
+		settings.velocityMinimum = {-2,1,-2};
+		settings.velocityMaximum = {2,4,2};
+		settings.particleScale = {0.06f,0.06f,0.06f};
+		settings.accelerationEnabled = true;
+		settings.acceleration = {0,-5,0};
+		settings.startSize = 1;
+		settings.endSize = 0;
+		settings.fadeIn = 0;
+		settings.softDistance = 0.1f;
+		settings.lifetimeMinimum = 0.3f;
+		settings.lifetimeMaximum = 0.8f;
+	}
+	return settings;
 }

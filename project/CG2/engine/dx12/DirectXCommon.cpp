@@ -1,5 +1,6 @@
 #include "FrameProfiler.h"
 #include "DirectXCommon.h"
+#include "SrvManager.h"
 
 // C++
 #include <cassert>
@@ -339,6 +340,7 @@ void DirectXCommon::PreDraw() {
 		&dsvHandle_);
 
 	// ClearColor
+	BindBackBuffer(); // 描画先と深度の借用情報を毎フレーム揃える。
 	float clearColor[] = { 0.1f,0.25f,0.5f,1.0f };
 
 	// RenderTargetClear
@@ -362,6 +364,8 @@ void DirectXCommon::PreDraw() {
 // 描画後処理
 
 void DirectXCommon::PostDraw() {
+	assert(!depthReading_);
+	activeDepth_ = nullptr;
 
 	// Barrier設定
 	D3D12_RESOURCE_BARRIER barrier{};
@@ -503,7 +507,7 @@ void DirectXCommon::InitializeDepthStencilView() {
 
 	dsvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 
-	dsvDescriptorHeapDesc.NumDescriptors = 1;
+	dsvDescriptorHeapDesc.NumDescriptors = 2;
 
 	dsvDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
@@ -522,7 +526,7 @@ void DirectXCommon::InitializeDepthStencilView() {
 	resourceDesc.Height = renderHeight_;
 	resourceDesc.MipLevels = 1;
 	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	resourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
 	resourceDesc.SampleDesc.Count = 1;
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
@@ -557,12 +561,83 @@ void DirectXCommon::InitializeDepthStencilView() {
 
 	// DSV生成
 	device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHandle_);
+	depthReadHandle_ = dsvHandle_;
+	depthReadHandle_.ptr += device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	dsvDesc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH | D3D12_DSV_FLAG_READ_ONLY_STENCIL;
+	device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, depthReadHandle_);
+	if (depthDescriptors_ != nullptr) {
+		depthDescriptors_->CreateSRVforTexture2D(depthDescriptorIndex_,depthStencilResource_.Get(),DXGI_FORMAT_R24_UNORM_X8_TYPELESS,1);
+	}
 }
 // Scene用描画先から戻るときに、バックバッファの表示領域も復元する。
 void DirectXCommon::BindBackBuffer() {
+	D3D12_GPU_DESCRIPTOR_HANDLE texture{};
+	if (depthDescriptors_ != nullptr) {
+		texture = depthDescriptors_->GetGPUDescriptorHandle(depthDescriptorIndex_);
+	}
+	SetDepthTarget(depthStencilResource_.Get(),rtvHandles_[backBufferIndex_],dsvHandle_,depthReadHandle_,texture);
     commandList_->OMSetRenderTargets(1, &rtvHandles_[backBufferIndex_], false, &dsvHandle_);
     commandList_->RSSetViewports(1, &viewport_);
     commandList_->RSSetScissorRects(1, &scissorRect_);
+}
+
+void DirectXCommon::InitializeDepthSampling(SrvManager* descriptors, uint32_t descriptorIndex) {
+	depthDescriptors_ = descriptors;
+	depthDescriptorIndex_ = descriptorIndex;
+	descriptors->CreateSRVforTexture2D(descriptorIndex,depthStencilResource_.Get(),DXGI_FORMAT_R24_UNORM_X8_TYPELESS,1);
+}
+
+void DirectXCommon::FinalizeDepthSampling() {
+	depthDescriptors_ = nullptr;
+	activeDepth_ = nullptr;
+}
+
+void DirectXCommon::SetDepthTarget(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE renderView,
+	D3D12_CPU_DESCRIPTOR_HANDLE writeView, D3D12_CPU_DESCRIPTOR_HANDLE readView, D3D12_GPU_DESCRIPTOR_HANDLE texture) {
+	assert(!depthReading_);
+	activeDepth_ = resource;
+	activeRenderView_ = renderView;
+	activeDepthWriteView_ = writeView;
+	activeDepthReadView_ = readView;
+	activeDepthTexture_ = texture;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::BeginDepthRead() {
+	assert(activeDepth_ != nullptr);
+	assert(!depthReading_);
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Transition.pResource = activeDepth_;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	commandList_->ResourceBarrier(1,&barrier);
+	commandList_->OMSetRenderTargets(1,&activeRenderView_,false,&activeDepthReadView_);
+	depthReading_ = true;
+	return activeDepthTexture_;
+}
+
+void DirectXCommon::EndDepthRead() {
+	assert(depthReading_);
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Transition.pResource = activeDepth_;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+	commandList_->OMSetRenderTargets(1,&activeRenderView_,false,&activeDepthWriteView_);
+	commandList_->ResourceBarrier(1,&barrier);
+	depthReading_ = false;
+}
+
+uint32_t DirectXCommon::GetDepthWidth() const {
+	assert(activeDepth_ != nullptr);
+	return static_cast<uint32_t>(activeDepth_->GetDesc().Width);
+}
+
+uint32_t DirectXCommon::GetDepthHeight() const {
+	assert(activeDepth_ != nullptr);
+	return activeDepth_->GetDesc().Height;
 }
 
 // 前フレームはPostDrawで待機済みなので、現在の命令を記録する前に安全に作り直せる。
