@@ -1,7 +1,7 @@
-#include "SceneMotion.h"
-#include "SceneObjects.h"
-#include "SceneFile.h"
-#include "PrefabFile.h"
+#include "systems/SceneMotion.h"
+#include "objects/SceneObjects.h"
+#include "serialization/SceneFile.h"
+#include "serialization/PrefabFile.h"
 #include "../project/CG2/editor/EditorSession.h"
 #include <cmath>
 #include <fstream>

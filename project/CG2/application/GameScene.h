@@ -2,10 +2,10 @@
 
 // 自作
 #include "IScene.h"
-#include "SceneObjects.h"
-#include "SceneMotion.h"
-#include "SceneCollision.h"
-#include "ScenePhysics.h"
+#include "objects/SceneObjects.h"
+#include "systems/SceneMotion.h"
+#include "systems/SceneCollision.h"
+#include "systems/ScenePhysics.h"
 #include "SceneRenderTarget.h"
 #include <memory>
 #include <unordered_map>

@@ -1,4 +1,4 @@
-#include "ParticleSettings.h"
+#include "components/ParticleSettings.h"
 #include <array>
 #include <cmath>
 #include <algorithm>

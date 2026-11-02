@@ -31,7 +31,7 @@
     <Filter Include="engine\audio">
       <UniqueIdentifier>{5cf7d3f8-4be4-4606-8960-6324b8bcbf3b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="engine\scene">
+    <Filter Include="engine\world">
       <UniqueIdentifier>{c9357e03-fcac-4391-9e62-58c3a3c2c8f7}</UniqueIdentifier>
     </Filter>
     <Filter Include="engine\utility">
@@ -45,6 +45,18 @@
     </Filter>
     <Filter Include="externals">
       <UniqueIdentifier>{24127203-dcf1-4b4f-880b-ee52aefece42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine\world\objects">
+      <UniqueIdentifier>{a09d1a6f-be68-4282-b64b-c1a6d1e6ccae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine\world\components">
+      <UniqueIdentifier>{c0d2ef9e-babd-4e47-ac9a-6f38f5723d90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine\world\serialization">
+      <UniqueIdentifier>{79746147-d6b3-499f-90a6-cd51a591da8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine\world\systems">
+      <UniqueIdentifier>{40f1194a-cc51-4a05-b422-8dfe25547513}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -112,8 +124,8 @@
     <ClCompile Include="application\GameScene.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="engine\scene\SceneManager.cpp">
-      <Filter>engine\scene</Filter>
+    <ClCompile Include="engine\world\SceneManager.cpp">
+      <Filter>engine\world</Filter>
     </ClCompile>
     <ClCompile Include="engine\object\Transform.cpp">
       <Filter>engine\object</Filter>
@@ -232,11 +244,11 @@
     <ClInclude Include="application\GameScene.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="engine\scene\IScene.h">
-      <Filter>engine\scene</Filter>
+    <ClInclude Include="engine\world\IScene.h">
+      <Filter>engine\world</Filter>
     </ClInclude>
-    <ClInclude Include="engine\scene\SceneManager.h">
-      <Filter>engine\scene</Filter>
+    <ClInclude Include="engine\world\SceneManager.h">
+      <Filter>engine\world</Filter>
     </ClInclude>
     <ClInclude Include="engine\object\Transform.h">
       <Filter>engine\object</Filter>
@@ -301,15 +313,15 @@
     <ClInclude Include="editor\EditorSelection.h"><Filter>editor</Filter></ClInclude>
     <ClInclude Include="editor\panels\HierarchyPanel.h"><Filter>editor\panels</Filter></ClInclude>
     <ClInclude Include="editor\panels\InspectorPanel.h"><Filter>editor\panels</Filter></ClInclude>
-    <ClInclude Include="engine\scene\IEditableScene.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClInclude Include="engine\world\IEditableScene.h"><Filter>engine\world</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\scene\SceneFile.cpp"><Filter>engine\scene</Filter></ClCompile>
-    <ClInclude Include="engine\scene\SceneFile.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClCompile Include="engine\world\serialization\SceneFile.cpp"><Filter>engine\world\serialization</Filter></ClCompile>
+    <ClInclude Include="engine\world\serialization\SceneFile.h"><Filter>engine\world\serialization</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\scene\SceneObjects.cpp"><Filter>engine\scene</Filter></ClCompile>
-    <ClInclude Include="engine\scene\SceneObjects.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClCompile Include="engine\world\objects\SceneObjects.cpp"><Filter>engine\world\objects</Filter></ClCompile>
+    <ClInclude Include="engine\world\objects\SceneObjects.h"><Filter>engine\world\objects</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="editor\EditorSession.cpp"><Filter>editor</Filter></ClCompile>
@@ -324,10 +336,10 @@
   <ItemGroup>
     <ClCompile Include="engine\dx12\SceneRenderTarget.cpp"><Filter>engine\dx12</Filter></ClCompile>
     <ClInclude Include="engine\dx12\SceneRenderTarget.h"><Filter>engine\dx12</Filter></ClInclude>
-    <ClCompile Include="engine\scene\ParticleSettings.cpp"><Filter>engine\scene</Filter></ClCompile>
-    <ClInclude Include="engine\scene\ParticleSettings.h"><Filter>engine\scene</Filter></ClInclude>
-    <ClCompile Include="engine\scene\ParticlePresetFile.cpp"><Filter>engine\scene</Filter></ClCompile>
-    <ClInclude Include="engine\scene\ParticlePresetFile.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClCompile Include="engine\world\components\ParticleSettings.cpp"><Filter>engine\world\components</Filter></ClCompile>
+    <ClInclude Include="engine\world\components\ParticleSettings.h"><Filter>engine\world\components</Filter></ClInclude>
+    <ClCompile Include="engine\world\serialization\ParticlePresetFile.cpp"><Filter>engine\world\serialization</Filter></ClCompile>
+    <ClInclude Include="engine\world\serialization\ParticlePresetFile.h"><Filter>engine\world\serialization</Filter></ClInclude>
     <ClCompile Include="editor\EditorLayout.cpp"><Filter>editor</Filter></ClCompile>
     <ClInclude Include="editor\EditorLayout.h"><Filter>editor</Filter></ClInclude>
     <ClCompile Include="editor\panels\ParticleEditorPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
@@ -352,24 +364,24 @@
     <ClInclude Include="engine\core\FrameProfiler.h"><Filter>engine\core</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\scene\SceneMotion.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClCompile Include="engine\world\systems\SceneMotion.cpp"><Filter>engine\world\systems</Filter></ClCompile>
     <ClCompile Include="editor\panels\InspectorMotion.cpp"><Filter>editor\panels</Filter></ClCompile>
-    <ClInclude Include="engine\scene\SceneMotion.h"><Filter>engine\scene</Filter></ClInclude>
-    <ClInclude Include="engine\scene\SceneMotionSettings.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClInclude Include="engine\world\systems\SceneMotion.h"><Filter>engine\world\systems</Filter></ClInclude>
+    <ClInclude Include="engine\world\components\SceneMotionSettings.h"><Filter>engine\world\components</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\scene\SceneCollision.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClCompile Include="engine\world\systems\SceneCollision.cpp"><Filter>engine\world\systems</Filter></ClCompile>
     <ClCompile Include="editor\panels\InspectorCollider.cpp"><Filter>editor\panels</Filter></ClCompile>
     <ClCompile Include="editor\panels\SceneViewCollider.cpp"><Filter>editor\panels</Filter></ClCompile>
     <ClCompile Include="editor\panels\SceneViewGuides.cpp"><Filter>editor\panels</Filter></ClCompile>
-    <ClInclude Include="engine\scene\SceneCollision.h"><Filter>engine\scene</Filter></ClInclude>
-    <ClInclude Include="engine\scene\SceneColliderSettings.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClInclude Include="engine\world\systems\SceneCollision.h"><Filter>engine\world\systems</Filter></ClInclude>
+    <ClInclude Include="engine\world\components\SceneColliderSettings.h"><Filter>engine\world\components</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\scene\ScenePhysics.cpp"><Filter>engine\scene</Filter></ClCompile>
+    <ClCompile Include="engine\world\systems\ScenePhysics.cpp"><Filter>engine\world\systems</Filter></ClCompile>
     <ClCompile Include="editor\panels\InspectorBody.cpp"><Filter>editor\panels</Filter></ClCompile>
-    <ClInclude Include="engine\scene\ScenePhysics.h"><Filter>engine\scene</Filter></ClInclude>
-    <ClInclude Include="engine\scene\SceneBodySettings.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClInclude Include="engine\world\systems\ScenePhysics.h"><Filter>engine\world\systems</Filter></ClInclude>
+    <ClInclude Include="engine\world\components\SceneBodySettings.h"><Filter>engine\world\components</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="editor\EditorTheme.cpp"><Filter>editor</Filter></ClCompile>
@@ -378,16 +390,27 @@
     <ClInclude Include="editor\EditorProperties.h"><Filter>editor</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\scene\SceneLighting.cpp"><Filter>engine\scene</Filter></ClCompile>
-    <ClInclude Include="engine\scene\SceneLighting.h"><Filter>engine\scene</Filter></ClInclude>
-    <ClInclude Include="engine\scene\SceneLightSettings.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClCompile Include="engine\world\systems\SceneLighting.cpp"><Filter>engine\world\systems</Filter></ClCompile>
+    <ClInclude Include="engine\world\systems\SceneLighting.h"><Filter>engine\world\systems</Filter></ClInclude>
+    <ClInclude Include="engine\world\components\SceneLightSettings.h"><Filter>engine\world\components</Filter></ClInclude>
     <ClCompile Include="editor\panels\InspectorLights.cpp"><Filter>editor\panels</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\scene\ScenePrimitives.cpp"><Filter>engine\scene</Filter></ClCompile>
-    <ClInclude Include="engine\scene\ScenePrimitives.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClCompile Include="engine\world\objects\ScenePrimitives.cpp"><Filter>engine\world\objects</Filter></ClCompile>
+    <ClInclude Include="engine\world\objects\ScenePrimitives.h"><Filter>engine\world\objects</Filter></ClInclude>
     <None Include="resources\primitives\Cube.obj" />
     <None Include="resources\primitives\Sphere.obj" />
     <None Include="resources\primitives\Primitive.mtl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="engine\world\ISceneObjects.h"><Filter>engine\world</Filter></ClInclude>
+    <ClInclude Include="engine\world\objects\SceneObjectData.h"><Filter>engine\world\objects</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="engine\base\LightLimits.h"><Filter>engine\base</Filter></ClInclude>
+    <ClInclude Include="engine\base\SceneObjectTypes.h"><Filter>engine\base</Filter></ClInclude>
+    <ClCompile Include="engine\world\components\SceneLightSettings.cpp"><Filter>engine\world\components</Filter></ClCompile>
+    <ClCompile Include="engine\world\serialization\SceneLightMigration.cpp"><Filter>engine\world\serialization</Filter></ClCompile>
+    <ClInclude Include="engine\world\serialization\SceneLightMigration.h"><Filter>engine\world\serialization</Filter></ClInclude>
   </ItemGroup>
 </Project>

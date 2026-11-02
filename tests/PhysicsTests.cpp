@@ -1,7 +1,7 @@
-#include "ScenePhysics.h"
-#include "SceneObjects.h"
-#include "SceneFile.h"
-#include "PrefabFile.h"
+#include "systems/ScenePhysics.h"
+#include "objects/SceneObjects.h"
+#include "serialization/SceneFile.h"
+#include "serialization/PrefabFile.h"
 #include "../project/CG2/editor/EditorSession.h"
 #include <cmath>
 #include <fstream>
@@ -31,7 +31,8 @@ namespace {
 		object.transform.translate.y = 3;
 		return object;
 	}
-	void Advance(ScenePhysics& physics, SceneObjects& scene, size_t frames) {
+	// 物理更新はEditor専用APIを持たない共通インターフェースだけを使用する。
+	void Advance(ScenePhysics& physics, ISceneObjects& scene, size_t frames) {
 		for (size_t frame = 0; frame < frames; ++frame) {
 			physics.Update(scene,1.0f / 60);
 		}

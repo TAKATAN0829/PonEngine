@@ -1,7 +1,7 @@
-#include "ParticlePresetFile.h"
-#include "SceneFile.h"
-#include "SceneObjects.h"
-#include "PrefabFile.h"
+#include "serialization/ParticlePresetFile.h"
+#include "serialization/SceneFile.h"
+#include "objects/SceneObjects.h"
+#include "serialization/PrefabFile.h"
 #include "../project/CG2/editor/EditorSession.h"
 #include <sstream>
 #include <cmath>

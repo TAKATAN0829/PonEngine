@@ -1,5 +1,5 @@
 #pragma once
-#include "IEditableScene.h"
+#include "ISceneObjects.h"
 #include <unordered_map>
 
 // ゲーム更新時だけTransformを動かす。描画はGameSceneへ任せ、GPU資源は所有しない。
@@ -16,7 +16,7 @@ public:
 	// 更新処理
 
 	// Pause中は呼ばない。Activeが無効な親を持つ対象も時計を進めない。
-	void Update(IEditableScene& scene, float deltaSeconds);
+	void Update(ISceneObjects& scene, float deltaSeconds);
 
 private:
 	//=============================================================================================//

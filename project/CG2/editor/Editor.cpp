@@ -2,7 +2,7 @@
 #include "Editor.h"
 #include "panels/HierarchyPanel.h"
 #include "panels/InspectorPanel.h"
-#include "SceneFile.h"
+#include "serialization/SceneFile.h"
 #include "LogSystem.h"
 
 #ifdef USE_IMGUI

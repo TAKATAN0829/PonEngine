@@ -1,5 +1,5 @@
 #pragma once
-#include "IEditableScene.h"
+#include "ISceneObjects.h"
 
 enum class ScenePrimitiveType { Cube, Sphere };
 
@@ -8,5 +8,5 @@ namespace ScenePrimitives {
 	inline constexpr const char* kCubeModel = "primitives/Cube.obj";
 	inline constexpr const char* kSphereModel = "primitives/Sphere.obj";
 	// CubeはBox、SphereはSphere Collider付き。失敗時はシーンを変更しない。
-	SceneObjectId Create(IEditableScene& scene, ScenePrimitiveType type, std::string& error);
+	SceneObjectId Create(ISceneObjects& scene, ScenePrimitiveType type, std::string& error);
 }

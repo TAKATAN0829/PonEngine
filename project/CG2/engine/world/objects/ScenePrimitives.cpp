@@ -1,8 +1,8 @@
-#include "ScenePrimitives.h"
+#include "objects/ScenePrimitives.h"
 #include <limits>
 #include <utility>
 
-SceneObjectId ScenePrimitives::Create(IEditableScene& scene, ScenePrimitiveType type, std::string& error) {
+SceneObjectId ScenePrimitives::Create(ISceneObjects& scene, ScenePrimitiveType type, std::string& error) {
 	error.clear();
 	if (!scene.SupportsObjectCollection()) {
 		error = "This scene does not support primitive creation.";

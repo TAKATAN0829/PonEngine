@@ -1,7 +1,8 @@
-#include "SceneLighting.h"
-#include "SceneObjects.h"
-#include "SceneFile.h"
-#include "PrefabFile.h"
+#include "serialization/SceneLightMigration.h"
+#include "systems/SceneLighting.h"
+#include "objects/SceneObjects.h"
+#include "serialization/SceneFile.h"
+#include "serialization/PrefabFile.h"
 #include "../project/CG2/editor/EditorSession.h"
 #include <cmath>
 #include <fstream>
@@ -89,7 +90,7 @@ void RunLightingTests(const std::filesystem::path& directory) {
 	RequireLight(lights.spots.count == 2 && lights.directional.count == 2,"Prefab lost lights");
 	for (SceneObjectType type : {SceneObjectType::PointLight,SceneObjectType::SpotLight,SceneObjectType::DirectionalLight}) {
 		SceneObjects capacity;
-		for (uint32_t lightIndex = 0; lightIndex < SceneLighting::GetLimit(type); ++lightIndex) {
+		for (uint32_t lightIndex = 0; lightIndex < SceneLightTypes::GetLimit(type); ++lightIndex) {
 			RequireLight(capacity.CreateObject(type) != 0,"Light limit too small");
 		}
 		RequireLight(capacity.CreateObject(type) == 0,"Light limit exceeded");
@@ -123,7 +124,16 @@ void RunLightingTests(const std::filesystem::path& directory) {
 	SceneObjectData exhausted;
 	exhausted.id = (std::numeric_limits<SceneObjectId>::max)()-1;
 	std::vector<SceneObjectData> noIds = {exhausted};
-	RequireLight(!SceneLighting::AddLegacyDefaults(noIds,error) && noIds.size() == 1,"Failed light migration partially changed scene");
+	RequireLight(!SceneLightMigration::AddLegacyDefaults(noIds,error) && noIds.size() == 1,"Failed light migration partially changed scene");
+	// 追加後のライト上限検証で拒否されても、元の配列と設定を維持する。
+	std::vector<SceneObjectData> fullPointLights = eightLights.CaptureObjects();
+	SceneObjectData lastPointLight = fullPointLights.back();
+	lastPointLight.id = eightLights.GetNextObjectId();
+	lastPointLight.color = {0.25f,0.5f,0.75f,1};
+	fullPointLights.push_back(lastPointLight);
+	RequireLight(!SceneLightMigration::AddLegacyDefaults(fullPointLights,error),"Migration exceeded point light capacity");
+	RequireLight(fullPointLights.size() == kMaxPointLights,"Rejected migration appended lights");
+	RequireLight(fullPointLights.back().id == lastPointLight.id && fullPointLights.back().color.x == 0.25f,"Rejected migration changed existing lights");
 	// 形式1の「既存IDへ適用」でも、現在の移行済みライトを二重に持ち越さない。
 	SceneObjects versionOne;
 	versionOne.AddObject("plane.gltf");

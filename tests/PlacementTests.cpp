@@ -1,4 +1,4 @@
-#include "SceneObjects.h"
+#include "objects/SceneObjects.h"
 #include "SceneViewMath.h"
 #include "../project/CG2/editor/AssetDragPayload.h"
 #include "../project/CG2/editor/EditorSession.h"

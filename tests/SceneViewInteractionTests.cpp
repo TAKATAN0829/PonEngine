@@ -1,6 +1,6 @@
 #include "../project/CG2/editor/panels/SceneViewPanel.h"
 #include "../project/CG2/editor/EditorSelection.h"
-#include "SceneObjects.h"
+#include "objects/SceneObjects.h"
 #include "SceneViewMath.h"
 #include "MathUtility.h"
 #include "../project/CG2/editor/panels/InspectorPanel.h"

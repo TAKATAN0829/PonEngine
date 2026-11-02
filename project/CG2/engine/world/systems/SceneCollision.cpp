@@ -1,4 +1,4 @@
-#include "SceneCollision.h"
+#include "systems/SceneCollision.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -288,7 +288,7 @@ bool SceneCollision::Intersects(const WorldCollider& first, const WorldCollider&
 	return LengthSquared(MathUtility::Subtract(first.center,second.center)) <= radius * radius;
 }
 
-void SceneCollision::Update(IEditableScene& scene) {
+void SceneCollision::Update(ISceneObjects& scene) {
 	events_.clear();
 	std::vector<WorldCollider> shapes;
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {

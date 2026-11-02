@@ -1,5 +1,5 @@
 #pragma once
-#include "SceneObjects.h"
+#include "objects/SceneObjects.h"
 #include "SceneRenderTarget.h"
 #include "Object3d.h"
 #include <array>

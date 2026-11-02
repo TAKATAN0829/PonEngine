@@ -1,5 +1,5 @@
 #include "EditorSession.h"
-#include "SceneObjects.h"
+#include "objects/SceneObjects.h"
 
 // 保存対象の全プロパティを比較する。UIの選択状態やパネル配置は比較しない。
 bool EditorSession::AreObjectsEqual(const SceneObjectData& firstObject, const SceneObjectData& secondObject) {

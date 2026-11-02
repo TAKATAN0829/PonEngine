@@ -1,6 +1,6 @@
 #include "LightingGraphicsTests.h"
 #include "IScene.h"
-#include "SceneLighting.h"
+#include "systems/SceneLighting.h"
 #include "Object3dCommon.h"
 #include "DirectXCommon.h"
 #include "ModelManager.h"

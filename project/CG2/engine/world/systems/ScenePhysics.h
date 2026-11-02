@@ -1,5 +1,5 @@
 #pragma once
-#include "SceneCollision.h"
+#include "systems/SceneCollision.h"
 #include <unordered_map>
 
 // 並進の重力・接触応答。Colliderの形状計算を共有し、GPUやログには依存しない。
@@ -8,13 +8,13 @@ public:
 	//=============================================================================================//
 	// 初期化・終了処理
 
-	void Initialize(IEditableScene& scene); // Play開始時の初速とKinematicの位置を取得する。
+	void Initialize(ISceneObjects& scene); // Play開始時の初速とKinematicの位置を取得する。
 	void Finalize(); // Stop時に速度を消す。Transformの復元はEditorSessionが担当する。
 
 	//=============================================================================================//
 	// 更新処理
 
-	void Update(IEditableScene& scene, float deltaSeconds);
+	void Update(ISceneObjects& scene, float deltaSeconds);
 
 	//=============================================================================================//
 	// Getter / 実行中の速度
@@ -44,14 +44,14 @@ private:
 	//=============================================================================================//
 	// メンバ関数 / 速度・移動・接触解決
 
-	void RefreshBodies(IEditableScene& scene, float deltaSeconds);
-	void Integrate(IEditableScene& scene, float deltaSeconds);
-	void AdvanceKinematics(IEditableScene& scene, float fraction);
-	void Solve(IEditableScene& scene);
-	std::vector<ShapeEntry> CollectShapes(IEditableScene& scene) const;
-	bool ResolvePair(IEditableScene& scene, const ShapeEntry& first, const ShapeEntry& second);
+	void RefreshBodies(ISceneObjects& scene, float deltaSeconds);
+	void Integrate(ISceneObjects& scene, float deltaSeconds);
+	void AdvanceKinematics(ISceneObjects& scene, float fraction);
+	void Solve(ISceneObjects& scene);
+	std::vector<ShapeEntry> CollectShapes(ISceneObjects& scene) const;
+	bool ResolvePair(ISceneObjects& scene, const ShapeEntry& first, const ShapeEntry& second);
 	void ApplyImpulse(SceneObjectId first, SceneObjectId second, const Vector3& normal, float restitution, float friction);
-	void MoveBody(IEditableScene& scene, SceneObjectId identifier, const Vector3& delta);
+	void MoveBody(ISceneObjects& scene, SceneObjectId identifier, const Vector3& delta);
 	float GetInverseMass(SceneObjectId identifier) const;
 	static bool CompareShapes(const ShapeEntry& first, const ShapeEntry& second);
 

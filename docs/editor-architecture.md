@@ -110,11 +110,36 @@ ParticlePresetFileの設定部分の読込・書込を共有し、シーン内Em
 
 GameSceneはSceneLightingでHierarchy内の有効なPoint / Spot / Directionalを収集し、固定長の各LightBufferをメッシュへ渡す。World Settingsの固定ライトは廃止した。旧シーンの移行と現在の上限は「ライトの統合」を参照。
 
+## engine/worldのファイル分類
+
+`world`直下には`IScene`・`ISceneObjects`・`IEditableScene`と`SceneManager`を置く。ゲーム側・Editor側が共有するシーンの窓口と、実行中のシーン切り替えを担当する。
+
+| フォルダ | 担当ファイルと責務 |
+| --- | --- |
+| `objects` | `SceneObjectData`の共有データ定義、`SceneObjects`の一覧・ID・親子関係・検証と、`ScenePrimitives`の基本形状作成 |
+| `components` | `SceneAssetSettings`、`ParticleSettings`、Motion・Collider・Body・Lightの設定値と設定単体の処理 |
+| `serialization` | `SceneFile`・`PrefabFile`・`ParticlePresetFile`の保存・読込・旧形式への対応 |
+| `systems` | `SceneMotion`・`SceneCollision`・`ScenePhysics`の実行時更新と、`SceneLighting`のライト収集・検証・移行用の値生成 |
+
+includeは`objects/SceneObjects.h`や`serialization/SceneFile.h`のように、既存の`engine/world`を起点に分類を明記する。各サブフォルダを追加のinclude検索先にせず、同名ファイルの曖昧な解決を避ける。実際のディレクトリとVisual Studioのフィルターも揃える。
+
+今回の分類では所有関係・公開API・保存形式を変更しない。`components`は設定値を持ち、`systems`がシーンを通して実行時の処理を行う。保存処理は`serialization`に集め、UIとGPUリソースの実装を持ち込まない。
+
+### オブジェクト操作とEditor操作の境界
+
+`base/SceneObjectTypes.h`はIDと種類を定義し、シーンの実装に依存しない。`SceneObjectData.h`はその共通型を使い、カメラ設定・保存用データと、フレーム内だけ借用する`EditableObjectView`を定義する。操作のインターフェースをincludeせず、UI・GPUリソースの所有権も持たない。
+
+`ISceneObjects`は一覧・親子関係・Transform・作成・置換・ゲームカメラの共通操作を定義する。Motion・Collision・Physics・Lightingの実行処理、Scene・Prefabの保存処理、基本形状作成はこの型を受け取る。`IEditableScene`は`ISceneObjects`を継承し、Editorの表示領域・カメラ入力・Asset／Particleプレビューなどを追加する。インターフェースに不要なInitialize／Update／Drawの空実装は増やさない。
+
+`SceneObjects`は既存の`IEditableScene`実装を維持し、既存のEditorとGameSceneは同じオブジェクトを共通窓口として渡す。変換用オブジェクト・追加の所有権・毎フレームの一覧コピーは導入しない。保存時の`ReplaceObjects`は従来どおり仮想呼出となり、GameScene側のモデル・テクスチャ準備と失敗時の一括取消を保持する。保存形式は13のまま。
+
 ## ライトの統合
 
 SceneObjectTypeの既存数値0〜4を維持し、SpotLight=5 / DirectionalLight=6を追加する。SceneLightSettingsはSpotの内角・外角（全開角・度数）を保存する。既存の色・強度・範囲・減衰とTransformを共有し、別の位置・方向状態を重複所有しない。
 
-SceneLighting.cppが種類・上限・検証・ワールド方向・GPU用一覧の収集・旧固定値の移行を担当する。InspectorLights.cppは編集UI、SceneLights.hlsliはライト配列と共通の照明計算を担当する。GameSceneは収集したSceneLightCollectionを各モデルへ適用する。固定長のDirectional 4 / Point 9 / Spot 8を使い、収集時のベクター確保を不要にする。SpotのCPU要素はHLSL配列と同じ64バイトに揃え、各Bufferをstatic_assertとGPUの色比較で確認する。
+ライトの種別・名前・設定検証はcomponents/SceneLightSettings.cpp、配列の上限はbase/LightLimits.hに集める。SceneLighting.cppはワールド方向とGPU用一覧の収集だけを担当し、具体的なSceneObjectsや保存処理を参照しない。旧固定値の移行はserialization/SceneLightMigration.cppへ分離し、仮の配列を全件検証してから反映する。GameSceneの既定ライト作成も同じ旧固定値を再利用し、従来の初期表示を維持する。
+
+InspectorLights.cppは編集UI、SceneLights.hlsliはライト配列と共通の照明計算を担当する。GameSceneは収集したSceneLightCollectionを各モデルへ適用する。固定長のDirectional 4 / Point 9 / Spot 8を使い、収集時のベクター確保を不要にする。SpotのCPU要素はHLSL配列と同じ64バイトに揃え、各Bufferをstatic_assertとGPUの色比較で確認する。
 
 Scene形式13ではSpot角度を各レコードの末尾に追加する。Editor・GameSceneの通常読込だけでSceneFile::LoadのmigrateLegacyLightsを有効にし、形式1〜12には旧Directional・Point・Spotを1個ずつ追加する。部分データやPrefabの読込には追加しない。移行はローカル配列を検証してから一括置換し、IDは採番済みの範囲を再利用しない。形式1の再読込でも現在の移行ライトを持ち越さず、形式13は再移行しない。
 C++とHLSLで先頭16バイト、各光源48バイトの配置を一致させる。

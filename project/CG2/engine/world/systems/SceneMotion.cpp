@@ -1,4 +1,4 @@
-#include "SceneMotion.h"
+#include "systems/SceneMotion.h"
 #include <cmath>
 #include <numbers>
 
@@ -42,7 +42,7 @@ void SceneMotion::UpdateMovement(const SceneMotionSettings& settings, float delt
 	transform.translate = MathUtility::Add(state.origin, MathUtility::Multiply(amount, settings.movementOffset));
 }
 
-void SceneMotion::Update(IEditableScene& scene, float deltaSeconds) {
+void SceneMotion::Update(ISceneObjects& scene, float deltaSeconds) {
 	if (!std::isfinite(deltaSeconds) || deltaSeconds <= 0) {
 		return;
 	}

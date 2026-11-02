@@ -1,6 +1,6 @@
-#include "PrefabFile.h"
-#include "SceneFile.h"
-#include "SceneObjects.h"
+#include "serialization/PrefabFile.h"
+#include "serialization/SceneFile.h"
+#include "objects/SceneObjects.h"
 #include "../project/CG2/editor/EditorSession.h"
 #include <cmath>
 #include <fstream>

@@ -2,7 +2,7 @@
 #include "../EditorSelection.h"
 #include "SceneViewDrawing.h"
 #include "MathUtility.h"
-#include "SceneLighting.h"
+#include "systems/SceneLighting.h"
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
 #include <cmath>

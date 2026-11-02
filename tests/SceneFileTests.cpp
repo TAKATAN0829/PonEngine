@@ -1,7 +1,7 @@
 #include "../project/CG2/editor/EditorSession.h"
-#include "SceneFile.h"
+#include "serialization/SceneFile.h"
 #include "IEditableScene.h"
-#include "SceneObjects.h"
+#include "objects/SceneObjects.h"
 
 #include <fstream>
 #include <iostream>
@@ -30,7 +30,8 @@ namespace {
 		}
 	}
 
-	class TestScene : public IEditableScene {
+	// Editorの操作を実装しないシーンでも、共通の窓口で保存・読込できることを検証する。
+	class TestScene : public ISceneObjects {
 	public:
 		TransformData transforms[2] = {
 			{{1, 2, 3}, {0.1f, 0.2f, 0.3f}, {4, 5, 6}},
@@ -46,7 +47,7 @@ namespace {
 	};
 
 	// 不正ファイルの読込を拒否し、編集中のID・個数・値が変わらないことを確認する。
-	void RequireRejectedSceneLoad(IEditableScene& scene, const std::filesystem::path& invalidScenePath,
+	void RequireRejectedSceneLoad(ISceneObjects& scene, const std::filesystem::path& invalidScenePath,
 		const std::string& fileContents, float expectedPosition) {
 		std::ofstream outputFile(invalidScenePath);
 		outputFile << fileContents;

@@ -5,7 +5,7 @@
 #include "GameScene.h"
 #include "LogSystem.h"
 #include "SceneRenderTarget.h"
-#include "SceneFile.h"
+#include "serialization/SceneFile.h"
 #include "DebugCamera.h"
 #include "TextureManager.h"
 #include "ModelManager.h"

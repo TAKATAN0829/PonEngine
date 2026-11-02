@@ -1,7 +1,7 @@
 ﻿#include "ProjectPanel.h"
 #include "../EditorSelection.h"
 #include "../AssetDragPayload.h"
-#include "SceneObjects.h"
+#include "objects/SceneObjects.h"
 #include <algorithm>
 #include <cstring>
 #ifdef USE_IMGUI

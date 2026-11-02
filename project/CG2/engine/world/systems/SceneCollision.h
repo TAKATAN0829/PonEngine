@@ -1,5 +1,5 @@
 #pragma once
-#include "IEditableScene.h"
+#include "ISceneObjects.h"
 #include <array>
 #include <set>
 #include <utility>
@@ -39,7 +39,7 @@ public:
 	//=============================================================================================//
 	// 更新処理
 
-	void Update(IEditableScene& scene);
+	void Update(ISceneObjects& scene);
 
 	//=============================================================================================//
 	// Getter / 接触通知・形状

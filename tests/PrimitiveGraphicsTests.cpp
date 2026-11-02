@@ -1,5 +1,5 @@
 #include "GameScene.h"
-#include "ScenePrimitives.h"
+#include "objects/ScenePrimitives.h"
 #include "ModelManager.h"
 #include <cmath>
 #include <stdexcept>

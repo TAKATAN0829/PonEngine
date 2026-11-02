@@ -15,7 +15,7 @@
 #include "EngineStructs.h"
 #include "Material.h"
 #include "BlendMode.h"
-#include "ParticleSettings.h"
+#include "components/ParticleSettings.h"
 
 class ParticleRenderer;
 

@@ -1,9 +1,9 @@
 #include "../project/CG2/editor/EditorSelection.h"
 #include "../project/CG2/editor/EditorSession.h"
 #include "../project/CG2/engine/core/FrameProfiler.h"
-#include "PrefabFile.h"
-#include "SceneFile.h"
-#include "SceneObjects.h"
+#include "serialization/PrefabFile.h"
+#include "serialization/SceneFile.h"
+#include "objects/SceneObjects.h"
 #include "SceneViewMath.h"
 #include <stdexcept>
 #include <cmath>

@@ -1,6 +1,6 @@
 #include "../EditorProperties.h"
 #include "InspectorPanel.h"
-#include "SceneCollision.h"
+#include "systems/SceneCollision.h"
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
 

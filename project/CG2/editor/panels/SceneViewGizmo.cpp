@@ -2,7 +2,7 @@
 #include "SceneViewDrawing.h"
 #include "../EditorSelection.h"
 #include "MathUtility.h"
-#include "SceneLighting.h"
+#include "components/SceneLightSettings.h"
 #ifdef USE_IMGUI
 #include <algorithm>
 #include <cmath>
@@ -94,7 +94,7 @@ bool SceneViewPanel::DrawGizmo(IEditableScene& scene, EditorSelection& selection
 		}
 	}
 	if (tool_ == TransformTool::Scale) {
-		if (object.type == SceneObjectType::Camera || SceneLighting::IsLight(object.type)) {
+		if (object.type == SceneObjectType::Camera || SceneLightTypes::IsLight(object.type)) {
 			return false;
 		}
 	}

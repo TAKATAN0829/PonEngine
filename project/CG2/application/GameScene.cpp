@@ -1,9 +1,10 @@
+#include "serialization/SceneLightMigration.h"
 #include "FrameProfiler.h"
 #include "GameScene.h"
 #include "WinApp.h"
-#include "SceneFile.h"
-#include "SceneLighting.h"
-#include "ParticlePresetFile.h"
+#include "serialization/SceneFile.h"
+#include "systems/SceneLighting.h"
+#include "serialization/ParticlePresetFile.h"
 #include "LogSystem.h"
 #include "ModelManager.h"
 #include "SceneViewMath.h"
@@ -97,8 +98,12 @@ void GameScene::Initialize(const SceneContext& context) {
 	}
 	if (!loadedScene) {
 		std::vector<SceneObjectData> initial = CaptureObjects();
-		if (!SceneLighting::AddLegacyDefaults(initial,sceneError) || !ReplaceObjects(std::move(initial),sceneError)) {
+		if (!SceneLightMigration::AddLegacyDefaults(initial,sceneError)) {
 			LogSystem::Log("Default lights: "+sceneError+"\n");
+		} else {
+			if (!ReplaceObjects(std::move(initial),sceneError)) {
+				LogSystem::Log("Default lights: "+sceneError+"\n");
+			}
 		}
 	}
 	//=============================================================================================//

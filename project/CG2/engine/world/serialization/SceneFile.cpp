@@ -1,8 +1,8 @@
-#include "SceneFile.h"
-#include "IEditableScene.h"
-#include "SceneObjects.h"
-#include "ParticlePresetFile.h"
-#include "SceneLighting.h"
+#include "serialization/SceneLightMigration.h"
+#include "serialization/SceneFile.h"
+#include "ISceneObjects.h"
+#include "objects/SceneObjects.h"
+#include "serialization/ParticlePresetFile.h"
 
 #include <Windows.h>
 #include <array>
@@ -187,7 +187,7 @@ namespace {
 }
 
 // 設定を検証して一時ファイルへ書き込み、完了したものだけを保存先へ反映する。
-bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, std::string& error) {
+bool SceneFile::Save(ISceneObjects& scene, const std::filesystem::path& path, std::string& error) {
 	error.clear();
 	if (scene.GetEditableObjectCount() > 100000) {
 		error = "Scene exceeds the supported object count.";
@@ -343,7 +343,7 @@ bool SceneFile::Save(IEditableScene& scene, const std::filesystem::path& path, s
 }
 
 // 対応する保存形式を読み込み、全件の整合性を確認してからシーンへ反映する。
-bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, std::string& error, bool migrateLegacyLights) {
+bool SceneFile::Load(ISceneObjects& scene, const std::filesystem::path& path, std::string& error, bool migrateLegacyLights) {
 	error.clear();
 	std::ifstream inputFile(path);
 	inputFile.imbue(std::locale::classic());
@@ -540,7 +540,7 @@ bool SceneFile::Load(IEditableScene& scene, const std::filesystem::path& path, s
 					}
 					objects = std::move(legacyObjects);
 				}
-				if (!SceneLighting::AddLegacyDefaults(objects,error,scene.GetNextObjectId())) {
+				if (!SceneLightMigration::AddLegacyDefaults(objects,error,scene.GetNextObjectId())) {
 					return false;
 				}
 			}

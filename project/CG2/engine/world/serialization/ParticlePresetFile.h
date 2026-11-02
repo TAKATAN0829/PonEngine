@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ParticleSettings.h"
+#include "components/ParticleSettings.h"
 #include <filesystem>
 #include <iosfwd>
 

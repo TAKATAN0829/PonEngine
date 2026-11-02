@@ -226,7 +226,11 @@ project/
       dx12/            DirectX 12・描画先・記述子・Pipeline
       renderer/        モデル・Particleなどの描画設定
       object/          描画オブジェクト・実行中のParticle
-      scene/           編集データ・保存・Prefab・動作・物理
+      world/           ゲームワールドの共通基盤・シーン切り替え管理
+        objects/       オブジェクト一覧・親子関係・基本形状の作成
+        components/    Material・Animation・Particle・物理・ライトなどの設定値
+        serialization/ Scene・Prefab・Particleプリセットの保存と読込
+        systems/       動作・衝突判定・物理更新・ライトの収集
       asset/           モデル・テクスチャ・アニメーションの読込
       math/            行列・投影・選択用の計算
     resources/         モデル・画像・シェーダー・保存データ
@@ -236,7 +240,9 @@ docs/                  操作と設計の詳細
 generated/             ビルド結果・テスト生成物（Git管理外）
 ```
 
-Editorは`IEditableScene`を窓口としてシーンを操作します。保存用データと実行中の状態を分け、UIはシーン所有の参照をフレームをまたいで保持しない方針です。
+オブジェクトの保存用データは`world/objects/SceneObjectData.h`にまとめ、実行・保存処理は`ISceneObjects`を窓口にします。Editorは、その操作を継承してカメラ・プレビュー操作を加えた`IEditableScene`を使います。保存用データと実行中の状態を分け、UIはシーン所有の参照をフレームをまたいで保持しない方針です。
+
+現在の参照方向、所有関係、相互依存と整理の優先順位は[依存関係の調査](docs/dependencies.md)にまとめています。
 
 ProjectとConsoleは別クラスです。Projectはフォルダ管理・画面構成・Asset操作、SceneViewは画面本体・ギズモ・Transform更新・選択／配置・補助表示に実装を分けています。担当ファイルはヘッダーの分類コメントと[設計資料](docs/editor-architecture.md#editorパネルの責務と実装ファイル)から確認できます。
 

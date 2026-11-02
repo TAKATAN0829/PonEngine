@@ -1,9 +1,9 @@
-#include "ScenePhysics.h"
+#include "systems/ScenePhysics.h"
 #include <algorithm>
 #include <cmath>
 
 namespace {
-	bool InvalidBodyAncestor(IEditableScene& scene, const SceneObjectData& child) {
+	bool InvalidBodyAncestor(ISceneObjects& scene, const SceneObjectData& child) {
 		if (!child.body.enabled) {
 			return false;
 		}
@@ -27,13 +27,13 @@ namespace {
 		}
 		return false;
 	}
-	bool IsActiveBody(IEditableScene& scene, const SceneObjectData& object) {
+	bool IsActiveBody(ISceneObjects& scene, const SceneObjectData& object) {
 		if (!object.body.enabled) {
 			return false;
 		}
 		return scene.IsObjectActive(object.id);
 	}
-	SceneBodySettings GetMaterial(IEditableScene& scene, SceneObjectId identifier) {
+	SceneBodySettings GetMaterial(ISceneObjects& scene, SceneObjectId identifier) {
 		const SceneObjectData* object = scene.GetObjectDataById(identifier);
 		if (object != nullptr) {
 			if (object->body.present) {
@@ -44,7 +44,7 @@ namespace {
 	}
 }
 
-void ScenePhysics::Initialize(IEditableScene& scene) {
+void ScenePhysics::Initialize(ISceneObjects& scene) {
 	bodies_.clear();
 	RefreshBodies(scene,0);
 }
@@ -70,7 +70,7 @@ float ScenePhysics::GetInverseMass(SceneObjectId identifier) const {
 	return found->second.inverseMass;
 }
 
-void ScenePhysics::RefreshBodies(IEditableScene& scene, float deltaSeconds) {
+void ScenePhysics::RefreshBodies(ISceneObjects& scene, float deltaSeconds) {
 	error_.clear();
 	std::unordered_map<SceneObjectId,BodyState>::iterator iterator = bodies_.begin();
 	while (iterator != bodies_.end()) {
@@ -143,7 +143,7 @@ void ScenePhysics::RefreshBodies(IEditableScene& scene, float deltaSeconds) {
 	}
 }
 
-void ScenePhysics::AdvanceKinematics(IEditableScene& scene, float fraction) {
+void ScenePhysics::AdvanceKinematics(ISceneObjects& scene, float fraction) {
 	bool hasKinematic = false;
 	for (const std::pair<const SceneObjectId,BodyState>& entry : bodies_) {
 		if (entry.second.active) {
@@ -183,7 +183,7 @@ void ScenePhysics::AdvanceKinematics(IEditableScene& scene, float fraction) {
 	}
 }
 
-void ScenePhysics::Integrate(IEditableScene& scene, float deltaSeconds) {
+void ScenePhysics::Integrate(ISceneObjects& scene, float deltaSeconds) {
 	for (std::pair<const SceneObjectId,BodyState>& entry : bodies_) {
 		BodyState& state = entry.second;
 		if (state.inverseMass == 0) {
@@ -205,7 +205,7 @@ void ScenePhysics::Integrate(IEditableScene& scene, float deltaSeconds) {
 	}
 }
 
-void ScenePhysics::MoveBody(IEditableScene& scene, SceneObjectId identifier, const Vector3& delta) {
+void ScenePhysics::MoveBody(ISceneObjects& scene, SceneObjectId identifier, const Vector3& delta) {
 	if (GetInverseMass(identifier) == 0) {
 		return;
 	}
@@ -220,7 +220,7 @@ bool ScenePhysics::CompareShapes(const ShapeEntry& first, const ShapeEntry& seco
 	return first.shape.bounds.min.x < second.shape.bounds.min.x;
 }
 
-std::vector<ScenePhysics::ShapeEntry> ScenePhysics::CollectShapes(IEditableScene& scene) const {
+std::vector<ScenePhysics::ShapeEntry> ScenePhysics::CollectShapes(ISceneObjects& scene) const {
 	std::vector<ShapeEntry> entries;
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const SceneObjectData* object = scene.GetObjectData(objectIndex);
@@ -296,7 +296,7 @@ void ScenePhysics::ApplyImpulse(SceneObjectId first, SceneObjectId second, const
 	}
 }
 
-bool ScenePhysics::ResolvePair(IEditableScene& scene, const ShapeEntry& first, const ShapeEntry& second) {
+bool ScenePhysics::ResolvePair(ISceneObjects& scene, const ShapeEntry& first, const ShapeEntry& second) {
 	if (first.trigger || second.trigger) {
 		return false;
 	}
@@ -348,7 +348,7 @@ bool ScenePhysics::ResolvePair(IEditableScene& scene, const ShapeEntry& first, c
 	return true;
 }
 
-void ScenePhysics::Solve(IEditableScene& scene) {
+void ScenePhysics::Solve(ISceneObjects& scene) {
 	for (size_t iteration = 0; iteration < 8; ++iteration) {
 		const std::vector<ShapeEntry> entries = CollectShapes(scene);
 		if (entries.size() < 2) {
@@ -370,7 +370,7 @@ void ScenePhysics::Solve(IEditableScene& scene) {
 	}
 }
 
-void ScenePhysics::Update(IEditableScene& scene, float deltaSeconds) {
+void ScenePhysics::Update(ISceneObjects& scene, float deltaSeconds) {
 	if (!std::isfinite(deltaSeconds) || deltaSeconds <= 0) {
 		return;
 	}

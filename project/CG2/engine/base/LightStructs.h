@@ -1,12 +1,9 @@
 #pragma once
 #include <cstdint>
+#include "LightLimits.h"
 
 // 自作
 #include "MathUtility.h"
-
-inline constexpr uint32_t kMaxPointLights = 9; // 従来の配置8個＋固定1個を移行できる数。
-inline constexpr uint32_t kMaxSpotLights = 8;
-inline constexpr uint32_t kMaxDirectionalLights = 4;
 
 //=================================================================================================//
 // 平行光源

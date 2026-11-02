@@ -1,6 +1,6 @@
-#include "PrefabFile.h"
-#include "SceneFile.h"
-#include "SceneObjects.h"
+#include "serialization/PrefabFile.h"
+#include "serialization/SceneFile.h"
+#include "objects/SceneObjects.h"
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
@@ -47,7 +47,7 @@ std::filesystem::path PrefabFile::ResolveSource(const std::string& source, std::
 	return path;
 }
 
-bool PrefabFile::Apply(IEditableScene& scene, SceneObjectId rootId, std::string& error) {
+bool PrefabFile::Apply(ISceneObjects& scene, SceneObjectId rootId, std::string& error) {
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const SceneObjectData* object = scene.GetObjectData(objectIndex);
 		if (object == nullptr) {
@@ -66,7 +66,7 @@ bool PrefabFile::Apply(IEditableScene& scene, SceneObjectId rootId, std::string&
 }
 
 // 一時シーンで子孫を入れ替え、リソース検証にも成功した時だけ本体へ反映する。
-bool PrefabFile::Revert(IEditableScene& scene, SceneObjectId rootId, std::string& error) {
+bool PrefabFile::Revert(ISceneObjects& scene, SceneObjectId rootId, std::string& error) {
 	SceneObjects candidate;
 	if (!candidate.ReplaceObjects(scene.CaptureObjects(), error)) {
 		return false;
@@ -113,7 +113,7 @@ bool PrefabFile::Revert(IEditableScene& scene, SceneObjectId rootId, std::string
 	return scene.ReplaceObjects(std::move(objects), error);
 }
 
-bool PrefabFile::Save(IEditableScene& scene, SceneObjectId rootId, const std::filesystem::path& path, std::string& error) {
+bool PrefabFile::Save(ISceneObjects& scene, SceneObjectId rootId, const std::filesystem::path& path, std::string& error) {
 	error.clear();
 	std::vector<SceneObjectData> source = scene.CaptureObjects();
 	std::unordered_set<SceneObjectId> included = {rootId};
@@ -167,7 +167,7 @@ bool PrefabFile::Save(IEditableScene& scene, SceneObjectId rootId, const std::fi
 	return SceneFile::Save(prefab, path, error);
 }
 
-SceneObjectId PrefabFile::Instantiate(IEditableScene& scene, const std::filesystem::path& path,
+SceneObjectId PrefabFile::Instantiate(ISceneObjects& scene, const std::filesystem::path& path,
 	SceneObjectId parentId, const Vector3& position, std::string& error) {
 	error.clear();
 	SceneObjects prefab;

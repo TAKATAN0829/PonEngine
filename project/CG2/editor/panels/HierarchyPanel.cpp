@@ -2,9 +2,8 @@
 #include "HierarchyPanel.h"
 #include "../EditorSelection.h"
 #include "../AssetDragPayload.h"
-#include "PrefabFile.h"
-#include "SceneLighting.h"
-#include "ScenePrimitives.h"
+#include "serialization/PrefabFile.h"
+#include "objects/ScenePrimitives.h"
 #include <cstring>
 #include <cstdio>
 

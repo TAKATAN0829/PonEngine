@@ -1,6 +1,6 @@
 ﻿#include "../EditorProperties.h"
 #include "InspectorPanel.h"
-#include "ScenePrimitives.h"
+#include "objects/ScenePrimitives.h"
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"

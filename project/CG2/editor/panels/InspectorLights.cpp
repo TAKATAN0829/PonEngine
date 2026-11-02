@@ -1,6 +1,6 @@
 #include "InspectorPanel.h"
 #include "../EditorProperties.h"
-#include "SceneLighting.h"
+#include "components/SceneLightSettings.h"
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
 #endif
@@ -8,10 +8,10 @@
 // Light共通項目とSpot固有の角度を分ける。向きはTransformの回転で編集する。
 void InspectorPanel::DrawLightComponent(const EditableObjectView& object) {
 #ifdef USE_IMGUI
-	if (!SceneLighting::IsLight(object.type)) {
+	if (!SceneLightTypes::IsLight(object.type)) {
 		return;
 	}
-	if (!EditorProperties::Header(SceneLighting::GetName(object.type),"Activeで有効・無効を切り替えます。Spot / Directionalの照射方向はTransformの回転（ローカル+Z）で指定します。影の生成には未対応です。")) {
+	if (!EditorProperties::Header(SceneLightTypes::GetName(object.type),"Activeで有効・無効を切り替えます。Spot / Directionalの照射方向はTransformの回転（ローカル+Z）で指定します。影の生成には未対応です。")) {
 		return;
 	}
 	if (!EditorProperties::Begin("LightFields")) {

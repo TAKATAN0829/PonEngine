@@ -1,6 +1,6 @@
-#include "SceneObjects.h"
-#include "PrefabFile.h"
-#include "SceneLighting.h"
+#include "objects/SceneObjects.h"
+#include "serialization/PrefabFile.h"
+#include "components/SceneLightSettings.h"
 
 #include <array>
 #include <filesystem>
@@ -312,7 +312,7 @@ SceneObjectId SceneObjects::CreateObject(SceneObjectType type) {
 		typeName = "Particle";
 	}
 	if (type == SceneObjectType::SpotLight || type == SceneObjectType::DirectionalLight) {
-		typeName = SceneLighting::GetName(type);
+		typeName = SceneLightTypes::GetName(type);
 		object.transform.translate.y = 2;
 		object.transform.rotate.x = 1.57079632679f;
 	}
@@ -528,8 +528,8 @@ bool SceneObjects::CanCreateType(SceneObjectType type) const {
 			++count;
 		}
 	}
-	if (SceneLighting::IsLight(type)) {
-		return count < SceneLighting::GetLimit(type);
+	if (SceneLightTypes::IsLight(type)) {
+		return count < SceneLightTypes::GetLimit(type);
 	}
 	if (type == SceneObjectType::Particle) {
 		return count < 32;

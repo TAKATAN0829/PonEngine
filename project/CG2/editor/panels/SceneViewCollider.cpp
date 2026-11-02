@@ -1,6 +1,6 @@
 #include "SceneViewPanel.h"
 #include "../EditorSelection.h"
-#include "SceneCollision.h"
+#include "systems/SceneCollision.h"
 #include "SceneViewMath.h"
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"

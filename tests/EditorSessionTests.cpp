@@ -1,5 +1,5 @@
 #include "../project/CG2/editor/EditorSession.h"
-#include "SceneObjects.h"
+#include "objects/SceneObjects.h"
 
 #include <stdexcept>
 #include <limits>

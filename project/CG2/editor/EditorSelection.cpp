@@ -1,5 +1,5 @@
 #include "EditorSelection.h"
-#include "SceneObjects.h"
+#include "objects/SceneObjects.h"
 #include <limits>
 #include <unordered_map>
 
