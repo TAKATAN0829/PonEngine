@@ -1,7 +1,7 @@
 #include "../project/CG2/editor/EditorSession.h"
 #include "serialization/SceneFile.h"
-#include "IEditableScene.h"
-#include "objects/SceneObjects.h"
+#include "IEditableWorld.h"
+#include "objects/WorldObjects.h"
 
 #include <fstream>
 #include <iostream>
@@ -31,7 +31,7 @@ namespace {
 	}
 
 	// Editorの操作を実装しないシーンでも、共通の窓口で保存・読込できることを検証する。
-	class TestScene : public ISceneObjects {
+	class TestScene : public IWorldObjects {
 	public:
 		TransformData transforms[2] = {
 			{{1, 2, 3}, {0.1f, 0.2f, 0.3f}, {4, 5, 6}},
@@ -42,18 +42,18 @@ namespace {
 		float shininess[2] = {40, 80};
 		size_t GetEditableObjectCount() const override { return 2; }
 		EditableObjectView GetEditableObject(size_t objectIndex) override {
-			return {static_cast<SceneObjectId>(objectIndex + 1), "Test", &transforms[objectIndex], &colors[objectIndex], &lighting[objectIndex], &shininess[objectIndex]};
+			return {static_cast<WorldObjectId>(objectIndex + 1), "Test", &transforms[objectIndex], &colors[objectIndex], &lighting[objectIndex], &shininess[objectIndex]};
 		}
 	};
 
 	// 不正ファイルの読込を拒否し、編集中のID・個数・値が変わらないことを確認する。
-	void RequireRejectedSceneLoad(ISceneObjects& scene, const std::filesystem::path& invalidScenePath,
+	void RequireRejectedSceneLoad(IWorldObjects& scene, const std::filesystem::path& invalidScenePath,
 		const std::string& fileContents, float expectedPosition) {
 		std::ofstream outputFile(invalidScenePath);
 		outputFile << fileContents;
 		outputFile.close();
 
-		const SceneObjectId originalObjectId = scene.GetEditableObject(0).id;
+		const WorldObjectId originalObjectId = scene.GetEditableObject(0).id;
 		const size_t originalObjectCount = scene.GetEditableObjectCount();
 		scene.GetEditableObject(0).transform->translate.x = expectedPosition;
 
@@ -68,15 +68,15 @@ namespace {
 
 	// 追加・削除・複製と、新旧保存形式での復元を検証する。
 	void TestCollections(const std::filesystem::path& directory) {
-		SceneObjects scene;
+		WorldObjects scene;
 		std::string error;
-		const SceneObjectId plane = scene.AddObject("plane.gltf");
-		const SceneObjectId axis = scene.AddObject("axis.obj");
+		const WorldObjectId plane = scene.AddObject("plane.gltf");
+		const WorldObjectId axis = scene.AddObject("axis.obj");
 		Require(plane != 0 && axis > plane, "add failed");
 		*scene.GetEditableObject(0).color = {0.2f, 0.3f, 0.4f, 1};
 		scene.GetEditableObject(0).transform->translate = {3, 4, 5};
 		*scene.GetEditableObject(0).useRootNodeMatrix = false;
-		const SceneObjectId duplicate = scene.DuplicateObject(plane);
+		const WorldObjectId duplicate = scene.DuplicateObject(plane);
 		Require(duplicate > axis, "duplicate ID reused");
 		Require(scene.GetEditableObject(2).transform->translate.x == 3, "duplicate lost transform");
 		scene.GetEditableObject(2).color->x = 0.9f;
@@ -91,23 +91,23 @@ namespace {
 		const std::filesystem::path path = directory / "collection.ponscene";
 		Require(SceneFile::Save(scene, path, error), "collection save failed");
 
-		SceneObjects restored;
+		WorldObjects restored;
 		restored.AddObject("axis.obj");
 		Require(SceneFile::Load(restored, path, error), "collection load failed");
 		Require(restored.GetEditableObjectCount() == 2, "object count not restored");
-		std::vector<SceneObjectData> snapshot = restored.CaptureObjects();
+		std::vector<WorldObjectData> snapshot = restored.CaptureObjects();
 		Require(snapshot[0].id == plane && snapshot[1].id == duplicate && snapshot[0].model == "plane.gltf" &&
 			snapshot[1].model == "axis.obj" && !snapshot[0].useRootNodeMatrix && snapshot[1].color.x == 0.9f,
 			"object metadata not restored");
 		Require(!snapshot[0].active && !snapshot[1].hasMeshRenderer, "component state not restored");
-		const SceneObjectId freshId = restored.AddObject("axis.obj");
+		const WorldObjectId freshId = restored.AddObject("axis.obj");
 		Require(freshId > duplicate, "loaded ID reused");
 		Require(SceneFile::Load(restored, path, error), "collection reload failed");
 		// 異なる種類が混在しても、設定・型・複製・履歴を失わず保存できる。
-		SceneObjects mixed;
-		Require(mixed.CreateObject(SceneObjectType::Empty) != 0, "cannot create empty object");
-		Require(mixed.CreateObject(SceneObjectType::PointLight) != 0, "cannot create light");
-		const SceneObjectId emitterId = mixed.CreateObject(SceneObjectType::Particle);
+		WorldObjects mixed;
+		Require(mixed.CreateObject(WorldObjectType::Empty) != 0, "cannot create empty object");
+		Require(mixed.CreateObject(WorldObjectType::PointLight) != 0, "cannot create light");
+		const WorldObjectId emitterId = mixed.CreateObject(WorldObjectType::Particle);
 		Require(emitterId != 0, "cannot create emitter");
 		*mixed.GetEditableObject(1).lightIntensity = 3.5f;
 		*mixed.GetEditableObject(1).lightRadius = 22;
@@ -117,12 +117,12 @@ namespace {
 		Require(mixed.DuplicateObject(emitterId) != 0, "cannot duplicate emitter");
 		const std::filesystem::path mixedPath = directory / "mixed.ponscene";
 		Require(SceneFile::Save(mixed, mixedPath, error), "cannot save mixed scene");
-		SceneObjects loadedMixed;
+		WorldObjects loadedMixed;
 		Require(SceneFile::Load(loadedMixed, mixedPath, error), "cannot load mixed scene");
 		EditorSession roundtripSession;
 		roundtripSession.Initialize(mixed);
 		Require(!roundtripSession.IsDirty(loadedMixed), "mixed scene lost component values");
-		Require(!*loadedMixed.GetEditableObject(0).hasMeshRenderer && loadedMixed.GetEditableObject(1).type == SceneObjectType::PointLight,
+		Require(!*loadedMixed.GetEditableObject(0).hasMeshRenderer && loadedMixed.GetEditableObject(1).type == WorldObjectType::PointLight,
 			"empty or light type changed");
 		EditorSession mixedSession;
 		mixedSession.Initialize(mixed);
@@ -134,17 +134,17 @@ namespace {
 		*mixed.GetEditableObject(1).lightIntensity = 99;
 		Require(mixedSession.Stop(mixed, error) && *mixed.GetEditableObject(1).lightIntensity == 3.5f, "light stop restore failed");
 		for (size_t lightIndex = 1; lightIndex < 9; ++lightIndex) {
-			Require(mixed.CreateObject(SceneObjectType::PointLight) != 0, "light capacity too small");
+			Require(mixed.CreateObject(WorldObjectType::PointLight) != 0, "light capacity too small");
 		}
-		Require(mixed.CreateObject(SceneObjectType::PointLight) == 0, "light capacity exceeded");
-		std::vector<SceneObjectData> invalidObjects = mixed.CaptureObjects();
+		Require(mixed.CreateObject(WorldObjectType::PointLight) == 0, "light capacity exceeded");
+		std::vector<WorldObjectData> invalidObjects = mixed.CaptureObjects();
 		invalidObjects[1].lightRadius = 0;
 		Require(!mixed.ReplaceObjects(invalidObjects, error), "invalid light accepted");
 
 		Require(restored.AddObject("axis.obj") > freshId, "reload moved ID allocator backwards");
 
-		const std::vector<SceneObjectData> before = restored.CaptureObjects();
-		std::vector<SceneObjectData> invalid = before;
+		const std::vector<WorldObjectData> before = restored.CaptureObjects();
+		std::vector<WorldObjectData> invalid = before;
 		invalid[1].id = invalid[0].id;
 		Require(!restored.ReplaceObjects(invalid, error) && restored.GetEditableObjectCount() == before.size(),
 			"duplicate replacement accepted");
@@ -177,7 +177,7 @@ namespace {
 		std::ofstream versionTwoFile(versionTwoPath);
 		versionTwoFile << "PON_SCENE 2\n2\n" << firstWithoutFlags << '\n' << secondWithoutFlags << '\n';
 		versionTwoFile.close();
-		SceneObjects versionTwoScene;
+		WorldObjects versionTwoScene;
 		Require(SceneFile::Load(versionTwoScene, versionTwoPath, error), "version 2 migration failed");
 		Require(*versionTwoScene.GetEditableObject(0).active && *versionTwoScene.GetEditableObject(1).hasMeshRenderer,
 			"version 2 component defaults incorrect");
@@ -186,7 +186,7 @@ namespace {
 		std::ofstream versionThreeFile(versionThreePath);
 		versionThreeFile << "PON_SCENE 3\n2\n" << firstWithoutFlags << " 0 1\n" << secondWithoutFlags << " 1 0\n";
 		versionThreeFile.close();
-		SceneObjects versionThreeScene;
+		WorldObjects versionThreeScene;
 		Require(SceneFile::Load(versionThreeScene, versionThreePath, error), "version 3 migration failed");
 		Require(!*versionThreeScene.GetEditableObject(0).active && !*versionThreeScene.GetEditableObject(1).hasMeshRenderer,
 			"version 3 flags lost");
@@ -199,7 +199,7 @@ namespace {
 		Require(restored.AddObject("axis.obj") != 0, "cannot add after empty scene load");
 
 		// 旧形式のモデル設定を読み込み、保存対象外だった二体目の既定モデルも残す。
-		SceneObjects legacy;
+		WorldObjects legacy;
 		legacy.AddObject("plane.gltf"); legacy.AddObject("axis.obj");
 		const std::filesystem::path legacyPath = directory / "legacy-single.ponscene";
 		std::ofstream legacyOutputFile(legacyPath);

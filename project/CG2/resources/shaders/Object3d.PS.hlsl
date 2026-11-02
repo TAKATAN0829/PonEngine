@@ -1,5 +1,5 @@
 ﻿#include "Object3d.hlsli"
-#include "SceneLights.hlsli"
+#include "WorldLights.hlsli"
 
 struct Material
 {
@@ -31,7 +31,7 @@ PixelShaderOutput main(VertexShaderOutput input) {
         float3 normal = input.normal/max(length(input.normal),0.00001f);
         float3 toEye = gCamera.worldPosition-input.worldPosition;
         toEye /= max(length(toEye),0.00001f);
-        output.color.rgb = CalculateSceneLighting(input.worldPosition,normal,toEye,output.color.rgb,gMaterial.shininess);
+        output.color.rgb = CalculateWorldLighting(input.worldPosition,normal,toEye,output.color.rgb,gMaterial.shininess);
     }
     if (output.color.a == 0) {
         discard;

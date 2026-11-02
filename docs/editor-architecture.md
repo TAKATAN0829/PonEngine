@@ -4,14 +4,14 @@ Debug / Development で起動し、Hierarchy のモデルを選択すると、In
 
 Hierarchyの右クリック→新規作成から追加し、複製・削除も右クリックメニューで行う。Cube・Sphere・Planeは3D Objectのサブメニューにまとめる。追加・複製後は新しい対象を選択する。複製は同じ位置に作られるため、Inspectorで位置を変更すると分離できる。最後のモデルを削除して空のシーンにすることもできる。
 
-ScenePrimitivesはCube・Sphereの作成時だけ使う関数群で、通常のSceneObjectType::ModelにOBJパスと初期Colliderを設定する。resources/primitivesのメッシュは既存のModelManagerで読み込み、専用の保存形式や描画経路を増やさない。作成時にだけシーンの値を複製し、ReplaceObjectsでモデル読込・ID・Collider上限を検証してから置換する。失敗時はシーンを変更しない。毎フレームの処理にはスナップショット作成を追加しない。
+WorldPrimitivesはCube・Sphereの作成時だけ使う関数群で、通常のWorldObjectType::ModelにOBJパスと初期Colliderを設定する。resources/primitivesのメッシュは既存のModelManagerで読み込み、専用の保存形式や描画経路を増やさない。作成時にだけシーンの値を複製し、ReplaceObjectsでモデル読込・ID・Collider上限を検証してから置換する。失敗時はシーンを変更しない。毎フレームの処理にはスナップショット作成を追加しない。
 
 ## 依存と責務
 
 ```text
 Engine → Editor → HierarchyPanel / InspectorPanel → ImGui
             ↓
-       IEditableScene ← SceneObjects ← GameScene
+       IEditableWorld ← WorldObjects ← GameScene
 Engine → SceneManager → IScene
 ```
 
@@ -19,11 +19,11 @@ Engine → SceneManager → IScene
 - Editor: 選択状態とパネル呼び出しの調整。Engineが値として所有する。
 - HierarchyPanel: 編集対象一覧の表示と選択。
 - InspectorPanel: 渡されたデータの表示と編集。
-- IEditableScene: ImGuiを含まない編集対象の列挙・操作契約。
-- SceneObjects: 設定データの一覧、ID採番、追加・削除・複製、全件置換と検証。描画機能には依存しない。
-- GameScene: SceneObjectsの設定を使い、IDごとのObject3dを所有して更新・描画する。
+- IEditableWorld: ImGuiを含まない編集対象の列挙・操作契約。
+- WorldObjects: 設定データの一覧、ID採番、追加・削除・複製、全件置換と検証。描画機能には依存しない。
+- GameScene: WorldObjectsの設定を使い、IDごとのObject3dを所有して更新・描画する。
 
-GameSceneはEditorの具体クラスを知らない。EditorもGameSceneを知らず、IEditableSceneを受け取る。この引数渡しが依存性の注入に当たる。最初は複雑なイベント機構や汎用リフレクションを導入せず、小さなインターフェースで境界を設けている。
+GameSceneはEditorの具体クラスを知らない。EditorもGameSceneを知らず、IEditableWorldを受け取る。この引数渡しが依存性の注入に当たる。最初は複雑なイベント機構や汎用リフレクションを導入せず、小さなインターフェースで境界を設けている。
 
 ## 所有権と更新順
 
@@ -49,7 +49,7 @@ Undo/Redoは現在、設定データ一覧のスナップショットを最大64
 
 保存済みファイルがあればGameSceneの初期化時に自動読込する。Releaseでも読込できる。ファイルがない場合は既定値で開始し、壊れたファイルは値を反映せずログにエラーを出す。保存はメニューまたはショートカットから明示的に行う。
 
-SceneFileはEditorに依存せず、IEditableSceneを引数に受け取る。コレクション対応シーンはテキスト形式 `PON_SCENE 6` で、個数、ID、Transform・色・光沢・ライティング、名前、モデル種類、RootNode行列の適用、Active、Mesh Rendererの有無、オブジェクトの種類、光源値、Emitter設定を記録する。浮動小数点は往復可能な桁数を使う。
+SceneFileはEditorに依存せず、IEditableWorldを引数に受け取る。コレクション対応シーンはテキスト形式 `PON_SCENE 6` で、個数、ID、Transform・色・光沢・ライティング、名前、モデル種類、RootNode行列の適用、Active、Mesh Rendererの有無、オブジェクトの種類、光源値、Emitter設定を記録する。浮動小数点は往復可能な桁数を使う。
 
 読込ではバージョン、件数、IDの重複、モデル種類、プロパティ、有限値、光沢の範囲、末尾の余分なデータを確認してから一覧を一括置換する。0体の保存ファイルもそのまま復元する。保存は隣接する一時ファイルに書き終えてからWindowsのファイル置換APIで置き換える。
 
@@ -103,43 +103,51 @@ MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1
 
 ### 種類別オブジェクトと保存形式4
 
-SceneObjectDataはModel・Empty・PointLight・Particleを識別し、光源値とParticleSettingsを値として保持する。
+WorldObjectDataはModel・Empty・PointLight・Particleを識別し、光源値とParticleSettingsを値として保持する。
 EditorSessionは種類別の値も比較し、複製・Undo/Redo・再生終了時の復元へ含める。
 SceneFileの形式4は種類とComponent値を保存する。形式1〜3ではModelとして復元し、既存シーンとの互換性を保つ。
 ParticlePresetFileの設定部分の読込・書込を共有し、シーン内Emitterとプリセットで項目の並びを統一する。
 
-GameSceneはSceneLightingでHierarchy内の有効なPoint / Spot / Directionalを収集し、固定長の各LightBufferをメッシュへ渡す。World Settingsの固定ライトは廃止した。旧シーンの移行と現在の上限は「ライトの統合」を参照。
+GameSceneはWorldLightingでHierarchy内の有効なPoint / Spot / Directionalを収集し、固定長の各LightBufferをメッシュへ渡す。World Settingsの固定ライトは廃止した。旧シーンの移行と現在の上限は「ライトの統合」を参照。
+
+## engineの基盤フォルダ
+
+`core`はEngineの起動・実行ループ・終了の組み立てだけを担当する。共有の構造体・ID・enum・上限は`types`、WinAppのWindows処理は`platform`、LogSystemとFrameProfilerは`diagnostics`、ImGuiのWin32／DirectX連携は`ui`へ分ける。従来の`base`は使用しない。
+
+typesへ新しい状態管理や初期化処理を追加しない。coreへ新しい機能の実装を積み上げず、各機能を呼び出す順序を管理する。Editorの画面内容はeditorに置き、uiにはImGuiの基盤処理だけを置く。ログと計測はどの機能からでも参照できるdiagnosticsに集める。
 
 ## engine/worldのファイル分類
 
-`world`直下には`IScene`・`ISceneObjects`・`IEditableScene`と`SceneManager`を置く。ゲーム側・Editor側が共有するシーンの窓口と、実行中のシーン切り替えを担当する。
+`world`直下には`IScene`・`IWorldObjects`・`IEditableWorld`と`SceneManager`を置く。ゲーム側・Editor側が共有するシーンの窓口と、実行中のシーン切り替えを担当する。
 
 | フォルダ | 担当ファイルと責務 |
 | --- | --- |
-| `objects` | `SceneObjectData`の共有データ定義、`SceneObjects`の一覧・ID・親子関係・検証と、`ScenePrimitives`の基本形状作成 |
-| `components` | `SceneAssetSettings`、`ParticleSettings`、Motion・Collider・Body・Lightの設定値と設定単体の処理 |
+| `objects` | `WorldObjectData`の共有データ定義、`WorldObjects`の一覧・ID・親子関係・検証と、`WorldPrimitives`の基本形状作成 |
+| `settings` | `AssetSettings`、`ParticleSettings`、Motion・Collider・Body・Lightの設定値と設定単体の処理 |
 | `serialization` | `SceneFile`・`PrefabFile`・`ParticlePresetFile`の保存・読込・旧形式への対応 |
-| `systems` | `SceneMotion`・`SceneCollision`・`ScenePhysics`の実行時更新と、`SceneLighting`のライト収集・検証・移行用の値生成 |
+| `systems` | `WorldMotion`・`WorldCollision`・`WorldPhysics`の実行時更新と、`WorldLighting`のライト収集・方向計算 |
 
-includeは`objects/SceneObjects.h`や`serialization/SceneFile.h`のように、既存の`engine/world`を起点に分類を明記する。各サブフォルダを追加のinclude検索先にせず、同名ファイルの曖昧な解決を避ける。実際のディレクトリとVisual Studioのフィルターも揃える。
+includeは`objects/WorldObjects.h`や`serialization/SceneFile.h`のように、既存の`engine/world`を起点に分類を明記する。各サブフォルダを追加のinclude検索先にせず、同名ファイルの曖昧な解決を避ける。実際のディレクトリとVisual Studioのフィルターも揃える。
 
-今回の分類では所有関係・公開API・保存形式を変更しない。`components`は設定値を持ち、`systems`がシーンを通して実行時の処理を行う。保存処理は`serialization`に集め、UIとGPUリソースの実装を持ち込まない。
+`Scene`はGameScene・TitleScene・シーン遷移などの場面に使う。共通の実行基盤はWorld、Componentの設定はRigidBodySettings・ColliderSettings・LightSettingsなどの機能名に揃える。IScene・SceneContext・SceneManagerは場面の管理、SceneFileは場面の保存、SceneViewはEditorの画面名として残す。
+
+型名・ファイル名と対応するAPI名を変更しても、所有関係・処理内容・保存形式は維持する。`settings`は設定値を持ち、`systems`がワールドを通して実行時の処理を行う。保存処理は`serialization`に集め、UIとGPUリソースの実装を持ち込まない。
 
 ### オブジェクト操作とEditor操作の境界
 
-`base/SceneObjectTypes.h`はIDと種類を定義し、シーンの実装に依存しない。`SceneObjectData.h`はその共通型を使い、カメラ設定・保存用データと、フレーム内だけ借用する`EditableObjectView`を定義する。操作のインターフェースをincludeせず、UI・GPUリソースの所有権も持たない。
+`types/WorldObjectTypes.h`はIDと種類を定義し、シーンの実装に依存しない。`WorldObjectData.h`はその共通型を使い、カメラ設定・保存用データと、フレーム内だけ借用する`EditableObjectView`を定義する。操作のインターフェースをincludeせず、UI・GPUリソースの所有権も持たない。
 
-`ISceneObjects`は一覧・親子関係・Transform・作成・置換・ゲームカメラの共通操作を定義する。Motion・Collision・Physics・Lightingの実行処理、Scene・Prefabの保存処理、基本形状作成はこの型を受け取る。`IEditableScene`は`ISceneObjects`を継承し、Editorの表示領域・カメラ入力・Asset／Particleプレビューなどを追加する。インターフェースに不要なInitialize／Update／Drawの空実装は増やさない。
+`IWorldObjects`は一覧・親子関係・Transform・作成・置換・ゲームカメラの共通操作を定義する。Motion・Collision・Physics・Lightingの実行処理、Scene・Prefabの保存処理、基本形状作成はこの型を受け取る。`IEditableWorld`は`IWorldObjects`を継承し、Editorの表示領域・カメラ入力・Asset／Particleプレビューなどを追加する。インターフェースに不要なInitialize／Update／Drawの空実装は増やさない。
 
-`SceneObjects`は既存の`IEditableScene`実装を維持し、既存のEditorとGameSceneは同じオブジェクトを共通窓口として渡す。変換用オブジェクト・追加の所有権・毎フレームの一覧コピーは導入しない。保存時の`ReplaceObjects`は従来どおり仮想呼出となり、GameScene側のモデル・テクスチャ準備と失敗時の一括取消を保持する。保存形式は13のまま。
+`WorldObjects`は既存の`IEditableWorld`実装を維持し、既存のEditorとGameSceneは同じオブジェクトを共通窓口として渡す。変換用オブジェクト・追加の所有権・毎フレームの一覧コピーは導入しない。保存時の`ReplaceObjects`は従来どおり仮想呼出となり、GameScene側のモデル・テクスチャ準備と失敗時の一括取消を保持する。保存形式は13のまま。
 
 ## ライトの統合
 
-SceneObjectTypeの既存数値0〜4を維持し、SpotLight=5 / DirectionalLight=6を追加する。SceneLightSettingsはSpotの内角・外角（全開角・度数）を保存する。既存の色・強度・範囲・減衰とTransformを共有し、別の位置・方向状態を重複所有しない。
+WorldObjectTypeの既存数値0〜4を維持し、SpotLight=5 / DirectionalLight=6を追加する。LightSettingsはSpotの内角・外角（全開角・度数）を保存する。既存の色・強度・範囲・減衰とTransformを共有し、別の位置・方向状態を重複所有しない。
 
-ライトの種別・名前・設定検証はcomponents/SceneLightSettings.cpp、配列の上限はbase/LightLimits.hに集める。SceneLighting.cppはワールド方向とGPU用一覧の収集だけを担当し、具体的なSceneObjectsや保存処理を参照しない。旧固定値の移行はserialization/SceneLightMigration.cppへ分離し、仮の配列を全件検証してから反映する。GameSceneの既定ライト作成も同じ旧固定値を再利用し、従来の初期表示を維持する。
+ライトの種別・名前・設定検証はsettings/LightSettings.cpp、配列の上限はtypes/LightLimits.hに集める。WorldLighting.cppはワールド方向とGPU用一覧の収集だけを担当し、具体的なWorldObjectsや保存処理を参照しない。旧固定値の移行はserialization/LegacyLightMigration.cppへ分離し、仮の配列を全件検証してから反映する。GameSceneの既定ライト作成も同じ旧固定値を再利用し、従来の初期表示を維持する。
 
-InspectorLights.cppは編集UI、SceneLights.hlsliはライト配列と共通の照明計算を担当する。GameSceneは収集したSceneLightCollectionを各モデルへ適用する。固定長のDirectional 4 / Point 9 / Spot 8を使い、収集時のベクター確保を不要にする。SpotのCPU要素はHLSL配列と同じ64バイトに揃え、各Bufferをstatic_assertとGPUの色比較で確認する。
+InspectorLights.cppは編集UI、WorldLights.hlsliはライト配列と共通の照明計算を担当する。GameSceneは収集したWorldLightCollectionを各モデルへ適用する。固定長のDirectional 4 / Point 9 / Spot 8を使い、収集時のベクター確保を不要にする。SpotのCPU要素はHLSL配列と同じ64バイトに揃え、各Bufferをstatic_assertとGPUの色比較で確認する。
 
 Scene形式13ではSpot角度を各レコードの末尾に追加する。Editor・GameSceneの通常読込だけでSceneFile::LoadのmigrateLegacyLightsを有効にし、形式1〜12には旧Directional・Point・Spotを1個ずつ追加する。部分データやPrefabの読込には追加しない。移行はローカル配列を検証してから一括置換し、IDは採番済みの範囲を再利用しない。形式1の再読込でも現在の移行ライトを持ち越さず、形式13は再移行しない。
 C++とHLSLで先頭16バイト、各光源48バイトの配置を一致させる。
@@ -185,7 +193,7 @@ EditorLayout::Beginがメニューと親領域を開き、Editorが再生操作�
 
 ## 親子関係とワールド変換
 
-SceneObjectDataはparentIdで親を参照し、Transformはローカル値として保存する。形式5に親IDを追加し、形式1〜4は親なしとして復元する。SceneObjectsはIDから配列位置への検索表を持ち、親の存在・循環・深さを全件検証してから一覧を置き換える。
+WorldObjectDataはparentIdで親を参照し、Transformはローカル値として保存する。形式5に親IDを追加し、形式1〜4は親なしとして復元する。WorldObjectsはIDから配列位置への検索表を持ち、親の存在・循環・深さを全件検証してから一覧を置き換える。
 
 ワールド行列は子のローカル行列に祖先の行列を順に掛けて求める。モデル描画、選択範囲、ライト、Emitter、ギズモ、注視で同じ計算を共有する。Object3dには解決済みワールド行列を渡す更新オーバーロードを追加し、モデルのRootNodeは最後に適用する。
 
@@ -199,13 +207,13 @@ Hierarchyの操作ボタンは右クリックメニューへまとめる。行�
 
 ## SceneカメラとProjectブラウザ
 
-形式6にSceneCameraSettingsとmainCameraを追加する。SetMainCameraで一意に指定し、複製先はメイン指定を引き継がない。GetGameCameraViewは親子変換から位置・向きを解決し、カメラ基底を正規化して拡縮を視野に持ち込まない。GameViewとReleaseで同じ計算を共有する。
+形式6にCameraSettingsとmainCameraを追加する。SetMainCameraで一意に指定し、複製先はメイン指定を引き継がない。GetGameCameraViewは親子変換から位置・向きを解決し、カメラ基底を正規化して拡縮を視野に持ち込まない。GameViewとReleaseで同じ計算を共有する。
 
 ProjectPanelはInitialize/Update/Drawでフォルダ一覧を管理する。ファイル走査は初期化・フォルダ変更・明示更新時に限り、毎フレームはキャッシュ済み一覧を描く。resources外への移動とシンボリックリンクの追跡は行わない。画像は可視タイルから一フレーム一件だけ読み込み、TextureManager所有のSRVを借用する。TryLoadは画像デコード失敗を返し、不完全なTextureDataをキャッシュへ登録しない。
 
 ## アセット編集・Prefab・アニメーション
 
-SceneAssetSettingsはGPUに依存しないスロット上書きと再生設定を定義する。SceneFile形式7、EditorSession、PrefabFileが同じデータを使う。PrefabはSceneFileの検証と原子的保存を再利用し、一つのルートだけを許可する。Instantiateは一時SceneObjectsでID・親・配置・個数上限を検証し、最後にIEditableScene.ReplaceObjectsへ渡す。GameSceneはモデルと画像を準備してから編集データを置き換える。
+AssetSettingsはGPUに依存しないスロット上書きと再生設定を定義する。SceneFile形式7、EditorSession、PrefabFileが同じデータを使う。PrefabはSceneFileの検証と原子的保存を再利用し、一つのルートだけを許可する。Instantiateは一時WorldObjectsでID・親・配置・個数上限を検証し、最後にIEditableWorld.ReplaceObjectsへ渡す。GameSceneはモデルと画像を準備してから編集データを置き換える。
 
 Modelは共有する元頂点・マテリアル情報・描画範囲・ModelAnimationを所有する。Object3dはスロットごとのMaterial、再生時計、変形用Meshを個別に所有する。ModelAnimationはAssimpのノード階層・キー・ボーンと逆バインド行列を保持し、位置・回転・拡縮を補間してCPUスキニングする。頂点と法線を変形し、描画時と選択時で同じ範囲を使う。プレビューの再生時計は履歴に含めず、開始・停止時にリセットする。共有のModelの頂点は更新しない。
 
@@ -214,7 +222,7 @@ AssetWorkflowTestsは保存・履歴・Prefabの再配置と失敗時の非変�
 
 ## 複数選択・表面スナップ・Prefab接続
 
-EditorSelectionは順序付きID一覧と選択判定用ハッシュ集合を持つ。SceneObjectsのID検索を公開し、選択確認のために毎フレーム一覧やハッシュ表を作り直さない。一括複製・削除は子孫を一度だけ列挙し、所有スナップショットを一回置換する。SceneObjectsの次回採番値を使い、削除済みIDを再利用しない。
+EditorSelectionは順序付きID一覧と選択判定用ハッシュ集合を持つ。WorldObjectsのID検索を公開し、選択確認のために毎フレーム一覧やハッシュ表を作り直さない。一括複製・削除は子孫を一度だけ列挙し、所有スナップショットを一回置換する。WorldObjectsの次回採番値を使い、削除済みIDを再利用しない。
 
 表面スナップはAABBで候補を絞り、Object3dの現在のスキニング済み頂点またはModelの元頂点と、描画と同じRootNode・ワールド行列で三角形交差を求める。三角形走査はドロップ確定時だけ実施する。通常クリックの選択は引き続きAABBで判定する。テクスチャの透明部分は表面判定へ反映しない。
 
@@ -233,9 +241,9 @@ GPU計測は2要素のTimestamp QueryHeapとREADBACKバッファを使用する�
 
 ## ゲーム動作Component
 
-SceneMotionSettingsは回転・往復移動の存在、有効フラグ、速度、変位、周期を保持する保存用の値型。SceneFile形式9、EditorSession、Prefabの既存スナップショットに統合し、非有限値、不正フラグ、0以下の周期等は部分反映せず拒否する。
+MotionSettingsは回転・往復移動の存在、有効フラグ、速度、変位、周期を保持する保存用の値型。SceneFile形式9、EditorSession、Prefabの既存スナップショットに統合し、非有限値、不正フラグ、0以下の周期等は部分反映せず拒否する。
 
-SceneMotionはGPUやImGuiに依存せず、IDごとの開始位置・時計だけを所有する。回転は度/秒からローカルEuler角へ変換し、往復移動は親座標系の変位を余弦で補間する。Activeでない階層や無効なComponentは進めない。削除・取り外し済みの移動状態は破棄する。
+WorldMotionはGPUやImGuiに依存せず、IDごとの開始位置・時計だけを所有する。回転は度/秒からローカルEuler角へ変換し、往復移動は親座標系の変位を余弦で補間する。Activeでない階層や無効なComponentは進めない。削除・取り外し済みの移動状態は破棄する。
 
 GameScene::Updateのカメラ・描画用行列の更新より前に呼ぶ。UpdateEditorFrameの非シミュレーション経路では呼ばず、Pauseと編集時に動かないようにする。OnPlayStateChangedで実行状態を初期化し、Transformの復元はEditorSessionの停止時スナップショットに任せる。Releaseも同じUpdateを使う。固定更新時間は既存の1/60秒を共有する。
 
@@ -244,45 +252,56 @@ MotionTestsは周期・回転・親子変換・無効状態・取り外し後の
 
 ## Colliderと接触検出
 
-SceneColliderSettingsは存在・有効・形状・ローカル中心・Box全幅・球半径を保持する。SceneFile形式10に追加し、SceneObjectsの検証と256個の上限、EditorSessionの比較、Prefabの既存保存経路へ統合する。
+ColliderSettingsは存在・有効・形状・ローカル中心・Box全幅・球半径を保持する。SceneFile形式10に追加し、WorldObjectsの検証と256個の上限、EditorSessionの比較、Prefabの既存保存経路へ統合する。
 
-SceneCollisionはImGuiとログに依存しない。ワールド形状を構築してX軸の下限で並べ、AABB候補だけを詳細判定へ送る。Box同士は面法線6本と辺の交差9本の分離軸判定、Boxと球は内部判定と12三角形上の最近点、球同士は中心間距離を使う。Boxは変換された半辺ベクトルで保持し、親子のせん断にも対応する。球の外接半径はGram行列の最大固有値に対する行和上界を使う。通常の直交基底では最大拡縮と一致する。
+WorldCollisionはImGuiとログに依存しない。ワールド形状を構築してX軸の下限で並べ、AABB候補だけを詳細判定へ送る。Box同士は面法線6本と辺の交差9本の分離軸判定、Boxと球は内部判定と12三角形上の最近点、球同士は中心間距離を使う。Boxは変換された半辺ベクトルで保持し、親子のせん断にも対応する。球の外接半径はGram行列の最大固有値に対する行和上界を使う。通常の直交基底では最大拡縮と一致する。
 
-IDを昇順にした接触ペア集合を比較し、開始・終了だけを通知する。GameSceneはSceneMotionの後で検出し、Consoleへ一更新最大32件を記録する。残りは省略件数として通知する。編集・Pause中は更新せず、Play/Stopで接触履歴を初期化する。SceneViewは同じWorldColliderから選択中の形状を描き、GPU側の別Collider資源を作らない。
+IDを昇順にした接触ペア集合を比較し、開始・終了だけを通知する。GameSceneはWorldMotionの後で検出し、Consoleへ一更新最大32件を記録する。残りは省略件数として通知する。編集・Pause中は更新せず、Play/Stopで接触履歴を初期化する。SceneViewは同じWorldColliderから選択中の形状を描き、GPU側の別Collider資源を作らない。
 
 CollisionTestsは三種の組み合わせ、接線、回転Boxの空白、負の拡縮・せん断、階層の無効化・削除と通知差分、保存・Prefab・Undo/Redo・上限・旧形式を確認する。実GPU試験はGameSceneとConsole通知、Pause、停止時のリセット、Inspector描画を通して確認する。
 
 
 ## Rigidbodyと並進物理
 
-SceneBodySettingsはStatic/Dynamic/Kinematic、重力、質量、初速、反発、摩擦、減衰を保持する。形式11で旧Collider設定の後へTriggerとRigidbodyを追加し、旧形式1〜10を維持する。EditorSessionは設定を比較し、再生前にSceneObjectsの全体検証も行う。親子の独立したDynamicによる二重移動は階層検証で拒否する。
+RigidBodySettingsはStatic/Dynamic/Kinematic、重力、質量、初速、反発、摩擦、減衰を保持する。形式11で旧Collider設定の後へTriggerとRigidbodyを追加し、旧形式1〜10を維持する。EditorSessionは設定を比較し、再生前にWorldObjectsの全体検証も行う。親子の独立したDynamicによる二重移動は階層検証で拒否する。
 
-SceneCollision.GetContactは既存形状計算を共有し、first→secondの法線と侵入深さを返す。Box同士は最小分離軸、Box/Sphereは最近面・最近点、Sphere同士は中心間距離から求める。
+WorldCollision.GetContactは既存形状計算を共有し、first→secondの法線と侵入深さを返す。Box同士は最小分離軸、Box/Sphereは最近面・最近点、Sphere同士は中心間距離から求める。
 
-ScenePhysicsはSceneMotionの後、接触通知と描画用行列の更新の前に実行する。1/60秒を4サブステップに分けて重力と速度を積分し、X軸の候補絞り込みと8回の反復で質量比に応じた位置補正・法線インパルス・接線摩擦を適用する。回転の慣性や角速度は扱わない。Kinematicの平行移動は親から子の順で各サブステップへ補間し、相手の速度との比較にも反映する。Dynamicに往復移動の位置更新を重ねない。
+WorldPhysicsはWorldMotionの後、接触通知と描画用行列の更新の前に実行する。1/60秒を4サブステップに分けて重力と速度を積分し、X軸の候補絞り込みと8回の反復で質量比に応じた位置補正・法線インパルス・接線摩擦を適用する。回転の慣性や角速度は扱わない。Kinematicの平行移動は親から子の順で各サブステップへ補間し、相手の速度との比較にも反映する。Dynamicに往復移動の位置更新を重ねない。
 
-子ColliderはIEditableScene.GetBodyOwnerで最も近い有効なRigidbodyへ結び付け、同じ所有者の接触は解決・通知ともに除外する。Triggerは通知だけを行う。速度・前回位置はIDに対応するScenePhysicsの実行状態に保持し、シーンファイル・Prefab・履歴へ入れない。Play時に初速を取得し、Stopで破棄する。
+子ColliderはIEditableWorld.GetBodyOwnerで最も近い有効なRigidbodyへ結び付け、同じ所有者の接触は解決・通知ともに除外する。Triggerは通知だけを行う。速度・前回位置はIDに対応するWorldPhysicsの実行状態に保持し、シーンファイル・Prefab・履歴へ入れない。Play時に初速を取得し、Stopで破棄する。
 
 PhysicsTestsはBox/Sphereの着地、壁、質量比、反発、摩擦、Trigger、親座標への変換、子Collider、動く床、重力オフ、無効化、坂、保存・履歴・停止・旧形式互換を検証する。実GPU試験でも本番のGameScene経路で落下・接地・Pause・停止時の復元とRigidbodyのInspectorを確認する。
 
 
 ## Editorパネルの責務と実装ファイル
 
+`editor/panels`はタブ単位のフォルダへ分類する。`hierarchy`・`inspector`・`project`・`console`・`scene_view`・`game_view`・`particle_editor`・`performance`に、各タブのヘッダーと実装をまとめる。機能追加時も対象タブのフォルダ内へ置き、共通の選択・履歴・レイアウト・入力の連携はeditor直下へ保つ。
+
 EditorはProjectPanelとConsolePanelを個別に所有し、両者を束ねるUtilityPanelsは廃止した。ProjectPanelはディレクトリ・選択・Assetプレビューを所有し、ConsolePanelはログ検索条件だけを所有する。ConsoleはLogSystemのログを描画中だけ借用し、Projectの更新処理やキャッシュに依存しない。外部リソースを初期化する必要がないため、Consoleに空のInitialize/Updateは設けない。
 
 | 対象 | ファイル | 担当 |
 |---|---|---|
-| Project | ProjectPanel.cpp | 初期化、フォルダ走査、キャッシュ更新、描画の入口 |
-| Project | ProjectView.cpp | 検索、フォルダツリー、一覧の配置、共通のフォルダ操作メニュー |
-| Project | ProjectAssets.cpp | Assetタイル、プレビュー、右クリック、ドラッグ＆ドロップ |
-| Console | ConsolePanel.cpp | ログ検索、一覧、全文確認、コピー |
-| SceneView | SceneViewPanel.cpp | タブ、画像サイズ、各操作の呼出し順 |
-| SceneView | SceneViewGizmo.cpp | 軸・リング・選択枠の描画、ヒット判定、ドラッグ開始 |
-| SceneView | SceneViewTransform.cpp | 移動・回転・拡縮の更新、キャンセル、一括操作の復元 |
-| SceneView | SceneViewPicking.cpp | ID検索、レイ選択、モデル・Prefabのドロップ配置 |
-| SceneView | SceneViewOverlay.cpp | グリッド、オブジェクトの種類別マーカー |
-| SceneView | SceneViewCollider.cpp / SceneViewGuides.cpp | Collider、カメラ・ライトの補助表示 |
+| Hierarchy | hierarchy/HierarchyPanel.cpp | 親子ツリー、作成、削除、複製、右クリック操作 |
+| Inspector | inspector/InspectorPanel.cpp・InspectorAssets/Body/Collider/Lights/Motion.cpp | 対象のComponent編集 |
+| Inspector | inspector/InspectorSelection.cpp | Editorの選択との接続・複数選択の編集 |
+| Project | project/ProjectPanel.cpp | 初期化、フォルダ走査、キャッシュ更新、描画の入口 |
+| Project | project/ProjectView.cpp | 検索、フォルダツリー、一覧の配置、共通のフォルダ操作メニュー |
+| Project | project/ProjectAssets.cpp | Assetタイル、プレビュー、右クリック、ドラッグ＆ドロップ |
+| Console | console/ConsolePanel.cpp | ログ検索、一覧、全文確認、コピー |
+| SceneView/GameView | scene_view/SceneViewPanel.cpp | 共通の描画先・タブ切替・表示内容の呼出し順 |
+| SceneView | scene_view/SceneViewContent.cpp | 編集用Toolbar、画像サイズ、配置・選択・ギズモの呼出し |
+| GameView | game_view/GameViewPanel.cpp | ゲームカメラの状態と画像表示。選択・ギズモは扱わない |
+| Particle Editor | particle_editor/ParticleEditorPanel.cpp | Emitter設定・プリセット・編集プレビュー |
+| Performance | performance/PerformancePanel.cpp | 計測履歴の選択、ピーク表示、CSV出力結果 |
+| SceneView | scene_view/SceneViewGizmo.cpp | 軸・リング・選択枠の描画、ヒット判定、ドラッグ開始 |
+| SceneView | scene_view/SceneViewTransform.cpp | 移動・回転・拡縮の更新、キャンセル、一括操作の復元 |
+| SceneView | scene_view/SceneViewPicking.cpp | ID検索、レイ選択、モデル・Prefabのドロップ配置 |
+| SceneView | scene_view/SceneViewOverlay.cpp | グリッド、オブジェクトの種類別マーカー |
+| SceneView | scene_view/SceneViewCollider.cpp / SceneViewGuides.cpp | Collider、カメラ・ライトの補助表示 |
 
 SceneViewの選択・ドラッグ・スナップ・タブは互いに関係するため、状態の所有者はSceneViewPanel一つに保ち、同じクラスの実装を責務別に分けた。SceneViewDrawing.hは画面位置への変換とワールド線分の共通描画だけを提供する。ImGui依存の描画はEditor内に置き、GPU非依存のSceneViewMathへ逆向きの依存を追加しない。各ヘッダーには担当ファイルとメンバ関数／変数の分類を記す。
+
+SceneViewPanelは共通のウィンドウとタブの開始終了を管理し、SceneViewContentとGameViewPanelはその内部だけを描く。GameViewPanelは追加の状態を持たない関数群とし、共通の画像ハンドルと寸法を借用する。GameViewへ切り替えた時は編集中のドラッグを取り消し、編集カメラ入力を無効にする。PerformancePanelは履歴の選択・ピーク表示・CSV結果を自身のメンバーで保持し、EditorTools.cppへ混在していた実装を廃止する。Inspectorの選択データの所有者はEditorに維持し、その表示実装だけをInspectorSelection.cppへ集める。
 
 今回の分割では保存形式と操作仕様を変更しない。CPUの保存・履歴テスト、実マウス入力を通すSceneViewテスト、実GPUの描画テストを使って確認する。Projectの計測範囲はProjectPanel自身の更新・描画とし、独立したConsoleの処理は含めない。

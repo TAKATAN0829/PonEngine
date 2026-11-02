@@ -2,10 +2,10 @@
 
 // 自作
 #include "IScene.h"
-#include "objects/SceneObjects.h"
-#include "systems/SceneMotion.h"
-#include "systems/SceneCollision.h"
-#include "systems/ScenePhysics.h"
+#include "objects/WorldObjects.h"
+#include "systems/WorldMotion.h"
+#include "systems/WorldCollision.h"
+#include "systems/WorldPhysics.h"
 #include "SceneRenderTarget.h"
 #include <memory>
 #include <unordered_map>
@@ -18,7 +18,7 @@
 #include "Sprite.h"
 #include "SpriteCommon.h"
 
-class GameScene : public IScene, public SceneObjects {
+class GameScene : public IScene, public WorldObjects {
 public:
 
 	//=============================================================================================//
@@ -49,7 +49,7 @@ public:
 	// Getter / Editor・Scene表示
 
 	// 接触色は保存対象外の最新ゲーム更新結果から取得する。
-	bool IsColliderTouching(SceneObjectId identifier) const override { return collision_.IsTouching(identifier); }
+	bool IsColliderTouching(WorldObjectId identifier) const override { return collision_.IsTouching(identifier); }
 
 	// Projectから要求されたモデルの専用サムネイルを取得する。
 	uint64_t GetModelPreview(const std::string& model, std::string& error) override;
@@ -59,11 +59,11 @@ public:
 	std::vector<ModelMaterialInfo> GetModelMaterials(const std::string& model) const override;
 	std::vector<ModelAnimationInfo> GetModelAnimations(const std::string& model) const override;
 	bool PrepareTexture(const std::string& texture, std::string& error) override;
-	float GetAnimationTime(SceneObjectId objectId) const override;
-	bool IsAnimationPreviewPlaying(SceneObjectId objectId) const override;
-	void SetAnimationPreview(SceneObjectId objectId, bool playing, bool reset) override;
-	bool ReplaceObjects(std::vector<SceneObjectData> objects, std::string& error) override;
-	IEditableScene* GetEditableScene() override { return this; }
+	float GetAnimationTime(WorldObjectId objectId) const override;
+	bool IsAnimationPreviewPlaying(WorldObjectId objectId) const override;
+	void SetAnimationPreview(WorldObjectId objectId, bool playing, bool reset) override;
+	bool ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error) override;
+	IEditableWorld* GetEditableWorld() override { return this; }
 	bool GetEditorViewInfo(EditorViewInfo& viewInfo) const override;
 	bool GetEditableObjectBounds(size_t objectIndex, AABB& worldBounds) const override;
 	bool IntersectObjectSurface(size_t objectIndex, const Vector3& origin, const Vector3& direction, float& distance) const override;
@@ -101,7 +101,7 @@ private:
 	void UpdateObject();
 	void UpdateModels(const Matrix4x4& viewProjection);
 	void UpdateParticles(const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
-	void UpdateEmitter(const SceneObjectData& data, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
+	void UpdateEmitter(const WorldObjectData& data, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
 	void UpdateSprite();
 	// 要求された3Dサムネイルを、Scene描画が始まる前に一度だけ描画する。
 	void DrawModelPreviews();
@@ -109,9 +109,9 @@ private:
 	//=============================================================================================//
 	// Getter / Particle更新条件
 
-	bool IsParticlePreviewTarget(SceneObjectId objectId) const;
-	bool ShouldSimulateEmitter(SceneObjectId objectId, bool gameEmissionEnabled) const;
-	bool ShouldEmitEmitter(SceneObjectId objectId, bool gameEmissionEnabled) const;
+	bool IsParticlePreviewTarget(WorldObjectId objectId) const;
+	bool ShouldSimulateEmitter(WorldObjectId objectId, bool gameEmissionEnabled) const;
+	bool ShouldEmitEmitter(WorldObjectId objectId, bool gameEmissionEnabled) const;
 
 	//=============================================================================================//
 	// メンバ関数 / 設定パネル描画
@@ -152,7 +152,7 @@ private:
 
 	Particle* particle_ = nullptr;
 	ParticleRenderer* particleRenderer_ = nullptr; // SceneContextが所有し、Sceneより長く生存する。
-	std::unordered_map<SceneObjectId, std::unique_ptr<Particle>> runtimeParticles_;
+	std::unordered_map<WorldObjectId, std::unique_ptr<Particle>> runtimeParticles_;
 
 	//=============================================================================================//
 	// DebugCamera
@@ -168,17 +168,17 @@ private:
 	// モデル
 
 	// 編集データのIDに対応する描画用リソース。保存ファイルや履歴には含めない。
-	std::unordered_map<SceneObjectId, RuntimeObject> runtimeObjects_;
+	std::unordered_map<WorldObjectId, RuntimeObject> runtimeObjects_;
 	// 3Dサムネイルは最大24件を保持し、通常のシーン描画用とは別に所有する。
 	std::unordered_map<std::string, std::unique_ptr<ModelPreview>> modelPreviews_;
 
 	//=============================================================================================//
 	// メンバ変数 / 再生状態
 
-	ScenePhysics physics_; // 重力・速度・押し戻し。保存対象外の実行状態。
+	WorldPhysics physics_; // 重力・速度・押し戻し。保存対象外の実行状態。
 	std::string physicsStatusLogged_; // 再生中に設定が不正になった場合の同じ通知を繰り返さない。
-	SceneCollision collision_; // 前回の接触ペア。保存・履歴の対象外。
-	SceneMotion motion_; // 保存対象外の開始位置と往復移動の時計。
+	WorldCollision collision_; // 前回の接触ペア。保存・履歴の対象外。
+	WorldMotion motion_; // 保存対象外の開始位置と往復移動の時計。
 	bool simulationEnabled_ = true; // このフレームに時間経過を進めるかどうか。
 	bool playing_ = false; // Pause中もtrueとなる、再生モード自体の状態。
 

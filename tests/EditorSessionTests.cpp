@@ -1,16 +1,16 @@
 #include "../project/CG2/editor/EditorSession.h"
-#include "objects/SceneObjects.h"
+#include "objects/WorldObjects.h"
 
 #include <stdexcept>
 #include <limits>
 
 namespace {
 	// 変更がない更新でスナップショットを複製しないことを計測する。
-	class SnapshotCountingScene : public SceneObjects {
+	class SnapshotCountingScene : public WorldObjects {
 	public:
-		std::vector<SceneObjectData> CaptureObjects() const override {
+		std::vector<WorldObjectData> CaptureObjects() const override {
 			++captureCount_;
-			return SceneObjects::CaptureObjects();
+			return WorldObjects::CaptureObjects();
 		}
 		size_t GetCaptureCount() const { return captureCount_; }
 	private:
@@ -41,8 +41,8 @@ void RunEditorSessionTests() {
 	unchangedSession.Update(unchangedScene, false);
 	RequireSessionCondition(unchangedScene.GetCaptureCount() == initialCaptureCount + 1, "Actual edit did not create one snapshot");
 
-	SceneObjects scene;
-	const SceneObjectId originalId = scene.AddObject("plane.gltf");
+	WorldObjects scene;
+	const WorldObjectId originalId = scene.AddObject("plane.gltf");
 	EditorSession session;
 	session.Initialize(scene);
 	std::string error;
@@ -64,7 +64,7 @@ void RunEditorSessionTests() {
 	session.MarkSaved(scene);
 	RequireSessionCondition(!session.IsDirty(scene), "Save did not clear dirty state");
 
-	const SceneObjectId duplicateId = scene.DuplicateObject(originalId);
+	const WorldObjectId duplicateId = scene.DuplicateObject(originalId);
 	session.Update(scene, false);
 	RequireSessionCondition(session.IsDirty(scene) && session.Undo(scene, error) && scene.GetEditableObjectCount() == 1,
 		"Duplicate undo failed");
@@ -81,7 +81,7 @@ void RunEditorSessionTests() {
 		!*scene.GetEditableObject(0).hasMeshRenderer, "Component redo failed");
 
 	// 再生中に追加・削除しても、停止時に編集用のオブジェクトと設定が復元されることを確認する。
-	const std::vector<SceneObjectData> beforePlay = scene.CaptureObjects();
+	const std::vector<WorldObjectData> beforePlay = scene.CaptureObjects();
 	RequireSessionCondition(session.BeginPlay(scene, error) && session.IsPlaying(), "Play failed");
 	RequireSessionCondition(session.ShouldSimulate(), "Play mode is not simulating");
 	RequireSessionCondition(!session.CanUndo() && !session.CanRedo(), "History enabled while playing");
@@ -97,7 +97,7 @@ void RunEditorSessionTests() {
 	session.Update(scene, false);
 	RequireSessionCondition(session.Stop(scene, error) && !session.IsPlaying() && !session.IsPaused(), "Stop failed");
 	RequireSessionCondition(!session.ShouldSimulate(), "Stopped scene is simulating");
-	const std::vector<SceneObjectData> afterPlay = scene.CaptureObjects();
+	const std::vector<WorldObjectData> afterPlay = scene.CaptureObjects();
 	RequireSessionCondition(afterPlay.size() == beforePlay.size() && afterPlay[0].id == originalId &&
 		afterPlay[0].name == "Player" && !afterPlay[0].active && !afterPlay[0].hasMeshRenderer,
 		"Stop did not restore component data");
@@ -130,7 +130,7 @@ void RunEditorSessionTests() {
 	RequireSessionCondition(!session.BeginPlay(scene, error) && !session.IsPlaying(),
 		"Invalid object data entered play mode");
 
-	SceneObjects cleanScene;
+	WorldObjects cleanScene;
 	cleanScene.AddObject("plane.gltf");
 	session.Initialize(cleanScene);
 	RequireSessionCondition(session.BeginPlay(cleanScene, error), "Clean scene cannot play");

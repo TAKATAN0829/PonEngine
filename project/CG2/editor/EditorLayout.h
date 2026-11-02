@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "IEditableScene.h"
+#include "IEditableWorld.h"
 
 // UIは選ばれた操作だけを返し、保存・読込の実行はEditorへ任せる。
 enum class EditorMenuAction { None, NewScene, SaveScene, LoadScene };

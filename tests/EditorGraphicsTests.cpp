@@ -10,7 +10,7 @@
 #include "TextureManager.h"
 #include "ModelManager.h"
 #include "../project/CG2/editor/EditorSession.h"
-#include "../project/CG2/editor/panels/InspectorPanel.h"
+#include "../project/CG2/editor/panels/inspector/InspectorPanel.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 #include <iostream>
@@ -36,10 +36,10 @@ public:
 		VerifyMessageQueue();
 		resizeTarget_.Initialize(context.object3dCommon->GetDxCommon(), context.object3dCommon->GetSrvManager());
 		originalHandle_ = resizeTarget_.GetTextureHandle();
-		hierarchyParentId_ = CreateObject(SceneObjectType::Empty);
-		lightChildId_ = CreateObject(SceneObjectType::PointLight);
-		emitterId_ = CreateObject(SceneObjectType::Particle);
-		CreateObject(SceneObjectType::Particle); // 複数EmitterのGPUリソースが共存できることも確認する。
+		hierarchyParentId_ = CreateObject(WorldObjectType::Empty);
+		lightChildId_ = CreateObject(WorldObjectType::PointLight);
+		emitterId_ = CreateObject(WorldObjectType::Particle);
+		CreateObject(WorldObjectType::Particle); // 複数EmitterのGPUリソースが共存できることも確認する。
 		modelChildId_ = AddObject("axis.obj");
 		std::string modelError;
 		if (GetModelPreview("teapot.obj",modelError) == 0) {
@@ -59,7 +59,7 @@ public:
 			FailTest(__LINE__);
 		}
 
-		CreateObject(SceneObjectType::Camera);
+		CreateObject(WorldObjectType::Camera);
 		std::string hierarchyError;
 		if (!SetObjectParent(emitterId_, hierarchyParentId_, hierarchyError)) {
 			FailTest(__LINE__);
@@ -269,7 +269,21 @@ public:
 			throw std::runtime_error("Editor preview PNG save failed.");
 		}
 	}
-	bool Passed() const { return valid_ && sawParticles_ && frameNumber_ >= 80; }
+	bool Passed() const {
+		// 途中終了と粒子未生成も識別し、一般的な失敗メッセージだけで原因を失わない。
+		if (!valid_) {
+			return false;
+		}
+		if (!sawParticles_) {
+			std::cerr << "GPU test did not observe particles; frames=" << frameNumber_ << '\n';
+			return false;
+		}
+		if (frameNumber_ < 80) {
+			std::cerr << "GPU test stopped before completion; frames=" << frameNumber_ << '\n';
+			return false;
+		}
+		return true;
+	}
 private:
 	void FailTest(int sourceLine) {
 		if (valid_) {
@@ -537,7 +551,7 @@ private:
 	}
 	// 本番の更新経路で落下・接地・Pause・停止時の復元を確認する。
 	void VerifyPhysicsSimulation() {
-		const std::vector<SceneObjectData> original = CaptureObjects();
+		const std::vector<WorldObjectData> original = CaptureObjects();
 		std::string error;
 		if (!ReplaceObjects({},error)) {
 			throw std::runtime_error(error);
@@ -545,8 +559,8 @@ private:
 		EditorSession session;
 		session.Initialize(*this);
 		// Projectドロップと同じ配置処理で実Assetを読み、Componentを編集する。
-		const SceneObjectId floorId = PlaceModel("plane.gltf",0,{0,-0.5f,0},error);
-		const SceneObjectId ballId = PlaceModel("axis.obj",0,{0,3,0},error);
+		const WorldObjectId floorId = PlaceModel("plane.gltf",0,{0,-0.5f,0},error);
+		const WorldObjectId ballId = PlaceModel("axis.obj",0,{0,3,0},error);
 		if (floorId == 0 || ballId == 0) {
 			throw std::runtime_error("Production asset placement failed: "+error);
 		}
@@ -609,11 +623,11 @@ private:
 	}
 	// 本番のGameScene経路で接触・Pause・Console通知・リセットを確認する。
 	void VerifyColliderSimulation() {
-		const std::vector<SceneObjectData> original = CaptureObjects();
-		SceneObjectData first;
+		const std::vector<WorldObjectData> original = CaptureObjects();
+		WorldObjectData first;
 		first.id = 900001;
 		first.collider.present = true;
-		SceneObjectData second = first;
+		WorldObjectData second = first;
 		second.id = 900002;
 		second.collider.shape = ColliderShape::Sphere;
 		second.transform.translate.x = 0.5f;
@@ -662,8 +676,8 @@ private:
 	}
 	// 本番のGameScene経路でPlay・Pause・Step・StopとInspector描画を確認する。
 	void VerifyMotionSimulation() {
-		const std::vector<SceneObjectData> original = CaptureObjects();
-		SceneObjectData moving;
+		const std::vector<WorldObjectData> original = CaptureObjects();
+		WorldObjectData moving;
 		moving.id = 999999;
 		moving.motion.hasRotation = true;
 		moving.motion.hasMovement = true;
@@ -710,9 +724,9 @@ private:
 	}
 	// OS入力は送らず、ImGuiのマウス状態を一時的に差し替えてカメラ単体を確認する。
 	void VerifySurfaceGeometry() {
-		const std::vector<SceneObjectData> original = CaptureObjects();
+		const std::vector<WorldObjectData> original = CaptureObjects();
 		std::string error;
-		SceneObjectData triangle;
+		WorldObjectData triangle;
 		triangle.id = 98765;
 		triangle.model = "fixtures/animated-skin.gltf";
 		triangle.useRootNodeMatrix = false;
@@ -844,8 +858,8 @@ private:
 		}
 		// 未キャッシュのモデルをComponentなしで読み込んでも、後から安全に追加できる。
 		std::filesystem::copy_file("resources/fixtures/animated-skin.gltf", "resources/fixtures/disabled.gltf", std::filesystem::copy_options::overwrite_existing);
-		std::vector<SceneObjectData> snapshot = CaptureObjects();
-		SceneObjectData disabled;
+		std::vector<WorldObjectData> snapshot = CaptureObjects();
+		WorldObjectData disabled;
 		disabled.id = animatedSecondId_ + 1;
 		disabled.model = "fixtures/disabled.gltf";
 		disabled.hasMeshRenderer = false;
@@ -955,12 +969,12 @@ private:
 	std::unique_ptr<Object3d> softPlane_;
 	ParticleRenderer* softRenderer_ = nullptr; // テストシーンよりEngine側が長く生存する。
 	Object3dCommon* softObjects_ = nullptr;
-	SceneObjectId hierarchyParentId_ = kInvalidSceneObjectId;
-	SceneObjectId lightChildId_ = kInvalidSceneObjectId;
-	SceneObjectId modelChildId_ = kInvalidSceneObjectId;
-	SceneObjectId emitterId_ = kInvalidSceneObjectId;
-	SceneObjectId animatedFirstId_ = 0;
-	SceneObjectId animatedSecondId_ = 0;
+	WorldObjectId hierarchyParentId_ = kInvalidWorldObjectId;
+	WorldObjectId lightChildId_ = kInvalidWorldObjectId;
+	WorldObjectId modelChildId_ = kInvalidWorldObjectId;
+	WorldObjectId emitterId_ = kInvalidWorldObjectId;
+	WorldObjectId animatedFirstId_ = 0;
+	WorldObjectId animatedSecondId_ = 0;
 	float pausedAnimationTime_ = 0;
 	uint32_t frameNumber_ = 0;
 	size_t pausedCount_ = 0;
@@ -984,7 +998,11 @@ int main() {
 		engine.Initialize(scene);
 		engine.Run(90);
 		scene->CapturePreview();
-		const bool passed = scene->Passed() && !engine.HasGraphicsErrors();
+		bool passed = scene->Passed();
+		if (engine.HasGraphicsErrors()) {
+			std::cerr << "GPU validation reported an error.\n";
+			passed = false;
+		}
 		engine.Finalize();
 		LogSystem::Finalize();
 		CoUninitialize();

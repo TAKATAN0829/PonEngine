@@ -1,4 +1,4 @@
-#include "objects/SceneObjects.h"
+#include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
 #include "../project/CG2/editor/EditorSession.h"
 #include <cmath>
@@ -24,10 +24,10 @@ namespace {
 }
 
 void RunHierarchyTests(const std::filesystem::path& directory) {
-	SceneObjects scene;
-	const SceneObjectId parentId = scene.CreateObject(SceneObjectType::Empty);
-	const SceneObjectId childId = scene.AddObject("plane.gltf");
-	const SceneObjectId lightId = scene.CreateObject(SceneObjectType::PointLight);
+	WorldObjects scene;
+	const WorldObjectId parentId = scene.CreateObject(WorldObjectType::Empty);
+	const WorldObjectId childId = scene.AddObject("plane.gltf");
+	const WorldObjectId lightId = scene.CreateObject(WorldObjectType::PointLight);
 	*scene.GetEditableObject(0).transform = {{2,2,2},{0.2f,0.4f,-0.1f},{10,3,-2}};
 	*scene.GetEditableObject(1).transform = {{1,2,3},{0.3f,-0.5f,0.2f},{3,4,5}};
 	Matrix4x4 originalWorld{};
@@ -57,7 +57,7 @@ void RunHierarchyTests(const std::filesystem::path& directory) {
 	*scene.GetEditableObject(0).active = true;
 	RequireHierarchy(scene.IsObjectActive(childId), "Active child did not recover");
 
-	const SceneObjectId copiedId = scene.DuplicateObject(parentId);
+	const WorldObjectId copiedId = scene.DuplicateObject(parentId);
 	RequireHierarchy(copiedId != 0 && scene.GetEditableObjectCount() == 6, "Subtree duplicate failed");
 	RequireHierarchy(scene.GetEditableObject(4).parentId == copiedId && scene.GetEditableObject(5).parentId == copiedId,
 		"Copied children reference original parent");
@@ -65,7 +65,7 @@ void RunHierarchyTests(const std::filesystem::path& directory) {
 	RequireMatrixNear(originalWorld, changedWorld);
 	const std::filesystem::path hierarchyPath = directory / "hierarchy.ponscene";
 	RequireHierarchy(SceneFile::Save(scene, hierarchyPath, error), "Hierarchy save failed");
-	SceneObjects loaded;
+	WorldObjects loaded;
 	RequireHierarchy(SceneFile::Load(loaded, hierarchyPath, error), "Hierarchy load failed");
 	session.Initialize(scene);
 	RequireHierarchy(!session.IsDirty(loaded), "Hierarchy roundtrip lost data");
@@ -74,7 +74,7 @@ void RunHierarchyTests(const std::filesystem::path& directory) {
 	RequireHierarchy(scene.AddObject("axis.obj") > copiedId, "ID reused after deletion");
 
 	// 親参照の検証で失敗しても、現在の一覧を部分的に変更しない。
-	std::vector<SceneObjectData> invalid = loaded.CaptureObjects();
+	std::vector<WorldObjectData> invalid = loaded.CaptureObjects();
 	invalid[0].parentId = 999;
 	RequireHierarchy(!loaded.ReplaceObjects(invalid, error) && loaded.GetEditableObject(0).parentId == 0, "Orphan parent partially applied");
 	invalid = loaded.CaptureObjects();
@@ -84,8 +84,8 @@ void RunHierarchyTests(const std::filesystem::path& directory) {
 	std::swap(invalid[0], invalid[1]);
 	RequireHierarchy(loaded.ReplaceObjects(invalid, error), "Child-before-parent ordering rejected");
 
-	SceneObjects scaled;
-	scaled.CreateObject(SceneObjectType::Empty);
+	WorldObjects scaled;
+	scaled.CreateObject(WorldObjectType::Empty);
 	scaled.AddObject("plane.gltf");
 	scaled.GetEditableObject(0).transform->scale = {0,1,1};
 	RequireHierarchy(!scaled.SetObjectParent(2,1,error), "Zero scale parent accepted");
@@ -104,9 +104,9 @@ void RunHierarchyTests(const std::filesystem::path& directory) {
 	RequireMatrixNear(originalWorld,changedWorld);
 
 	// 三段のツリーでも、子孫の親IDを複製先へ付け直してUndoでまとめて復元する。
-	SceneObjects nested;
-	nested.CreateObject(SceneObjectType::Empty);
-	nested.CreateObject(SceneObjectType::Empty);
+	WorldObjects nested;
+	nested.CreateObject(WorldObjectType::Empty);
+	nested.CreateObject(WorldObjectType::Empty);
 	nested.AddObject("axis.obj");
 	RequireHierarchy(nested.SetObjectParent(2,1,error) && nested.SetObjectParent(3,2,error), "Three-level tree failed");
 	nested.GetEditableObject(0).transform->translate.x = 5;
@@ -122,9 +122,9 @@ void RunHierarchyTests(const std::filesystem::path& directory) {
 	RequireHierarchy(nested.GetEditableObjectCount() == 3 && session.Undo(nested,error) && nested.GetEditableObjectCount() == 6,
 		"Subtree delete undo failed");
 
-	std::vector<SceneObjectData> deepObjects;
-	for (SceneObjectId objectId = 1; objectId <= 65; ++objectId) {
-		SceneObjectData object;
+	std::vector<WorldObjectData> deepObjects;
+	for (WorldObjectId objectId = 1; objectId <= 65; ++objectId) {
+		WorldObjectData object;
 		object.id = objectId;
 		object.parentId = objectId - 1;
 		deepObjects.push_back(object);
@@ -133,8 +133,8 @@ void RunHierarchyTests(const std::filesystem::path& directory) {
 	deepObjects.pop_back();
 	RequireHierarchy(nested.ReplaceObjects(deepObjects,error) && nested.GetObjectWorldMatrix(64,changedWorld), "64-level hierarchy rejected");
 
-	SceneObjects manipulated;
-	const SceneObjectId manipulatedId = manipulated.AddObject("plane.gltf");
+	WorldObjects manipulated;
+	const WorldObjectId manipulatedId = manipulated.AddObject("plane.gltf");
 	const Matrix4x4 rotated = MathUtility::MakeAffineMatrix({1,2,3},{0.4f,0.5f,0.6f},{3,4,5});
 	RequireHierarchy(manipulated.SetObjectWorldTransform(manipulatedId,rotated), "Rotation gizmo transform rejected");
 	RequireHierarchy(manipulated.GetObjectWorldMatrix(manipulatedId,changedWorld), "Rotation gizmo matrix missing");

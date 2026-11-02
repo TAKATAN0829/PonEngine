@@ -1,6 +1,6 @@
 #include "serialization/ParticlePresetFile.h"
 #include "serialization/SceneFile.h"
-#include "objects/SceneObjects.h"
+#include "objects/WorldObjects.h"
 #include "serialization/PrefabFile.h"
 #include "../project/CG2/editor/EditorSession.h"
 #include <sstream>
@@ -118,8 +118,8 @@ void RunParticlePresetTests() {
 	RequireParticleCondition(!ValidateParticleSettings(settings),"Non-finite end color accepted");
 
 	// Scene・Prefab・Undoでも新しい項目を失わず、旧Scene11のParticleも読める。
-	SceneObjects scene;
-	const SceneObjectId emitter = scene.CreateObject(SceneObjectType::Particle);
+	WorldObjects scene;
+	const WorldObjectId emitter = scene.CreateObject(WorldObjectType::Particle);
 	*scene.GetEditableObject(0).particleSettings = original;
 	EditorSession session;
 	session.Initialize(scene);
@@ -129,7 +129,7 @@ void RunParticlePresetTests() {
 	RequireParticleCondition(session.Redo(scene,error),"Particle lifetime redo failed");
 	const std::filesystem::path scenePath = directory/"lifetime.ponscene";
 	RequireParticleCondition(SceneFile::Save(scene,scenePath,error),"Particle lifetime scene save failed");
-	SceneObjects loaded;
+	WorldObjects loaded;
 	RequireParticleCondition(SceneFile::Load(loaded,scenePath,error) && EqualParticleSettings(*scene.GetEditableObject(0).particleSettings,*loaded.GetEditableObject(0).particleSettings),"Particle lifetime scene roundtrip failed");
 	const std::filesystem::path prefabPath = directory/"lifetime.ponprefab";
 	RequireParticleCondition(PrefabFile::Save(scene,emitter,prefabPath,error),"Particle lifetime prefab save failed");

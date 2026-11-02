@@ -1,4 +1,4 @@
-#include "objects/SceneObjects.h"
+#include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
 #include "../project/CG2/editor/EditorSession.h"
 #include <cmath>
@@ -14,12 +14,12 @@ namespace {
 }
 
 void RunCameraTests(const std::filesystem::path& directory) {
-	SceneObjects scene;
-	SceneCameraView view{};
+	WorldObjects scene;
+	CameraView view{};
 	RequireCamera(!scene.GetGameCameraView(1, view), "Empty scene has a camera");
-	const SceneObjectId firstId = scene.CreateObject(SceneObjectType::Camera);
-	const SceneObjectId secondId = scene.CreateObject(SceneObjectType::Camera);
-	const SceneObjectId parentId = scene.CreateObject(SceneObjectType::Empty);
+	const WorldObjectId firstId = scene.CreateObject(WorldObjectType::Camera);
+	const WorldObjectId secondId = scene.CreateObject(WorldObjectType::Camera);
+	const WorldObjectId parentId = scene.CreateObject(WorldObjectType::Empty);
 	RequireCamera(scene.GetMainCameraId() == firstId, "First camera was not main");
 	RequireCamera(scene.GetCameraView(secondId,1,view),"Non-main camera guide unavailable");
 	RequireCamera(scene.GetMainCameraId() == firstId,"Guide changed main camera");
@@ -45,7 +45,7 @@ void RunCameraTests(const std::filesystem::path& directory) {
 	RequireCamera(scene.GetGameCameraView(1,view), "Parented camera did not resolve");
 	const float forwardLength = std::sqrt(view.cameraWorld.m[2][0]*view.cameraWorld.m[2][0]+view.cameraWorld.m[2][1]*view.cameraWorld.m[2][1]+view.cameraWorld.m[2][2]*view.cameraWorld.m[2][2]);
 	RequireCamera(std::abs(forwardLength-1) < 0.001f, "Parent scale distorted camera view");
-	SceneCameraView guide{};
+	CameraView guide{};
 	RequireCamera(scene.GetCameraView(secondId,1,guide),"Parented camera guide unavailable");
 	for (size_t rowIndex = 0; rowIndex < 4; ++rowIndex) {
 		for (size_t columnIndex = 0; columnIndex < 4; ++columnIndex) {
@@ -62,13 +62,13 @@ void RunCameraTests(const std::filesystem::path& directory) {
 	scene.GetEditableObject(1).camera->farClip = 500;
 	const std::filesystem::path cameraPath = directory / "camera.ponscene";
 	RequireCamera(SceneFile::Save(scene,cameraPath,error), "Camera save failed");
-	SceneObjects loaded;
+	WorldObjects loaded;
 	RequireCamera(SceneFile::Load(loaded,cameraPath,error), "Camera load failed");
 	session.Initialize(scene);
 	RequireCamera(!session.IsDirty(loaded), "Camera roundtrip lost properties");
 	RequireCamera(session.BeginPlay(scene,error) && scene.SetMainCamera(0) && session.Stop(scene,error) && scene.GetMainCameraId() == secondId,
 		"Play stop lost main camera");
-	std::vector<SceneObjectData> invalid = loaded.CaptureObjects();
+	std::vector<WorldObjectData> invalid = loaded.CaptureObjects();
 	invalid[0].mainCamera = true;
 	RequireCamera(!loaded.ReplaceObjects(invalid,error), "Multiple main cameras accepted");
 	invalid = loaded.CaptureObjects();

@@ -220,15 +220,27 @@ project/
   CG2/
     application/       GameSceneとゲーム側の処理
     editor/            Editorの状態・履歴・レイアウト
-      panels/          Hierarchy / Inspector / Project / Console / SceneViewなど
+      panels/          タブごとに実装を分類
+        hierarchy/     Hierarchyのツリーと右クリック操作
+        inspector/     InspectorのComponent編集・複数選択
+        project/       Projectのフォルダ・Asset表示
+        console/       Consoleの検索とログ表示
+        scene_view/    SceneViewの操作・ギズモ・共通のタブ管理
+        game_view/     GameViewのカメラ画像表示
+        particle_editor/ Particle Editorの設定・プレビュー操作
+        performance/   Performanceの履歴表示・CSV出力
     engine/
-      core/            実行ループ・入力との連携・計測
+      core/            Engineの起動・実行ループ・終了の組み立て
+      types/           共有する構造体・ID・種類・上限定数
+      platform/        Windowsのウィンドウ・メッセージ処理
+      diagnostics/     ログ・CPU/GPU負荷の記録と出力
+      ui/              ImGuiの初期化・Win32/DirectX連携
       dx12/            DirectX 12・描画先・記述子・Pipeline
       renderer/        モデル・Particleなどの描画設定
       object/          描画オブジェクト・実行中のParticle
       world/           ゲームワールドの共通基盤・シーン切り替え管理
         objects/       オブジェクト一覧・親子関係・基本形状の作成
-        components/    Material・Animation・Particle・物理・ライトなどの設定値
+        settings/      Material・Animation・Particle・物理・ライトなどの設定値
         serialization/ Scene・Prefab・Particleプリセットの保存と読込
         systems/       動作・衝突判定・物理更新・ライトの収集
       asset/           モデル・テクスチャ・アニメーションの読込
@@ -240,7 +252,9 @@ docs/                  操作と設計の詳細
 generated/             ビルド結果・テスト生成物（Git管理外）
 ```
 
-オブジェクトの保存用データは`world/objects/SceneObjectData.h`にまとめ、実行・保存処理は`ISceneObjects`を窓口にします。Editorは、その操作を継承してカメラ・プレビュー操作を加えた`IEditableScene`を使います。保存用データと実行中の状態を分け、UIはシーン所有の参照をフレームをまたいで保持しない方針です。
+オブジェクトの保存用データは`world/objects/WorldObjectData.h`にまとめ、実行・保存処理は`IWorldObjects`を窓口にします。Editorは、その操作を継承してカメラ・プレビュー操作を加えた`IEditableWorld`を使います。保存用データと実行中の状態を分け、UIはシーン所有の参照をフレームをまたいで保持しない方針です。
+
+命名ではSceneをGameScene・TitleSceneなどの場面とその管理に使い、共通の実行処理にはWorld、設定値にはRigidBodySettings・ColliderSettingsなどの機能名を使います。SceneFileは場面の保存、SceneViewはEditorの画面名として残しています。
 
 現在の参照方向、所有関係、相互依存と整理の優先順位は[依存関係の調査](docs/dependencies.md)にまとめています。
 

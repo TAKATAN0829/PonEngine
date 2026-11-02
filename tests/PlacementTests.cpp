@@ -1,4 +1,4 @@
-#include "objects/SceneObjects.h"
+#include "objects/WorldObjects.h"
 #include "SceneViewMath.h"
 #include "../project/CG2/editor/AssetDragPayload.h"
 #include "../project/CG2/editor/EditorSession.h"
@@ -14,20 +14,20 @@ namespace {
 	}
 }
 void RunPlacementTests() {
-	SceneObjects scene;
+	WorldObjects scene;
 	EditorSession session;
 	session.Initialize(scene);
 	std::string error;
-	const SceneObjectId placed = scene.PlaceModel("plane.gltf",0,{3,4,5},error);
+	const WorldObjectId placed = scene.PlaceModel("plane.gltf",0,{3,4,5},error);
 	CheckPlacement(placed != 0 && scene.GetObjectWorldPosition(placed).x == 3);
 	session.Update(scene,false);
 	CheckPlacement(session.Undo(scene,error) && scene.GetEditableObjectCount() == 0);
 	CheckPlacement(session.Redo(scene,error) && scene.GetEditableObjectCount() == 1);
-	const SceneObjectId parent = scene.CreateObject(SceneObjectType::Empty);
+	const WorldObjectId parent = scene.CreateObject(WorldObjectType::Empty);
 	scene.GetEditableObject(1).transform->translate = {10,2,3};
 	scene.GetEditableObject(1).transform->rotate.y = 0.4f;
 	scene.GetEditableObject(1).transform->scale = {2,3,4};
-	const SceneObjectId child = scene.PlaceModel("axis.obj",parent,{10,2,3},error);
+	const WorldObjectId child = scene.PlaceModel("axis.obj",parent,{10,2,3},error);
 	CheckPlacement(child != 0 && scene.GetEditableObject(2).parentId == parent);
 	CheckPlacement(std::abs(scene.GetObjectWorldPosition(child).x-10) < 0.001f);
 	const size_t count = scene.GetEditableObjectCount();

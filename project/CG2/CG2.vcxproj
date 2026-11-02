@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -72,7 +72,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\base;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\types;$(ProjectDir)engine\platform;$(ProjectDir)engine\diagnostics;$(ProjectDir)engine\ui;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -102,7 +102,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\base;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\types;$(ProjectDir)engine\platform;$(ProjectDir)engine\diagnostics;$(ProjectDir)engine\ui;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -134,7 +134,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\base;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\types;$(ProjectDir)engine\platform;$(ProjectDir)engine\diagnostics;$(ProjectDir)engine\ui;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -164,19 +164,19 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\dx12\DirectXCommon.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
-    <ClCompile Include="engine\core\ImGuiSystem.cpp">
+    <ClCompile Include="engine\ui\ImGuiSystem.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
     <ClCompile Include="engine\io\Input.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
-    <ClCompile Include="engine\base\LogSystem.cpp">
+    <ClCompile Include="engine\diagnostics\LogSystem.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
     <ClCompile Include="engine\utility\StringUtility.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
-    <ClCompile Include="engine\base\WinApp.cpp">
+    <ClCompile Include="engine\platform\WinApp.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
     <ClCompile Include="engine\core\Engine.cpp" />
@@ -268,14 +268,14 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\object\DebugCamera.h" />
     <ClInclude Include="engine\dx12\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\dx12\DirectXCommon.h" />
-    <ClInclude Include="engine\core\ImGuiSystem.h" />
+    <ClInclude Include="engine\ui\ImGuiSystem.h" />
     <ClInclude Include="engine\io\Input.h" />
-    <ClInclude Include="engine\base\LogSystem.h" />
+    <ClInclude Include="engine\diagnostics\LogSystem.h" />
     <ClInclude Include="engine\utility\StringUtility.h" />
-    <ClInclude Include="engine\base\WinApp.h" />
+    <ClInclude Include="engine\platform\WinApp.h" />
     <ClInclude Include="engine\core\Engine.h" />
-    <ClInclude Include="engine\base\EngineStructs.h" />
-    <ClInclude Include="engine\base\LightStructs.h" />
+    <ClInclude Include="engine\types\EngineStructs.h" />
+    <ClInclude Include="engine\types\LightStructs.h" />
     <ClInclude Include="engine\asset\Material.h" />
     <ClInclude Include="engine\asset\Mesh.h" />
     <ClInclude Include="engine\object\Object3d.h" />
@@ -315,7 +315,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     </None>
     <None Include="resources\shaders\Object3d.hlsli" />
     <None Include="resources\shaders\Particle.hlsli" />
-    <None Include="resources\shaders\SceneLights.hlsli" />
+    <None Include="resources\shaders\WorldLights.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
@@ -330,21 +330,21 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="editor\Editor.cpp" />
-    <ClCompile Include="editor\panels\HierarchyPanel.cpp" />
-    <ClCompile Include="editor\panels\InspectorPanel.cpp" />
+    <ClCompile Include="editor\panels\hierarchy\HierarchyPanel.cpp" />
+    <ClCompile Include="editor\panels\inspector\InspectorPanel.cpp" />
     <ClInclude Include="editor\Editor.h" /><ClInclude Include="editor\AssetDragPayload.h" />
     <ClInclude Include="editor\EditorSelection.h" />
-    <ClInclude Include="editor\panels\HierarchyPanel.h" />
-    <ClInclude Include="editor\panels\InspectorPanel.h" />
-    <ClInclude Include="engine\world\IEditableScene.h" />
+    <ClInclude Include="editor\panels\hierarchy\HierarchyPanel.h" />
+    <ClInclude Include="editor\panels\inspector\InspectorPanel.h" />
+    <ClInclude Include="engine\world\IEditableWorld.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\serialization\SceneFile.cpp" />
     <ClInclude Include="engine\world\serialization\SceneFile.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\world\objects\SceneObjects.cpp" />
-    <ClInclude Include="engine\world\objects\SceneObjects.h" />
+    <ClCompile Include="engine\world\objects\WorldObjects.cpp" />
+    <ClInclude Include="engine\world\objects\WorldObjects.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="editor\EditorSession.cpp" />
@@ -353,66 +353,66 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   <ItemGroup>
     <ClCompile Include="engine\math\SceneViewMath.cpp" />
     <ClInclude Include="engine\math\SceneViewMath.h" />
-    <ClCompile Include="editor\panels\SceneViewPanel.cpp" />
-    <ClInclude Include="editor\panels\SceneViewPanel.h" />
+    <ClCompile Include="editor\panels\scene_view\SceneViewPanel.cpp" />
+    <ClInclude Include="editor\panels\scene_view\SceneViewPanel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\dx12\SceneRenderTarget.cpp" />
     <ClInclude Include="engine\dx12\SceneRenderTarget.h" />
-    <ClCompile Include="engine\world\components\ParticleSettings.cpp" />
-    <ClInclude Include="engine\world\components\ParticleSettings.h" />
+    <ClCompile Include="engine\world\settings\ParticleSettings.cpp" />
+    <ClInclude Include="engine\world\settings\ParticleSettings.h" />
     <ClCompile Include="engine\world\serialization\ParticlePresetFile.cpp" />
     <ClInclude Include="engine\world\serialization\ParticlePresetFile.h" />
     <ClCompile Include="editor\EditorLayout.cpp" />
     <ClInclude Include="editor\EditorLayout.h" />
-    <ClCompile Include="editor\panels\ParticleEditorPanel.cpp" />
-    <ClInclude Include="editor\panels\ParticleEditorPanel.h" />
+    <ClCompile Include="editor\panels\particle_editor\ParticleEditorPanel.cpp" />
+    <ClInclude Include="editor\panels\particle_editor\ParticleEditorPanel.h" />
 
-    <ClCompile Include="editor\panels\ProjectPanel.cpp" />
-    <ClCompile Include="editor\panels\ProjectAssets.cpp" />
-    <ClCompile Include="editor\panels\ProjectView.cpp" />
-    <ClCompile Include="editor\panels\ConsolePanel.cpp" />
-    <ClCompile Include="editor\panels\SceneViewGizmo.cpp" />
-    <ClCompile Include="editor\panels\SceneViewTransform.cpp" />
-    <ClCompile Include="editor\panels\SceneViewPicking.cpp" />
-    <ClCompile Include="editor\panels\SceneViewOverlay.cpp" />
+    <ClCompile Include="editor\panels\project\ProjectPanel.cpp" />
+    <ClCompile Include="editor\panels\project\ProjectAssets.cpp" />
+    <ClCompile Include="editor\panels\project\ProjectView.cpp" />
+    <ClCompile Include="editor\panels\console\ConsolePanel.cpp" />
+    <ClCompile Include="editor\panels\scene_view\SceneViewGizmo.cpp" />
+    <ClCompile Include="editor\panels\scene_view\SceneViewTransform.cpp" />
+    <ClCompile Include="editor\panels\scene_view\SceneViewPicking.cpp" />
+    <ClCompile Include="editor\panels\scene_view\SceneViewOverlay.cpp" />
 
-    <ClInclude Include="editor\panels\ProjectPanel.h" />
-    <ClInclude Include="editor\panels\ConsolePanel.h" />
-    <ClInclude Include="editor\panels\SceneViewDrawing.h" />
+    <ClInclude Include="editor\panels\project\ProjectPanel.h" />
+    <ClInclude Include="editor\panels\console\ConsolePanel.h" />
+    <ClInclude Include="editor\panels\scene_view\SceneViewDrawing.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\asset\ModelAnimation.cpp" />
     <ClCompile Include="engine\world\serialization\PrefabFile.cpp" />
-    <ClCompile Include="editor\panels\InspectorAssets.cpp" />
+    <ClCompile Include="editor\panels\inspector\InspectorAssets.cpp" />
     <ClInclude Include="engine\asset\ModelAnimation.h" />
     <ClInclude Include="engine\world\serialization\PrefabFile.h" />
-    <ClInclude Include="engine\world\components\SceneAssetSettings.h" />
+    <ClInclude Include="engine\world\settings\AssetSettings.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\EditorTools.cpp" />
+    <ClCompile Include="editor\panels\performance\PerformancePanel.cpp" />
     <ClCompile Include="editor\EditorSelection.cpp" />
-    <ClInclude Include="engine\core\FrameProfiler.h" />
+    <ClInclude Include="engine\diagnostics\FrameProfiler.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\world\systems\SceneMotion.cpp" />
-    <ClCompile Include="editor\panels\InspectorMotion.cpp" />
-    <ClInclude Include="engine\world\systems\SceneMotion.h" />
-    <ClInclude Include="engine\world\components\SceneMotionSettings.h" />
+    <ClCompile Include="engine\world\systems\WorldMotion.cpp" />
+    <ClCompile Include="editor\panels\inspector\InspectorMotion.cpp" />
+    <ClInclude Include="engine\world\systems\WorldMotion.h" />
+    <ClInclude Include="engine\world\settings\MotionSettings.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\world\systems\SceneCollision.cpp" />
-    <ClCompile Include="editor\panels\InspectorCollider.cpp" />
-    <ClCompile Include="editor\panels\SceneViewCollider.cpp" />
-    <ClCompile Include="editor\panels\SceneViewGuides.cpp" />
-    <ClInclude Include="engine\world\systems\SceneCollision.h" />
-    <ClInclude Include="engine\world\components\SceneColliderSettings.h" />
+    <ClCompile Include="engine\world\systems\WorldCollision.cpp" />
+    <ClCompile Include="editor\panels\inspector\InspectorCollider.cpp" />
+    <ClCompile Include="editor\panels\scene_view\SceneViewCollider.cpp" />
+    <ClCompile Include="editor\panels\scene_view\SceneViewGuides.cpp" />
+    <ClInclude Include="engine\world\systems\WorldCollision.h" />
+    <ClInclude Include="engine\world\settings\ColliderSettings.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\world\systems\ScenePhysics.cpp" />
-    <ClCompile Include="editor\panels\InspectorBody.cpp" />
-    <ClInclude Include="engine\world\systems\ScenePhysics.h" />
-    <ClInclude Include="engine\world\components\SceneBodySettings.h" />
+    <ClCompile Include="engine\world\systems\WorldPhysics.cpp" />
+    <ClCompile Include="editor\panels\inspector\InspectorBody.cpp" />
+    <ClInclude Include="engine\world\systems\WorldPhysics.h" />
+    <ClInclude Include="engine\world\settings\RigidBodySettings.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="editor\EditorTheme.cpp" />
@@ -421,27 +421,34 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="editor\EditorProperties.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\world\systems\SceneLighting.cpp" />
-    <ClInclude Include="engine\world\systems\SceneLighting.h" />
-    <ClInclude Include="engine\world\components\SceneLightSettings.h" />
-    <ClCompile Include="editor\panels\InspectorLights.cpp" />
+    <ClCompile Include="engine\world\systems\WorldLighting.cpp" />
+    <ClInclude Include="engine\world\systems\WorldLighting.h" />
+    <ClInclude Include="engine\world\settings\LightSettings.h" />
+    <ClCompile Include="editor\panels\inspector\InspectorLights.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\world\objects\ScenePrimitives.cpp" />
-    <ClInclude Include="engine\world\objects\ScenePrimitives.h" />
+    <ClCompile Include="engine\world\objects\WorldPrimitives.cpp" />
+    <ClInclude Include="engine\world\objects\WorldPrimitives.h" />
     <None Include="resources\primitives\Cube.obj" />
     <None Include="resources\primitives\Sphere.obj" />
     <None Include="resources\primitives\Primitive.mtl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="engine\world\ISceneObjects.h" />
-    <ClInclude Include="engine\world\objects\SceneObjectData.h" />
+    <ClInclude Include="engine\world\IWorldObjects.h" />
+    <ClInclude Include="engine\world\objects\WorldObjectData.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="engine\base\LightLimits.h" />
-    <ClInclude Include="engine\base\SceneObjectTypes.h" />
-    <ClCompile Include="engine\world\components\SceneLightSettings.cpp" />
-    <ClCompile Include="engine\world\serialization\SceneLightMigration.cpp" />
-    <ClInclude Include="engine\world\serialization\SceneLightMigration.h" />
+    <ClInclude Include="engine\types\LightLimits.h" />
+    <ClInclude Include="engine\types\WorldObjectTypes.h" />
+    <ClCompile Include="engine\world\settings\LightSettings.cpp" />
+    <ClCompile Include="engine\world\serialization\LegacyLightMigration.cpp" />
+    <ClInclude Include="engine\world\serialization\LegacyLightMigration.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\panels\inspector\InspectorSelection.cpp" />
+    <ClInclude Include="editor\panels\performance\PerformancePanel.h" />
+    <ClCompile Include="editor\panels\scene_view\SceneViewContent.cpp" />
+    <ClCompile Include="editor\panels\game_view\GameViewPanel.cpp" />
+    <ClInclude Include="editor\panels\game_view\GameViewPanel.h" />
   </ItemGroup>
 </Project>

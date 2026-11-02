@@ -1,5 +1,5 @@
 #include "GameScene.h"
-#include "objects/ScenePrimitives.h"
+#include "objects/WorldPrimitives.h"
 #include "ModelManager.h"
 #include <cmath>
 #include <stdexcept>
@@ -12,9 +12,9 @@ namespace {
 
 // 本番のモデル読込・作成を通し、寸法、法線、巻き順、極の退化面、表面選択を確認する。
 void VerifyPrimitiveAssets(GameScene& scene) {
-	for (ScenePrimitiveType type : {ScenePrimitiveType::Cube,ScenePrimitiveType::Sphere}) {
+	for (PrimitiveType type : {PrimitiveType::Cube,PrimitiveType::Sphere}) {
 		std::string error;
-		if (ScenePrimitives::Create(scene,type,error) == 0) {
+		if (WorldPrimitives::Create(scene,type,error) == 0) {
 			throw std::runtime_error("GPU primitive creation failed: "+error);
 		}
 		const size_t objectIndex = scene.GetEditableObjectCount()-1;
@@ -31,7 +31,7 @@ void VerifyPrimitiveAssets(GameScene& scene) {
 		}
 		const std::vector<Mesh::VertexData>& vertices = model->GetVertices();
 		size_t expectedVertices = 36;
-		if (type == ScenePrimitiveType::Sphere) {
+		if (type == PrimitiveType::Sphere) {
 			expectedVertices = 2880;
 		}
 		if (vertices.size() != expectedVertices) {
@@ -50,7 +50,7 @@ void VerifyPrimitiveAssets(GameScene& scene) {
 			}
 		}
 		object.transform->translate = {-2,0,0};
-		if (type == ScenePrimitiveType::Sphere) {
+		if (type == PrimitiveType::Sphere) {
 			object.transform->translate.x = 2;
 		}
 		const Vector3 rayOrigin = MathUtility::Add(object.transform->translate,{0,0,-2});

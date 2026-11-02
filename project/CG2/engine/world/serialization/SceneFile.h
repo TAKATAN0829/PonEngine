@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <string>
 
-class ISceneObjects;
+class IWorldObjects;
 
 // Editorに依存しない、バージョン付きのシーン保存形式を扱う。
 class SceneFile {
@@ -18,12 +18,12 @@ public:
 	// メンバ関数 / シーン保存
 
 	// 書き終えた一時ファイルだけを置換し、失敗時は元ファイルを残す。
-	static bool Save(ISceneObjects& scene, const std::filesystem::path& path, std::string& error);
+	static bool Save(IWorldObjects& scene, const std::filesystem::path& path, std::string& error);
 
 	//=============================================================================================//
 	// メンバ関数 / シーン読込
 
 	// 全件検証に成功した場合だけ、現在の編集データへ反映する。
 	// Editor/ゲームの旧シーン読込では固定ライトを移行する。Prefab等の部分読込では追加しない。
-	static bool Load(ISceneObjects& scene, const std::filesystem::path& path, std::string& error, bool migrateLegacyLights = false);
+	static bool Load(IWorldObjects& scene, const std::filesystem::path& path, std::string& error, bool migrateLegacyLights = false);
 };

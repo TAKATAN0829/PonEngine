@@ -1,8 +1,8 @@
 #include "EditorSession.h"
-#include "objects/SceneObjects.h"
+#include "objects/WorldObjects.h"
 
 // 保存対象の全プロパティを比較する。UIの選択状態やパネル配置は比較しない。
-bool EditorSession::AreObjectsEqual(const SceneObjectData& firstObject, const SceneObjectData& secondObject) {
+bool EditorSession::AreObjectsEqual(const WorldObjectData& firstObject, const WorldObjectData& secondObject) {
 	if (!EqualLightSettings(firstObject.light,secondObject.light)) {
 		return false;
 	}
@@ -48,8 +48,8 @@ bool EditorSession::AreObjectsEqual(const SceneObjectData& firstObject, const Sc
 }
 
 // オブジェクトの個数・並び順・設定を比較し、シーン全体の変更を検出する。
-bool EditorSession::AreScenesEqual(const std::vector<SceneObjectData>& firstScene,
-	const std::vector<SceneObjectData>& secondScene) {
+bool EditorSession::AreScenesEqual(const std::vector<WorldObjectData>& firstScene,
+	const std::vector<WorldObjectData>& secondScene) {
 	if (firstScene.size() != secondScene.size()) {
 		return false;
 	}
@@ -62,12 +62,12 @@ bool EditorSession::AreScenesEqual(const std::vector<SceneObjectData>& firstScen
 }
 
 // 編集がないフレームは、参照だけで履歴や保存済み設定と比較する。
-bool EditorSession::MatchesSnapshot(const IEditableScene& scene, const std::vector<SceneObjectData>& snapshot) {
+bool EditorSession::MatchesSnapshot(const IEditableWorld& scene, const std::vector<WorldObjectData>& snapshot) {
 	if (scene.GetEditableObjectCount() != snapshot.size()) {
 		return false;
 	}
 	for (size_t objectIndex = 0; objectIndex < snapshot.size(); ++objectIndex) {
-		const SceneObjectData* object = scene.GetObjectData(objectIndex);
+		const WorldObjectData* object = scene.GetObjectData(objectIndex);
 		if (object == nullptr) {
 			return AreScenesEqual(scene.CaptureObjects(), snapshot);
 		}
@@ -79,7 +79,7 @@ bool EditorSession::MatchesSnapshot(const IEditableScene& scene, const std::vect
 }
 
 // 読込後のシーンを基準に、履歴・保存状態・再生状態を初期化する。
-void EditorSession::Initialize(IEditableScene& scene) {
+void EditorSession::Initialize(IEditableWorld& scene) {
 	history_.clear();
 	history_.push_back(scene.CaptureObjects());
 	historyIndex_ = 0;
@@ -91,7 +91,7 @@ void EditorSession::Initialize(IEditableScene& scene) {
 }
 
 // ドラッグや文字入力の途中は記録せず、完了した操作を履歴一件にまとめる。
-void EditorSession::Update(IEditableScene& scene, bool interactionActive) {
+void EditorSession::Update(IEditableWorld& scene, bool interactionActive) {
 	if (playing_) {
 		return;
 	}
@@ -138,7 +138,7 @@ bool EditorSession::CanRedo() const {
 }
 
 // 未確定の編集を記録してから、一つ前の設定を復元する。
-bool EditorSession::Undo(IEditableScene& scene, std::string& error) {
+bool EditorSession::Undo(IEditableWorld& scene, std::string& error) {
 	error.clear();
 	Update(scene, false);
 	if (!CanUndo()) {
@@ -153,7 +153,7 @@ bool EditorSession::Undo(IEditableScene& scene, std::string& error) {
 }
 
 // 復元に成功した場合だけ履歴位置を進め、失敗時の状態を保つ。
-bool EditorSession::Redo(IEditableScene& scene, std::string& error) {
+bool EditorSession::Redo(IEditableWorld& scene, std::string& error) {
 	error.clear();
 	Update(scene, false);
 	if (!CanRedo()) {
@@ -168,7 +168,7 @@ bool EditorSession::Redo(IEditableScene& scene, std::string& error) {
 }
 
 // 再生中は開始前の編集状態を比較し、実行中の変更を未保存扱いにしない。
-bool EditorSession::IsDirty(const IEditableScene& scene) const {
+bool EditorSession::IsDirty(const IEditableWorld& scene) const {
 	if (playing_) {
 		return !AreScenesEqual(playSnapshot_, savedState_);
 	}
@@ -176,14 +176,14 @@ bool EditorSession::IsDirty(const IEditableScene& scene) const {
 }
 
 // 保存成功時の編集データを、未保存判定の新しい基準にする。
-void EditorSession::MarkSaved(const IEditableScene& scene) {
+void EditorSession::MarkSaved(const IEditableWorld& scene) {
 	if (!playing_) {
 		savedState_ = scene.CaptureObjects();
 	}
 }
 
 // 復元できる有効なデータであることを確認し、編集状態を退避して再生する。
-bool EditorSession::BeginPlay(IEditableScene& scene, std::string& error) {
+bool EditorSession::BeginPlay(IEditableWorld& scene, std::string& error) {
 	error.clear();
 	if (playing_) {
 		error = "This scene is already playing.";
@@ -193,14 +193,14 @@ bool EditorSession::BeginPlay(IEditableScene& scene, std::string& error) {
 		error = "This scene cannot enter play mode.";
 		return false;
 	}
-	const std::vector<SceneObjectData> objects = scene.CaptureObjects();
-	for (const SceneObjectData& object : objects) {
-		if (!SceneObjects::Validate(object)) {
+	const std::vector<WorldObjectData> objects = scene.CaptureObjects();
+	for (const WorldObjectData& object : objects) {
+		if (!WorldObjects::Validate(object)) {
 			error = "Fix invalid object values before entering play mode.";
 			return false;
 		}
 	}
-	SceneObjects validator;
+	WorldObjects validator;
 	if (!validator.ReplaceObjects(objects,error)) {
 		return false;
 	}
@@ -213,7 +213,7 @@ bool EditorSession::BeginPlay(IEditableScene& scene, std::string& error) {
 }
 
 // 退避した設定の復元に成功してから、編集モードへ戻す。
-bool EditorSession::Stop(IEditableScene& scene, std::string& error) {
+bool EditorSession::Stop(IEditableWorld& scene, std::string& error) {
 	error.clear();
 	if (!playing_) {
 		error = "The scene is not playing.";

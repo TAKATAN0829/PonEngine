@@ -1,5 +1,5 @@
 #pragma once
-#include "objects/SceneObjects.h"
+#include "objects/WorldObjects.h"
 #include "SceneRenderTarget.h"
 #include "Object3d.h"
 #include <array>
@@ -20,11 +20,11 @@ private:
 	//=============================================================================================//
 	// 型・メンバ関数 / 独立した試験ケース
 	struct Sample {
-		SceneObjects scene;
+		WorldObjects scene;
 		SceneRenderTarget target;
 		std::unique_ptr<Object3d> plane;
 	};
-	static void AddLight(Sample& sample, SceneObjectType type, const Vector4& color);
+	static void AddLight(Sample& sample, WorldObjectType type, const Vector4& color);
 	//=============================================================================================//
 	// メンバ変数 / リソースとEngineからの借用
 	std::array<Sample,8> samples_;

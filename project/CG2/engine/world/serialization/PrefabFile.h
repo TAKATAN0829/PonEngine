@@ -1,5 +1,5 @@
 #pragma once
-#include "ISceneObjects.h"
+#include "IWorldObjects.h"
 #include <filesystem>
 
 // Prefabはルートと子孫を保存する。元Assetへの明示的なApply/Revertを提供する。
@@ -9,17 +9,21 @@ public:
 	// 保存 / 読み込み・配置
 
 	// シーン形式を再利用し、マテリアル・アニメーション・種類別Componentも保存する。
-	static bool Save(ISceneObjects& scene, SceneObjectId rootId, const std::filesystem::path& path, std::string& error);
+	static bool Save(IWorldObjects& scene, WorldObjectId rootId, const std::filesystem::path& path, std::string& error);
+
 	// 全件を検証してから新しいIDを割り当てる。失敗時にシーンを部分変更しない。
-	static SceneObjectId Instantiate(ISceneObjects& scene, const std::filesystem::path& path,
-		SceneObjectId parentId, const Vector3& position, std::string& error);
+	static WorldObjectId Instantiate(IWorldObjects& scene, const std::filesystem::path& path,
+		WorldObjectId parentId, const Vector3& position, std::string& error);
+
 	//=============================================================================================//
 	// メンバ関数 / 元Assetへの反映・復元
 
 	// Applyはファイルを書き換えるため、シーンのUndoでは元Assetを戻せない。
-	static bool Apply(ISceneObjects& scene, SceneObjectId rootId, std::string& error);
+	static bool Apply(IWorldObjects& scene, WorldObjectId rootId, std::string& error);
+
 	// 復元時はルートのID・親・Transformを維持し、子孫は新しいIDで再構築する。
-	static bool Revert(ISceneObjects& scene, SceneObjectId rootId, std::string& error);
+	static bool Revert(IWorldObjects& scene, WorldObjectId rootId, std::string& error);
+
 	// resources内の元Assetだけを解決し、シンボリックリンクでの脱出も拒否する。
 	static std::filesystem::path ResolveSource(const std::string& source, std::string& error);
 };

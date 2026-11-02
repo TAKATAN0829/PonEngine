@@ -108,7 +108,7 @@ void Engine::Initialize(IScene* firstScene) {
 	sceneManager_->Initialize(sceneContext, firstScene);
 #ifdef USE_IMGUI
 	// シーンの初期化後に編集用の履歴・選択状態を作る。
-	editor_.Initialize(sceneManager_->GetEditableScene());
+	editor_.Initialize(sceneManager_->GetEditableWorld());
 #endif
 }
 
@@ -162,11 +162,11 @@ void Engine::Run(uint32_t frameLimit) {
 		editor_.SetSceneTexture(sceneTarget_.GetTextureHandle());
 		{
 			FrameProfiler::Scope editorTime(FrameProfiler::Section::Editor);
-			editor_.Draw(sceneManager_->GetEditableScene());
-			editor_.Update(sceneManager_->GetEditableScene());
+			editor_.Draw(sceneManager_->GetEditableWorld());
+			editor_.Update(sceneManager_->GetEditableWorld());
 		}
 		if (winApp_->IsCloseRequested()) {
-			editor_.RequestExit(sceneManager_->GetEditableScene());
+			editor_.RequestExit(sceneManager_->GetEditableWorld());
 			winApp_->ClearCloseRequest();
 		}
 		if (editor_.ShouldExit()) {

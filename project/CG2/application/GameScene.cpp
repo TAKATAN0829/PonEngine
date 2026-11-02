@@ -1,9 +1,9 @@
-#include "serialization/SceneLightMigration.h"
+#include "serialization/LegacyLightMigration.h"
 #include "FrameProfiler.h"
 #include "GameScene.h"
 #include "WinApp.h"
 #include "serialization/SceneFile.h"
-#include "systems/SceneLighting.h"
+#include "systems/WorldLighting.h"
 #include "serialization/ParticlePresetFile.h"
 #include "LogSystem.h"
 #include "ModelManager.h"
@@ -55,11 +55,11 @@ void GameScene::Initialize(const SceneContext& context) {
 
 	ModelManager::GetInstance()->LoadModel("axis.obj");
 
-	SceneObjectData mainModel;
+	WorldObjectData mainModel;
 	mainModel.id = 1;
 	mainModel.name = "Plane #1";
 	mainModel.transform.scale = {5, 5, 5};
-	SceneObjectData axis;
+	WorldObjectData axis;
 	axis.id = 2;
 	axis.name = "Axis #2";
 	axis.model = "axis.obj";
@@ -97,8 +97,8 @@ void GameScene::Initialize(const SceneContext& context) {
 		}
 	}
 	if (!loadedScene) {
-		std::vector<SceneObjectData> initial = CaptureObjects();
-		if (!SceneLightMigration::AddLegacyDefaults(initial,sceneError)) {
+		std::vector<WorldObjectData> initial = CaptureObjects();
+		if (!LegacyLightMigration::AddLegacyDefaults(initial,sceneError)) {
 			LogSystem::Log("Default lights: "+sceneError+"\n");
 		} else {
 			if (!ReplaceObjects(std::move(initial),sceneError)) {
@@ -158,7 +158,7 @@ void GameScene::Draw() {
 	if (!isolateParticles) {
 		object3dCommon_->DrawSettingCommon();
 
-		for (const SceneObjectData& object : GetObjects()) {
+		for (const WorldObjectData& object : GetObjects()) {
 			if (IsObjectActive(object.id)) {
 				if (object.hasMeshRenderer) {
 					runtimeObjects_.at(object.id).drawable->Draw();
@@ -173,7 +173,7 @@ void GameScene::Draw() {
 
 	particleRenderer_->BeginPass();
 	particle_->Draw();
-	for (const std::pair<const SceneObjectId, std::unique_ptr<Particle>>& entry : runtimeParticles_) {
+	for (const std::pair<const WorldObjectId, std::unique_ptr<Particle>>& entry : runtimeParticles_) {
 		entry.second->Draw();
 	}
 	particleRenderer_->EndPass();
@@ -209,7 +209,7 @@ void GameScene::Finalize() {
 	//=============================================================================================//
 	// Particle解放
 
-	for (std::pair<const SceneObjectId, std::unique_ptr<Particle>>& entry : runtimeParticles_) {
+	for (std::pair<const WorldObjectId, std::unique_ptr<Particle>>& entry : runtimeParticles_) {
 		entry.second->Finalize();
 	}
 	runtimeParticles_.clear();
@@ -258,7 +258,7 @@ void GameScene::UpdateObject() {
 	if (gameView_) {
 		cameraMatrix = MathUtility::Inverse(camera_->GetViewMatrix());
 		viewProjection = camera_->GetViewProjectionMatrix();
-		SceneCameraView cameraView{};
+		CameraView cameraView{};
 		if (GetGameCameraView(static_cast<float>(viewportWidth_) / static_cast<float>(viewportHeight_), cameraView)) {
 			cameraMatrix = cameraView.cameraWorld;
 			viewProjection = cameraView.viewProjection;
@@ -285,9 +285,9 @@ void GameScene::UpdateObject() {
 
 void GameScene::UpdateModels(const Matrix4x4& viewProjection) {
 	// 前フレームのGPU完了後、描画命令を記録する前に不要なリソースを破棄する。
-	const SceneLightCollection lights = SceneLighting::Collect(*this);
-	std::unordered_set<SceneObjectId> liveIds;
-	for (const SceneObjectData& data : GetObjects()) {
+	const WorldLightCollection lights = WorldLighting::Collect(*this);
+	std::unordered_set<WorldObjectId> liveIds;
+	for (const WorldObjectData& data : GetObjects()) {
 		if (!IsObjectActive(data.id)) {
 			continue;
 		}
@@ -328,7 +328,7 @@ void GameScene::UpdateModels(const Matrix4x4& viewProjection) {
 			object.Update(viewProjection, world);
 		}
 	}
-	std::unordered_map<SceneObjectId, RuntimeObject>::iterator runtimeObjectIterator = runtimeObjects_.begin();
+	std::unordered_map<WorldObjectId, RuntimeObject>::iterator runtimeObjectIterator = runtimeObjects_.begin();
 	while (runtimeObjectIterator != runtimeObjects_.end()) {
 		if (liveIds.contains(runtimeObjectIterator->first)) {
 			++runtimeObjectIterator;
@@ -341,7 +341,7 @@ void GameScene::UpdateModels(const Matrix4x4& viewProjection) {
 //=============================================================================================//
 // Getter / Particleの更新・発生可否
 
-bool GameScene::IsParticlePreviewTarget(SceneObjectId objectId) const {
+bool GameScene::IsParticlePreviewTarget(WorldObjectId objectId) const {
 	if (playing_) {
 		return false;
 	}
@@ -351,7 +351,7 @@ bool GameScene::IsParticlePreviewTarget(SceneObjectId objectId) const {
 	return particlePreview_.targetObject == objectId;
 }
 
-bool GameScene::ShouldSimulateEmitter(SceneObjectId objectId, bool gameEmissionEnabled) const {
+bool GameScene::ShouldSimulateEmitter(WorldObjectId objectId, bool gameEmissionEnabled) const {
 	if (simulationEnabled_) {
 		if (gameEmissionEnabled) {
 			return true;
@@ -363,7 +363,7 @@ bool GameScene::ShouldSimulateEmitter(SceneObjectId objectId, bool gameEmissionE
 	return false;
 }
 
-bool GameScene::ShouldEmitEmitter(SceneObjectId objectId, bool gameEmissionEnabled) const {
+bool GameScene::ShouldEmitEmitter(WorldObjectId objectId, bool gameEmissionEnabled) const {
 	if (simulationEnabled_) {
 		if (gameEmissionEnabled) {
 			return true;
@@ -378,7 +378,7 @@ bool GameScene::ShouldEmitEmitter(SceneObjectId objectId, bool gameEmissionEnabl
 //=============================================================================================//
 // 更新処理 / 個別Emitter
 
-void GameScene::UpdateEmitter(const SceneObjectData& data, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix) {
+void GameScene::UpdateEmitter(const WorldObjectData& data, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix) {
 	std::unique_ptr<Particle>& emitter = runtimeParticles_[data.id];
 	if (!emitter) {
 		emitter = std::make_unique<Particle>();
@@ -398,18 +398,18 @@ void GameScene::UpdateEmitter(const SceneObjectData& data, const Matrix4x4& view
 // 更新処理 / Particle一覧
 
 void GameScene::UpdateParticles(const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix) {
-	std::unordered_set<SceneObjectId> particleIds;
-	for (const SceneObjectData& data : GetObjects()) {
+	std::unordered_set<WorldObjectId> particleIds;
+	for (const WorldObjectData& data : GetObjects()) {
 		if (!IsObjectActive(data.id)) {
 			continue;
 		}
-		if (data.type != SceneObjectType::Particle) {
+		if (data.type != WorldObjectType::Particle) {
 			continue;
 		}
 		particleIds.insert(data.id);
 		UpdateEmitter(data, viewProjection, cameraMatrix);
 	}
-	std::unordered_map<SceneObjectId, std::unique_ptr<Particle>>::iterator emitterIterator = runtimeParticles_.begin();
+	std::unordered_map<WorldObjectId, std::unique_ptr<Particle>>::iterator emitterIterator = runtimeParticles_.begin();
 	while (emitterIterator != runtimeParticles_.end()) {
 		if (particleIds.contains(emitterIterator->first)) {
 			++emitterIterator;
@@ -422,7 +422,7 @@ void GameScene::UpdateParticles(const Matrix4x4& viewProjection, const Matrix4x4
 	// 個別Emitterがあるゲームでは共通プリセットの自動発生を止め、二重発生を防ぐ。
 	particle_->ApplySettings(particleSettings_);
 	if (particleBurstRequested_) {
-		if (particlePreview_.targetObject == kInvalidSceneObjectId) {
+		if (particlePreview_.targetObject == kInvalidWorldObjectId) {
 			particle_->AddParticles();
 		}
 	}
@@ -433,8 +433,8 @@ void GameScene::UpdateParticles(const Matrix4x4& viewProjection, const Matrix4x4
 		}
 	}
 	particle_->Update(viewProjection, cameraMatrix,
-		ShouldSimulateEmitter(kInvalidSceneObjectId, runtimeParticles_.empty()),
-		ShouldEmitEmitter(kInvalidSceneObjectId, runtimeParticles_.empty()));
+		ShouldSimulateEmitter(kInvalidWorldObjectId, runtimeParticles_.empty()),
+		ShouldEmitEmitter(kInvalidWorldObjectId, runtimeParticles_.empty()));
 	particlePreview_.step = false;
 }
 
@@ -500,7 +500,7 @@ void GameScene::OnPlayStateChanged(bool playing) {
 	if (playing) {
 		physics_.Initialize(*this);
 	}
-	for (std::pair<const SceneObjectId, RuntimeObject>& entry : runtimeObjects_) {
+	for (std::pair<const WorldObjectId, RuntimeObject>& entry : runtimeObjects_) {
 		entry.second.animationPreview = false;
 		entry.second.drawable->ResetAnimation();
 	}
@@ -524,12 +524,12 @@ bool GameScene::GetEditableObjectBounds(size_t objectIndex, AABB& worldBounds) c
 	if (objectIndex >= GetObjects().size()) {
 		return false;
 	}
-	const SceneObjectData& object = GetObjects()[objectIndex];
+	const WorldObjectData& object = GetObjects()[objectIndex];
 	if (!IsObjectActive(object.id)) {
 		return false;
 	}
 	if (!object.hasMeshRenderer) {
-		if (object.type == SceneObjectType::Model) {
+		if (object.type == WorldObjectType::Model) {
 			return false;
 		}
 		// メッシュを持たない対象も選択・注視できる小さな範囲を公開する。
@@ -589,15 +589,15 @@ void GameScene::SetEditorCameraInput(bool enabled) {
 // プレビューの再開や設定読込時は、古い粒子を残さず作り直す。
 void GameScene::ResetParticlePreview() {
 	particle_->ResetSimulation();
-	for (std::pair<const SceneObjectId, std::unique_ptr<Particle>>& entry : runtimeParticles_) {
+	for (std::pair<const WorldObjectId, std::unique_ptr<Particle>>& entry : runtimeParticles_) {
 		entry.second->ResetSimulation();
 	}
 }
 
 // 表示上限だけではなく、実際に管理している粒子数をEditorへ通知する。
 size_t GameScene::GetParticleCount() const {
-	if (particlePreview_.targetObject != kInvalidSceneObjectId) {
-		const std::unordered_map<SceneObjectId, std::unique_ptr<Particle>>::const_iterator emitter = runtimeParticles_.find(particlePreview_.targetObject);
+	if (particlePreview_.targetObject != kInvalidWorldObjectId) {
+		const std::unordered_map<WorldObjectId, std::unique_ptr<Particle>>::const_iterator emitter = runtimeParticles_.find(particlePreview_.targetObject);
 		if (emitter != runtimeParticles_.end()) {
 			return emitter->second->GetLiveCount();
 		}
@@ -617,25 +617,25 @@ void GameScene::DrawEditorTools(EditorToolVisibility& visibility) {
 }
 
 bool GameScene::PrepareModel(const std::string& model, std::string& error) {
-	if (!SceneObjects::IsSupportedModel(model)) {
+	if (!WorldObjects::IsSupportedModel(model)) {
 		error = "Unsupported model path.";
 		return false;
 	}
 	return ModelManager::GetInstance()->TryLoadModel(model,error);
 }
 
-bool GameScene::ReplaceObjects(std::vector<SceneObjectData> objects, std::string& error) {
-	SceneObjects validator;
+bool GameScene::ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error) {
+	WorldObjects validator;
 	if (!validator.ReplaceObjects(objects,error)) {
 		return false;
 	}
-	for (const SceneObjectData& object : objects) {
+	for (const WorldObjectData& object : objects) {
 		// Mesh Rendererを外して保存したモデルも、後から再追加できるよう準備する。
 		if (!PrepareModel(object.model, error)) {
 			return false;
 		}
 		const size_t materialCount = GetModelMaterials(object.model).size();
-		for (const SceneMaterialSettings& material : object.materials) {
+		for (const MaterialSettings& material : object.materials) {
 			if (material.slot >= materialCount) {
 				error = "Material slot does not exist in this model.";
 				return false;
@@ -647,7 +647,7 @@ bool GameScene::ReplaceObjects(std::vector<SceneObjectData> objects, std::string
 			}
 		}
 	}
-	return SceneObjects::ReplaceObjects(std::move(objects),error);
+	return WorldObjects::ReplaceObjects(std::move(objects),error);
 }
 
 std::vector<ModelMaterialInfo> GameScene::GetModelMaterials(const std::string& model) const {
@@ -697,7 +697,7 @@ bool GameScene::PrepareTexture(const std::string& texture, std::string& error) {
 	return TextureManager::GetInstance()->TryLoad("resources/" + texture, error);
 }
 
-void GameScene::SetAnimationPreview(SceneObjectId objectId, bool playing, bool reset) {
+void GameScene::SetAnimationPreview(WorldObjectId objectId, bool playing, bool reset) {
 	if (!runtimeObjects_.contains(objectId)) {
 		return;
 	}
@@ -708,14 +708,14 @@ void GameScene::SetAnimationPreview(SceneObjectId objectId, bool playing, bool r
 	}
 }
 
-float GameScene::GetAnimationTime(SceneObjectId objectId) const {
+float GameScene::GetAnimationTime(WorldObjectId objectId) const {
 	if (!runtimeObjects_.contains(objectId)) {
 		return 0;
 	}
 	return runtimeObjects_.at(objectId).drawable->GetAnimationTime();
 }
 
-bool GameScene::IsAnimationPreviewPlaying(SceneObjectId objectId) const {
+bool GameScene::IsAnimationPreviewPlaying(WorldObjectId objectId) const {
 	if (!runtimeObjects_.contains(objectId)) {
 		return false;
 	}
@@ -775,7 +775,7 @@ bool GameScene::IntersectObjectSurface(size_t objectIndex, const Vector3& origin
 	if (objectIndex >= GetObjects().size()) {
 		return false;
 	}
-	const SceneObjectData& data = GetObjects()[objectIndex];
+	const WorldObjectData& data = GetObjects()[objectIndex];
 	if (!data.hasMeshRenderer) {
 		return false;
 	}
@@ -824,20 +824,20 @@ bool GameScene::IntersectObjectSurface(size_t objectIndex, const Vector3& origin
 void GameScene::UpdateCollisions() {
 	FrameProfiler::Scope collisionTime(FrameProfiler::Section::Collision);
 	collision_.Update(*this);
-	const std::vector<SceneContactEvent>& events = collision_.GetEvents();
+	const std::vector<CollisionEvent>& events = collision_.GetEvents();
 	for (size_t eventIndex = 0; eventIndex < (std::min)(events.size(),size_t{32}); ++eventIndex) {
-		const SceneContactEvent& event = events[eventIndex];
+		const CollisionEvent& event = events[eventIndex];
 		std::string message = "[Collision Exit] ";
 		if (event.entering) {
 			message = "[Collision Enter] ";
 		}
 		message += std::to_string(event.first);
-		const SceneObjectData* first = GetObjectDataById(event.first);
+		const WorldObjectData* first = GetObjectDataById(event.first);
 		if (first != nullptr) {
 			message += " (" + first->name + ")";
 		}
 		message += " <-> " + std::to_string(event.second);
-		const SceneObjectData* second = GetObjectDataById(event.second);
+		const WorldObjectData* second = GetObjectDataById(event.second);
 		if (second != nullptr) {
 			message += " (" + second->name + ")";
 		}

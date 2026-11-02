@@ -1,6 +1,6 @@
 #include "serialization/PrefabFile.h"
 #include "serialization/SceneFile.h"
-#include "objects/SceneObjects.h"
+#include "objects/WorldObjects.h"
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
@@ -47,9 +47,9 @@ std::filesystem::path PrefabFile::ResolveSource(const std::string& source, std::
 	return path;
 }
 
-bool PrefabFile::Apply(ISceneObjects& scene, SceneObjectId rootId, std::string& error) {
+bool PrefabFile::Apply(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
-		const SceneObjectData* object = scene.GetObjectData(objectIndex);
+		const WorldObjectData* object = scene.GetObjectData(objectIndex);
 		if (object == nullptr) {
 			continue;
 		}
@@ -66,14 +66,14 @@ bool PrefabFile::Apply(ISceneObjects& scene, SceneObjectId rootId, std::string& 
 }
 
 // 一時シーンで子孫を入れ替え、リソース検証にも成功した時だけ本体へ反映する。
-bool PrefabFile::Revert(ISceneObjects& scene, SceneObjectId rootId, std::string& error) {
-	SceneObjects candidate;
+bool PrefabFile::Revert(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
+	WorldObjects candidate;
 	if (!candidate.ReplaceObjects(scene.CaptureObjects(), error)) {
 		return false;
 	}
-	SceneObjectData original;
+	WorldObjectData original;
 	bool found = false;
-	for (const SceneObjectData& object : candidate.GetObjects()) {
+	for (const WorldObjectData& object : candidate.GetObjects()) {
 		if (object.id == rootId) {
 			original = object;
 			found = true;
@@ -89,12 +89,12 @@ bool PrefabFile::Revert(ISceneObjects& scene, SceneObjectId rootId, std::string&
 		return false;
 	}
 	candidate.RemoveObject(rootId);
-	const SceneObjectId importedRoot = Instantiate(candidate, path, 0, {}, error);
+	const WorldObjectId importedRoot = Instantiate(candidate, path, 0, {}, error);
 	if (importedRoot == 0) {
 		return false;
 	}
-	std::vector<SceneObjectData> objects = candidate.CaptureObjects();
-	for (SceneObjectData& object : objects) {
+	std::vector<WorldObjectData> objects = candidate.CaptureObjects();
+	for (WorldObjectData& object : objects) {
 		if (object.parentId == importedRoot) {
 			object.parentId = rootId;
 		}
@@ -105,7 +105,7 @@ bool PrefabFile::Revert(ISceneObjects& scene, SceneObjectId rootId, std::string&
 			object.prefabSource = original.prefabSource;
 			// インスタンスのメイン指定は他のカメラと競合させない。
 			object.mainCamera = original.mainCamera;
-			if (object.type != SceneObjectType::Camera) {
+			if (object.type != WorldObjectType::Camera) {
 				object.mainCamera = false;
 			}
 		}
@@ -113,15 +113,15 @@ bool PrefabFile::Revert(ISceneObjects& scene, SceneObjectId rootId, std::string&
 	return scene.ReplaceObjects(std::move(objects), error);
 }
 
-bool PrefabFile::Save(ISceneObjects& scene, SceneObjectId rootId, const std::filesystem::path& path, std::string& error) {
+bool PrefabFile::Save(IWorldObjects& scene, WorldObjectId rootId, const std::filesystem::path& path, std::string& error) {
 	error.clear();
-	std::vector<SceneObjectData> source = scene.CaptureObjects();
-	std::unordered_set<SceneObjectId> included = {rootId};
+	std::vector<WorldObjectData> source = scene.CaptureObjects();
+	std::unordered_set<WorldObjectId> included = {rootId};
 	// 一覧の並び順に依存せず、選択したルートの子孫だけを抽出する。
 	bool changed = true;
 	while (changed) {
 		changed = false;
-		for (const SceneObjectData& object : source) {
+		for (const WorldObjectData& object : source) {
 			if (included.contains(object.parentId)) {
 				if (included.insert(object.id).second) {
 					changed = true;
@@ -129,9 +129,9 @@ bool PrefabFile::Save(ISceneObjects& scene, SceneObjectId rootId, const std::fil
 			}
 		}
 	}
-	std::vector<SceneObjectData> subtree;
+	std::vector<WorldObjectData> subtree;
 	bool foundRoot = false;
-	for (SceneObjectData& object : source) {
+	for (WorldObjectData& object : source) {
 		if (!included.contains(object.id)) {
 			continue;
 		}
@@ -147,7 +147,7 @@ bool PrefabFile::Save(ISceneObjects& scene, SceneObjectId rootId, const std::fil
 		error = "Prefab root does not exist.";
 		return false;
 	}
-	SceneObjects prefab;
+	WorldObjects prefab;
 	if (!prefab.ReplaceObjects(std::move(subtree), error)) {
 		return false;
 	}
@@ -167,32 +167,32 @@ bool PrefabFile::Save(ISceneObjects& scene, SceneObjectId rootId, const std::fil
 	return SceneFile::Save(prefab, path, error);
 }
 
-SceneObjectId PrefabFile::Instantiate(ISceneObjects& scene, const std::filesystem::path& path,
-	SceneObjectId parentId, const Vector3& position, std::string& error) {
+WorldObjectId PrefabFile::Instantiate(IWorldObjects& scene, const std::filesystem::path& path,
+	WorldObjectId parentId, const Vector3& position, std::string& error) {
 	error.clear();
-	SceneObjects prefab;
+	WorldObjects prefab;
 	if (!SceneFile::Load(prefab, path, error)) {
 		return 0;
 	}
-	std::vector<SceneObjectData> candidate = scene.CaptureObjects();
-	std::vector<SceneObjectData> imported = prefab.CaptureObjects();
-	if (imported.empty() || candidate.size() + imported.size() > SceneObjects::kMaxObjects) {
+	std::vector<WorldObjectData> candidate = scene.CaptureObjects();
+	std::vector<WorldObjectData> imported = prefab.CaptureObjects();
+	if (imported.empty() || candidate.size() + imported.size() > WorldObjects::kMaxObjects) {
 		error = "Prefab is empty or exceeds the scene object limit.";
 		return 0;
 	}
-	SceneObjectId nextId = scene.GetNextObjectId();
-	for (const SceneObjectData& object : candidate) {
+	WorldObjectId nextId = scene.GetNextObjectId();
+	for (const WorldObjectData& object : candidate) {
 		if (object.id >= nextId) {
 			nextId = object.id + 1;
 		}
 	}
-	if (nextId >= (std::numeric_limits<SceneObjectId>::max)() - imported.size()) {
+	if (nextId >= (std::numeric_limits<WorldObjectId>::max)() - imported.size()) {
 		error = "Prefab object IDs exceed the supported range.";
 		return 0;
 	}
-	std::unordered_map<SceneObjectId, SceneObjectId> remapped;
-	SceneObjectId rootId = 0;
-	for (const SceneObjectData& object : imported) {
+	std::unordered_map<WorldObjectId, WorldObjectId> remapped;
+	WorldObjectId rootId = 0;
+	for (const WorldObjectData& object : imported) {
 		remapped[object.id] = nextId++;
 		if (object.parentId == 0) {
 			if (rootId != 0) {
@@ -206,7 +206,7 @@ SceneObjectId PrefabFile::Instantiate(ISceneObjects& scene, const std::filesyste
 		error = "Prefab root is missing.";
 		return 0;
 	}
-	for (SceneObjectData& object : imported) {
+	for (WorldObjectData& object : imported) {
 		object.id = remapped.at(object.id);
 		object.prefabSource.clear();
 		if (object.id == rootId) {
@@ -231,7 +231,7 @@ SceneObjectId PrefabFile::Instantiate(ISceneObjects& scene, const std::filesyste
 		candidate.push_back(std::move(object));
 	}
 	// 親座標への変換も一時シーン内で済ませ、特異な親でも元シーンを維持する。
-	SceneObjects validator;
+	WorldObjects validator;
 	if (!validator.ReplaceObjects(std::move(candidate), error)) {
 		return 0;
 	}

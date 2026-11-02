@@ -1,6 +1,6 @@
 #include "LightingGraphicsTests.h"
 #include "IScene.h"
-#include "systems/SceneLighting.h"
+#include "systems/WorldLighting.h"
 #include "Object3dCommon.h"
 #include "DirectXCommon.h"
 #include "ModelManager.h"
@@ -9,7 +9,7 @@
 #include <numbers>
 #include <stdexcept>
 
-void LightingGraphicsTests::AddLight(Sample& sample, SceneObjectType type, const Vector4& color) {
+void LightingGraphicsTests::AddLight(Sample& sample, WorldObjectType type, const Vector4& color) {
 	if (sample.scene.CreateObject(type) == 0) {
 		throw std::runtime_error("GPU light fixture creation failed.");
 	}
@@ -45,17 +45,17 @@ void LightingGraphicsTests::Initialize(const SceneContext& context) {
 		sample.plane->SetEnableLighting(true);
 		sample.plane->Update(projection,MathUtility::MakeIdentity4x4());
 		if (sampleIndex == 1 || sampleIndex == 5) {
-			AddLight(sample,SceneObjectType::DirectionalLight,{1,0,0,1});
+			AddLight(sample,WorldObjectType::DirectionalLight,{1,0,0,1});
 			if (sampleIndex == 5) {
-				AddLight(sample,SceneObjectType::DirectionalLight,{0,1,0,1});
+				AddLight(sample,WorldObjectType::DirectionalLight,{0,1,0,1});
 			}
 		} else if (sampleIndex != 0) {
-			AddLight(sample,SceneObjectType::SpotLight,{0,1,1,1});
+			AddLight(sample,WorldObjectType::SpotLight,{0,1,1,1});
 			if (sampleIndex == 3) {
 				sample.scene.GetEditableObject(0).transform->rotate.y = std::numbers::pi_v<float>;
 			} else if (sampleIndex == 4) {
 				*sample.scene.GetEditableObject(0).color = {1,0,0,1};
-				AddLight(sample,SceneObjectType::SpotLight,{0,0,1,1});
+				AddLight(sample,WorldObjectType::SpotLight,{0,0,1,1});
 			} else if (sampleIndex == 6) {
 				*sample.scene.GetEditableObject(0).active = false;
 			} else if (sampleIndex == 7) {
@@ -63,7 +63,7 @@ void LightingGraphicsTests::Initialize(const SceneContext& context) {
 				sample.scene.GetEditableObject(0).light->outerAngle = 45;
 			}
 		}
-		sample.plane->SetSceneLights(SceneLighting::Collect(sample.scene));
+		sample.plane->SetSceneLights(WorldLighting::Collect(sample.scene));
 	}
 }
 

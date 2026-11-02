@@ -1,6 +1,6 @@
 #pragma once
 #include "Mesh.h"
-#include "components/SceneAssetSettings.h"
+#include "settings/AssetSettings.h"
 #include <memory>
 #include <string>
 #include <vector>

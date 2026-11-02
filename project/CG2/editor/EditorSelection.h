@@ -1,5 +1,5 @@
 #pragma once
-#include "IEditableScene.h"
+#include "IEditableWorld.h"
 #include <algorithm>
 #include <unordered_set>
 
@@ -9,30 +9,30 @@ public:
 	//=============================================================================================//
 	// Getter / 選択一覧・主選択
 
-	SceneObjectId Get() const {
+	WorldObjectId Get() const {
 		if (selected_.empty()) {
-			return kInvalidSceneObjectId;
+			return kInvalidWorldObjectId;
 		}
 		return selected_.back();
 	}
-	const std::vector<SceneObjectId>& GetIds() const { return selected_; }
-	bool Contains(SceneObjectId identifier) const {
+	const std::vector<WorldObjectId>& GetIds() const { return selected_; }
+	bool Contains(WorldObjectId identifier) const {
 		return selectedIds_.contains(identifier);
 	}
 	// 親も選択されている子を除き、二重移動・二重複製を防ぐ。
-	std::vector<SceneObjectId> GetRoots(const IEditableScene& scene) const {
-		std::vector<SceneObjectId> roots;
-		for (SceneObjectId identifier : selected_) {
-			const SceneObjectData* object = scene.GetObjectDataById(identifier);
+	std::vector<WorldObjectId> GetRoots(const IEditableWorld& scene) const {
+		std::vector<WorldObjectId> roots;
+		for (WorldObjectId identifier : selected_) {
+			const WorldObjectData* object = scene.GetObjectDataById(identifier);
 			if (object == nullptr) {
 				continue;
 			}
-			SceneObjectId ancestor = object->parentId;
+			WorldObjectId ancestor = object->parentId;
 			while (ancestor != 0) {
 				if (Contains(ancestor)) {
 					break;
 				}
-				const SceneObjectData* parent = scene.GetObjectDataById(ancestor);
+				const WorldObjectData* parent = scene.GetObjectDataById(ancestor);
 				if (parent == nullptr) {
 					break;
 				}
@@ -48,18 +48,18 @@ public:
 	//=============================================================================================//
 	// Setter / 単体選択・追加選択・解除
 
-	void Select(SceneObjectId identifier) {
+	void Select(WorldObjectId identifier) {
 		Clear();
 		if (identifier != 0) {
 			selected_.push_back(identifier);
 			selectedIds_.insert(identifier);
 		}
 	}
-	void Toggle(SceneObjectId identifier) {
+	void Toggle(WorldObjectId identifier) {
 		if (identifier == 0) {
 			return;
 		}
-		const std::vector<SceneObjectId>::iterator found = std::find(selected_.begin(), selected_.end(), identifier);
+		const std::vector<WorldObjectId>::iterator found = std::find(selected_.begin(), selected_.end(), identifier);
 		if (found == selected_.end()) {
 			selected_.push_back(identifier);
 			selectedIds_.insert(identifier);
@@ -73,7 +73,7 @@ public:
 		selectedIds_.clear();
 	}
 	// Undo・削除後は、消えたIDだけを選択一覧から除く。
-	void Prune(const IEditableScene& scene) {
+	void Prune(const IEditableWorld& scene) {
 		for (size_t selectionIndex = selected_.size(); selectionIndex > 0; --selectionIndex) {
 			if (scene.GetObjectDataById(selected_[selectionIndex - 1]) == nullptr) {
 				selectedIds_.erase(selected_[selectionIndex - 1]);
@@ -86,13 +86,13 @@ public:
 	// メンバ関数 / 一括複製・削除
 
 	// 一時シーンで上限を検証してから反映し、途中失敗で部分変更しない。
-	bool Duplicate(IEditableScene& scene, std::string& error);
-	bool Remove(IEditableScene& scene, std::string& error);
+	bool Duplicate(IEditableWorld& scene, std::string& error);
+	bool Remove(IEditableWorld& scene, std::string& error);
 
 private:
 	//=============================================================================================//
 	// メンバ変数 / 選択ID
 
-	std::vector<SceneObjectId> selected_; // フレーム内の借用参照は保持しない。
-	std::unordered_set<SceneObjectId> selectedIds_; // Hierarchy各行の選択判定を一定時間で行う。
+	std::vector<WorldObjectId> selected_; // フレーム内の借用参照は保持しない。
+	std::unordered_set<WorldObjectId> selectedIds_; // Hierarchy各行の選択判定を一定時間で行う。
 };

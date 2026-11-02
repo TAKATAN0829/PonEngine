@@ -1,0 +1,36 @@
+#pragma once
+
+#include "IEditableWorld.h"
+
+// 選択対象の設定を借用して編集する。オブジェクトは所有しない。
+class InspectorPanel {
+public:
+	//=============================================================================================//
+	// 初期化処理
+
+	static void Initialize() { status_.clear(); }
+
+	//=============================================================================================//
+	// 描画処理
+
+	static void Draw(const EditableObjectView& object, bool* particleEditorOpen = nullptr, IEditableWorld* scene = nullptr);
+
+private:
+	//=============================================================================================//
+	// メンバ関数 / アセットComponent編集
+
+	// 空白の右クリックから追加し、各Componentの見出しから削除する。
+	static void DrawMotionComponents(const EditableObjectView& object, IEditableWorld* scene);
+	static void DrawColliderComponent(const EditableObjectView& object);
+	static void DrawBodyComponent(const EditableObjectView& object);
+	static void DrawMaterials(const EditableObjectView& object, IEditableWorld& scene);
+	static void DrawAnimation(const EditableObjectView& object, IEditableWorld& scene);
+	// Point / Spot / Directionalの共通設定と角度を編集する（InspectorLights.cpp）。
+	static void DrawLightComponent(const EditableObjectView& object);
+
+private:
+	//=============================================================================================//
+	// メンバ変数 / 編集結果
+
+	inline static std::string status_; // 読み込めない画像の理由。シーン切替時に消す。
+};

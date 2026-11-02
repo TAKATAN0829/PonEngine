@@ -22,7 +22,6 @@ public:
 
 	void Draw();
 
-
 	//=============================================================================================//
 	// 終了処理
 
@@ -32,11 +31,11 @@ public:
 	// Getter / 編集窓口
 
 	// 現在のシーンが公開する編集窓口を借用する。シーンの所有権は渡さない。
-	IEditableScene* GetEditableScene() {
+	IEditableWorld* GetEditableWorld() {
 		if (currentScene_ == nullptr) {
 			return nullptr;
 		}
-		return currentScene_->GetEditableScene();
+		return currentScene_->GetEditableWorld();
 	}
 
 	//=============================================================================================//

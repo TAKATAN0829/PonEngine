@@ -37,7 +37,7 @@ public:
 	// シーンの親子変換を解決したワールド行列で描画用データを更新する。
 	void Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& objectWorldMatrix);
 	// 共有モデルを書き換えず、このオブジェクト専用の頂点と再生時計を更新する。
-	void UpdateAnimation(const SceneAnimationSettings& settings, float deltaSeconds, bool playing);
+	void UpdateAnimation(const AnimationSettings& settings, float deltaSeconds, bool playing);
 	void ResetAnimation();
 	float GetAnimationTime() const { return animationTime_; }
 	const AABB& GetLocalBounds() const;
@@ -54,7 +54,7 @@ public:
 
 	void SetModel (Model* model);
 	// 全体の色・ライティングと各スロットの上書き値を合成する。
-	void SetMaterials(const std::vector<SceneMaterialSettings>& settings);
+	void SetMaterials(const std::vector<MaterialSettings>& settings);
 
 	//=============================================================================================//
 	// Transform設定
@@ -122,7 +122,7 @@ public:
 
 	void SetSpotLight (const SpotLight& spotLight) { spotLightData_->count = 1; spotLightData_->lights[0] = spotLight; }
 	// Sceneが一度だけ収集した固定長配列を反映する。隠れた既定光源を追加しない。
-	void SetSceneLights(const SceneLightCollection& lights) {
+	void SetSceneLights(const WorldLightCollection& lights) {
 		*directionalLightData_ = lights.directional;
 		*pointLightData_ = lights.points;
 		*spotLightData_ = lights.spots;
@@ -185,7 +185,7 @@ private:
 
 	std::unique_ptr<Mesh> animatedMesh_;
 	std::vector<Mesh::VertexData> animatedVertices_;
-	SceneAnimationSettings animationSettings_;
+	AnimationSettings animationSettings_;
 	float animationTime_ = 0;
 	bool animationInitialized_ = false;
 	AABB animatedBounds_{}; // 変形した頂点から求めた選択範囲。

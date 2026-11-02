@@ -288,7 +288,7 @@ void Object3d::SetModel(Model* model) {
 	SetMaterials({});
 }
 
-void Object3d::SetMaterials(const std::vector<SceneMaterialSettings>& settings) {
+void Object3d::SetMaterials(const std::vector<MaterialSettings>& settings) {
 	for (size_t slotIndex = 0; slotIndex < slotMaterials_.size(); ++slotIndex) {
 		Material& slot = *slotMaterials_[slotIndex];
 		Vector4 color = model_->GetMaterials()[slotIndex].color;
@@ -298,7 +298,7 @@ void Object3d::SetMaterials(const std::vector<SceneMaterialSettings>& settings) 
 		if (textureOverride_) {
 			textureIndex = material_->GetTextureIndex();
 		}
-		for (const SceneMaterialSettings& overrideSettings : settings) {
+		for (const MaterialSettings& overrideSettings : settings) {
 			if (overrideSettings.slot != slotIndex) {
 				continue;
 			}
@@ -330,7 +330,7 @@ const AABB& Object3d::GetLocalBounds() const {
 	return model_->GetLocalBounds();
 }
 
-void Object3d::UpdateAnimation(const SceneAnimationSettings& settings, float deltaSeconds, bool playing) {
+void Object3d::UpdateAnimation(const AnimationSettings& settings, float deltaSeconds, bool playing) {
 	const ModelAnimation* animation = model_->GetAnimation();
 	if (animation == nullptr) {
 		return;

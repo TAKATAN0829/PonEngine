@@ -1,5 +1,5 @@
-#include "systems/SceneMotion.h"
-#include "objects/SceneObjects.h"
+#include "systems/WorldMotion.h"
+#include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
 #include "serialization/PrefabFile.h"
 #include "../project/CG2/editor/EditorSession.h"
@@ -20,20 +20,20 @@ namespace {
 	}
 
 	void VerifyMotionRuntime() {
-		SceneObjects scene;
-		const SceneObjectId parent = scene.CreateObject(SceneObjectType::Empty);
-		const SceneObjectId child = scene.AddObject("plane.gltf");
+		WorldObjects scene;
+		const WorldObjectId parent = scene.CreateObject(WorldObjectType::Empty);
+		const WorldObjectId child = scene.AddObject("plane.gltf");
 		std::string error;
 		RequireMotion(scene.SetObjectParent(child, parent, error), "Motion parenting failed");
 		scene.GetEditableObject(0).transform->translate = {10,0,0};
 		scene.GetEditableObject(1).transform->translate = {1,2,3};
-		SceneMotionSettings& settings = *scene.GetEditableObject(1).motion;
+		MotionSettings& settings = *scene.GetEditableObject(1).motion;
 		settings.hasRotation = true;
 		settings.rotationDegreesPerSecond = {0,90,0};
 		settings.hasMovement = true;
 		settings.movementOffset = {4,0,0};
 		settings.movementPeriod = 2;
-		SceneMotion runtime;
+		WorldMotion runtime;
 		runtime.Initialize();
 		runtime.Update(scene, 0.5f);
 		RequireMotion(NearMotion(scene.GetObjectDataById(child)->transform.translate.x, 3), "Quarter-period movement incorrect");
@@ -71,27 +71,27 @@ namespace {
 	}
 
 	void VerifyMotionHistoryAndPlay(const std::filesystem::path& directory) {
-		SceneObjects scene;
-		const SceneObjectId identifier = scene.AddObject("plane.gltf");
+		WorldObjects scene;
+		const WorldObjectId identifier = scene.AddObject("plane.gltf");
 		EditorSession session;
 		session.Initialize(scene);
 		scene.GetEditableObject(0).motion->hasRotation = true;
 		scene.GetEditableObject(0).motion->hasMovement = true;
 		scene.GetEditableObject(0).motion->movementOffset = {2,4,6};
-		const SceneMotionSettings expected = *scene.GetEditableObject(0).motion;
+		const MotionSettings expected = *scene.GetEditableObject(0).motion;
 		session.Update(scene, false);
 		std::string error;
 		RequireMotion(session.Undo(scene, error) && !scene.GetObjectData(0)->motion.hasRotation, "Motion add missing from undo");
 		RequireMotion(session.Redo(scene, error) && EqualMotionSettings(scene.GetObjectData(0)->motion, expected), "Motion settings missing from redo");
 		RequireMotion(SceneFile::Save(scene, directory / "motion.ponscene", error), "Motion scene save failed");
-		SceneObjects restored;
+		WorldObjects restored;
 		RequireMotion(SceneFile::Load(restored, directory / "motion.ponscene", error), "Motion scene load failed");
 		RequireMotion(EqualMotionSettings(restored.GetObjectData(0)->motion, expected), "Motion roundtrip failed");
 		RequireMotion(PrefabFile::Save(scene, identifier, directory / "motion.ponprefab", error), "Motion prefab save failed");
 		RequireMotion(PrefabFile::Instantiate(restored, directory / "motion.ponprefab", 0, {}, error) != 0, "Motion prefab placement failed");
 		RequireMotion(EqualMotionSettings(restored.GetObjectData(1)->motion, expected), "Prefab lost motion settings");
 		RequireMotion(session.BeginPlay(scene, error), "Motion Play failed");
-		SceneMotion runtime;
+		WorldMotion runtime;
 		runtime.Initialize();
 		runtime.Update(scene, 0.5f);
 		RequireMotion(scene.GetObjectData(0)->transform.translate.y > 0, "Motion did not run in Play");
@@ -109,7 +109,7 @@ namespace {
 		runtime.Update(scene, 0.5f);
 		RequireMotion(NearMotion(scene.GetObjectData(0)->transform.translate.y, 2), "Second Play reused old motion clock");
 		RequireMotion(session.Stop(scene, error), "Second Motion Stop failed");
-		std::vector<SceneObjectData> invalid = scene.CaptureObjects();
+		std::vector<WorldObjectData> invalid = scene.CaptureObjects();
 		invalid[0].motion.movementPeriod = 0;
 		RequireMotion(!scene.ReplaceObjects(invalid, error), "Zero movement period accepted");
 		invalid[0].motion = expected;

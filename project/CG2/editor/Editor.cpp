@@ -1,7 +1,7 @@
-#include "FrameProfiler.h"
+﻿#include "FrameProfiler.h"
 #include "Editor.h"
-#include "panels/HierarchyPanel.h"
-#include "panels/InspectorPanel.h"
+#include "panels/hierarchy/HierarchyPanel.h"
+#include "panels/inspector/InspectorPanel.h"
 #include "serialization/SceneFile.h"
 #include "LogSystem.h"
 
@@ -49,7 +49,7 @@ namespace {
 #endif
 
 // 保存前に再生を終了し、編集用データだけをファイルへ書き込む。
-bool Editor::SaveScene (IEditableScene& scene) {
+bool Editor::SaveScene (IEditableWorld& scene) {
 	std::string error;
 	if (session_.IsPlaying ()) {
 		if (!session_.Stop (scene, error)) {
@@ -67,7 +67,7 @@ bool Editor::SaveScene (IEditableScene& scene) {
 }
 
 // 操作の種類と各保存対象の変更を順に確認する。
-bool Editor::NeedsSaveConfirmation(SceneAction action, IEditableScene& scene) const {
+bool Editor::NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) const {
 	if (session_.IsDirty(scene)) {
 		return true;
 	}
@@ -80,7 +80,7 @@ bool Editor::NeedsSaveConfirmation(SceneAction action, IEditableScene& scene) co
 }
 
 // 未保存の変更がある場合は、処理を保留して保存確認を表示する。
-void Editor::RequestSceneAction(SceneAction action, IEditableScene& scene) {
+void Editor::RequestSceneAction(SceneAction action, IEditableWorld& scene) {
 	pendingAction_ = action;
 	if (NeedsSaveConfirmation(action, scene)) {
 		openDiscardPrompt_ = true;
@@ -90,7 +90,7 @@ void Editor::RequestSceneAction(SceneAction action, IEditableScene& scene) {
 }
 
 // 保存確認が済んだ新規作成・読込・終了を実行し、結果を画面へ通知する。
-void Editor::PerformSceneAction (IEditableScene& scene) {
+void Editor::PerformSceneAction (IEditableWorld& scene) {
 	std::string error;
 	bool succeeded = false;
 	if (pendingAction_ == SceneAction::LoadScene) {
@@ -119,7 +119,7 @@ void Editor::PerformSceneAction (IEditableScene& scene) {
 }
 
 // 再生開始時に編集状態を退避し、停止時にはその状態へ戻す。
-void Editor::TogglePlay (IEditableScene& scene) {
+void Editor::TogglePlay (IEditableWorld& scene) {
 	sceneView_.ResetInteraction ();
 	std::string error;
 	bool succeeded = false;
@@ -146,7 +146,7 @@ bool Editor::ShouldSimulate () {
 }
 
 // ウィンドウの終了要求を受け取り、必要なら未保存データの確認へ回す。
-void Editor::RequestExit (IEditableScene* scene) {
+void Editor::RequestExit (IEditableWorld* scene) {
 	if (pendingAction_ != SceneAction::None) {
 		return;
 	}
@@ -162,7 +162,7 @@ void Editor::RequestExit (IEditableScene* scene) {
 }
 
 // 再生・停止・一時停止・ステップだけを中央へ並べる。
-void Editor::DrawToolbar (IEditableScene& scene) {
+void Editor::DrawToolbar (IEditableWorld& scene) {
 #ifdef USE_IMGUI
 	// シーン管理はメニューへ分離し、中央には再生操作だけを置く。
 	// この行だけ縦の項目間隔を詰め、下の作業領域を広く保つ。
@@ -219,7 +219,7 @@ void Editor::DrawToolbar (IEditableScene& scene) {
 #endif
 }
 // 保存成功または破棄の選択が済むまで、シーンを置き換えない。
-void Editor::DrawDiscardPrompt (IEditableScene& scene) {
+void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 #ifdef USE_IMGUI
 	if (openDiscardPrompt_) {
 		ImGui::OpenPopup ("Unsaved Scene");
@@ -268,7 +268,7 @@ void Editor::DrawDiscardPrompt (IEditableScene& scene) {
 }
 
 // 文字入力やポップアップの操作と競合しないときだけショートカットを処理する。
-void Editor::HandleShortcuts(IEditableScene& scene) {
+void Editor::HandleShortcuts(IEditableWorld& scene) {
 #ifdef USE_IMGUI
 	// 文字入力・ウィジェット操作・Scene操作・ダイアログはそれぞれ独立して確認する。
 	if (ImGui::GetIO().WantTextInput) {
@@ -330,7 +330,7 @@ void Editor::HandleShortcuts(IEditableScene& scene) {
 //=============================================================================================//
 // 初期化処理
 
-void Editor::Initialize(IEditableScene* scene) {
+void Editor::Initialize(IEditableWorld* scene) {
 	scene_ = scene;
 	HierarchyPanel::Initialize();
 	InspectorPanel::Initialize();
@@ -352,7 +352,7 @@ void Editor::Initialize(IEditableScene* scene) {
 //=============================================================================================//
 // 更新処理
 
-void Editor::Update(IEditableScene* scene) {
+void Editor::Update(IEditableWorld* scene) {
 	FrameProfiler::Scope sectionTime(FrameProfiler::Section::History);
 	if (scene == nullptr) {
 		return;
@@ -377,31 +377,10 @@ void Editor::Update(IEditableScene* scene) {
 //=============================================================================================//
 // メンバ関数 / Inspector描画
 
-void Editor::DrawInspector(IEditableScene& scene) {
-	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Inspector);
-	selection_.Prune(scene);
-	if (selection_.GetIds().size() > 1) {
-		DrawMultipleInspector(scene);
-		return;
-	}
-	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
-		const EditableObjectView object = scene.GetEditableObject(objectIndex);
-		if (object.id == kInvalidSceneObjectId) {
-			continue;
-		}
-		if (object.id == selection_.Get()) {
-			InspectorPanel::Draw(object, &toolVisibility_.particleEditor, &scene);
-			return;
-		}
-	}
-	selection_.Clear();
-	InspectorPanel::Draw({});
-}
-
 //=============================================================================================//
 // 描画処理
 
-void Editor::Draw(IEditableScene* scene) {
+void Editor::Draw(IEditableWorld* scene) {
 	if (scene_ != scene) {
 		Initialize(scene);
 	}
@@ -421,7 +400,7 @@ void Editor::Draw(IEditableScene* scene) {
 	if (!sceneAvailable) {
 		HierarchyPanel::Draw(scene, selection_);
 		InspectorPanel::Draw({});
-		DrawPerformance();
+		performancePanel_.Draw(toolVisibility_.performance);
 		return;
 	}
 	if (menuAction == EditorMenuAction::NewScene) {
@@ -448,6 +427,6 @@ void Editor::Draw(IEditableScene* scene) {
 	sceneView_.Draw(*scene, selection_);
 	DrawInspector(*scene);
 	scene->DrawEditorTools(toolVisibility_);
-	DrawPerformance();
+	performancePanel_.Draw(toolVisibility_.performance);
 	DrawDiscardPrompt(*scene);
 }

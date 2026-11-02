@@ -1,9 +1,9 @@
 #include "../project/CG2/editor/EditorSelection.h"
 #include "../project/CG2/editor/EditorSession.h"
-#include "../project/CG2/engine/core/FrameProfiler.h"
+#include "../project/CG2/engine/diagnostics/FrameProfiler.h"
 #include "serialization/PrefabFile.h"
 #include "serialization/SceneFile.h"
-#include "objects/SceneObjects.h"
+#include "objects/WorldObjects.h"
 #include "SceneViewMath.h"
 #include <stdexcept>
 #include <cmath>
@@ -16,10 +16,10 @@ namespace {
 		}
 	}
 	void VerifyMultipleSelection() {
-		SceneObjects scene;
-		const SceneObjectId parent = scene.CreateObject(SceneObjectType::Empty);
-		const SceneObjectId child = scene.AddObject("plane.gltf");
-		const SceneObjectId independent = scene.AddObject("axis.obj");
+		WorldObjects scene;
+		const WorldObjectId parent = scene.CreateObject(WorldObjectType::Empty);
+		const WorldObjectId child = scene.AddObject("plane.gltf");
+		const WorldObjectId independent = scene.AddObject("axis.obj");
 		std::string error;
 		RequireWorkflow(scene.SetObjectParent(child, parent, error), "Selection parent setup failed");
 		EditorSelection selection;
@@ -43,15 +43,15 @@ namespace {
 		selection.Select(independent);
 		selection.Toggle(independent);
 		RequireWorkflow(selection.Get() == 0, "Ctrl toggle did not deselect");
-		const SceneObjectId retired = scene.AddObject("axis.obj");
+		const WorldObjectId retired = scene.AddObject("axis.obj");
 		RequireWorkflow(scene.RemoveObject(retired), "Retired ID removal failed");
 		selection.Select(independent);
 		RequireWorkflow(selection.Duplicate(scene, error) && selection.Get() > retired, "Batch duplicate reused a deleted ID");
 		selection.Clear();
 		// 最後の複製だけが上限を超えても、最初の複製まで元シーンへ反映しない。
-		SceneObjects lightScene;
+		WorldObjects lightScene;
 		for (size_t lightIndex = 0; lightIndex < 7; ++lightIndex) {
-			selection.Toggle(lightScene.CreateObject(SceneObjectType::PointLight));
+			selection.Toggle(lightScene.CreateObject(WorldObjectType::PointLight));
 		}
 		RequireWorkflow(!selection.Duplicate(lightScene, error) && lightScene.GetEditableObjectCount() == 7, "Failed batch duplicate partially changed scene");
 	}
@@ -68,23 +68,23 @@ namespace {
 	}
 
 	void VerifyLinkedPrefab() {
-		SceneObjects source;
-		const SceneObjectId root = source.CreateObject(SceneObjectType::Empty);
-		const SceneObjectId child = source.AddObject("axis.obj");
+		WorldObjects source;
+		const WorldObjectId root = source.CreateObject(WorldObjectType::Empty);
+		const WorldObjectId child = source.AddObject("axis.obj");
 		std::string error;
 		RequireWorkflow(source.SetObjectParent(child, root, error), "Linked prefab setup failed");
 		RequireWorkflow(PrefabFile::Save(source, root, "resources/workflow.ponprefab", error), "Linked prefab save failed");
-		SceneObjects scene;
+		WorldObjects scene;
 		// 高いルートIDが再配置した子の範囲に入っても重複させない。
-		SceneObjectData seed;
+		WorldObjectData seed;
 		seed.id = 100;
 		RequireWorkflow(scene.ReplaceObjects({seed}, error), "Prefab seed failed");
-		const SceneObjectId instance = scene.PlacePrefab("workflow.ponprefab", 0, {3,4,5}, error);
+		const WorldObjectId instance = scene.PlacePrefab("workflow.ponprefab", 0, {3,4,5}, error);
 		RequireWorkflow(instance != 0 && !scene.GetObjectData(1)->prefabSource.empty(), "Prefab source link missing");
-		const SceneObjectId second = scene.PlacePrefab("workflow.ponprefab", 0, {}, error);
+		const WorldObjectId second = scene.PlacePrefab("workflow.ponprefab", 0, {}, error);
 		RequireWorkflow(second != 0, "Second linked instance failed");
 		RequireWorkflow(SceneFile::Save(scene, "linked.ponscene", error), "Linked scene save failed");
-		SceneObjects restored;
+		WorldObjects restored;
 		RequireWorkflow(SceneFile::Load(restored, "linked.ponscene", error), "Linked scene load failed");
 		RequireWorkflow(restored.GetObjectData(1)->prefabSource == "workflow.ponprefab", "Prefab link lost after reload");
 		// 直前の保存形式7は、リンク情報なしで同じComponentを復元できる。
@@ -101,7 +101,7 @@ namespace {
 			previousFormat << record.substr(0, sourcePosition) << '\n';
 		}
 		previousFormat.close();
-		SceneObjects previousScene;
+		WorldObjects previousScene;
 		RequireWorkflow(SceneFile::Load(previousScene, "previous-format.ponscene", error), "Format 7 backward compatibility failed");
 		RequireWorkflow(previousScene.GetObjectData(1)->prefabSource.empty(), "Legacy scene inherited a prefab link");
 		*scene.GetEditableObject(2).editableName = "Applied Child";

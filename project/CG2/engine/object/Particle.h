@@ -15,7 +15,7 @@
 #include "EngineStructs.h"
 #include "Material.h"
 #include "BlendMode.h"
-#include "components/ParticleSettings.h"
+#include "settings/ParticleSettings.h"
 
 class ParticleRenderer;
 
@@ -52,6 +52,7 @@ public:
 
 	// 保存データの設定を検証してから適用し、実行中の粒子は保持する。
 	bool ApplySettings(const ParticleSettings& settings);
+
 	// 設定は保持したまま、粒子と発生タイマーを初期状態へ戻す。
 	void ResetSimulation();
 
@@ -69,6 +70,7 @@ public:
 	// EmitterのTransform
 
 	TransformData& GetEmitterTransform() { return emitter_.transform; }
+
 	// 親子変換で求めたワールド位置。プリセットのローカル設定とは分けて適用する。
 	void SetEmitterPosition(const Vector3& position);
 

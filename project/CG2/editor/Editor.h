@@ -1,12 +1,13 @@
-#pragma once
+﻿#pragma once
 
 // 自作
 #include "EditorSelection.h"
 #include "EditorSession.h"
-#include "panels/SceneViewPanel.h"
-#include "panels/ParticleEditorPanel.h"
-#include "panels/ProjectPanel.h"
-#include "panels/ConsolePanel.h"
+#include "panels/scene_view/SceneViewPanel.h"
+#include "panels/particle_editor/ParticleEditorPanel.h"
+#include "panels/project/ProjectPanel.h"
+#include "panels/console/ConsolePanel.h"
+#include "panels/performance/PerformancePanel.h"
 #include "EditorLayout.h"
 
 // C++
@@ -20,19 +21,19 @@ public:
 	// 初期化処理
 
 	// 対象シーンに合わせて選択・履歴・確認待ちの状態を初期化する。
-	void Initialize(IEditableScene* scene);
+	void Initialize(IEditableWorld* scene);
 
 	//=============================================================================================//
 	// 更新処理
 
 	// パネル操作後の履歴確定、ショートカット、ログ通知を処理する。
-	void Update(IEditableScene* scene);
+	void Update(IEditableWorld* scene);
 
 	//=============================================================================================//
 	// 描画処理
 
 	// メニューと各パネルを描く。GPUへの反映より前に呼び出す。
-	void Draw(IEditableScene* scene);
+	void Draw(IEditableWorld* scene);
 
 	//=============================================================================================//
 	// Getter / 再生・終了状態
@@ -57,7 +58,7 @@ public:
 	// メンバ関数 / 終了要求
 
 	// 未保存の設定があれば確認を保留し、許可後に終了状態を公開する。
-	void RequestExit(IEditableScene* scene);
+	void RequestExit(IEditableWorld* scene);
 
 private:
 
@@ -69,27 +70,25 @@ private:
 	//=============================================================================================//
 	// メンバ関数 / シーン保存・切替
 
-	bool SaveScene(IEditableScene& scene);
-	void RequestSceneAction(SceneAction action, IEditableScene& scene);
-	void PerformSceneAction(IEditableScene& scene);
-	bool NeedsSaveConfirmation(SceneAction action, IEditableScene& scene) const;
+	bool SaveScene(IEditableWorld& scene);
+	void RequestSceneAction(SceneAction action, IEditableWorld& scene);
+	void PerformSceneAction(IEditableWorld& scene);
+	bool NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) const;
 
 	//=============================================================================================//
 	// メンバ関数 / パネル描画
 
-	void DrawToolbar(IEditableScene& scene);
-	void DrawDiscardPrompt(IEditableScene& scene);
-	void DrawInspector(IEditableScene& scene);
+	void DrawToolbar(IEditableWorld& scene);
+	void DrawDiscardPrompt(IEditableWorld& scene);
+	void DrawInspector(IEditableWorld& scene);
 	// 共通Transformは差分、Activeと色は明示した値を選択全体へ反映する。
-	void DrawMultipleInspector(IEditableScene& scene);
-	// 表示メニューから開く、フレーム履歴と処理別時間の画面。
-	void DrawPerformance();
+	void DrawMultipleInspector(IEditableWorld& scene);
 
 	//=============================================================================================//
 	// メンバ関数 / 入力・再生
 
-	void HandleShortcuts(IEditableScene& scene);
-	void TogglePlay(IEditableScene& scene);
+	void HandleShortcuts(IEditableWorld& scene);
+	void TogglePlay(IEditableWorld& scene);
 
 private:
 
@@ -97,7 +96,7 @@ private:
 	// メンバ変数 / 編集対象
 
 	// SceneManagerが所有するシーン。切替検出用に借用し、破棄しない。
-	IEditableScene* scene_ = nullptr;
+	IEditableWorld* scene_ = nullptr;
 	EditorSelection selection_;
 	EditorSession session_;
 
@@ -108,6 +107,7 @@ private:
 	ParticleEditorPanel particleEditor_; // Emitter設定とプレビュー。
 	ProjectPanel projectPanel_; // フォルダ・Assetの選択とプレビュー。
 	ConsolePanel consolePanel_; // ログの検索・表示。
+	PerformancePanel performancePanel_; // 計測履歴の選択とCSV出力の表示。
 	EditorToolVisibility toolVisibility_; // 補助画面は初期状態ではすべて閉じる。
 	EditorLayout layout_; // メニュー・初期ドッキング・通知欄。
 

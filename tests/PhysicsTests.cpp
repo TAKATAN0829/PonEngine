@@ -1,5 +1,5 @@
-#include "systems/ScenePhysics.h"
-#include "objects/SceneObjects.h"
+#include "systems/WorldPhysics.h"
+#include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
 #include "serialization/PrefabFile.h"
 #include "../project/CG2/editor/EditorSession.h"
@@ -13,8 +13,8 @@ namespace {
 			throw std::runtime_error(message);
 		}
 	}
-	SceneObjectData Floor() {
-		SceneObjectData floor;
+	WorldObjectData Floor() {
+		WorldObjectData floor;
 		floor.id = 1;
 		floor.name = "Floor";
 		floor.collider.present = true;
@@ -22,8 +22,8 @@ namespace {
 		floor.transform.translate.y = -0.5f;
 		return floor;
 	}
-	SceneObjectData Falling(ColliderShape shape) {
-		SceneObjectData object;
+	WorldObjectData Falling(ColliderShape shape) {
+		WorldObjectData object;
 		object.id = 2;
 		object.collider.present = true;
 		object.collider.shape = shape;
@@ -32,40 +32,40 @@ namespace {
 		return object;
 	}
 	// 物理更新はEditor専用APIを持たない共通インターフェースだけを使用する。
-	void Advance(ScenePhysics& physics, ISceneObjects& scene, size_t frames) {
+	void Advance(WorldPhysics& physics, IWorldObjects& scene, size_t frames) {
 		for (size_t frame = 0; frame < frames; ++frame) {
 			physics.Update(scene,1.0f / 60);
 		}
 	}
 	void VerifyLanding(ColliderShape shape) {
-		SceneObjects scene;
+		WorldObjects scene;
 		std::string error;
 		RequirePhysics(scene.ReplaceObjects({Floor(),Falling(shape)},error), "Physics setup failed");
-		ScenePhysics physics;
+		WorldPhysics physics;
 		physics.Initialize(scene);
 		Advance(physics,scene,240);
 		RequirePhysics(std::abs(scene.GetObjectWorldPosition(2).y-0.5f) < 0.002f, "Falling object did not rest on floor");
 		RequirePhysics(std::abs(physics.GetVelocity(2).y) < 0.02f, "Resting object retained downward velocity");
 		RequirePhysics(scene.GetObjectWorldPosition(1).y == -0.5f, "Static floor was displaced");
-		SceneCollision collision;
+		WorldCollision collision;
 		collision.Update(scene);
 		RequirePhysics(collision.IsTouching(2), "Resting body lost contact notification");
 		physics.Finalize();
 	}
 	void VerifyMassAndWall() {
-		SceneObjectData first = Falling(ColliderShape::Sphere);
+		WorldObjectData first = Falling(ColliderShape::Sphere);
 		first.id = 1;
 		first.transform.translate = {-0.25f,0,0};
 		first.body.useGravity = false;
 		first.body.friction = 0;
-		SceneObjectData second = first;
+		WorldObjectData second = first;
 		second.id = 2;
 		second.transform.translate.x = 0.25f;
 		second.body.mass = 3;
-		SceneObjects scene;
+		WorldObjects scene;
 		std::string error;
 		RequirePhysics(scene.ReplaceObjects({first,second},error), "Mass setup failed");
-		ScenePhysics physics;
+		WorldPhysics physics;
 		physics.Initialize(scene);
 		Advance(physics,scene,2);
 		const float firstPosition = scene.GetObjectWorldPosition(1).x;
@@ -80,10 +80,10 @@ namespace {
 		physics.Initialize(scene);
 		Advance(physics,scene,1);
 		RequirePhysics(std::abs(physics.GetVelocity(1).x+1) < 0.001f && std::abs(physics.GetVelocity(2).x-1) < 0.001f, "Dynamic impulse ignored mass or momentum");
-		SceneObjectData wall = Floor();
+		WorldObjectData wall = Floor();
 		wall.collider.size = {1,10,10};
 		wall.transform.translate = {0,0,0};
-		SceneObjectData mover = Falling(ColliderShape::Box);
+		WorldObjectData mover = Falling(ColliderShape::Box);
 		mover.transform.translate = {-3,0,0};
 		mover.body.useGravity = false;
 		mover.body.initialVelocity = {4,0,0};
@@ -93,12 +93,12 @@ namespace {
 		RequirePhysics(scene.GetObjectWorldPosition(2).x <= -0.999f && std::abs(physics.GetVelocity(2).x) < 0.01f, "Box passed through static wall");
 	}
 	void VerifyMaterialsAndTrigger() {
-		SceneObjects scene;
+		WorldObjects scene;
 		std::string error;
-		SceneObjectData ball = Falling(ColliderShape::Sphere);
+		WorldObjectData ball = Falling(ColliderShape::Sphere);
 		ball.body.restitution = 1;
 		RequirePhysics(scene.ReplaceObjects({Floor(),ball},error), "Bounce setup failed");
-		ScenePhysics physics;
+		WorldPhysics physics;
 		physics.Initialize(scene);
 		bool bounced = false;
 		for (size_t frame = 0; frame < 100; ++frame) {
@@ -108,7 +108,7 @@ namespace {
 			}
 		}
 		RequirePhysics(bounced, "Restitution did not produce bounce");
-		SceneObjectData sliding = Falling(ColliderShape::Box);
+		WorldObjectData sliding = Falling(ColliderShape::Box);
 		sliding.transform.translate.y = 0.5f;
 		sliding.body.initialVelocity.x = 4;
 		sliding.body.friction = 1;
@@ -116,7 +116,7 @@ namespace {
 		physics.Initialize(scene);
 		Advance(physics,scene,120);
 		RequirePhysics(std::abs(physics.GetVelocity(2).x) < 0.1f, "Contact friction did not slow sliding");
-		SceneObjectData trigger = Floor();
+		WorldObjectData trigger = Floor();
 		trigger.collider.trigger = true;
 		RequirePhysics(scene.ReplaceObjects({trigger,Falling(ColliderShape::Sphere)},error), "Trigger setup failed");
 		physics.Initialize(scene);
@@ -124,36 +124,36 @@ namespace {
 		RequirePhysics(scene.GetObjectWorldPosition(2).y < -2, "Trigger incorrectly pushed out falling body");
 	}
 	void VerifyHierarchyAndCompound() {
-		SceneObjects scene;
-		SceneObjectData parent;
+		WorldObjects scene;
+		WorldObjectData parent;
 		parent.id = 3;
-		parent.type = SceneObjectType::Empty;
+		parent.type = WorldObjectType::Empty;
 		parent.hasMeshRenderer = false;
 		parent.transform.scale = {2,2,2};
-		SceneObjectData child = Falling(ColliderShape::Box);
+		WorldObjectData child = Falling(ColliderShape::Box);
 		child.parentId = 3;
 		std::string error;
 		RequirePhysics(scene.ReplaceObjects({Floor(),parent,child},error), "Scaled parent setup failed");
-		ScenePhysics physics;
+		WorldPhysics physics;
 		physics.Initialize(scene);
 		Advance(physics,scene,240);
 		RequirePhysics(std::abs(scene.GetObjectWorldPosition(2).y-1) < 0.002f, "Physics did not convert world position through parent");
-		SceneObjectData root = Falling(ColliderShape::Box);
+		WorldObjectData root = Falling(ColliderShape::Box);
 		root.collider.present = false;
-		SceneObjectData firstCollider;
+		WorldObjectData firstCollider;
 		firstCollider.id = 3;
 		firstCollider.parentId = 2;
 		firstCollider.collider.present = true;
-		SceneObjectData secondCollider = firstCollider;
+		WorldObjectData secondCollider = firstCollider;
 		secondCollider.id = 4;
 		RequirePhysics(scene.ReplaceObjects({Floor(),root,firstCollider,secondCollider},error), "Compound setup failed");
 		physics.Initialize(scene);
 		Advance(physics,scene,240);
 		RequirePhysics(std::abs(scene.GetObjectWorldPosition(2).y-0.5f) < 0.002f, "Child collider did not move owning Rigidbody");
-		SceneCollision contacts;
+		WorldCollision contacts;
 		contacts.Update(scene);
 		RequirePhysics(contacts.GetContactCount() == 2, "Colliders of the same Rigidbody collided with each other");
-		std::vector<SceneObjectData> invalid = scene.CaptureObjects();
+		std::vector<WorldObjectData> invalid = scene.CaptureObjects();
 		invalid[2].body.present = true;
 		RequirePhysics(!scene.ReplaceObjects(invalid,error), "Nested Dynamic bodies were accepted");
 		// Inspectorで再生中に値が書き換わっても、無効な親子を解決して暴走させない。
@@ -166,7 +166,7 @@ namespace {
 		RequirePhysics(physics.GetError().empty(), "Physics did not resume after hierarchy fix");
 	}
 	void VerifySettingsAndPlay(const std::filesystem::path& directory) {
-		SceneObjects scene;
+		WorldObjects scene;
 		std::string error;
 		RequirePhysics(scene.ReplaceObjects({Floor(),Falling(ColliderShape::Sphere)},error), "Save setup failed");
 		EditorSession session;
@@ -177,14 +177,14 @@ namespace {
 		session.Update(scene,false);
 		RequirePhysics(session.Undo(scene,error) && scene.GetObjectData(1)->body.mass == 1 && !scene.GetObjectData(0)->collider.trigger, "Rigidbody edit missing from undo");
 		RequirePhysics(session.Redo(scene,error) && scene.GetObjectData(1)->body.mass == 3 && scene.GetObjectData(0)->collider.trigger, "Rigidbody edit missing from redo");
-		const SceneBodySettings expected = scene.GetObjectData(1)->body;
+		const RigidBodySettings expected = scene.GetObjectData(1)->body;
 		RequirePhysics(SceneFile::Save(scene,directory/"physics.ponscene",error), "Physics save failed");
-		SceneObjects restored;
+		WorldObjects restored;
 		RequirePhysics(SceneFile::Load(restored,directory/"physics.ponscene",error) && EqualBodySettings(restored.GetObjectData(1)->body,expected) && restored.GetObjectData(0)->collider.trigger, "Physics settings roundtrip failed");
 		RequirePhysics(PrefabFile::Save(scene,2,directory/"physics.ponprefab",error), "Physics prefab save failed");
 		RequirePhysics(PrefabFile::Instantiate(restored,directory/"physics.ponprefab",0,{},error) != 0 && EqualBodySettings(restored.GetObjectData(2)->body,expected), "Prefab lost Rigidbody settings");
 		RequirePhysics(session.BeginPlay(scene,error), "Physics Play failed");
-		ScenePhysics physics;
+		WorldPhysics physics;
 		physics.Initialize(scene);
 		Advance(physics,scene,120);
 		RequirePhysics(scene.GetObjectWorldPosition(2).y < 1, "Physics did not advance in Play");
@@ -212,20 +212,20 @@ namespace {
 		}
 		legacy.close();
 		RequirePhysics(SceneFile::Load(restored,directory/"physics-v10.ponscene",error) && !restored.GetObjectData(1)->body.present, "Format 10 compatibility failed");
-		std::vector<SceneObjectData> invalid = scene.CaptureObjects();
+		std::vector<WorldObjectData> invalid = scene.CaptureObjects();
 		invalid[1].body.mass = 0;
 		RequirePhysics(!restored.ReplaceObjects(invalid,error), "Zero mass accepted");
 	}
 	void VerifyKinematicAndModes() {
-		SceneObjectData platform = Floor();
+		WorldObjectData platform = Floor();
 		platform.body.present = true;
 		platform.body.mode = BodyMode::Kinematic;
-		SceneObjectData rider = Falling(ColliderShape::Box);
+		WorldObjectData rider = Falling(ColliderShape::Box);
 		rider.transform.translate.y = 0.5f;
-		SceneObjects scene;
+		WorldObjects scene;
 		std::string error;
 		RequirePhysics(scene.ReplaceObjects({platform,rider},error), "Kinematic setup failed");
-		ScenePhysics physics;
+		WorldPhysics physics;
 		physics.Initialize(scene);
 		for (size_t frame = 0; frame < 60; ++frame) {
 			scene.GetEditableObject(0).transform->translate.y += 0.01f;
@@ -248,17 +248,17 @@ namespace {
 		RequirePhysics(scene.GetObjectWorldPosition(2).x == stopped.x, "Static body moved");
 	}
 	void VerifySlope() {
-		SceneObjectData ramp = Floor();
+		WorldObjectData ramp = Floor();
 		ramp.transform.rotate.z = 0.2f;
 		ramp.body.present = true;
 		ramp.body.mode = BodyMode::Static;
 		ramp.body.friction = 0;
-		SceneObjectData ball = Falling(ColliderShape::Sphere);
+		WorldObjectData ball = Falling(ColliderShape::Sphere);
 		ball.body.friction = 0;
-		SceneObjects scene;
+		WorldObjects scene;
 		std::string error;
 		RequirePhysics(scene.ReplaceObjects({ramp,ball},error), "Slope setup failed");
-		ScenePhysics physics;
+		WorldPhysics physics;
 		physics.Initialize(scene);
 		Advance(physics,scene,180);
 		const Vector3 offset = MathUtility::Subtract(scene.GetObjectWorldPosition(2),ramp.transform.translate);
@@ -267,15 +267,15 @@ namespace {
 		RequirePhysics(scene.GetObjectWorldPosition(2).x < -0.2f, "Frictionless sphere did not slide down slope");
 	}
 	void VerifyStack() {
-		SceneObjectData lower = Falling(ColliderShape::Box);
+		WorldObjectData lower = Falling(ColliderShape::Box);
 		lower.transform.translate.y = 2;
-		SceneObjectData upper = Falling(ColliderShape::Box);
+		WorldObjectData upper = Falling(ColliderShape::Box);
 		upper.id = 3;
 		upper.transform.translate.y = 4;
-		SceneObjects scene;
+		WorldObjects scene;
 		std::string error;
 		RequirePhysics(scene.ReplaceObjects({Floor(),lower,upper},error), "Stack setup failed");
-		ScenePhysics physics;
+		WorldPhysics physics;
 		physics.Initialize(scene);
 		Advance(physics,scene,360);
 		RequirePhysics(std::abs(scene.GetObjectWorldPosition(2).y-0.5f) < 0.005f && std::abs(scene.GetObjectWorldPosition(3).y-1.5f) < 0.005f, "Dynamic boxes did not settle in stack");
