@@ -113,7 +113,7 @@ public:
 	virtual std::vector<WorldObjectData> CaptureObjects() const { return {}; }
 
 	//=============================================================================================//
-	// メンバ関数 / 作成・配置・置換
+	// 作成・配置・置換
 
 	// Prefabを新しいIDの独立した階層として追加する。
 	virtual WorldObjectId PlacePrefab(const std::string&, WorldObjectId, const Vector3&, std::string&) { return 0; }

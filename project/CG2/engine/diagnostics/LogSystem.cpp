@@ -11,13 +11,14 @@
 #pragma comment(lib,"Dbghelp.lib")
 
 //=============================================================================================//
-// static変数実体
+// 実装内補助定義
 
 std::ofstream LogSystem::logStream_;
 std::deque<std::string> LogSystem::recentMessages_;
 
 //=============================================================================================//
 // 初期化
+
 
 void LogSystem::Initialize () {
 
@@ -53,6 +54,7 @@ void LogSystem::Initialize () {
 //=============================================================================================//
 // 終了処理
 
+
 void LogSystem::Finalize () {
 
 	// LogFileを閉じる
@@ -63,6 +65,7 @@ void LogSystem::Finalize () {
 
 //=============================================================================================//
 // Log出力
+
 
 void LogSystem::Log (const std::string& message) {
 	// Console表示は件数を制限し、長時間起動してもログを無制限に保持しない。
@@ -96,12 +99,14 @@ void LogSystem::Log (std::ostream& os, const std::string& message) {
 //=============================================================================================//
 // Getter
 
+
 std::ofstream& LogSystem::GetLogStream () {
 	return logStream_;
 }
 
 //=============================================================================================//
 // Dump出力
+
 
 LONG WINAPI LogSystem::ExportDump (EXCEPTION_POINTERS* exception) {
 

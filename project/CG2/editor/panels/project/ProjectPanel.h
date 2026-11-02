@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "IEditableWorld.h"
 #include <filesystem>
 #include <unordered_map>
@@ -48,7 +48,7 @@ private:
 	};
 
 	//=============================================================================================//
-	// メンバ関数 / ディレクトリ管理（ProjectPanel.cpp）
+	// ディレクトリ管理
 
 	static bool CompareEntries(const AssetEntry& first, const AssetEntry& second);
 	static std::string PathText(const std::filesystem::path& path);
@@ -56,14 +56,14 @@ private:
 	void CacheFolders(const std::filesystem::path& directory, size_t depth);
 
 	//=============================================================================================//
-	// メンバ関数 / 画面構成（ProjectView.cpp）
+	// 画面構成
 
 	void DrawContents(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
 	void DrawFolders();
 	void DrawDirectoryActions(); // パンくず側とAsset一覧側で共通の右クリック操作。
 
 	//=============================================================================================//
-	// メンバ関数 / Asset操作・プレビュー（ProjectAssets.cpp）
+	// Asset操作・プレビュー
 
 	void DrawAsset(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
 	void DrawAssetActions(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility);

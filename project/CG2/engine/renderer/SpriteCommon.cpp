@@ -8,8 +8,9 @@
 #include "ShaderCompiler.h"
 #include "Mesh.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void SpriteCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
 
@@ -33,16 +34,37 @@ void SpriteCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, S
 	mesh_->Initialize(dxCommon_, MeshType::kSprite);
 }
 
-//=================================================================================================//
+//=============================================================================================//
+// 共通描画設定
+
+
+void SpriteCommon::DrawSettingCommon() {
+
+	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
+
+	// RootSignatureをセットするコマンド
+	commandList->SetGraphicsRootSignature(rootSignature_.Get());
+
+	// GraphicsPipelineStateをセットするコマンド
+	commandList->SetPipelineState(pipelineState_.Get());
+
+	// PrimitiveTopologyをセットするコマンド
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+}
+
+//=============================================================================================//
 // 終了処理
+
 
 void SpriteCommon::Finalize() {
 
 	delete mesh_;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // RootSignatureの作成
+
 
 void SpriteCommon::CreateRootSignature() {
 
@@ -150,8 +172,9 @@ void SpriteCommon::CreateRootSignature() {
 	assert (SUCCEEDED (hr));
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // GraphicsPipelineの生成
+
 
 void SpriteCommon::CreateGraphicsPipeline() {
 
@@ -262,22 +285,4 @@ void SpriteCommon::CreateGraphicsPipeline() {
 	HRESULT hr = device->CreateGraphicsPipelineState (&graphicsPipelineStateDesc, IID_PPV_ARGS (&pipelineState_));
 
 	assert (SUCCEEDED (hr));
-}
-
-//=================================================================================================//
-// 共通描画設定
-
-void SpriteCommon::DrawSettingCommon() {
-
-	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
-
-	// RootSignatureをセットするコマンド
-	commandList->SetGraphicsRootSignature(rootSignature_.Get());
-
-	// GraphicsPipelineStateをセットするコマンド
-	commandList->SetPipelineState(pipelineState_.Get());
-
-	// PrimitiveTopologyをセットするコマンド
-	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 }

@@ -3,6 +3,10 @@
 #include "SrvManager.h"
 #include <stdexcept>
 
+//=============================================================================================//
+// 初期化処理
+
+
 // 専用のRTV/DSVを用意し、ImGuiへ渡すSRV番号はリサイズしても変えない。
 void SceneRenderTarget::Initialize(DirectXCommon* graphics, SrvManager* descriptors) {
 	graphics_ = graphics;
@@ -23,6 +27,51 @@ void SceneRenderTarget::Initialize(DirectXCommon* graphics, SrvManager* descript
 	initialized_ = true;
 	Resize(800, 500);
 }
+
+//=============================================================================================//
+// 描画先の切替
+
+
+// サンプリング用の状態から描画用へ切り替え、パネルと同じ寸法で描画する。
+void SceneRenderTarget::Begin() {
+	ID3D12GraphicsCommandList* commands = graphics_->GetCommandList();
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Transition.pResource = color_.Get();
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	commands->ResourceBarrier(1, &barrier);
+	const D3D12_CPU_DESCRIPTOR_HANDLE renderHandle = renderHeap_->GetCPUDescriptorHandleForHeapStart();
+	const D3D12_CPU_DESCRIPTOR_HANDLE depthHandle = depthHeap_->GetCPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE readView = depthHandle;
+	readView.ptr += graphics_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	graphics_->SetDepthTarget(depth_.Get(),renderHandle,depthHandle,readView,descriptors_->GetGPUDescriptorHandle(depthDescriptorIndex_));
+	commands->OMSetRenderTargets(1, &renderHandle, false, &depthHandle);
+	const float clearColor[4] = {0.055f, 0.065f, 0.085f, 1};
+	commands->ClearRenderTargetView(renderHandle, clearColor, 0, nullptr);
+	commands->ClearDepthStencilView(depthHandle, D3D12_CLEAR_FLAG_DEPTH, 1, 0, 0, nullptr);
+	const D3D12_VIEWPORT viewport = {0, 0, static_cast<float>(width_), static_cast<float>(height_), 0, 1};
+	const D3D12_RECT scissor = {0, 0, static_cast<LONG>(width_), static_cast<LONG>(height_)};
+	commands->RSSetViewports(1, &viewport);
+	commands->RSSetScissorRects(1, &scissor);
+}
+
+// ImGuiが同じフレームで読み取れるよう、描画結果をサンプリング用へ戻す。
+void SceneRenderTarget::End() {
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Transition.pResource = color_.Get();
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	graphics_->GetCommandList()->ResourceBarrier(1, &barrier);
+	graphics_->BindBackBuffer();
+}
+
+//=============================================================================================//
+// リサイズ
+
 
 // 新しいリソースの作成に成功するまでは、現在の描画先を保持する。
 void SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
@@ -81,42 +130,9 @@ void SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 	descriptors_->CreateSRVforTexture2D(descriptorIndex_, color_.Get(), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
 }
 
-// サンプリング用の状態から描画用へ切り替え、パネルと同じ寸法で描画する。
-void SceneRenderTarget::Begin() {
-	ID3D12GraphicsCommandList* commands = graphics_->GetCommandList();
-	D3D12_RESOURCE_BARRIER barrier{};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Transition.pResource = color_.Get();
-	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	commands->ResourceBarrier(1, &barrier);
-	const D3D12_CPU_DESCRIPTOR_HANDLE renderHandle = renderHeap_->GetCPUDescriptorHandleForHeapStart();
-	const D3D12_CPU_DESCRIPTOR_HANDLE depthHandle = depthHeap_->GetCPUDescriptorHandleForHeapStart();
-	D3D12_CPU_DESCRIPTOR_HANDLE readView = depthHandle;
-	readView.ptr += graphics_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-	graphics_->SetDepthTarget(depth_.Get(),renderHandle,depthHandle,readView,descriptors_->GetGPUDescriptorHandle(depthDescriptorIndex_));
-	commands->OMSetRenderTargets(1, &renderHandle, false, &depthHandle);
-	const float clearColor[4] = {0.055f, 0.065f, 0.085f, 1};
-	commands->ClearRenderTargetView(renderHandle, clearColor, 0, nullptr);
-	commands->ClearDepthStencilView(depthHandle, D3D12_CLEAR_FLAG_DEPTH, 1, 0, 0, nullptr);
-	const D3D12_VIEWPORT viewport = {0, 0, static_cast<float>(width_), static_cast<float>(height_), 0, 1};
-	const D3D12_RECT scissor = {0, 0, static_cast<LONG>(width_), static_cast<LONG>(height_)};
-	commands->RSSetViewports(1, &viewport);
-	commands->RSSetScissorRects(1, &scissor);
-}
+//=============================================================================================//
+// 終了処理
 
-// ImGuiが同じフレームで読み取れるよう、描画結果をサンプリング用へ戻す。
-void SceneRenderTarget::End() {
-	D3D12_RESOURCE_BARRIER barrier{};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Transition.pResource = color_.Get();
-	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-	graphics_->GetCommandList()->ResourceBarrier(1, &barrier);
-	graphics_->BindBackBuffer();
-}
 
 // 共有SRV管理より先に解放し、再起動や終了時に記述子を残さない。
 void SceneRenderTarget::Finalize() {
@@ -132,6 +148,10 @@ void SceneRenderTarget::Finalize() {
 	renderHeap_.Reset();
 	depthHeap_.Reset();
 }
+
+//=============================================================================================//
+// Getter / Scene画像
+
 
 // 描画リソース自体ではなく、ImGuiが利用する共有ヒープ内のハンドルを返す。
 uint64_t SceneRenderTarget::GetTextureHandle() const {

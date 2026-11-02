@@ -369,13 +369,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="editor\panels\particle_editor\ParticleEditorPanel.h" />
 
     <ClCompile Include="editor\panels\project\ProjectPanel.cpp" />
-    <ClCompile Include="editor\panels\project\ProjectAssets.cpp" />
-    <ClCompile Include="editor\panels\project\ProjectView.cpp" />
     <ClCompile Include="editor\panels\console\ConsolePanel.cpp" />
-    <ClCompile Include="editor\panels\scene_view\SceneViewGizmo.cpp" />
-    <ClCompile Include="editor\panels\scene_view\SceneViewTransform.cpp" />
-    <ClCompile Include="editor\panels\scene_view\SceneViewPicking.cpp" />
-    <ClCompile Include="editor\panels\scene_view\SceneViewOverlay.cpp" />
 
     <ClInclude Include="editor\panels\project\ProjectPanel.h" />
     <ClInclude Include="editor\panels\console\ConsolePanel.h" />
@@ -384,7 +378,6 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   <ItemGroup>
     <ClCompile Include="engine\asset\ModelAnimation.cpp" />
     <ClCompile Include="engine\world\serialization\PrefabFile.cpp" />
-    <ClCompile Include="editor\panels\inspector\InspectorAssets.cpp" />
     <ClInclude Include="engine\asset\ModelAnimation.h" />
     <ClInclude Include="engine\world\serialization\PrefabFile.h" />
     <ClInclude Include="engine\world\settings\AssetSettings.h" />
@@ -396,21 +389,16 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\systems\WorldMotion.cpp" />
-    <ClCompile Include="editor\panels\inspector\InspectorMotion.cpp" />
     <ClInclude Include="engine\world\systems\WorldMotion.h" />
     <ClInclude Include="engine\world\settings\MotionSettings.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\systems\WorldCollision.cpp" />
-    <ClCompile Include="editor\panels\inspector\InspectorCollider.cpp" />
-    <ClCompile Include="editor\panels\scene_view\SceneViewCollider.cpp" />
-    <ClCompile Include="editor\panels\scene_view\SceneViewGuides.cpp" />
     <ClInclude Include="engine\world\systems\WorldCollision.h" />
     <ClInclude Include="engine\world\settings\ColliderSettings.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\systems\WorldPhysics.cpp" />
-    <ClCompile Include="editor\panels\inspector\InspectorBody.cpp" />
     <ClInclude Include="engine\world\systems\WorldPhysics.h" />
     <ClInclude Include="engine\world\settings\RigidBodySettings.h" />
   </ItemGroup>
@@ -424,7 +412,6 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\world\systems\WorldLighting.cpp" />
     <ClInclude Include="engine\world\systems\WorldLighting.h" />
     <ClInclude Include="engine\world\settings\LightSettings.h" />
-    <ClCompile Include="editor\panels\inspector\InspectorLights.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\objects\WorldPrimitives.cpp" />
@@ -445,9 +432,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\world\serialization\LegacyLightMigration.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\panels\inspector\InspectorSelection.cpp" />
     <ClInclude Include="editor\panels\performance\PerformancePanel.h" />
-    <ClCompile Include="editor\panels\scene_view\SceneViewContent.cpp" />
     <ClCompile Include="editor\panels\game_view\GameViewPanel.cpp" />
     <ClInclude Include="editor\panels\game_view\GameViewPanel.h" />
   </ItemGroup>

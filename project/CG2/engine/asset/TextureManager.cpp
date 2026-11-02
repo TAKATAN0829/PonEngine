@@ -11,8 +11,9 @@
 #include "ResourceManager.h"
 #include "StringUtility.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // インスタンス取得
+
 
 TextureManager* TextureManager::GetInstance() {
 
@@ -21,8 +22,9 @@ TextureManager* TextureManager::GetInstance() {
 	return &instance;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void TextureManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 
@@ -34,8 +36,9 @@ void TextureManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager)
 	srvManager_ = srvManager;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 終了処理
+
 
 void TextureManager::Finalize() {
 
@@ -46,8 +49,9 @@ void TextureManager::Finalize() {
 	dxCommon_ = nullptr;
 }
 
-//=================================================================================================//
-// Texture読み込み
+//=============================================================================================//
+// Texture読み込み(読み込み済みなら番号を返す)
+
 
 uint32_t TextureManager::Load(const std::string& filePath) {
 
@@ -106,12 +110,23 @@ uint32_t TextureManager::Load(const std::string& filePath) {
     return loadedIndex;
 }
 
-bool TextureManager::HasTransparency(const std::string& filePath) const {
-	return textureDatas_.at(filePath).hasTransparency;
+bool TextureManager::TryLoad(const std::string& filePath, std::string& error) {
+    error.clear();
+	if (textureDatas_.contains(filePath)) {
+		return true;
+	}
+	if (srvManager_->IsFull()) {
+		error = "Texture descriptor limit reached.";
+		return false;
+	}
+    try { Load(filePath); }
+    catch (const std::exception& failure) { error = failure.what(); return false; }
+    return true;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // メタデータ取得
+
 
 const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& filePath) {
 
@@ -120,8 +135,13 @@ const DirectX::TexMetadata& TextureManager::GetMetaData(const std::string& fileP
 	return textureDatas_.at(filePath).metadata;
 }
 
-//=================================================================================================//
+bool TextureManager::HasTransparency(const std::string& filePath) const {
+	return textureDatas_.at(filePath).hasTransparency;
+}
+
+//=============================================================================================//
 // SRV番号取得
+
 
 uint32_t TextureManager::GetSrvIndex(const std::string& filePath) {
 
@@ -130,8 +150,9 @@ uint32_t TextureManager::GetSrvIndex(const std::string& filePath) {
 	return textureDatas_.at(filePath).srvIndex;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // GPUHandle取得
+
 
 D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string& filePath) {
 
@@ -140,8 +161,9 @@ D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string& f
 	return textureDatas_.at(filePath).srvHandleGPU;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Textureファイル読み込み
+
 
 DirectX::ScratchImage TextureManager::LoadTexture(const std::string& filePath) {
 
@@ -180,18 +202,4 @@ DirectX::ScratchImage TextureManager::LoadTexture(const std::string& filePath) {
 	}
 
 	return mipImages;
-}
-
-bool TextureManager::TryLoad(const std::string& filePath, std::string& error) {
-    error.clear();
-	if (textureDatas_.contains(filePath)) {
-		return true;
-	}
-	if (srvManager_->IsFull()) {
-		error = "Texture descriptor limit reached.";
-		return false;
-	}
-    try { Load(filePath); }
-    catch (const std::exception& failure) { error = failure.what(); return false; }
-    return true;
 }

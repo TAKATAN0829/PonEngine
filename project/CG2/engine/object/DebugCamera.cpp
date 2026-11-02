@@ -3,6 +3,10 @@
 
 #include <algorithm>
 
+//=============================================================================================//
+// 初期化処理
+
+
 void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight) {
 
 	clientWidth_ = clientWidth;
@@ -15,6 +19,10 @@ void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight) {
 	UpdateProjectionMatrix();
 	UpdateMatrix();
 }
+
+//=============================================================================================//
+// 更新処理
+
 
 // UIやギズモが入力を使っている間は、カメラへマウス操作を渡さない。
 void DebugCamera::Update() {
@@ -50,15 +58,9 @@ void DebugCamera::Update() {
 #endif
 }
 
-// 画面をつかんで動かす中ドラッグと、視線方向へのホイール移動を合成する。
-void DebugCamera::PanAndZoom(const Vector2& mouseDelta, float wheel) {
-	const Matrix4x4 rotation = MathUtility::MakeAffineMatrix({1, 1, 1}, transform_.rotate, {});
-	const Vector3 movement = {-mouseDelta.x * panSpeed_, mouseDelta.y * panSpeed_, wheel * zoomSpeed_};
-	transform_.translate = MathUtility::Add(transform_.translate, MathUtility::TransformNormal(movement, rotation));
-}
-
 //=============================================================================================//
 // 描画処理
+
 
 void DebugCamera::Draw(bool* open) {
 #ifdef USE_IMGUI
@@ -81,22 +83,9 @@ void DebugCamera::Draw(bool* open) {
 #endif
 }
 
-void DebugCamera::UpdateMatrix() {
+//=============================================================================================//
+// Setter / 表示サイズ・入力
 
-	cameraMatrix_ = MathUtility::MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
-
-	viewMatrix_ = MathUtility::Inverse(cameraMatrix_);
-
-
-	viewProjectionMatrix_ = MathUtility::Multiply(viewMatrix_, projectionMatrix_);
-}
-
-// 注視後すぐに行列を更新し、同じフレームの選択枠も新しいカメラに合わせる。
-void DebugCamera::Focus(const Vector3& targetPosition) {
-	const Vector3 forwardDirection = {cameraMatrix_.m[2][0], cameraMatrix_.m[2][1], cameraMatrix_.m[2][2]};
-	transform_.translate = MathUtility::Subtract(targetPosition, MathUtility::Multiply(10.0f, forwardDirection));
-	UpdateMatrix();
-}
 
 // パネルのアスペクト比に合わせ、投影とクリック判定の行列を同時に更新する。
 void DebugCamera::SetViewportSize(int32_t width, int32_t height) {
@@ -112,7 +101,39 @@ void DebugCamera::SetViewportSize(int32_t width, int32_t height) {
 	UpdateMatrix();
 }
 
+//=============================================================================================//
+// 注視
+
+
+// 注視後すぐに行列を更新し、同じフレームの選択枠も新しいカメラに合わせる。
+void DebugCamera::Focus(const Vector3& targetPosition) {
+	const Vector3 forwardDirection = {cameraMatrix_.m[2][0], cameraMatrix_.m[2][1], cameraMatrix_.m[2][2]};
+	transform_.translate = MathUtility::Subtract(targetPosition, MathUtility::Multiply(10.0f, forwardDirection));
+	UpdateMatrix();
+}
+
+//=============================================================================================//
+// 行列更新
+
+
+void DebugCamera::UpdateMatrix() {
+
+	cameraMatrix_ = MathUtility::MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
+
+	viewMatrix_ = MathUtility::Inverse(cameraMatrix_);
+
+
+	viewProjectionMatrix_ = MathUtility::Multiply(viewMatrix_, projectionMatrix_);
+}
+
 // 表示サイズが変わらない間は投影行列を再利用する。
 void DebugCamera::UpdateProjectionMatrix() {
 	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix(0.45f, static_cast<float>(clientWidth_) / static_cast<float>(clientHeight_), 0.1f, 1000.0f);
+}
+
+// 画面をつかんで動かす中ドラッグと、視線方向へのホイール移動を合成する。
+void DebugCamera::PanAndZoom(const Vector2& mouseDelta, float wheel) {
+	const Matrix4x4 rotation = MathUtility::MakeAffineMatrix({1, 1, 1}, transform_.rotate, {});
+	const Vector3 movement = {-mouseDelta.x * panSpeed_, mouseDelta.y * panSpeed_, wheel * zoomSpeed_};
+	transform_.translate = MathUtility::Add(transform_.translate, MathUtility::TransformNormal(movement, rotation));
 }

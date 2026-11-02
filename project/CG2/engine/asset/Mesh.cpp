@@ -10,8 +10,9 @@
 // 自作
 #include "DirectXCommon.h"
 
-//=================================================================================================//
-// 初期化処理
+//=============================================================================================//
+// 初期化
+
 
 void Mesh::Initialize(DirectXCommon* dxCommon, MeshType meshType) {
 
@@ -46,8 +47,9 @@ void Mesh::Initialize(DirectXCommon* dxCommon, MeshType meshType) {
 	}
 }
 
-//=================================================================================================//
-// 初期化処理(頂点データ)
+//=============================================================================================//
+// 初期化(頂点データ)
+
 
 void Mesh::Initialize(DirectXCommon* dxCommon, const std::vector<VertexData>& vertices) {
 
@@ -70,8 +72,19 @@ void Mesh::Initialize(DirectXCommon* dxCommon, const std::vector<VertexData>& ve
 		indexData_[index] = index;
 	}
 }
-//=================================================================================================//
+
+//=============================================================================================//
+// 更新処理 / インスタンス専用の変形頂点
+
+
+void Mesh::Update(const std::vector<VertexData>& vertices) {
+	assert(vertices.size() == vertexCount_);
+	std::memcpy(vertexData_, vertices.data(), sizeof(VertexData) * vertexCount_);
+}
+
+//=============================================================================================//
 // 描画処理
+
 
 void Mesh::Draw(uint32_t instanceCount) {
 
@@ -99,11 +112,6 @@ void Mesh::Draw(uint32_t instanceCount) {
 		0);
 }
 
-void Mesh::Update(const std::vector<VertexData>& vertices) {
-	assert(vertices.size() == vertexCount_);
-	std::memcpy(vertexData_, vertices.data(), sizeof(VertexData) * vertexCount_);
-}
-
 void Mesh::DrawRange(uint32_t firstIndex, uint32_t indexCount) {
 	assert(firstIndex <= indexCount_);
 	assert(indexCount <= indexCount_ - firstIndex);
@@ -114,8 +122,9 @@ void Mesh::DrawRange(uint32_t firstIndex, uint32_t indexCount) {
 	commandList->DrawIndexedInstanced(indexCount, 1, firstIndex, 0, 0);
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Sphere初期化
+
 
 void Mesh::InitializeSphere() {
 
@@ -145,8 +154,9 @@ void Mesh::InitializeSphere() {
 	CreateSphere();
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Plane初期化
+
 
 void Mesh::InitializePlane() {
 
@@ -176,8 +186,9 @@ void Mesh::InitializePlane() {
 	CreatePlane();
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Sprite初期化
+
 
 void Mesh::InitializeSprite() {
 
@@ -207,8 +218,9 @@ void Mesh::InitializeSprite() {
 	CreateSprite();
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Triangle初期化
+
 
 void Mesh::InitializeTriangle() {
 
@@ -238,8 +250,9 @@ void Mesh::InitializeTriangle() {
 	CreateTriangle();
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 頂点Resource生成
+
 
 void Mesh::CreateVertexResource() {
 
@@ -263,8 +276,9 @@ void Mesh::CreateVertexResource() {
 	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // IndexResource生成
+
 
 void Mesh::CreateIndexResource() {
 
@@ -288,8 +302,9 @@ void Mesh::CreateIndexResource() {
 	indexResource_->Map(0, nullptr, reinterpret_cast<void**>(&indexData_));
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Sphere生成
+
 
 void Mesh::CreateSphere() {
 
@@ -358,8 +373,9 @@ void Mesh::CreateSphere() {
 	}
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Plane生成
+
 
 void Mesh::CreatePlane() {
 
@@ -403,8 +419,9 @@ void Mesh::CreatePlane() {
 	indexData_[5] = 2;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Sprite生成
+
 
 void Mesh::CreateSprite() {
 
@@ -448,8 +465,9 @@ void Mesh::CreateSprite() {
 	indexData_[5] = 2;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Triangle生成
+
 
 void Mesh::CreateTriangle() {
 
@@ -487,4 +505,3 @@ void Mesh::CreateTriangle() {
 	indexData_[4] = 2;
 	indexData_[5] = 1;
 }
-

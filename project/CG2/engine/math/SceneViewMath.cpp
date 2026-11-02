@@ -6,6 +6,9 @@
 #include <limits>
 #include <utility>
 
+//=============================================================================================//
+// 実装内補助定義
+
 namespace {
 	// 同次座標の半空間へ線分のパラメータ範囲を絞る。
 	bool ClipLineInterval(float firstDistance, float secondDistance, float& start, float& end) {
@@ -37,6 +40,10 @@ namespace {
 			first.x * second.y - first.y * second.x};
 	}
 }
+
+//=============================================================================================//
+// 補助表示の投影
+
 
 bool SceneViewMath::ProjectLine(const Vector3& start, const Vector3& end, const Matrix4x4& viewProjection,
 	float viewportWidth, float viewportHeight, Vector2& screenStart, Vector2& screenEnd) {
@@ -84,32 +91,21 @@ float SceneViewMath::GetHandleLength(const Vector3& origin, const Matrix4x4& vie
 	return length;
 }
 
-// Moller-Trumbore法。頂点の表裏と負の拡縮に依存せず表面へ配置する。
-bool SceneViewMath::IntersectTriangle(const Vector3& origin, const Vector3& direction,
-	const Vector3& first, const Vector3& second, const Vector3& third, float& distance) {
-	const Vector3 firstEdge = MathUtility::Subtract(second, first);
-	const Vector3 secondEdge = MathUtility::Subtract(third, first);
-	const Vector3 perpendicular = CrossProduct(direction, secondEdge);
-	const float determinant = MathUtility::Dot(firstEdge, perpendicular);
-	if (std::abs(determinant) < 0.0000001f) {
-		return false;
-	}
-	const Vector3 offset = MathUtility::Subtract(origin, first);
-	const float horizontal = MathUtility::Dot(offset, perpendicular) / determinant;
-	if (horizontal < 0 || horizontal > 1) {
-		return false;
-	}
-	const Vector3 crossOffset = CrossProduct(offset, firstEdge);
-	const float vertical = MathUtility::Dot(direction, crossOffset) / determinant;
-	if (vertical < 0 || horizontal + vertical > 1) {
-		return false;
-	}
-	const float candidate = MathUtility::Dot(secondEdge, crossOffset) / determinant;
-	if (!std::isfinite(candidate) || candidate < 0) {
-		return false;
-	}
-	distance = candidate;
-	return true;
+//=============================================================================================//
+// 配置・選択・軸操作
+
+
+Vector3 SceneViewMath::GetPlacementPosition(const Vector3& origin, const Vector3& direction, float rayLength, float hitDistance) {
+    float distance = (std::min)(10.0f, rayLength);
+    if (hitDistance >= 0 && hitDistance <= rayLength) {
+        distance = hitDistance;
+    } else if (std::abs(direction.y) > 0.0001f) {
+        const float groundDistance = -origin.y / direction.y;
+		if (groundDistance >= 0 && groundDistance <= rayLength) {
+			distance = groundDistance;
+		}
+    }
+    return MathUtility::Add(origin, MathUtility::Multiply(distance, direction));
 }
 
 // 同次座標の除算前に奥行を確認し、背面の点が画面へ反転して現れることを防ぐ。
@@ -158,24 +154,32 @@ bool SceneViewMath::CreateRay(const Vector2& screenPosition, const Matrix4x4& vi
     return true;
 }
 
-// 平行なレイでは除算せず、その軸の範囲内に始点があるか確認する。
-bool SceneViewMath::IntersectSlab(float rayOrigin, float rayDirection, float minimum, float maximum,
-    float& nearDistance, float& farDistance) {
-    if (std::abs(rayDirection) < 0.00001f) {
-        return rayOrigin >= minimum && rayOrigin <= maximum;
-    }
-    float entryDistance = (minimum - rayOrigin) / rayDirection;
-    float exitDistance = (maximum - rayOrigin) / rayDirection;
-    if (entryDistance > exitDistance) {
-        std::swap(entryDistance, exitDistance);
-    }
-    if (entryDistance > nearDistance) {
-        nearDistance = entryDistance;
-    }
-    if (exitDistance < farDistance) {
-        farDistance = exitDistance;
-    }
-    return nearDistance <= farDistance;
+// Moller-Trumbore法。頂点の表裏と負の拡縮に依存せず表面へ配置する。
+bool SceneViewMath::IntersectTriangle(const Vector3& origin, const Vector3& direction,
+	const Vector3& first, const Vector3& second, const Vector3& third, float& distance) {
+	const Vector3 firstEdge = MathUtility::Subtract(second, first);
+	const Vector3 secondEdge = MathUtility::Subtract(third, first);
+	const Vector3 perpendicular = CrossProduct(direction, secondEdge);
+	const float determinant = MathUtility::Dot(firstEdge, perpendicular);
+	if (std::abs(determinant) < 0.0000001f) {
+		return false;
+	}
+	const Vector3 offset = MathUtility::Subtract(origin, first);
+	const float horizontal = MathUtility::Dot(offset, perpendicular) / determinant;
+	if (horizontal < 0 || horizontal > 1) {
+		return false;
+	}
+	const Vector3 crossOffset = CrossProduct(offset, firstEdge);
+	const float vertical = MathUtility::Dot(direction, crossOffset) / determinant;
+	if (vertical < 0 || horizontal + vertical > 1) {
+		return false;
+	}
+	const float candidate = MathUtility::Dot(secondEdge, crossOffset) / determinant;
+	if (!std::isfinite(candidate) || candidate < 0) {
+		return false;
+	}
+	distance = candidate;
+	return true;
 }
 
 // レイの後方にあるモデルを選ばないよう、交差区間を距離0から始める。
@@ -270,15 +274,22 @@ float SceneViewMath::DistanceToSegment(const Vector2& point, const Vector2& star
     return std::sqrt(horizontalDistance * horizontalDistance + verticalDistance * verticalDistance);
 }
 
-Vector3 SceneViewMath::GetPlacementPosition(const Vector3& origin, const Vector3& direction, float rayLength, float hitDistance) {
-    float distance = (std::min)(10.0f, rayLength);
-    if (hitDistance >= 0 && hitDistance <= rayLength) {
-        distance = hitDistance;
-    } else if (std::abs(direction.y) > 0.0001f) {
-        const float groundDistance = -origin.y / direction.y;
-		if (groundDistance >= 0 && groundDistance <= rayLength) {
-			distance = groundDistance;
-		}
+// 平行なレイでは除算せず、その軸の範囲内に始点があるか確認する。
+bool SceneViewMath::IntersectSlab(float rayOrigin, float rayDirection, float minimum, float maximum,
+    float& nearDistance, float& farDistance) {
+    if (std::abs(rayDirection) < 0.00001f) {
+        return rayOrigin >= minimum && rayOrigin <= maximum;
     }
-    return MathUtility::Add(origin, MathUtility::Multiply(distance, direction));
+    float entryDistance = (minimum - rayOrigin) / rayDirection;
+    float exitDistance = (maximum - rayOrigin) / rayDirection;
+    if (entryDistance > exitDistance) {
+        std::swap(entryDistance, exitDistance);
+    }
+    if (entryDistance > nearDistance) {
+        nearDistance = entryDistance;
+    }
+    if (exitDistance < farDistance) {
+        farDistance = exitDistance;
+    }
+    return nearDistance <= farDistance;
 }

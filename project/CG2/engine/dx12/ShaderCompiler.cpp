@@ -14,6 +14,7 @@
 //=============================================================================================//
 // 初期化処理
 
+
 void ShaderCompiler::Initialize () {
 
 	HRESULT hr;
@@ -42,6 +43,7 @@ void ShaderCompiler::Initialize () {
 
 //=============================================================================================//
 // ShaderCompile
+
 
 Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstring& filePath, const wchar_t* profile) {
 
@@ -136,6 +138,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstri
 
 //=============================================================================================//
 // 終了処理
+
 
 void ShaderCompiler::Finalize () {
 

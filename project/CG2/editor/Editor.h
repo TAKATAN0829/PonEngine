@@ -55,7 +55,7 @@ public:
 	void SetSceneTexture(uint64_t textureHandle) { sceneView_.SetTexture(textureHandle); }
 
 	//=============================================================================================//
-	// メンバ関数 / 終了要求
+	// 終了要求
 
 	// 未保存の設定があれば確認を保留し、許可後に終了状態を公開する。
 	void RequestExit(IEditableWorld* scene);
@@ -68,7 +68,7 @@ private:
 	enum class SceneAction { None, NewScene, LoadScene, Exit };
 
 	//=============================================================================================//
-	// メンバ関数 / シーン保存・切替
+	// シーン保存・切替
 
 	bool SaveScene(IEditableWorld& scene);
 	void RequestSceneAction(SceneAction action, IEditableWorld& scene);
@@ -76,16 +76,13 @@ private:
 	bool NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) const;
 
 	//=============================================================================================//
-	// メンバ関数 / パネル描画
+	// パネル描画
 
 	void DrawToolbar(IEditableWorld& scene);
 	void DrawDiscardPrompt(IEditableWorld& scene);
-	void DrawInspector(IEditableWorld& scene);
-	// 共通Transformは差分、Activeと色は明示した値を選択全体へ反映する。
-	void DrawMultipleInspector(IEditableWorld& scene);
 
 	//=============================================================================================//
-	// メンバ関数 / 入力・再生
+	// 入力・再生
 
 	void HandleShortcuts(IEditableWorld& scene);
 	void TogglePlay(IEditableWorld& scene);

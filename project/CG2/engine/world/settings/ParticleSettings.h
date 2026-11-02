@@ -65,7 +65,13 @@ struct ParticleAppearance {
 	Vector4 color{};
 };
 
+//=============================================================================================//
+// 表示の評価
+
 ParticleAppearance EvaluateParticleAppearance(const ParticleSettings& settings, const Vector4& initialColor, float normalizedAge);
+//=============================================================================================//
+// プリセットの作成
+
 ParticleSettings MakeParticlePreset(ParticlePresetKind kind);
 
 // 操作中だけの状態。プリセットとシーンファイルの保存対象には含めない。

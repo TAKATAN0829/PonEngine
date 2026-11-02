@@ -1,4 +1,4 @@
-# Editorの最初の実装
+﻿# Editorの最初の実装
 
 Debug / Development で起動し、Hierarchy のモデルを選択すると、Inspector でモデル種類・位置・回転・拡縮・色・ライティング・光沢・RootNode行列の適用を編集できる。Clear Selection で選択を解除する。パネルは既存のDockSpaceにドッキングできる。
 
@@ -147,7 +147,7 @@ WorldObjectTypeの既存数値0〜4を維持し、SpotLight=5 / DirectionalLight
 
 ライトの種別・名前・設定検証はsettings/LightSettings.cpp、配列の上限はtypes/LightLimits.hに集める。WorldLighting.cppはワールド方向とGPU用一覧の収集だけを担当し、具体的なWorldObjectsや保存処理を参照しない。旧固定値の移行はserialization/LegacyLightMigration.cppへ分離し、仮の配列を全件検証してから反映する。GameSceneの既定ライト作成も同じ旧固定値を再利用し、従来の初期表示を維持する。
 
-InspectorLights.cppは編集UI、WorldLights.hlsliはライト配列と共通の照明計算を担当する。GameSceneは収集したWorldLightCollectionを各モデルへ適用する。固定長のDirectional 4 / Point 9 / Spot 8を使い、収集時のベクター確保を不要にする。SpotのCPU要素はHLSL配列と同じ64バイトに揃え、各Bufferをstatic_assertとGPUの色比較で確認する。
+InspectorPanel.cppのLight区間は編集UI、WorldLights.hlsliはライト配列と共通の照明計算を担当する。GameSceneは収集したWorldLightCollectionを各モデルへ適用する。固定長のDirectional 4 / Point 9 / Spot 8を使い、収集時のベクター確保を不要にする。SpotのCPU要素はHLSL配列と同じ64バイトに揃え、各Bufferをstatic_assertとGPUの色比較で確認する。
 
 Scene形式13ではSpot角度を各レコードの末尾に追加する。Editor・GameSceneの通常読込だけでSceneFile::LoadのmigrateLegacyLightsを有効にし、形式1〜12には旧Directional・Point・Spotを1個ずつ追加する。部分データやPrefabの読込には追加しない。移行はローカル配列を検証してから一括置換し、IDは採番済みの範囲を再利用しない。形式1の再読込でも現在の移行ライトを持ち越さず、形式13は再移行しない。
 C++とHLSLで先頭16バイト、各光源48バイトの配置を一致させる。
@@ -276,32 +276,25 @@ PhysicsTestsはBox/Sphereの着地、壁、質量比、反発、摩擦、Trigger
 
 ## Editorパネルの責務と実装ファイル
 
-`editor/panels`はタブ単位のフォルダへ分類する。`hierarchy`・`inspector`・`project`・`console`・`scene_view`・`game_view`・`particle_editor`・`performance`に、各タブのヘッダーと実装をまとめる。機能追加時も対象タブのフォルダ内へ置き、共通の選択・履歴・レイアウト・入力の連携はeditor直下へ保つ。
+`editor/panels`はタブ単位のフォルダへ分類し、各クラスの宣言は同名の.h、実装は同名の.cppへまとめる。複数cppへ同じクラスを分散せず、機能ごとの区切りコメントで分類する。型やinline関数だけの.hは許可し、空のcppや形式だけのヘッダーは増やさない。起動入口のmain.cppは同名ヘッダーを必要としない。
 
-EditorはProjectPanelとConsolePanelを個別に所有し、両者を束ねるUtilityPanelsは廃止した。ProjectPanelはディレクトリ・選択・Assetプレビューを所有し、ConsolePanelはログ検索条件だけを所有する。ConsoleはLogSystemのログを描画中だけ借用し、Projectの更新処理やキャッシュに依存しない。外部リソースを初期化する必要がないため、Consoleに空のInitialize/Updateは設けない。
+GameScene・Editor・Asset・描画・入力・物理など、対応するcppがある自作コード全体で、cppの分類名と関数の並びをhの宣言に合わせる。関数区分は「メンバ関数 / Motion」ではなく「Motion」のように内容だけを書く。コンストラクタとデストラクタは生成・破棄として分類する。補助関数・内部データの定義はcpp内の実装用の枠へ分ける。h内で完結するGetter／Setterやメンバー変数には、cppへ対応する空の見出しを作らない。namespaceや通常の関数も、宣言側の分類と並びに合わせる。
 
-| 対象 | ファイル | 担当 |
-|---|---|---|
-| Hierarchy | hierarchy/HierarchyPanel.cpp | 親子ツリー、作成、削除、複製、右クリック操作 |
-| Inspector | inspector/InspectorPanel.cpp・InspectorAssets/Body/Collider/Lights/Motion.cpp | 対象のComponent編集 |
-| Inspector | inspector/InspectorSelection.cpp | Editorの選択との接続・複数選択の編集 |
-| Project | project/ProjectPanel.cpp | 初期化、フォルダ走査、キャッシュ更新、描画の入口 |
-| Project | project/ProjectView.cpp | 検索、フォルダツリー、一覧の配置、共通のフォルダ操作メニュー |
-| Project | project/ProjectAssets.cpp | Assetタイル、プレビュー、右クリック、ドラッグ＆ドロップ |
-| Console | console/ConsolePanel.cpp | ログ検索、一覧、全文確認、コピー |
-| SceneView/GameView | scene_view/SceneViewPanel.cpp | 共通の描画先・タブ切替・表示内容の呼出し順 |
-| SceneView | scene_view/SceneViewContent.cpp | 編集用Toolbar、画像サイズ、配置・選択・ギズモの呼出し |
-| GameView | game_view/GameViewPanel.cpp | ゲームカメラの状態と画像表示。選択・ギズモは扱わない |
-| Particle Editor | particle_editor/ParticleEditorPanel.cpp | Emitter設定・プリセット・編集プレビュー |
-| Performance | performance/PerformancePanel.cpp | 計測履歴の選択、ピーク表示、CSV出力結果 |
-| SceneView | scene_view/SceneViewGizmo.cpp | 軸・リング・選択枠の描画、ヒット判定、ドラッグ開始 |
-| SceneView | scene_view/SceneViewTransform.cpp | 移動・回転・拡縮の更新、キャンセル、一括操作の復元 |
-| SceneView | scene_view/SceneViewPicking.cpp | ID検索、レイ選択、モデル・Prefabのドロップ配置 |
-| SceneView | scene_view/SceneViewOverlay.cpp | グリッド、オブジェクトの種類別マーカー |
-| SceneView | scene_view/SceneViewCollider.cpp / SceneViewGuides.cpp | Collider、カメラ・ライトの補助表示 |
+| タブ | フォルダ | .h / .cppの名前 | 担当 |
+| --- | --- | --- | --- |
+| Hierarchy | hierarchy | HierarchyPanel | 親子ツリー・作成・削除・複製・右クリック |
+| Inspector | inspector | InspectorPanel | 単体／複数選択・各Componentの編集 |
+| Project | project | ProjectPanel | フォルダ走査・一覧・プレビュー・Asset操作 |
+| Console | console | ConsolePanel | ログの検索・一覧・全文確認・コピー |
+| SceneView | scene_view | SceneViewPanel | 共通タブ・編集カメラ・選択・配置・ギズモ・補助表示 |
+| GameView | game_view | GameViewPanel | ゲームカメラの状態と画像表示 |
+| Particle Editor | particle_editor | ParticleEditorPanel | Emitter設定・プリセット・編集プレビュー |
+| Performance | performance | PerformancePanel | 計測履歴・ピーク表示・CSV出力結果 |
 
-SceneViewの選択・ドラッグ・スナップ・タブは互いに関係するため、状態の所有者はSceneViewPanel一つに保ち、同じクラスの実装を責務別に分けた。SceneViewDrawing.hは画面位置への変換とワールド線分の共通描画だけを提供する。ImGui依存の描画はEditor内に置き、GPU非依存のSceneViewMathへ逆向きの依存を追加しない。各ヘッダーには担当ファイルとメンバ関数／変数の分類を記す。
+Editorは選択と履歴を所有し、InspectorPanel::DrawSelectionへ選択を借用させる。InspectorPanelが単体と複数選択の表示を切り替え、Editorのメンバー関数を別名cppへ実装する形は使わない。
 
-SceneViewPanelは共通のウィンドウとタブの開始終了を管理し、SceneViewContentとGameViewPanelはその内部だけを描く。GameViewPanelは追加の状態を持たない関数群とし、共通の画像ハンドルと寸法を借用する。GameViewへ切り替えた時は編集中のドラッグを取り消し、編集カメラ入力を無効にする。PerformancePanelは履歴の選択・ピーク表示・CSV結果を自身のメンバーで保持し、EditorTools.cppへ混在していた実装を廃止する。Inspectorの選択データの所有者はEditorに維持し、その表示実装だけをInspectorSelection.cppへ集める。
+SceneViewPanelは選択・ドラッグ・スナップ・共通タブの状態を所有し、その全実装をSceneViewPanel.cppへまとめる。GameViewPanelは状態を重複所有しない関数群として、共通の画像ハンドルと寸法を借用する。SceneViewDrawing.hは画面位置への変換と線分描画のinline関数だけを持つ、ヘッダーのみの補助として残す。
 
-今回の分割では保存形式と操作仕様を変更しない。CPUの保存・履歴テスト、実マウス入力を通すSceneViewテスト、実GPUの描画テストを使って確認する。Projectの計測範囲はProjectPanel自身の更新・描画とし、独立したConsoleの処理は含めない。
+ProjectPanelはディレクトリ・選択・プレビューの状態を所有し、画面構成とAsset操作もProjectPanel.cppへ置く。Consoleはログを描画中だけ借用し、Projectのキャッシュや更新処理には依存しない。PerformancePanelは履歴の選択とCSV出力結果を自身のメンバーで保持する。
+
+今回の統合では保存形式と操作仕様を維持する。CPUの保存・履歴テスト、専用ImGuiコンテキストでのギズモ・タブ切替・単体／複数Inspectorの操作テストと、実GPUの描画テストで確認する。

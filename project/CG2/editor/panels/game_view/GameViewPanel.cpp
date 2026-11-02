@@ -4,6 +4,10 @@
 #include <algorithm>
 #endif
 
+//=============================================================================================//
+// 描画処理
+
+
 void GameViewPanel::Draw(IEditableWorld& scene, uint64_t textureHandle, uint32_t& width, uint32_t& height) {
 #ifdef USE_IMGUI
 	// 実行用カメラの画像を表示する間は、編集カメラへ入力を渡さない。

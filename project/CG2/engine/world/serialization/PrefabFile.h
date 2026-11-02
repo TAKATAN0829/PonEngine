@@ -16,7 +16,7 @@ public:
 		WorldObjectId parentId, const Vector3& position, std::string& error);
 
 	//=============================================================================================//
-	// メンバ関数 / 元Assetへの反映・復元
+	// 元Assetへの反映・復元
 
 	// Applyはファイルを書き換えるため、シーンのUndoでは元Assetを戻せない。
 	static bool Apply(IWorldObjects& scene, WorldObjectId rootId, std::string& error);

@@ -6,6 +6,9 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
 
+//=============================================================================================//
+// 実装内補助定義
+
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
 	HWND hwnd,
 	UINT msg,
@@ -15,6 +18,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
 
 //=============================================================================================//
 // 初期化
+
 
 void WinApp::Initialize() {
 
@@ -57,12 +61,14 @@ void WinApp::Initialize() {
 //=============================================================================================//
 // 更新
 
+
 void WinApp::Update() {
 
 }
 
 //=============================================================================================//
 // メッセージの処理
+
 
 bool WinApp::ProcessMessage() {
 
@@ -83,6 +89,7 @@ bool WinApp::ProcessMessage() {
 //=============================================================================================//
 // 終了処理
 
+
 void WinApp::Finalize() {
 	// Windowを閉じる
 	CloseWindow(hwnd_);
@@ -90,7 +97,17 @@ void WinApp::Finalize() {
 }
 
 //=============================================================================================//
+// Setter / 終了要求
+
+
+// 保存確認が済んだ後にウィンドウを破棄し、通常の終了メッセージを発生させる。
+void WinApp::ConfirmClose() {
+	DestroyWindow(hwnd_);
+}
+
+//=============================================================================================//
 // ウィンドウプロシージャ
+
 
 LRESULT CALLBACK WinApp::WindowProc(
 	HWND hwnd,
@@ -137,9 +154,4 @@ LRESULT CALLBACK WinApp::WindowProc(
 		msg,
 		wParam,
 		lParam);
-}
-
-// 保存確認が済んだ後にウィンドウを破棄し、通常の終了メッセージを発生させる。
-void WinApp::ConfirmClose() {
-	DestroyWindow(hwnd_);
 }

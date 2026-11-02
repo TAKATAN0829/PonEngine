@@ -5,8 +5,9 @@
 // 自作
 #include "ModelCommon.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // インスタンス取得
+
 
 ModelManager* ModelManager::GetInstance() {
 
@@ -15,8 +16,9 @@ ModelManager* ModelManager::GetInstance() {
 	return &instance;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void ModelManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 
@@ -25,8 +27,9 @@ void ModelManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 	modelCommon_->Initialize(dxCommon, srvManager);
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 終了処理
+
 
 void ModelManager::Finalize() {
 
@@ -37,8 +40,9 @@ void ModelManager::Finalize() {
 	modelCommon_ = nullptr;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // モデルファイル読み込み
+
 
 void ModelManager::LoadModel(const std::string& filePath) {
 
@@ -55,19 +59,6 @@ void ModelManager::LoadModel(const std::string& filePath) {
 	models_.insert(std::make_pair(filePath, std::move(model)));
 }
 
-//=================================================================================================//
-// モデル検索
-
-Model* ModelManager::FindModel(const std::string& filePath) {
-
-	if (models_.contains(filePath)) {
-
-		return models_.at(filePath).get();
-	}
-
-	return nullptr;
-}
-
 // 壊れたアセットはキャッシュに登録せず、UIへ理由を返す。
 bool ModelManager::TryLoadModel(const std::string& filePath, std::string& error) {
 	error.clear();
@@ -79,4 +70,18 @@ bool ModelManager::TryLoadModel(const std::string& filePath, std::string& error)
 		return false;
 	}
 	return true;
+}
+
+//=============================================================================================//
+// モデル検索
+
+
+Model* ModelManager::FindModel(const std::string& filePath) {
+
+	if (models_.contains(filePath)) {
+
+		return models_.at(filePath).get();
+	}
+
+	return nullptr;
 }

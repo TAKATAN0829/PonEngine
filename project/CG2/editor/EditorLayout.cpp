@@ -6,6 +6,10 @@
 #include "imgui/imgui_internal.h"
 #endif
 
+//=============================================================================================//
+// 描画処理
+
+
 // メニューとドッキング用の親を画面全体に置き、各作業領域を分割する。
 EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dirty, EditorToolVisibility& visibility) {
 	EditorMenuAction action = EditorMenuAction::None;

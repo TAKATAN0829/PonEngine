@@ -7,9 +7,9 @@
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
-
 //=============================================================================================//
 // 初期化
+
 
 void Input::Initialize(WinApp* winApp) {
 
@@ -47,6 +47,7 @@ void Input::Initialize(WinApp* winApp) {
 //=============================================================================================//
 // 更新
 
+
 void Input::Update() {
 
 	// 前フレームの入力を保存
@@ -62,6 +63,7 @@ void Input::Update() {
 //=============================================================================================//
 // 終了処理
 
+
 void Input::Finalize() {
 
 	if (keyboard_ != nullptr) {
@@ -76,32 +78,24 @@ void Input::Finalize() {
 }
 
 //=============================================================================================//
-// 押している
+// キー入力
+
 
 bool Input::IsPressKey(BYTE keyNumber) const {
 
 	return key_[keyNumber] != 0;
 }
 
-//=============================================================================================//
-// 離している
-
 bool Input::IsReleaseKey(BYTE keyNumber) const {
 
 	return key_[keyNumber] == 0;
 }
-
-//=============================================================================================//
-// 押した瞬間
 
 bool Input::IsTriggerKey(BYTE keyNumber) const {
 
 	return preKey_[keyNumber] == 0 &&
 		key_[keyNumber] != 0;
 }
-
-//=============================================================================================//
-// 離した瞬間
 
 bool Input::IsReleaseTriggerKey(BYTE keyNumber) const {
 

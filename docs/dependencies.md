@@ -1,6 +1,6 @@
-# 現在の依存関係
+﻿# 現在の依存関係
 
-`engine/world`の分類、共有データ・共通操作・Editor操作の分離、ライトの相互依存解消と、タブ単位のPanel分割を反映した調査。調査対象は`project/CG2`の自作C++ソースとヘッダー158ファイルで、解決できた直接のローカルincludeは重複を除いて346組。外部ライブラリとテストはこの件数に含めない。
+`engine/world`の分類、共有データ・共通操作・Editor操作の分離、ライトの相互依存解消と、タブ単位のPanel配置・クラスごとの.h/.cpp統合を反映した調査。調査対象は`project/CG2`の自作C++ソースとヘッダー143ファイルで、解決できた直接のローカルincludeは重複を除いて315組。外部ライブラリとテストはこの件数に含めない。
 
 includeは条件付きコンパイルの両方の分岐を含めて数えている。ファイル単位のinclude循環は検出していない。ただし、フォルダを単位にすると相互依存がある。include循環がないことと、機能が独立していることは別である。
 
@@ -59,9 +59,9 @@ world/settingsには保存・編集する設定値と検証・比較を置く。
 
 ## Editorのタブ単位の境界
 
-panelsはhierarchy・inspector・project・console・scene_view・game_view・particle_editor・performanceに分類した。各タブのヘッダーとcppを同じフォルダへ集め、includeはその場所を明記する。全タブのフォルダをinclude検索先へ追加することはしない。
+panelsはhierarchy・inspector・project・console・scene_view・game_view・particle_editor・performanceに分類した。各タブのヘッダーとcppを同じフォルダへ集め、includeはその場所を明記する。全タブのフォルダをinclude検索先へ追加することはしない。各クラスは同名の.h/.cpp一組へまとめ、宣言だけで完結する補助は.hのみとする。
 
-Editorは選択・履歴・表示要求を所有し、InspectorSelection.cppがその選択から単体／複数Inspectorへ接続する。PerformancePanelは履歴の選択やCSV出力の表示状態を所有し、Editorは開閉状態だけを渡す。SceneViewPanelは共有のタブ切替・画像寸法と編集操作の状態を維持し、SceneViewContentとGameViewPanelが各タブの内容を描く。GameViewPanelは状態を重複所有せず、選択・ギズモ・編集カメラ入力を扱わない。
+Editorは選択・履歴・表示要求を所有し、InspectorPanel::DrawSelectionが借用した選択から単体／複数Inspectorへ接続する。PerformancePanelは履歴の選択やCSV出力の表示状態を所有し、Editorは開閉状態だけを渡す。SceneViewPanelは共有のタブ切替・画像寸法と編集操作の状態を維持し、SceneViewPanel.cppとGameViewPanel.cppが各タブの内容を描く。GameViewPanelは状態を重複所有せず、選択・ギズモ・編集カメラ入力を扱わない。
 
 ## worldの内部
 
@@ -106,7 +106,7 @@ Editorは選択・履歴・表示要求を所有し、InspectorSelection.cppが�
 
 ### Editorと描画基盤の接続
 
-モデルのプレビューは`IEditableWorld`経由だが、`ProjectAssets.cpp`の画像プレビューは`TextureManager`を直接使用し、GPUハンドルを取得する。プレビューの取得経路は統一されていない。
+モデルのプレビューは`IEditableWorld`経由だが、`ProjectPanel.cpp`の画像プレビューは`TextureManager`を直接使用し、GPUハンドルを取得する。プレビューの取得経路は統一されていない。
 
 `Engine`から`Editor`への参照は、現在の実行ループを組み立てるための接続でもある。すぐに誤りとは言えないが、Engineを独立したランタイムとして再利用する場合は、Editorを外側の起動処理へ接続する境界が必要になる。
 

@@ -12,9 +12,9 @@
 #include "ResourceManager.h"
 #include "TextureManager.h"
 
-
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void Object3d::Initialize (Object3dCommon* object3dCommon) {
 
@@ -33,63 +33,9 @@ void Object3d::Initialize (Object3dCommon* object3dCommon) {
 	CreateSpotLightData ();
 }
 
-
-//=================================================================================================//
-// 座標変換行列データ作成
-
-void Object3d::CreateTransformationMatrixData () {
-
-	wvpResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (TransformationMatrix), "wvpResource");
-
-	wvpResource_->Map (0, nullptr, reinterpret_cast<void**> (&wvpData_));
-
-	wvpData_->WVP = MathUtility::MakeIdentity4x4 ();
-
-	wvpData_->World = MathUtility::MakeIdentity4x4 ();
-
-	wvpData_->WorldInverseTranspose = MathUtility::MakeIdentity4x4 ();
-}
-
-
-//=================================================================================================//
-// 平行光源データ作成
-
-void Object3d::CreateDirectionalLightData () {
-
-	directionalLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (DirectionalLightBuffer), "directionalLightResource");
-
-	directionalLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&directionalLightData_));
-	*directionalLightData_ = {};
-}
-
-
-//=================================================================================================//
-// 点光源データ作成
-
-void Object3d::CreatePointLightData () {
-
-	pointLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (PointLightBuffer), "pointLightResource");
-
-	pointLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&pointLightData_));
-
-	*pointLightData_ = {};
-}
-
-
-//=================================================================================================//
-// スポットライトデータ作成
-
-void Object3d::CreateSpotLightData () {
-
-	spotLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (SpotLightBuffer), "spotLightResource");
-
-	spotLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&spotLightData_));
-	*spotLightData_ = {};
-}
-
-
-//=================================================================================================//
+//=============================================================================================//
 // 更新処理
+
 
 void Object3d::Update (const Matrix4x4& viewProjectionMatrix) {
 
@@ -116,9 +62,73 @@ void Object3d::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ob
 	wvpData_->WorldInverseTranspose = MathUtility::Transpose (MathUtility::Inverse (worldMatrix));
 }
 
+void Object3d::UpdateAnimation(const AnimationSettings& settings, float deltaSeconds, bool playing) {
+	const ModelAnimation* animation = model_->GetAnimation();
+	if (animation == nullptr) {
+		return;
+	}
+	const float previousTime = animationTime_;
+	const bool poseChanged = !animationInitialized_ || settings.clip != animationSettings_.clip || settings.time != animationSettings_.time;
+	if (poseChanged) {
+		animationTime_ = settings.time;
+	}
+	animationInitialized_ = true;
+	animationSettings_ = settings;
+	if (playing) {
+		animationTime_ += deltaSeconds * settings.speed;
+	}
+	if (settings.clip >= 0) {
+		if (static_cast<size_t>(settings.clip) < animation->GetClips().size()) {
+			const float duration = animation->GetClips()[settings.clip].duration;
+			if (settings.loop && duration > 0) {
+				animationTime_ = std::fmod(animationTime_, duration);
+			} else {
+				animationTime_ = (std::min)(animationTime_, duration);
+			}
+		}
+	}
+	// 停止・Pause・終端では、カメラを動かしても同じ頂点を毎フレーム計算し直さない。
+	if (!poseChanged && animationTime_ == previousTime) {
+		return;
+	}
+	FrameProfiler::Scope animationTime(FrameProfiler::Section::Animation);
+	animation->Update(settings.clip, animationTime_, settings.loop, animatedVertices_);
+	animatedMesh_->Update(animatedVertices_);
+	const Vector4& first = animatedVertices_.front().position;
+	animatedBounds_ = {{first.x, first.y, first.z}, {first.x, first.y, first.z}};
+	for (const Mesh::VertexData& vertex : animatedVertices_) {
+		animatedBounds_.min.x = (std::min)(animatedBounds_.min.x, vertex.position.x);
+		animatedBounds_.min.y = (std::min)(animatedBounds_.min.y, vertex.position.y);
+		animatedBounds_.min.z = (std::min)(animatedBounds_.min.z, vertex.position.z);
+		animatedBounds_.max.x = (std::max)(animatedBounds_.max.x, vertex.position.x);
+		animatedBounds_.max.y = (std::max)(animatedBounds_.max.y, vertex.position.y);
+		animatedBounds_.max.z = (std::max)(animatedBounds_.max.z, vertex.position.z);
+	}
+}
 
-//=================================================================================================//
+void Object3d::ResetAnimation() {
+	animationTime_ = 0;
+	animationInitialized_ = false;
+}
+
+const AABB& Object3d::GetLocalBounds() const {
+	if (animatedMesh_) {
+		return animatedBounds_;
+	}
+	return model_->GetLocalBounds();
+}
+
+// 現在の描画姿勢を表面スナップと共有する。呼出側は参照を保持しない。
+const std::vector<Mesh::VertexData>& Object3d::GetSurfaceVertices() const {
+	if (!animatedVertices_.empty()) {
+		return animatedVertices_;
+	}
+	return model_->GetVertices();
+}
+
+//=============================================================================================//
 // 描画処理
+
 
 void Object3d::Draw () {
 
@@ -149,121 +159,9 @@ void Object3d::Draw () {
 	model_->Draw(material_.get(), &slotMaterials_, animatedMesh_.get());
 }
 
-
-//=================================================================================================//
-// Transform設定
-
-void Object3d::SetTransform (const TransformData& transform) {
-
-	transform_.local_ = transform;
-}
-
-
-//=================================================================================================//
-// Transform取得
-
-TransformData Object3d::GetTransform () {
-
-	return transform_.local_;
-}
-
-
-//=================================================================================================//
-// 色設定
-
-void Object3d::SetColor (const Vector4& color) {
-
-	material_->SetColor (color);
-}
-
-
-//=================================================================================================//
-// Lighting設定
-
-void Object3d::SetEnableLighting (bool enableLighting) {
-
-	material_->SetEnableLighting (enableLighting);
-}
-
-
-//=================================================================================================//
-// UVTransform設定
-
-void Object3d::SetUVTransform (const Matrix4x4& uvTransform) {
-
-	material_->SetUVTransform (uvTransform);
-}
-
-
-//=================================================================================================//
-// DirectionalLight設定
-
-void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity) {
-	directionalLightData_->count = 1;
-
-	directionalLightData_->lights[0].color = color;
-
-	directionalLightData_->lights[0].direction = MathUtility::Normalize (direction);
-
-	directionalLightData_->lights[0].intensity = intensity;
-}
-
-
-//=================================================================================================//
-// Texture番号設定
-
-void Object3d::SetTextureIndex (uint32_t textureIndex) {
-
-	material_->SetTextureIndex (textureIndex);
-	textureOverride_ = true;
-}
-
-
 //=============================================================================================//
-// Transformアドレス取得
+// Model設定
 
-Transform* Object3d::GetTransformAddress () {
-
-	return &transform_;
-}
-
-
-//=============================================================================================//
-// 親設定
-
-void Object3d::SetParent (Transform* parent) {
-
-	transform_.SetParent (parent);
-}
-
-
-//=============================================================================================//
-// Texture設定
-
-void Object3d::SetTexture (const std::string& filePath) {
-
-	uint32_t textureIndex = TextureManager::GetInstance ()->Load (filePath);
-
-	SetTextureIndex (textureIndex);
-}
-
-
-//=============================================================================================//
-// BlendMode設定
-
-void Object3d::SetBlendMode (BlendMode blendMode) {
-
-	blendMode_ = blendMode;
-}
-
-
-//=============================================================================================//
-// BlendMode取得
-
-BlendMode Object3d::GetBlendMode () const {
-
-	return blendMode_;
-}
 
 // メッシュは共有するが、テクスチャ番号はオブジェクト専用のマテリアルへ設定する。
 void Object3d::SetModel(Model* model) {
@@ -318,66 +216,164 @@ void Object3d::SetMaterials(const std::vector<MaterialSettings>& settings) {
 	}
 }
 
-void Object3d::ResetAnimation() {
-	animationTime_ = 0;
-	animationInitialized_ = false;
+//=============================================================================================//
+// Transform設定
+
+
+void Object3d::SetTransform (const TransformData& transform) {
+
+	transform_.local_ = transform;
 }
 
-const AABB& Object3d::GetLocalBounds() const {
-	if (animatedMesh_) {
-		return animatedBounds_;
-	}
-	return model_->GetLocalBounds();
+void Object3d::SetParent (Transform* parent) {
+
+	transform_.SetParent (parent);
 }
 
-void Object3d::UpdateAnimation(const AnimationSettings& settings, float deltaSeconds, bool playing) {
-	const ModelAnimation* animation = model_->GetAnimation();
-	if (animation == nullptr) {
-		return;
-	}
-	const float previousTime = animationTime_;
-	const bool poseChanged = !animationInitialized_ || settings.clip != animationSettings_.clip || settings.time != animationSettings_.time;
-	if (poseChanged) {
-		animationTime_ = settings.time;
-	}
-	animationInitialized_ = true;
-	animationSettings_ = settings;
-	if (playing) {
-		animationTime_ += deltaSeconds * settings.speed;
-	}
-	if (settings.clip >= 0) {
-		if (static_cast<size_t>(settings.clip) < animation->GetClips().size()) {
-			const float duration = animation->GetClips()[settings.clip].duration;
-			if (settings.loop && duration > 0) {
-				animationTime_ = std::fmod(animationTime_, duration);
-			} else {
-				animationTime_ = (std::min)(animationTime_, duration);
-			}
-		}
-	}
-	// 停止・Pause・終端では、カメラを動かしても同じ頂点を毎フレーム計算し直さない。
-	if (!poseChanged && animationTime_ == previousTime) {
-		return;
-	}
-	FrameProfiler::Scope animationTime(FrameProfiler::Section::Animation);
-	animation->Update(settings.clip, animationTime_, settings.loop, animatedVertices_);
-	animatedMesh_->Update(animatedVertices_);
-	const Vector4& first = animatedVertices_.front().position;
-	animatedBounds_ = {{first.x, first.y, first.z}, {first.x, first.y, first.z}};
-	for (const Mesh::VertexData& vertex : animatedVertices_) {
-		animatedBounds_.min.x = (std::min)(animatedBounds_.min.x, vertex.position.x);
-		animatedBounds_.min.y = (std::min)(animatedBounds_.min.y, vertex.position.y);
-		animatedBounds_.min.z = (std::min)(animatedBounds_.min.z, vertex.position.z);
-		animatedBounds_.max.x = (std::max)(animatedBounds_.max.x, vertex.position.x);
-		animatedBounds_.max.y = (std::max)(animatedBounds_.max.y, vertex.position.y);
-		animatedBounds_.max.z = (std::max)(animatedBounds_.max.z, vertex.position.z);
-	}
+//=============================================================================================//
+// Transform取得
+
+
+TransformData Object3d::GetTransform () {
+
+	return transform_.local_;
 }
 
-// 現在の描画姿勢を表面スナップと共有する。呼出側は参照を保持しない。
-const std::vector<Mesh::VertexData>& Object3d::GetSurfaceVertices() const {
-	if (!animatedVertices_.empty()) {
-		return animatedVertices_;
-	}
-	return model_->GetVertices();
+Transform* Object3d::GetTransformAddress () {
+
+	return &transform_;
+}
+
+//=============================================================================================//
+// 色設定
+
+
+void Object3d::SetColor (const Vector4& color) {
+
+	material_->SetColor (color);
+}
+
+//=============================================================================================//
+// Texture番号設定
+
+
+void Object3d::SetTextureIndex (uint32_t textureIndex) {
+
+	material_->SetTextureIndex (textureIndex);
+	textureOverride_ = true;
+}
+
+//=============================================================================================//
+// Lighting設定
+
+
+void Object3d::SetEnableLighting (bool enableLighting) {
+
+	material_->SetEnableLighting (enableLighting);
+}
+
+//=============================================================================================//
+// UVTransform設定
+
+
+void Object3d::SetUVTransform (const Matrix4x4& uvTransform) {
+
+	material_->SetUVTransform (uvTransform);
+}
+
+//=============================================================================================//
+// DirectionalLight設定
+
+
+void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity) {
+	directionalLightData_->count = 1;
+
+	directionalLightData_->lights[0].color = color;
+
+	directionalLightData_->lights[0].direction = MathUtility::Normalize (direction);
+
+	directionalLightData_->lights[0].intensity = intensity;
+}
+
+//=============================================================================================//
+// Texture設定
+
+
+void Object3d::SetTexture (const std::string& filePath) {
+
+	uint32_t textureIndex = TextureManager::GetInstance ()->Load (filePath);
+
+	SetTextureIndex (textureIndex);
+}
+
+//=============================================================================================//
+// BlendMode設定
+
+
+void Object3d::SetBlendMode (BlendMode blendMode) {
+
+	blendMode_ = blendMode;
+}
+
+//=============================================================================================//
+// BlendMode取得
+
+
+BlendMode Object3d::GetBlendMode () const {
+
+	return blendMode_;
+}
+
+//=============================================================================================//
+// 座標変換行列データ作成
+
+
+void Object3d::CreateTransformationMatrixData () {
+
+	wvpResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (TransformationMatrix), "wvpResource");
+
+	wvpResource_->Map (0, nullptr, reinterpret_cast<void**> (&wvpData_));
+
+	wvpData_->WVP = MathUtility::MakeIdentity4x4 ();
+
+	wvpData_->World = MathUtility::MakeIdentity4x4 ();
+
+	wvpData_->WorldInverseTranspose = MathUtility::MakeIdentity4x4 ();
+}
+
+//=============================================================================================//
+// 平行光源データ作成
+
+
+void Object3d::CreateDirectionalLightData () {
+
+	directionalLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (DirectionalLightBuffer), "directionalLightResource");
+
+	directionalLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&directionalLightData_));
+	*directionalLightData_ = {};
+}
+
+//=============================================================================================//
+// 点光源データ作成
+
+
+void Object3d::CreatePointLightData () {
+
+	pointLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (PointLightBuffer), "pointLightResource");
+
+	pointLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&pointLightData_));
+
+	*pointLightData_ = {};
+}
+
+//=============================================================================================//
+// スポットライトデータ作成
+
+
+void Object3d::CreateSpotLightData () {
+
+	spotLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (SpotLightBuffer), "spotLightResource");
+
+	spotLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&spotLightData_));
+	*spotLightData_ = {};
 }

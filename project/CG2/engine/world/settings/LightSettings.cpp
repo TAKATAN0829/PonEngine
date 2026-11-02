@@ -1,6 +1,9 @@
 ﻿#include "settings/LightSettings.h"
 #include <cmath>
 
+//=============================================================================================//
+// 設定の検証・比較
+
 // 設定単体の検証・比較。シーンの一覧やライト収集処理は参照しない。
 bool ValidateLightSettings(const LightSettings& settings) {
 	if (!std::isfinite(settings.outerAngle) || !std::isfinite(settings.innerAngle)) {
@@ -12,6 +15,9 @@ bool ValidateLightSettings(const LightSettings& settings) {
 bool EqualLightSettings(const LightSettings& first, const LightSettings& second) {
 	return first.outerAngle == second.outerAngle && first.innerAngle == second.innerAngle;
 }
+
+//=============================================================================================//
+// ライト種別
 
 // UI・一覧管理・保存検証で共有するライト種別の規則。
 bool LightTypes::IsLight(WorldObjectType type) {

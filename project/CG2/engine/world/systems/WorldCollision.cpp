@@ -3,6 +3,9 @@
 #include <cmath>
 #include <limits>
 
+//=============================================================================================//
+// 実装内補助定義
+
 namespace {
 	Vector3 CrossEdges(const Vector3& first, const Vector3& second) {
 		return {first.y*second.z-first.z*second.y, first.z*second.x-first.x*second.z, first.x*second.y-first.y*second.x};
@@ -200,6 +203,10 @@ namespace {
 
 }
 
+//=============================================================================================//
+// 初期化・終了処理
+
+
 void WorldCollision::Initialize() {
 	contacts_.clear();
 	events_.clear();
@@ -210,83 +217,9 @@ void WorldCollision::Finalize() {
 	Initialize();
 }
 
-Vector3 WorldCollision::GetCorner(const WorldCollider& box, size_t cornerIndex) {
-	Vector3 corner = box.center;
-	for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {
-		float sign = -1;
-		if ((cornerIndex & (size_t{1} << axisIndex)) != 0) {
-			sign = 1;
-		}
-		corner = MathUtility::Add(corner, MathUtility::Multiply(sign, box.halfEdges[axisIndex]));
-	}
-	return corner;
-}
+//=============================================================================================//
+// 更新処理
 
-bool WorldCollision::BuildWorld(const ColliderSettings& settings, const Matrix4x4& world, WorldCollider& result) {
-	if (!ValidateColliderSettings(settings)) {
-		return false;
-	}
-	result.shape = settings.shape;
-	result.center = MathUtility::Transform(settings.center, world);
-	const float sizes[] = {settings.size.x, settings.size.y, settings.size.z};
-	std::array<Vector3,3> basis{};
-	for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {
-		basis[axisIndex] = {world.m[axisIndex][0],world.m[axisIndex][1],world.m[axisIndex][2]};
-		result.halfEdges[axisIndex] = MathUtility::Multiply(sizes[axisIndex]*0.5f, basis[axisIndex]);
-	}
-	// 退化したBoxは面・辺として扱わず、判定対象から外す。
-	if (result.shape == ColliderShape::Box) {
-		const float determinant = MathUtility::Dot(basis[0], CrossEdges(basis[1],basis[2]));
-		if (std::abs(determinant) < 0.0000001f) {
-			return false;
-		}
-		result.bounds = {GetCorner(result,0),GetCorner(result,0)};
-		for (size_t cornerIndex = 1; cornerIndex < 8; ++cornerIndex) {
-			const Vector3 corner = GetCorner(result,cornerIndex);
-			result.bounds.min = {(std::min)(result.bounds.min.x,corner.x),(std::min)(result.bounds.min.y,corner.y),(std::min)(result.bounds.min.z,corner.z)};
-			result.bounds.max = {(std::max)(result.bounds.max.x,corner.x),(std::max)(result.bounds.max.y,corner.y),(std::max)(result.bounds.max.z,corner.z)};
-		}
-	} else {
-		// Gram行列の行和で最大拡縮を上から抑え、せん断でも外接球を小さくしない。
-		float maximumStretchSquared = 0;
-		for (size_t row = 0; row < 3; ++row) {
-			float rowSum = 0;
-			for (size_t column = 0; column < 3; ++column) {
-				rowSum += std::abs(MathUtility::Dot(basis[row],basis[column]));
-			}
-			maximumStretchSquared = (std::max)(maximumStretchSquared,rowSum);
-		}
-		result.radius = settings.radius * std::sqrt(maximumStretchSquared);
-		if (!std::isfinite(result.radius) || result.radius <= 0) {
-			return false;
-		}
-		result.bounds = {MathUtility::Subtract(result.center,{result.radius,result.radius,result.radius}),MathUtility::Add(result.center,{result.radius,result.radius,result.radius})};
-	}
-	const float bounds[] = {result.bounds.min.x,result.bounds.min.y,result.bounds.min.z,result.bounds.max.x,result.bounds.max.y,result.bounds.max.z};
-	for (float value : bounds) {
-		if (!std::isfinite(value)) {
-			return false;
-		}
-	}
-	return true;
-}
-
-bool WorldCollision::Intersects(const WorldCollider& first, const WorldCollider& second) {
-	if (!BoundsOverlap(first.bounds, second.bounds)) {
-		return false;
-	}
-	if (first.shape == ColliderShape::Box) {
-		if (second.shape == ColliderShape::Box) {
-			return BoxesIntersect(first,second);
-		}
-		return BoxSphereIntersect(first,second);
-	}
-	if (second.shape == ColliderShape::Box) {
-		return BoxSphereIntersect(second,first);
-	}
-	const float radius = first.radius + second.radius;
-	return LengthSquared(MathUtility::Subtract(first.center,second.center)) <= radius * radius;
-}
 
 void WorldCollision::Update(IWorldObjects& scene) {
 	events_.clear();
@@ -355,6 +288,76 @@ void WorldCollision::Update(IWorldObjects& scene) {
 	}
 }
 
+//=============================================================================================//
+// Getter / 接触通知・形状
+
+
+bool WorldCollision::BuildWorld(const ColliderSettings& settings, const Matrix4x4& world, WorldCollider& result) {
+	if (!ValidateColliderSettings(settings)) {
+		return false;
+	}
+	result.shape = settings.shape;
+	result.center = MathUtility::Transform(settings.center, world);
+	const float sizes[] = {settings.size.x, settings.size.y, settings.size.z};
+	std::array<Vector3,3> basis{};
+	for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {
+		basis[axisIndex] = {world.m[axisIndex][0],world.m[axisIndex][1],world.m[axisIndex][2]};
+		result.halfEdges[axisIndex] = MathUtility::Multiply(sizes[axisIndex]*0.5f, basis[axisIndex]);
+	}
+	// 退化したBoxは面・辺として扱わず、判定対象から外す。
+	if (result.shape == ColliderShape::Box) {
+		const float determinant = MathUtility::Dot(basis[0], CrossEdges(basis[1],basis[2]));
+		if (std::abs(determinant) < 0.0000001f) {
+			return false;
+		}
+		result.bounds = {GetCorner(result,0),GetCorner(result,0)};
+		for (size_t cornerIndex = 1; cornerIndex < 8; ++cornerIndex) {
+			const Vector3 corner = GetCorner(result,cornerIndex);
+			result.bounds.min = {(std::min)(result.bounds.min.x,corner.x),(std::min)(result.bounds.min.y,corner.y),(std::min)(result.bounds.min.z,corner.z)};
+			result.bounds.max = {(std::max)(result.bounds.max.x,corner.x),(std::max)(result.bounds.max.y,corner.y),(std::max)(result.bounds.max.z,corner.z)};
+		}
+	} else {
+		// Gram行列の行和で最大拡縮を上から抑え、せん断でも外接球を小さくしない。
+		float maximumStretchSquared = 0;
+		for (size_t row = 0; row < 3; ++row) {
+			float rowSum = 0;
+			for (size_t column = 0; column < 3; ++column) {
+				rowSum += std::abs(MathUtility::Dot(basis[row],basis[column]));
+			}
+			maximumStretchSquared = (std::max)(maximumStretchSquared,rowSum);
+		}
+		result.radius = settings.radius * std::sqrt(maximumStretchSquared);
+		if (!std::isfinite(result.radius) || result.radius <= 0) {
+			return false;
+		}
+		result.bounds = {MathUtility::Subtract(result.center,{result.radius,result.radius,result.radius}),MathUtility::Add(result.center,{result.radius,result.radius,result.radius})};
+	}
+	const float bounds[] = {result.bounds.min.x,result.bounds.min.y,result.bounds.min.z,result.bounds.max.x,result.bounds.max.y,result.bounds.max.z};
+	for (float value : bounds) {
+		if (!std::isfinite(value)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool WorldCollision::Intersects(const WorldCollider& first, const WorldCollider& second) {
+	if (!BoundsOverlap(first.bounds, second.bounds)) {
+		return false;
+	}
+	if (first.shape == ColliderShape::Box) {
+		if (second.shape == ColliderShape::Box) {
+			return BoxesIntersect(first,second);
+		}
+		return BoxSphereIntersect(first,second);
+	}
+	if (second.shape == ColliderShape::Box) {
+		return BoxSphereIntersect(second,first);
+	}
+	const float radius = first.radius + second.radius;
+	return LengthSquared(MathUtility::Subtract(first.center,second.center)) <= radius * radius;
+}
+
 bool WorldCollision::GetContact(const WorldCollider& first, const WorldCollider& second, CollisionContact& contact) {
 	contact = {};
 	if (!BoundsOverlap(first.bounds,second.bounds)) {
@@ -384,4 +387,16 @@ bool WorldCollision::GetContact(const WorldCollider& first, const WorldCollider&
 	}
 	contact.penetration = radius-distance;
 	return true;
+}
+
+Vector3 WorldCollision::GetCorner(const WorldCollider& box, size_t cornerIndex) {
+	Vector3 corner = box.center;
+	for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {
+		float sign = -1;
+		if ((cornerIndex & (size_t{1} << axisIndex)) != 0) {
+			sign = 1;
+		}
+		corner = MathUtility::Add(corner, MathUtility::Multiply(sign, box.halfEdges[axisIndex]));
+	}
+	return corner;
 }

@@ -38,14 +38,14 @@ public:
 	void MarkSaved(const IEditableWorld& scene);
 
 	//=============================================================================================//
-	// メンバ関数 / 履歴操作
+	// 履歴操作
 
 	// 復元が失敗した場合は現在の設定と履歴位置を保持する。
 	bool Undo(IEditableWorld& scene, std::string& error);
 	bool Redo(IEditableWorld& scene, std::string& error);
 
 	//=============================================================================================//
-	// メンバ関数 / 再生操作
+	// 再生操作
 
 	bool BeginPlay(IEditableWorld& scene, std::string& error);
 	bool Stop(IEditableWorld& scene, std::string& error);
@@ -55,7 +55,7 @@ public:
 private:
 
 	//=============================================================================================//
-	// メンバ関数 / 設定比較
+	// 設定比較
 
 	// 読取専用参照で比較し、変更がある場合にだけ履歴用のコピーを作る。
 	static bool MatchesSnapshot(const IEditableWorld& scene, const std::vector<WorldObjectData>& snapshot);

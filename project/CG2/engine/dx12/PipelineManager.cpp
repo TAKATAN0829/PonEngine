@@ -6,8 +6,9 @@
 // C++
 #include <cassert>
 
-//=================================================================================================//
+//=============================================================================================//
 // RootSignatureを作る
+
 
 Microsoft::WRL::ComPtr<ID3D12RootSignature>
 PipelineManager::CreateRootSignature (ID3D12Device* device, D3D12_ROOT_SIGNATURE_DESC& descriptionRootSignature) {
@@ -47,9 +48,9 @@ PipelineManager::CreateRootSignature (ID3D12Device* device, D3D12_ROOT_SIGNATURE
 	return rootSignature;
 }
 
-
-//=================================================================================================//
+//=============================================================================================//
 // InputLayout設定
+
 
 D3D12_INPUT_LAYOUT_DESC
 PipelineManager::CreateInputLayout () {
@@ -90,9 +91,9 @@ PipelineManager::CreateInputLayout () {
 	return inputLayoutDesc;
 }
 
-
-//=================================================================================================//
+//=============================================================================================//
 // BlendState設定
+
 
 D3D12_BLEND_DESC
 PipelineManager::CreateBlendState (BlendMode blendMode) {
@@ -198,9 +199,9 @@ PipelineManager::CreateBlendState (BlendMode blendMode) {
 	return blendDesc;
 }
 
-
-//=================================================================================================//
+//=============================================================================================//
 // RasterizerState設定
+
 
 D3D12_RASTERIZER_DESC
 PipelineManager::CreateRasterizerState () {
@@ -214,9 +215,9 @@ PipelineManager::CreateRasterizerState () {
 	return rasterizerDesc;
 }
 
-
-//=================================================================================================//
+//=============================================================================================//
 // DepthStencilState設定
+
 
 D3D12_DEPTH_STENCIL_DESC
 PipelineManager::CreateDepthStencilState () {
@@ -232,9 +233,9 @@ PipelineManager::CreateDepthStencilState () {
 	return depthStencilDesc;
 }
 
-
-//=================================================================================================//
+//=============================================================================================//
 // GraphicsPipelineStateを作る
+
 
 Microsoft::WRL::ComPtr<ID3D12PipelineState>
 PipelineManager::CreateGraphicsPipelineState (
@@ -295,4 +296,3 @@ PipelineManager::CreateGraphicsPipelineState (
 
 	return graphicsPipelineState;
 }
-

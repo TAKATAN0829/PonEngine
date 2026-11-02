@@ -7,6 +7,9 @@
 #include <stdexcept>
 #include <unordered_map>
 
+//=============================================================================================//
+// 実装内補助定義
+
 namespace {
 	// ゼロ拡縮で逆行列が作れないフレームでも、GPUへNaNの法線を渡さない。
 	aiMatrix3x3 MakeNormalMatrix(const aiMatrix4x4& matrix) {
@@ -154,8 +157,17 @@ struct ModelAnimation::AnimationData {
 	}
 };
 
+//=============================================================================================//
+// 生成・破棄
+
+
 ModelAnimation::ModelAnimation() = default;
+
 ModelAnimation::~ModelAnimation() = default;
+
+//=============================================================================================//
+// 初期化・更新処理
+
 
 void ModelAnimation::Initialize(const std::string& path) {
 	data_ = std::make_unique<AnimationData>();
@@ -189,10 +201,6 @@ void ModelAnimation::Initialize(const std::string& path) {
 		}
 		data_->channels.push_back(std::move(channels));
 	}
-}
-
-const std::vector<ModelAnimationInfo>& ModelAnimation::GetClips() const {
-	return data_->clips;
 }
 
 void ModelAnimation::Update(int clipIndex, float seconds, bool loop, std::vector<Mesh::VertexData>& vertices) const {
@@ -266,4 +274,12 @@ void ModelAnimation::Update(int clipIndex, float seconds, bool loop, std::vector
 		}
 		vertices[vertexIndex] = {{-position.x, position.y, position.z, 1}, {source.uv.x, source.uv.y}, {-normal.x, normal.y, normal.z}};
 	}
+}
+
+//=============================================================================================//
+// Getter / クリップ一覧
+
+
+const std::vector<ModelAnimationInfo>& ModelAnimation::GetClips() const {
+	return data_->clips;
 }

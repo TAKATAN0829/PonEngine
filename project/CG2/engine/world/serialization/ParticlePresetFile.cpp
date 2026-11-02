@@ -5,11 +5,18 @@
 #include <limits>
 #include <locale>
 
+//=============================================================================================//
+// 実装内補助定義
+
 namespace {
 	// 読込・書込で軸の並びを統一する。
 	void WriteVector(std::ostream& output, const Vector3& value) { output << value.x << ' ' << value.y << ' ' << value.z << ' '; }
 	void ReadVector(std::istream& input, Vector3& value) { input >> value.x >> value.y >> value.z; }
 }
+
+//=============================================================================================//
+// ファイル保存・読込
+
 
 // 完成した一時ファイルだけを置換し、書込途中の失敗で既存のプリセットを失わない。
 bool ParticlePresetFile::Save(const ParticleSettings& settings, const std::filesystem::path& path, std::string& error) {
@@ -75,6 +82,10 @@ bool ParticlePresetFile::Load(ParticleSettings& settings, const std::filesystem:
 	settings = loaded;
 	return true;
 }
+
+//=============================================================================================//
+// 設定部分の保存・読込
+
 
 // シーン内のEmitterも同じ順序で保存し、プリセットと設定項目を共有する。
 void ParticlePresetFile::WriteSettings(std::ostream& output, const ParticleSettings& settings) {

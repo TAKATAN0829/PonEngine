@@ -1,82 +1,9 @@
 #include "EditorSession.h"
 #include "objects/WorldObjects.h"
 
-// 保存対象の全プロパティを比較する。UIの選択状態やパネル配置は比較しない。
-bool EditorSession::AreObjectsEqual(const WorldObjectData& firstObject, const WorldObjectData& secondObject) {
-	if (!EqualLightSettings(firstObject.light,secondObject.light)) {
-		return false;
-	}
-	if (!EqualBodySettings(firstObject.body,secondObject.body)) {
-		return false;
-	}
-	if (!EqualColliderSettings(firstObject.collider, secondObject.collider)) {
-		return false;
-	}
-	if (!EqualMotionSettings(firstObject.motion, secondObject.motion)) {
-		return false;
-	}
-	if (!EqualAnimationSettings(firstObject.animation, secondObject.animation)) {
-		return false;
-	}
-	if (firstObject.materials.size() != secondObject.materials.size()) {
-		return false;
-	}
-	for (size_t slotIndex = 0; slotIndex < firstObject.materials.size(); ++slotIndex) {
-		if (!EqualMaterialSettings(firstObject.materials[slotIndex], secondObject.materials[slotIndex])) {
-			return false;
-		}
-	}
-	const TransformData& firstTransform = firstObject.transform;
-	const TransformData& secondTransform = secondObject.transform;
-	return firstObject.prefabSource == secondObject.prefabSource && firstObject.id == secondObject.id && firstObject.parentId == secondObject.parentId && firstObject.name == secondObject.name &&
-		firstObject.model == secondObject.model && firstObject.active == secondObject.active &&
-		firstObject.hasMeshRenderer == secondObject.hasMeshRenderer &&
-		firstObject.type == secondObject.type && firstObject.lightIntensity == secondObject.lightIntensity &&
-		firstObject.lightRadius == secondObject.lightRadius && firstObject.lightDecay == secondObject.lightDecay &&
-		firstObject.mainCamera == secondObject.mainCamera && firstObject.camera.fieldOfView == secondObject.camera.fieldOfView &&
-		firstObject.camera.nearClip == secondObject.camera.nearClip && firstObject.camera.farClip == secondObject.camera.farClip &&
-		EqualParticleSettings(firstObject.particle, secondObject.particle) &&
-		firstObject.enableLighting == secondObject.enableLighting && firstObject.shininess == secondObject.shininess &&
-		firstObject.useRootNodeMatrix == secondObject.useRootNodeMatrix &&
-		firstTransform.scale.x == secondTransform.scale.x && firstTransform.scale.y == secondTransform.scale.y &&
-		firstTransform.scale.z == secondTransform.scale.z && firstTransform.rotate.x == secondTransform.rotate.x &&
-		firstTransform.rotate.y == secondTransform.rotate.y && firstTransform.rotate.z == secondTransform.rotate.z &&
-		firstTransform.translate.x == secondTransform.translate.x && firstTransform.translate.y == secondTransform.translate.y &&
-		firstTransform.translate.z == secondTransform.translate.z && firstObject.color.x == secondObject.color.x &&
-		firstObject.color.y == secondObject.color.y && firstObject.color.z == secondObject.color.z &&
-		firstObject.color.w == secondObject.color.w;
-}
+//=============================================================================================//
+// 初期化処理
 
-// オブジェクトの個数・並び順・設定を比較し、シーン全体の変更を検出する。
-bool EditorSession::AreScenesEqual(const std::vector<WorldObjectData>& firstScene,
-	const std::vector<WorldObjectData>& secondScene) {
-	if (firstScene.size() != secondScene.size()) {
-		return false;
-	}
-	for (size_t objectIndex = 0; objectIndex < firstScene.size(); ++objectIndex) {
-		if (!AreObjectsEqual(firstScene[objectIndex], secondScene[objectIndex])) {
-			return false;
-		}
-	}
-	return true;
-}
-
-// 編集がないフレームは、参照だけで履歴や保存済み設定と比較する。
-bool EditorSession::MatchesSnapshot(const IEditableWorld& scene, const std::vector<WorldObjectData>& snapshot) {
-	if (scene.GetEditableObjectCount() != snapshot.size()) {
-		return false;
-	}
-	for (size_t objectIndex = 0; objectIndex < snapshot.size(); ++objectIndex) {
-		const WorldObjectData* object = scene.GetObjectData(objectIndex);
-		if (object == nullptr) {
-			return AreScenesEqual(scene.CaptureObjects(), snapshot);
-		}
-		if (!AreObjectsEqual(*object, snapshot[objectIndex])) {
-			return false;
-		}
-	}
-	return true;
-}
 
 // 読込後のシーンを基準に、履歴・保存状態・再生状態を初期化する。
 void EditorSession::Initialize(IEditableWorld& scene) {
@@ -89,6 +16,10 @@ void EditorSession::Initialize(IEditableWorld& scene) {
 	paused_ = false;
 	stepRequested_ = false;
 }
+
+//=============================================================================================//
+// 更新処理
+
 
 // ドラッグや文字入力の途中は記録せず、完了した操作を履歴一件にまとめる。
 void EditorSession::Update(IEditableWorld& scene, bool interactionActive) {
@@ -118,6 +49,10 @@ void EditorSession::Update(IEditableWorld& scene, bool interactionActive) {
 	historyIndex_ = history_.size() - 1;
 }
 
+//=============================================================================================//
+// Getter / 履歴・保存状態
+
+
 // 再生中の一時変更は編集履歴の対象外とし、巻き戻しを禁止する。
 bool EditorSession::CanUndo() const {
 	if (playing_) {
@@ -136,6 +71,43 @@ bool EditorSession::CanRedo() const {
 	}
 	return historyIndex_ + 1 < history_.size();
 }
+
+// 再生中は開始前の編集状態を比較し、実行中の変更を未保存扱いにしない。
+bool EditorSession::IsDirty(const IEditableWorld& scene) const {
+	if (playing_) {
+		return !AreScenesEqual(playSnapshot_, savedState_);
+	}
+	return !MatchesSnapshot(scene, savedState_);
+}
+
+//=============================================================================================//
+// Getter / 再生状態
+
+
+// ステップ要求をここで消費し、次のフレームへ持ち越さない。
+bool EditorSession::ShouldSimulate() {
+	const bool stepRequested = stepRequested_;
+	stepRequested_ = false;
+	if (!playing_) {
+		return false;
+	}
+	return !paused_ || stepRequested;
+}
+
+//=============================================================================================//
+// Setter / 保存基準
+
+
+// 保存成功時の編集データを、未保存判定の新しい基準にする。
+void EditorSession::MarkSaved(const IEditableWorld& scene) {
+	if (!playing_) {
+		savedState_ = scene.CaptureObjects();
+	}
+}
+
+//=============================================================================================//
+// 履歴操作
+
 
 // 未確定の編集を記録してから、一つ前の設定を復元する。
 bool EditorSession::Undo(IEditableWorld& scene, std::string& error) {
@@ -167,20 +139,9 @@ bool EditorSession::Redo(IEditableWorld& scene, std::string& error) {
 	return true;
 }
 
-// 再生中は開始前の編集状態を比較し、実行中の変更を未保存扱いにしない。
-bool EditorSession::IsDirty(const IEditableWorld& scene) const {
-	if (playing_) {
-		return !AreScenesEqual(playSnapshot_, savedState_);
-	}
-	return !MatchesSnapshot(scene, savedState_);
-}
+//=============================================================================================//
+// 再生操作
 
-// 保存成功時の編集データを、未保存判定の新しい基準にする。
-void EditorSession::MarkSaved(const IEditableWorld& scene) {
-	if (!playing_) {
-		savedState_ = scene.CaptureObjects();
-	}
-}
 
 // 復元できる有効なデータであることを確認し、編集状態を退避して再生する。
 bool EditorSession::BeginPlay(IEditableWorld& scene, std::string& error) {
@@ -244,12 +205,83 @@ void EditorSession::RequestStep() {
 	}
 }
 
-// ステップ要求をここで消費し、次のフレームへ持ち越さない。
-bool EditorSession::ShouldSimulate() {
-	const bool stepRequested = stepRequested_;
-	stepRequested_ = false;
-	if (!playing_) {
+//=============================================================================================//
+// 設定比較
+
+
+// 編集がないフレームは、参照だけで履歴や保存済み設定と比較する。
+bool EditorSession::MatchesSnapshot(const IEditableWorld& scene, const std::vector<WorldObjectData>& snapshot) {
+	if (scene.GetEditableObjectCount() != snapshot.size()) {
 		return false;
 	}
-	return !paused_ || stepRequested;
+	for (size_t objectIndex = 0; objectIndex < snapshot.size(); ++objectIndex) {
+		const WorldObjectData* object = scene.GetObjectData(objectIndex);
+		if (object == nullptr) {
+			return AreScenesEqual(scene.CaptureObjects(), snapshot);
+		}
+		if (!AreObjectsEqual(*object, snapshot[objectIndex])) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// 保存対象の全プロパティを比較する。UIの選択状態やパネル配置は比較しない。
+bool EditorSession::AreObjectsEqual(const WorldObjectData& firstObject, const WorldObjectData& secondObject) {
+	if (!EqualLightSettings(firstObject.light,secondObject.light)) {
+		return false;
+	}
+	if (!EqualBodySettings(firstObject.body,secondObject.body)) {
+		return false;
+	}
+	if (!EqualColliderSettings(firstObject.collider, secondObject.collider)) {
+		return false;
+	}
+	if (!EqualMotionSettings(firstObject.motion, secondObject.motion)) {
+		return false;
+	}
+	if (!EqualAnimationSettings(firstObject.animation, secondObject.animation)) {
+		return false;
+	}
+	if (firstObject.materials.size() != secondObject.materials.size()) {
+		return false;
+	}
+	for (size_t slotIndex = 0; slotIndex < firstObject.materials.size(); ++slotIndex) {
+		if (!EqualMaterialSettings(firstObject.materials[slotIndex], secondObject.materials[slotIndex])) {
+			return false;
+		}
+	}
+	const TransformData& firstTransform = firstObject.transform;
+	const TransformData& secondTransform = secondObject.transform;
+	return firstObject.prefabSource == secondObject.prefabSource && firstObject.id == secondObject.id && firstObject.parentId == secondObject.parentId && firstObject.name == secondObject.name &&
+		firstObject.model == secondObject.model && firstObject.active == secondObject.active &&
+		firstObject.hasMeshRenderer == secondObject.hasMeshRenderer &&
+		firstObject.type == secondObject.type && firstObject.lightIntensity == secondObject.lightIntensity &&
+		firstObject.lightRadius == secondObject.lightRadius && firstObject.lightDecay == secondObject.lightDecay &&
+		firstObject.mainCamera == secondObject.mainCamera && firstObject.camera.fieldOfView == secondObject.camera.fieldOfView &&
+		firstObject.camera.nearClip == secondObject.camera.nearClip && firstObject.camera.farClip == secondObject.camera.farClip &&
+		EqualParticleSettings(firstObject.particle, secondObject.particle) &&
+		firstObject.enableLighting == secondObject.enableLighting && firstObject.shininess == secondObject.shininess &&
+		firstObject.useRootNodeMatrix == secondObject.useRootNodeMatrix &&
+		firstTransform.scale.x == secondTransform.scale.x && firstTransform.scale.y == secondTransform.scale.y &&
+		firstTransform.scale.z == secondTransform.scale.z && firstTransform.rotate.x == secondTransform.rotate.x &&
+		firstTransform.rotate.y == secondTransform.rotate.y && firstTransform.rotate.z == secondTransform.rotate.z &&
+		firstTransform.translate.x == secondTransform.translate.x && firstTransform.translate.y == secondTransform.translate.y &&
+		firstTransform.translate.z == secondTransform.translate.z && firstObject.color.x == secondObject.color.x &&
+		firstObject.color.y == secondObject.color.y && firstObject.color.z == secondObject.color.z &&
+		firstObject.color.w == secondObject.color.w;
+}
+
+// オブジェクトの個数・並び順・設定を比較し、シーン全体の変更を検出する。
+bool EditorSession::AreScenesEqual(const std::vector<WorldObjectData>& firstScene,
+	const std::vector<WorldObjectData>& secondScene) {
+	if (firstScene.size() != secondScene.size()) {
+		return false;
+	}
+	for (size_t objectIndex = 0; objectIndex < firstScene.size(); ++objectIndex) {
+		if (!AreObjectsEqual(firstScene[objectIndex], secondScene[objectIndex])) {
+			return false;
+		}
+	}
+	return true;
 }

@@ -11,8 +11,9 @@
 #include "TextureManager.h"
 #include "WinApp.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void Sprite::Initialize (SpriteCommon* spriteCommon, const std::string& textureFilePath) {
 
@@ -42,8 +43,9 @@ void Sprite::Initialize (SpriteCommon* spriteCommon, const std::string& textureF
 	SetTexture (textureFilePath);
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 更新処理
+
 
 void Sprite::Update () {
 
@@ -73,8 +75,9 @@ void Sprite::Update () {
 	transformationMatrixData_->World = worldMatrix;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 描画処理
+
 
 void Sprite::Draw () {
 
@@ -96,16 +99,18 @@ void Sprite::Draw () {
 	spriteCommon_->GetMesh ()->Draw ();
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 終了処理
+
 
 void Sprite::Finalize () {
 
 	delete material_;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Texture設定
+
 
 void Sprite::SetTexture (const std::string& filePath) {
 
@@ -116,8 +121,24 @@ void Sprite::SetTexture (const std::string& filePath) {
 	AdjustTextureSize ();
 }
 
-//=================================================================================================//
+//=============================================================================================//
+// 座標変換行列データ作成
+
+
+void Sprite::CreateTransformationMatrixData () {
+
+	transformationMatrixResource_ = ResourceManager::CreateBufferResource (spriteCommon_->GetDxCommon ()->GetDevice (), sizeof (TransformationMatrix), "spriteTransformationMatrixResource");
+
+	transformationMatrixResource_->Map (0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
+
+	transformationMatrixData_->WVP = MathUtility::MakeIdentity4x4 ();
+
+	transformationMatrixData_->World = MathUtility::MakeIdentity4x4 ();
+}
+
+//=============================================================================================//
 // テクスチャサイズをイメージに合わせる
+
 
 void Sprite::AdjustTextureSize () {
 
@@ -133,8 +154,9 @@ void Sprite::AdjustTextureSize () {
 	size_ = textureImageSize_;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // WorldMatrix作成
+
 
 Matrix4x4 Sprite::MakeWorldMatrix () const {
 
@@ -148,8 +170,9 @@ Matrix4x4 Sprite::MakeWorldMatrix () const {
 	return MathUtility::Multiply (anchorMatrix, affineMatrix);
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // UVTransform作成
+
 
 Matrix4x4 Sprite::MakeUVTransform () const {
 
@@ -176,18 +199,4 @@ Matrix4x4 Sprite::MakeUVTransform () const {
 	}
 
 	return MathUtility::Multiply (MathUtility::MakeScaleMatrix (scale), MathUtility::MakeTranslateMatrix (translate));
-}
-
-//=================================================================================================//
-// 座標変換行列データ作成
-
-void Sprite::CreateTransformationMatrixData () {
-
-	transformationMatrixResource_ = ResourceManager::CreateBufferResource (spriteCommon_->GetDxCommon ()->GetDevice (), sizeof (TransformationMatrix), "spriteTransformationMatrixResource");
-
-	transformationMatrixResource_->Map (0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
-
-	transformationMatrixData_->WVP = MathUtility::MakeIdentity4x4 ();
-
-	transformationMatrixData_->World = MathUtility::MakeIdentity4x4 ();
 }

@@ -3,6 +3,10 @@
 #include "imgui/imgui.h"
 #endif
 
+//=============================================================================================//
+// 初期化処理 / ImGuiスタイル
+
+
 void EditorTheme::Initialize() {
 #ifdef USE_IMGUI
 	ImGui::StyleColorsDark();

@@ -6,8 +6,9 @@
 // 自作
 #include "DirectXCommon.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void SrvManager::Initialize(DirectXCommon* dxCommon) {
 
@@ -38,8 +39,9 @@ void SrvManager::Initialize(DirectXCommon* dxCommon) {
 	descriptorSize_ = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 描画前処理
+
 
 void SrvManager::PreDraw() {
 
@@ -48,8 +50,9 @@ void SrvManager::PreDraw() {
 	dxCommon_->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 空きSRV確保
+
 
 uint32_t SrvManager::Allocate() {
 
@@ -67,8 +70,9 @@ uint32_t SrvManager::Allocate() {
 	return useIndex_++;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // SRV解放
+
 
 void SrvManager::Free(uint32_t srvIndex) {
 
@@ -77,8 +81,9 @@ void SrvManager::Free(uint32_t srvIndex) {
 	freeIndices_.push(srvIndex);
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // SRV生成(Texture2D)
+
 
 void SrvManager::CreateSRVforTexture2D(
 	uint32_t srvIndex,
@@ -96,8 +101,9 @@ void SrvManager::CreateSRVforTexture2D(
 	dxCommon_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // SRV生成(StructuredBuffer)
+
 
 void SrvManager::CreateSRVforStructuredBuffer(
 	uint32_t srvIndex,
@@ -118,16 +124,18 @@ void SrvManager::CreateSRVforStructuredBuffer(
 	dxCommon_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // DescriptorTable設定
+
 
 void SrvManager::SetGraphicsRootDescriptorTable(UINT rootParameterIndex, uint32_t srvIndex) {
 
 	dxCommon_->GetCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, GetGPUDescriptorHandle(srvIndex));
 }
 
-//=================================================================================================//
-// CPUHandle取得
+//=============================================================================================//
+// Handle取得
+
 
 D3D12_CPU_DESCRIPTOR_HANDLE SrvManager::GetCPUDescriptorHandle(uint32_t srvIndex) {
 
@@ -138,9 +146,6 @@ D3D12_CPU_DESCRIPTOR_HANDLE SrvManager::GetCPUDescriptorHandle(uint32_t srvIndex
 	return handle;
 }
 
-//=================================================================================================//
-// GPUHandle取得
-
 D3D12_GPU_DESCRIPTOR_HANDLE SrvManager::GetGPUDescriptorHandle(uint32_t srvIndex) {
 
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
@@ -150,8 +155,9 @@ D3D12_GPU_DESCRIPTOR_HANDLE SrvManager::GetGPUDescriptorHandle(uint32_t srvIndex
 	return handle;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // CPUHandleから番号取得
+
 
 uint32_t SrvManager::GetIndex(D3D12_CPU_DESCRIPTOR_HANDLE handle) {
 

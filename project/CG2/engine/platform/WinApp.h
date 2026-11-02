@@ -36,7 +36,7 @@ public:
 	HINSTANCE GetHInstance() const { return wc_.hInstance; }
 
 	//=============================================================================================//
-	// Setter・メンバ関数 / 終了要求
+	// Setter / 終了要求
 
 	void ClearCloseRequest() { closeRequested_ = false; }
 	void ConfirmClose(); // 保存確認後にだけウィンドウを破棄する。

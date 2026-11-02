@@ -37,14 +37,14 @@ public:
 	void SetEditorInputEnabled(bool enabled) { editorInputEnabled_ = enabled; }
 
 	//=============================================================================================//
-	// メンバ関数 / 注視
+	// 注視
 
 	// 向きを保ち、選択位置から一定距離離れた位置へ移動する。
 	void Focus(const Vector3& targetPosition);
 
 private:
 	//=============================================================================================//
-	// メンバ関数 / 行列更新
+	// 行列更新
 
 	void UpdateMatrix(); // 位置・回転をビューへ反映する。
 	void UpdateProjectionMatrix(); // 初期化・表示サイズ変更時だけ更新する。

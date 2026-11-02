@@ -39,7 +39,7 @@ public:
 	void PreDraw();
 	void BindBackBuffer();
 	//=============================================================================================//
-	// メンバ関数 / Particleの深度参照。Targetの所有者がBegin〜Endの間だけ貸す。
+	// Particleの深度参照。Targetの所有者がBegin〜Endの間だけ貸す。
 
 	void InitializeDepthSampling(SrvManager* descriptors, uint32_t descriptorIndex);
 	void FinalizeDepthSampling();
@@ -87,7 +87,7 @@ private:
 	bool depthReading_ = false;
 
 	//=============================================================================================//
-	// メンバ関数 / GPU実行時間
+	// GPU実行時間
 
 	// タイムスタンプ用のQueryHeapと読取専用バッファを初期化する。
 	// 非対応・確保失敗時は描画を継続し、計測値を未取得として扱う。

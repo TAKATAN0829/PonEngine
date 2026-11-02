@@ -91,7 +91,7 @@ public:
 	}
 
 	//=============================================================================================//
-	// Setter・メンバ関数 / 描画カウンター・記録制御
+	// Setter / 描画カウンター・記録制御
 
 	static void SetPaused(bool paused) { paused_ = paused; }
 	static void ResetPeak() { peak_ = {}; }

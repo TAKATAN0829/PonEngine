@@ -29,7 +29,7 @@ private:
 	};
 
 	//=============================================================================================//
-	// メンバ関数 / 動作の種類別更新
+	// 動作の種類別更新
 
 	static void UpdateRotation(const MotionSettings& settings, float deltaSeconds, TransformData& transform);
 

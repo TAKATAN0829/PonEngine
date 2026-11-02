@@ -8,7 +8,7 @@
 class SceneViewMath {
 public:
     //=============================================================================================//
-    // メンバ関数 / 補助表示の投影
+    // 補助表示の投影
 
     // 近・遠クリップ面をまたぐ線分も、見える区間だけ画面へ投影する。
     static bool ProjectLine(const Vector3& start, const Vector3& end, const Matrix4x4& viewProjection,
@@ -18,7 +18,7 @@ public:
         float viewportWidth, float viewportHeight, float pixelLength);
 
     //=============================================================================================//
-    // メンバ関数 / 配置・選択・軸操作
+    // 配置・選択・軸操作
 
     // 形状の手前面、XZ平面、視線の10単位先の順で配置位置を選ぶ。
     static Vector3 GetPlacementPosition(const Vector3& origin, const Vector3& direction, float rayLength, float hitDistance);

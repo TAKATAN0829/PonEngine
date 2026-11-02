@@ -1,4 +1,4 @@
-[![DebugBuild](https://github.com/TAKATAN0829/PonEngine/actions/workflows/DebugBuild.yml/badge.svg)](https://github.com/TAKATAN0829/PonEngine/actions/workflows/DebugBuild.yml)
+﻿[![DebugBuild](https://github.com/TAKATAN0829/PonEngine/actions/workflows/DebugBuild.yml/badge.svg)](https://github.com/TAKATAN0829/PonEngine/actions/workflows/DebugBuild.yml)
 [![DevelopmentBuild](https://github.com/TAKATAN0829/PonEngine/actions/workflows/DevelopmentBuild.yml/badge.svg)](https://github.com/TAKATAN0829/PonEngine/actions/workflows/DevelopmentBuild.yml)
 [![ReleaseBuild](https://github.com/TAKATAN0829/PonEngine/actions/workflows/ReleaseBuild.yml/badge.svg)](https://github.com/TAKATAN0829/PonEngine/actions/workflows/ReleaseBuild.yml)
 
@@ -258,9 +258,13 @@ generated/             ビルド結果・テスト生成物（Git管理外）
 
 現在の参照方向、所有関係、相互依存と整理の優先順位は[依存関係の調査](docs/dependencies.md)にまとめています。
 
-ProjectとConsoleは別クラスです。Projectはフォルダ管理・画面構成・Asset操作、SceneViewは画面本体・ギズモ・Transform更新・選択／配置・補助表示に実装を分けています。担当ファイルはヘッダーの分類コメントと[設計資料](docs/editor-architecture.md#editorパネルの責務と実装ファイル)から確認できます。
+各パネルはタブごとのフォルダへ置き、各クラスの.h/.cpp一組へ実装をまとめています。Projectのフォルダ管理・画面構成・Asset操作や、SceneViewのギズモ・選択・配置などは、同じcpp内で分類コメントにより区切ります。担当ファイルはヘッダーの分類コメントと[設計資料](docs/editor-architecture.md#editorパネルの責務と実装ファイル)から確認できます。
 
 追加・修正するコードは以下を基準にします。
+
+ファイルは原則としてクラスごとの同名.h/.cpp一組、または宣言・inline関数だけの.hに揃えます。起動入口のmain.cppは例外です。
+
+.hを目次として読めるよう、.cppの見出し名と関数の実装順は宣言側の分類・順番に揃えます。関数の見出しには「メンバ関数」を付けず、Motion・Colliderなど内容を示す名前を使います。cpp内だけのクラス外補助関数は別枠とし、メンバー変数やinline実装のために空の区画をcppへ増やしません。
 
 - 三項演算子、ラムダ式、`auto`、一文字の変数名・関数名を使わない。
 - if文の本体は改行し、種類の異なる判定を一つの条件へ詰め込まない。

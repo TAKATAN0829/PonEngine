@@ -32,7 +32,7 @@ public:
 	Vector3 GetFocusPosition() const { return focusPosition_; }
 
 	//=============================================================================================//
-	// メンバ関数 / 保存・注視要求
+	// 保存・注視要求
 
 	bool Save(IEditableWorld& scene); // 共通プリセットの保存。
 	bool ConsumeFocusRequest(); // 一度だけ注視要求を取り出す。
@@ -52,7 +52,7 @@ private:
 	TransformData* GetEditingTransform(IEditableWorld& scene) const;
 
 	//=============================================================================================//
-	// メンバ関数 / プリセット反映
+	// プリセット反映
 
 	void ApplyPendingAction(IEditableWorld& scene);
 	bool SaveEditingPreset(IEditableWorld& scene);

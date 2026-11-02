@@ -35,7 +35,7 @@ private:
 	};
 
 	//=============================================================================================//
-	// メンバ関数 / 操作UI・ツリー
+	// 操作UI・ツリー
 
 	static void DrawCreateMenu(IEditableWorld& scene, EditorSelection& selection);
 	static void DrawContextMenu(IEditableWorld& scene, EditorSelection& selection);

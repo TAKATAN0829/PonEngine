@@ -14,6 +14,9 @@
 #include <unordered_set>
 #include <vector>
 
+//=============================================================================================//
+// 実装内補助定義
+
 namespace {
 	// 形式7のアセット設定。件数と0/1フラグを読込時点で制限する。
 	bool ReadAssetSettings(std::istream& input, WorldObjectData& object) {
@@ -186,6 +189,10 @@ namespace {
 	}
 }
 
+//=============================================================================================//
+// シーン保存
+
+
 // 設定を検証して一時ファイルへ書き込み、完了したものだけを保存先へ反映する。
 bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, std::string& error) {
 	error.clear();
@@ -341,6 +348,10 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 	}
 	return true;
 }
+
+//=============================================================================================//
+// シーン読込
+
 
 // 対応する保存形式を読み込み、全件の整合性を確認してからシーンへ反映する。
 bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, std::string& error, bool migrateLegacyLights) {

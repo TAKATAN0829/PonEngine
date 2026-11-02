@@ -3,6 +3,9 @@
 #include <limits>
 #include <unordered_map>
 
+//=============================================================================================//
+// 実装内補助定義
+
 namespace {
 	// 選択ルートとその子孫を一度だけ列挙する。一括操作中は所有スナップショットを使う。
 	std::unordered_set<WorldObjectId> CollectSubtrees(const std::vector<WorldObjectData>& objects,
@@ -27,6 +30,10 @@ namespace {
 		return included;
 	}
 }
+
+//=============================================================================================//
+// 一括複製・削除
+
 
 // 選択数分のシーン全体コピーを避け、採番・親の付け替え・検証を一回で行う。
 bool EditorSelection::Duplicate(IEditableWorld& scene, std::string& error) {

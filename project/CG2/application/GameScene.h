@@ -83,7 +83,7 @@ public:
 	size_t GetParticleCount() const override;
 
 	//=============================================================================================//
-	// Setter・メンバ関数 / Particle操作
+	// Setter / Particle操作
 
 	void SetParticlePreview(const ParticlePreviewState& state) override { particlePreview_ = state; }
 	void ResetParticlePreview() override;
@@ -93,7 +93,7 @@ public:
 private:
 
 	//=============================================================================================//
-	// メンバ関数 / 更新
+	// 更新
 
 	// 動作Componentを反映した後に接触を調べ、開始・終了をConsoleへ通知する。
 	void UpdateCollisions();
@@ -114,7 +114,7 @@ private:
 	bool ShouldEmitEmitter(WorldObjectId objectId, bool gameEmissionEnabled) const;
 
 	//=============================================================================================//
-	// メンバ関数 / 設定パネル描画
+	// 設定パネル描画
 
 	// ImGuiの受付中にWorld Settingsの設定を編集する。
 	void DrawWorldSettings(bool* open);

@@ -14,8 +14,9 @@
 #include "ModelCommon.h"
 #include "TextureManager.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPath, const std::string& filename) {
 
@@ -99,6 +100,10 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 	material_->SetTextureIndex(modelData_.textureIndices.front());
 }
 
+//=============================================================================================//
+// 描画処理
+
+
 // スロットごとの範囲を描画し、別マテリアルの設定を上書きしない。
 void Model::Draw(Material* instanceMaterial, const std::vector<std::unique_ptr<Material>>* slots, Mesh* animatedMesh) {
 	Mesh* drawable = mesh_.get();
@@ -117,8 +122,9 @@ void Model::Draw(Material* instanceMaterial, const std::vector<std::unique_ptr<M
 	}
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // モデルファイル読み込み
+
 
 Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const std::string& filename) {
 
@@ -236,8 +242,9 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 	return modelData;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Node読み込み
+
 
 Model::Node Model::ReadNode(aiNode* node) {
 

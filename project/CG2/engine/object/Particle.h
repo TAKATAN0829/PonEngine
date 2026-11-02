@@ -62,7 +62,7 @@ public:
 	size_t GetLiveCount() const { return particles_.size(); }
 
 	//=============================================================================================//
-	// メンバ関数 / Particle追加
+	// Particle追加
 
 	void AddParticles() { particles_.splice(particles_.end(), Emit()); }
 

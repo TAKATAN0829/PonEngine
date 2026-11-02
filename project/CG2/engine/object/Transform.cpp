@@ -3,6 +3,7 @@
 //=============================================================================================//
 // 更新処理
 
+
 void Transform::UpdateMatrix() {
 
 	Matrix4x4 localMatrix = MathUtility::MakeAffineMatrix(local_.scale, local_.rotate, local_.translate);

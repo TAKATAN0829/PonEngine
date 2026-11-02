@@ -14,8 +14,9 @@
 #include "MathUtility.h"
 #include "Random.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void Particle::Initialize(ParticleRenderer* renderer) {
 
@@ -67,8 +68,9 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 		sizeof(ParticleForGPU));
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 更新処理
+
 
 void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate, bool emit) {
 	inverseViewProjection_ = MathUtility::Inverse(viewProjectionMatrix);
@@ -143,8 +145,9 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 	}
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 描画処理
+
 
 void Particle::Draw() {
 
@@ -176,8 +179,9 @@ void Particle::Draw() {
 	renderer_->GetMesh()->Draw(numInstance_);
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 終了処理
+
 
 void Particle::Finalize() {
 	if (descriptorAllocated_) {
@@ -193,16 +197,57 @@ void Particle::Finalize() {
 	}
 }
 
-//=================================================================================================//
-// 色設定
+//=============================================================================================//
+// Particle追加
+
+
+// 不正な編集中の値は実行へ反映せず、直前の正常な設定でプレビューを続ける。
+bool Particle::ApplySettings(const ParticleSettings& settings) {
+	if (!ValidateParticleSettings(settings)) {
+		return false;
+	}
+	if (settings.texture != appliedTexture_) {
+		SetTexture(settings.texture);
+	}
+	settings_ = settings;
+	emitter_.transform.translate = settings.emitterPosition;
+	emitter_.count = settings.spawnCount;
+	emitter_.frequency = settings.interval;
+	accelerationField_.acceleration = settings.acceleration;
+	useAccelerationField_ = settings.accelerationEnabled;
+	useBillboard_ = settings.billboard;
+	blendMode_ = settings.blendMode;
+	material_->SetColor({1,1,1,1});
+	return true;
+}
+
+// 描画用リソースを残したまま、実行中の粒子と発生タイマーだけを初期化する。
+void Particle::ResetSimulation() {
+	particles_.clear();
+	emitter_.frequencyTime = 0;
+	numInstance_ = 0;
+}
+
+//=============================================================================================//
+// EmitterのTransform
+
+
+// 設定のコピーを作らず、シーン側で解決した発生位置だけを反映する。
+void Particle::SetEmitterPosition(const Vector3& position) {
+	if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) {
+		return;
+	}
+	emitter_.transform.translate = position;
+}
+
+//=============================================================================================//
+// Setter
+
 
 void Particle::SetColor(const Vector4& color) {
 
 	material_->SetColor(color);
 }
-
-//=================================================================================================//
-// Texture設定
 
 void Particle::SetTexture(const std::string& filePath) {
 
@@ -213,16 +258,14 @@ void Particle::SetTexture(const std::string& filePath) {
 	useBrightnessAlpha_ = !TextureManager::GetInstance()->HasTransparency(filePath);
 }
 
-//=================================================================================================//
-// BlendMode設定
-
 void Particle::SetBlendMode(BlendMode blendMode) {
 
 	blendMode_ = blendMode;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 新しいParticle生成
+
 
 Particle::ParticleData Particle::MakeNewParticle(const Vector3& translate) {
 
@@ -253,8 +296,9 @@ Particle::ParticleData Particle::MakeNewParticle(const Vector3& translate) {
 	return particle;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Emitterから指定個数のParticleを作る
+
 
 std::list<Particle::ParticleData> Particle::Emit() {
 
@@ -270,39 +314,4 @@ std::list<Particle::ParticleData> Particle::Emit() {
 	}
 
 	return particles;
-}
-
-// 描画用リソースを残したまま、実行中の粒子と発生タイマーだけを初期化する。
-void Particle::ResetSimulation() {
-	particles_.clear();
-	emitter_.frequencyTime = 0;
-	numInstance_ = 0;
-}
-
-// 不正な編集中の値は実行へ反映せず、直前の正常な設定でプレビューを続ける。
-bool Particle::ApplySettings(const ParticleSettings& settings) {
-	if (!ValidateParticleSettings(settings)) {
-		return false;
-	}
-	if (settings.texture != appliedTexture_) {
-		SetTexture(settings.texture);
-	}
-	settings_ = settings;
-	emitter_.transform.translate = settings.emitterPosition;
-	emitter_.count = settings.spawnCount;
-	emitter_.frequency = settings.interval;
-	accelerationField_.acceleration = settings.acceleration;
-	useAccelerationField_ = settings.accelerationEnabled;
-	useBillboard_ = settings.billboard;
-	blendMode_ = settings.blendMode;
-	material_->SetColor({1,1,1,1});
-	return true;
-}
-
-// 設定のコピーを作らず、シーン側で解決した発生位置だけを反映する。
-void Particle::SetEmitterPosition(const Vector3& position) {
-	if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) {
-		return;
-	}
-	emitter_.transform.translate = position;
 }

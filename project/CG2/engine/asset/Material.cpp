@@ -8,8 +8,9 @@
 #include "SrvManager.h"
 #include "ResourceManager.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void Material::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 
@@ -40,8 +41,9 @@ void Material::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 	materialData_->shininess = 40.0f;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // RootParameter設定
+
 
 void Material::Bind() {
 
@@ -58,24 +60,27 @@ void Material::Bind() {
 	srvManager_->SetGraphicsRootDescriptorTable(2, textureIndex_);
 }
 
-//=================================================================================================//
-// 色設定
+//=============================================================================================//
+// 色
+
 
 void Material::SetColor(const Vector4& color) {
 
 	materialData_->color = color;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Texture番号設定
+
 
 void Material::SetTextureIndex(uint32_t textureIndex) {
 
 	textureIndex_ = textureIndex;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // Lighting有効設定
+
 
 void Material::SetEnableLighting(bool enableLighting) {
 
@@ -84,6 +89,7 @@ void Material::SetEnableLighting(bool enableLighting) {
 
 //=============================================================================================//
 // UVTransform設定
+
 
 void Material::SetUVTransform (const Matrix4x4& uvTransform) {
 

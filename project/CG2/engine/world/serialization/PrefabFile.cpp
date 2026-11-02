@@ -5,113 +5,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
-std::filesystem::path PrefabFile::ResolveSource(const std::string& source, std::string& error) {
-	error.clear();
-	if (source.find('\0') != std::string::npos) {
-		error = "Invalid prefab source path.";
-		return {};
-	}
-	const std::filesystem::path relative(std::u8string(source.begin(), source.end()));
-	if (source.empty() || relative.is_absolute() || relative.has_root_name() || relative.extension() != ".ponprefab") {
-		error = "Invalid prefab source path.";
-		return {};
-	}
-	for (const std::filesystem::path& part : relative) {
-		if (part == "..") {
-			error = "Prefab source must remain inside resources.";
-			return {};
-		}
-	}
-	std::error_code pathError;
-	const std::filesystem::path resources = std::filesystem::weakly_canonical("resources", pathError);
-	if (pathError) {
-		error = pathError.message();
-		return {};
-	}
-	const std::filesystem::path path = std::filesystem::weakly_canonical(resources / relative, pathError);
-	if (pathError) {
-		error = pathError.message();
-		return {};
-	}
-	const std::filesystem::path contained = path.lexically_relative(resources);
-	if (contained.empty()) {
-		error = "Cannot resolve prefab source.";
-		return {};
-	}
-	for (const std::filesystem::path& part : contained) {
-		if (part == "..") {
-			error = "Prefab source escapes resources.";
-			return {};
-		}
-	}
-	return path;
-}
+//=============================================================================================//
+// 保存 / 読み込み・配置
 
-bool PrefabFile::Apply(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
-	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
-		const WorldObjectData* object = scene.GetObjectData(objectIndex);
-		if (object == nullptr) {
-			continue;
-		}
-		if (object->id == rootId) {
-			const std::filesystem::path path = ResolveSource(object->prefabSource, error);
-			if (path.empty()) {
-				return false;
-			}
-			return Save(scene, rootId, path, error);
-		}
-	}
-	error = "Prefab root does not exist.";
-	return false;
-}
-
-// 一時シーンで子孫を入れ替え、リソース検証にも成功した時だけ本体へ反映する。
-bool PrefabFile::Revert(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
-	WorldObjects candidate;
-	if (!candidate.ReplaceObjects(scene.CaptureObjects(), error)) {
-		return false;
-	}
-	WorldObjectData original;
-	bool found = false;
-	for (const WorldObjectData& object : candidate.GetObjects()) {
-		if (object.id == rootId) {
-			original = object;
-			found = true;
-			break;
-		}
-	}
-	if (!found) {
-		error = "Prefab root does not exist.";
-		return false;
-	}
-	const std::filesystem::path path = ResolveSource(original.prefabSource, error);
-	if (path.empty()) {
-		return false;
-	}
-	candidate.RemoveObject(rootId);
-	const WorldObjectId importedRoot = Instantiate(candidate, path, 0, {}, error);
-	if (importedRoot == 0) {
-		return false;
-	}
-	std::vector<WorldObjectData> objects = candidate.CaptureObjects();
-	for (WorldObjectData& object : objects) {
-		if (object.parentId == importedRoot) {
-			object.parentId = rootId;
-		}
-		if (object.id == importedRoot) {
-			object.id = rootId;
-			object.parentId = original.parentId;
-			object.transform = original.transform;
-			object.prefabSource = original.prefabSource;
-			// インスタンスのメイン指定は他のカメラと競合させない。
-			object.mainCamera = original.mainCamera;
-			if (object.type != WorldObjectType::Camera) {
-				object.mainCamera = false;
-			}
-		}
-	}
-	return scene.ReplaceObjects(std::move(objects), error);
-}
 
 bool PrefabFile::Save(IWorldObjects& scene, WorldObjectId rootId, const std::filesystem::path& path, std::string& error) {
 	error.clear();
@@ -246,4 +142,116 @@ WorldObjectId PrefabFile::Instantiate(IWorldObjects& scene, const std::filesyste
 		return 0;
 	}
 	return rootId;
+}
+
+//=============================================================================================//
+// 元Assetへの反映・復元
+
+
+bool PrefabFile::Apply(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
+	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
+		const WorldObjectData* object = scene.GetObjectData(objectIndex);
+		if (object == nullptr) {
+			continue;
+		}
+		if (object->id == rootId) {
+			const std::filesystem::path path = ResolveSource(object->prefabSource, error);
+			if (path.empty()) {
+				return false;
+			}
+			return Save(scene, rootId, path, error);
+		}
+	}
+	error = "Prefab root does not exist.";
+	return false;
+}
+
+// 一時シーンで子孫を入れ替え、リソース検証にも成功した時だけ本体へ反映する。
+bool PrefabFile::Revert(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
+	WorldObjects candidate;
+	if (!candidate.ReplaceObjects(scene.CaptureObjects(), error)) {
+		return false;
+	}
+	WorldObjectData original;
+	bool found = false;
+	for (const WorldObjectData& object : candidate.GetObjects()) {
+		if (object.id == rootId) {
+			original = object;
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		error = "Prefab root does not exist.";
+		return false;
+	}
+	const std::filesystem::path path = ResolveSource(original.prefabSource, error);
+	if (path.empty()) {
+		return false;
+	}
+	candidate.RemoveObject(rootId);
+	const WorldObjectId importedRoot = Instantiate(candidate, path, 0, {}, error);
+	if (importedRoot == 0) {
+		return false;
+	}
+	std::vector<WorldObjectData> objects = candidate.CaptureObjects();
+	for (WorldObjectData& object : objects) {
+		if (object.parentId == importedRoot) {
+			object.parentId = rootId;
+		}
+		if (object.id == importedRoot) {
+			object.id = rootId;
+			object.parentId = original.parentId;
+			object.transform = original.transform;
+			object.prefabSource = original.prefabSource;
+			// インスタンスのメイン指定は他のカメラと競合させない。
+			object.mainCamera = original.mainCamera;
+			if (object.type != WorldObjectType::Camera) {
+				object.mainCamera = false;
+			}
+		}
+	}
+	return scene.ReplaceObjects(std::move(objects), error);
+}
+
+std::filesystem::path PrefabFile::ResolveSource(const std::string& source, std::string& error) {
+	error.clear();
+	if (source.find('\0') != std::string::npos) {
+		error = "Invalid prefab source path.";
+		return {};
+	}
+	const std::filesystem::path relative(std::u8string(source.begin(), source.end()));
+	if (source.empty() || relative.is_absolute() || relative.has_root_name() || relative.extension() != ".ponprefab") {
+		error = "Invalid prefab source path.";
+		return {};
+	}
+	for (const std::filesystem::path& part : relative) {
+		if (part == "..") {
+			error = "Prefab source must remain inside resources.";
+			return {};
+		}
+	}
+	std::error_code pathError;
+	const std::filesystem::path resources = std::filesystem::weakly_canonical("resources", pathError);
+	if (pathError) {
+		error = pathError.message();
+		return {};
+	}
+	const std::filesystem::path path = std::filesystem::weakly_canonical(resources / relative, pathError);
+	if (pathError) {
+		error = pathError.message();
+		return {};
+	}
+	const std::filesystem::path contained = path.lexically_relative(resources);
+	if (contained.empty()) {
+		error = "Cannot resolve prefab source.";
+		return {};
+	}
+	for (const std::filesystem::path& part : contained) {
+		if (part == "..") {
+			error = "Prefab source escapes resources.";
+			return {};
+		}
+	}
+	return path;
 }

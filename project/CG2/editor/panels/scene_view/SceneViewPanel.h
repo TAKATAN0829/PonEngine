@@ -34,7 +34,7 @@ public:
 	void ShowScene() { forceScene_ = true; }
 
 	//=============================================================================================//
-	// メンバ関数 / 操作の解除
+	// 操作の解除
 
 	void ResetInteraction();
 
@@ -59,7 +59,7 @@ private:
 	void Update(IEditableWorld& scene, const EditorViewInfo& viewInfo, const Vector2& mousePosition);
 
 	//=============================================================================================//
-	// メンバ関数 / Transform更新・復元（SceneViewTransform.cpp）
+	// Transform更新・復元
 
 	// 位置を戻してからドラッグを解除する。
 	void CancelDrag(IEditableWorld& scene);
@@ -67,12 +67,12 @@ private:
 	bool ApplyDragTransform(IEditableWorld& scene, const Matrix4x4& delta);
 
 	//=============================================================================================//
-	// メンバ関数 / ID検索・選択・Asset配置（SceneViewPicking.cpp）
+	// ID検索・選択・Asset配置
 
 	static EditableObjectView FindObject(IEditableWorld& scene, WorldObjectId objectId);
 
 	//=============================================================================================//
-	// メンバ関数 / 表示領域（SceneViewContent.cpp）
+	// 表示領域
 
 	// 編集タブの内容だけを描き、GameViewの処理を混在させない。
 	void DrawScene(IEditableWorld& scene, EditorSelection& selection);
@@ -81,7 +81,7 @@ private:
 	bool ResizeViewport(IEditableWorld& scene, const ImVec2& availableSize);
 
 	//=============================================================================================//
-	// メンバ関数 / 補助表示（SceneViewOverlay・Collider・Guides.cpp）
+	// 補助表示
 
 	void DrawOverlay(IEditableWorld& scene, const EditorViewInfo& viewInfo, const ImVec2& origin);
 
@@ -91,7 +91,7 @@ private:
 	void DrawGuides(IEditableWorld& scene, const EditorSelection& selection, const EditorViewInfo& viewInfo, const ImVec2& origin);
 
 	//=============================================================================================//
-	// メンバ関数 / ギズモ描画・操作開始（SceneViewGizmo.cpp）
+	// ギズモ描画・操作開始
 
 	// 最も近い一軸を確定してから、全選択ルートの開始値を保存する。
 	bool BeginDrag(IEditableWorld& scene, EditorSelection& selection, const EditorViewInfo& viewInfo,
@@ -101,7 +101,7 @@ private:
 		const ImVec2& viewportOrigin, const Vector2& mousePosition, bool imageHovered);
 
 	//=============================================================================================//
-	// メンバ関数 / 選択・配置（SceneViewPicking.cpp）
+	// 選択・配置
 
 	bool AcceptModelDrop(IEditableWorld& scene, EditorSelection& selection, const ImVec2& viewportOrigin);
 	void PickObject(IEditableWorld& scene, EditorSelection& selection, const EditorViewInfo& viewInfo, const Vector2& mousePosition);

@@ -64,7 +64,7 @@ public:
 	bool GetCameraView(WorldObjectId cameraId, float aspectRatio, CameraView& view) const override;
 
 	//=============================================================================================//
-	// メンバ関数 / 追加・複製・削除
+	// 追加・複製・削除
 
 	WorldObjectId PlaceModel(const std::string& model, WorldObjectId parentId, const Vector3& position, std::string& error) override;
 	WorldObjectId AddObject(const std::string& model) override;
@@ -73,13 +73,13 @@ public:
 	bool RemoveObject(WorldObjectId id) override;
 
 	//=============================================================================================//
-	// メンバ関数 / 一括置換
+	// 一括置換
 
 	// 全件の検証後に反映し、失敗時は現在の一覧を維持する。
 	bool ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error) override;
 
 	//=============================================================================================//
-	// メンバ関数 / 保存データ検証
+	// 保存データ検証
 
 	static bool IsSupportedModel(const std::string& model);
 	static bool Validate(const WorldObjectData& object);

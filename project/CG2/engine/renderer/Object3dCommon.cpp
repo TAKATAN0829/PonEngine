@@ -9,8 +9,9 @@
 #include "ShaderCompiler.h"
 #include "ResourceManager.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void Object3dCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
 
@@ -29,8 +30,9 @@ void Object3dCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager,
 	CreateCameraResource();
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 共通描画設定
+
 
 void Object3dCommon::DrawSettingCommon() {
 
@@ -45,16 +47,18 @@ void Object3dCommon::DrawSettingCommon() {
 	commandList->SetGraphicsRootConstantBufferView(4, cameraResource_->GetGPUVirtualAddress());
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // BlendMode設定
+
 
 void Object3dCommon::SetBlendMode(BlendMode blendMode) {
 
 	dxCommon_->GetCommandList()->SetPipelineState(pipelineStates_[blendMode].Get());
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // RootSignatureの作成
+
 
 void Object3dCommon::CreateRootSignature() {
 
@@ -124,8 +128,9 @@ void Object3dCommon::CreateRootSignature() {
 	rootSignature_ = pipelineManager.CreateRootSignature(dxCommon_->GetDevice(), descriptionRootSignature);
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // GraphicsPipelineの生成
+
 
 void Object3dCommon::CreateGraphicsPipeline() {
 
@@ -160,8 +165,9 @@ void Object3dCommon::CreateGraphicsPipeline() {
 	}
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // カメラ用リソース生成
+
 
 void Object3dCommon::CreateCameraResource() {
 

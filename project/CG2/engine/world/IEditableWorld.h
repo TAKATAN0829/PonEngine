@@ -58,14 +58,14 @@ public:
 	virtual size_t GetParticleCount() const { return 0; }
 
 	//=============================================================================================//
-	// Setter・メンバ関数 / Particleプレビュー
+	// Setter / Particleプレビュー
 
 	virtual void SetParticlePreview(const ParticlePreviewState& state) { (void)state; }
 	virtual void ResetParticlePreview() {}
 	virtual void BurstParticles() {}
 
 	//=============================================================================================//
-	// メンバ関数 / オブジェクト操作
+	// オブジェクト操作
 
 	// 3Dプレビュー用の画像ハンドルを返す。描画を持たないシーンは0を返す。
 	virtual uint64_t GetModelPreview(const std::string&, std::string&) { return 0; }

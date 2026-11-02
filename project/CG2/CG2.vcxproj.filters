@@ -379,13 +379,13 @@
     <ClInclude Include="editor\panels\particle_editor\ParticleEditorPanel.h"><Filter>editor\panels\particle_editor</Filter></ClInclude>
 
     <ClCompile Include="editor\panels\project\ProjectPanel.cpp"><Filter>editor\panels\project</Filter></ClCompile>
-    <ClCompile Include="editor\panels\project\ProjectAssets.cpp"><Filter>editor\panels\project</Filter></ClCompile>
-    <ClCompile Include="editor\panels\project\ProjectView.cpp"><Filter>editor\panels\project</Filter></ClCompile>
+
+
     <ClCompile Include="editor\panels\console\ConsolePanel.cpp"><Filter>editor\panels\console</Filter></ClCompile>
-    <ClCompile Include="editor\panels\scene_view\SceneViewGizmo.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
-    <ClCompile Include="editor\panels\scene_view\SceneViewTransform.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
-    <ClCompile Include="editor\panels\scene_view\SceneViewPicking.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
-    <ClCompile Include="editor\panels\scene_view\SceneViewOverlay.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
+
+
+
+
 
     <ClInclude Include="editor\panels\project\ProjectPanel.h"><Filter>editor\panels\project</Filter></ClInclude>
     <ClInclude Include="editor\panels\console\ConsolePanel.h"><Filter>editor\panels\console</Filter></ClInclude>
@@ -398,21 +398,21 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\systems\WorldMotion.cpp"><Filter>engine\world\systems</Filter></ClCompile>
-    <ClCompile Include="editor\panels\inspector\InspectorMotion.cpp"><Filter>editor\panels\inspector</Filter></ClCompile>
+
     <ClInclude Include="engine\world\systems\WorldMotion.h"><Filter>engine\world\systems</Filter></ClInclude>
     <ClInclude Include="engine\world\settings\MotionSettings.h"><Filter>engine\world\settings</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\systems\WorldCollision.cpp"><Filter>engine\world\systems</Filter></ClCompile>
-    <ClCompile Include="editor\panels\inspector\InspectorCollider.cpp"><Filter>editor\panels\inspector</Filter></ClCompile>
-    <ClCompile Include="editor\panels\scene_view\SceneViewCollider.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
-    <ClCompile Include="editor\panels\scene_view\SceneViewGuides.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
+
+
+
     <ClInclude Include="engine\world\systems\WorldCollision.h"><Filter>engine\world\systems</Filter></ClInclude>
     <ClInclude Include="engine\world\settings\ColliderSettings.h"><Filter>engine\world\settings</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\systems\WorldPhysics.cpp"><Filter>engine\world\systems</Filter></ClCompile>
-    <ClCompile Include="editor\panels\inspector\InspectorBody.cpp"><Filter>editor\panels\inspector</Filter></ClCompile>
+
     <ClInclude Include="engine\world\systems\WorldPhysics.h"><Filter>engine\world\systems</Filter></ClInclude>
     <ClInclude Include="engine\world\settings\RigidBodySettings.h"><Filter>engine\world\settings</Filter></ClInclude>
   </ItemGroup>
@@ -426,7 +426,7 @@
     <ClCompile Include="engine\world\systems\WorldLighting.cpp"><Filter>engine\world\systems</Filter></ClCompile>
     <ClInclude Include="engine\world\systems\WorldLighting.h"><Filter>engine\world\systems</Filter></ClInclude>
     <ClInclude Include="engine\world\settings\LightSettings.h"><Filter>engine\world\settings</Filter></ClInclude>
-    <ClCompile Include="editor\panels\inspector\InspectorLights.cpp"><Filter>editor\panels\inspector</Filter></ClCompile>
+
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\objects\WorldPrimitives.cpp"><Filter>engine\world\objects</Filter></ClCompile>
@@ -447,9 +447,9 @@
     <ClInclude Include="engine\world\serialization\LegacyLightMigration.h"><Filter>engine\world\serialization</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\panels\inspector\InspectorSelection.cpp"><Filter>editor\panels\inspector</Filter></ClCompile>
+
     <ClInclude Include="editor\panels\performance\PerformancePanel.h"><Filter>editor\panels\performance</Filter></ClInclude>
-    <ClCompile Include="editor\panels\scene_view\SceneViewContent.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
+
     <ClCompile Include="editor\panels\game_view\GameViewPanel.cpp"><Filter>editor\panels\game_view</Filter></ClCompile>
     <ClInclude Include="editor\panels\game_view\GameViewPanel.h"><Filter>editor\panels\game_view</Filter></ClInclude>
   </ItemGroup>

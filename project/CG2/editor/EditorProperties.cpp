@@ -5,6 +5,10 @@
 #include <cfloat>
 #endif
 
+//=============================================================================================//
+// 描画処理 / セクション・プロパティ表
+
+
 bool EditorProperties::Header(const char* title, const char* help) {
 #ifdef USE_IMGUI
 	ImGui::Spacing();
@@ -62,6 +66,10 @@ void EditorProperties::End() {
 	ImGui::PopID();
 #endif
 }
+
+//=============================================================================================//
+// 描画処理 / 値の編集。戻り値は変更の有無。
+
 
 bool EditorProperties::Float(const char* label, float* value, float speed, float minimum, float maximum, const char* format) {
 #ifdef USE_IMGUI

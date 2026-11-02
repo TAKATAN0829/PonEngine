@@ -2,6 +2,10 @@
 #include <limits>
 #include <utility>
 
+//=============================================================================================//
+// 基本形状の作成
+
+
 WorldObjectId WorldPrimitives::Create(IWorldObjects& scene, PrimitiveType type, std::string& error) {
 	error.clear();
 	if (!scene.SupportsObjectCollection()) {

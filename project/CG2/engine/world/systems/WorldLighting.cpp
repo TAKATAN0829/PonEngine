@@ -3,6 +3,10 @@
 #include <cmath>
 #include <numbers>
 
+//=============================================================================================//
+// ライト計算
+
+
 // 実行中の向きとGPU用一覧だけを計算し、具体的なシーン管理や保存処理は使わない。
 bool WorldLighting::GetDirection(const Matrix4x4& world, Vector3& direction) {
 	direction = {world.m[2][0],world.m[2][1],world.m[2][2]};
@@ -56,4 +60,3 @@ WorldLightCollection WorldLighting::Collect(const IWorldObjects& scene) {
 	}
 	return collection;
 }
-

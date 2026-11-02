@@ -5,6 +5,9 @@
 #include "imgui/imgui.h"
 #include <cfloat>
 
+//=============================================================================================//
+// 実装内補助定義
+
 namespace {
 	// 狭いInspector幅でもラベルと数値が重ならないよう、ラベルの下へ値を並べる。
 	void EditParticleVector(const char* label, Vector3& value, float minimum, float maximum) {
@@ -102,100 +105,9 @@ namespace {
 }
 #endif
 
-// 実行中の粒子数ではなく、保存対象の設定だけで未保存状態を判定する。
-bool ParticleEditorPanel::IsDirty(IEditableWorld& scene) const {
-	const ParticleSettings* settings = scene.GetParticleSettings();
-	return scene_ == &scene && settings != nullptr && !EqualParticleSettings(*settings, savedSettings_);
-}
-
-// 保存成功時だけ比較基準を更新し、失敗した設定を保存済み扱いにしない。
-bool ParticleEditorPanel::Save(IEditableWorld& scene) {
-	const ParticleSettings* settings = scene.GetParticleSettings();
-	if (settings == nullptr) {
-		return true;
-	}
-	if (!ParticlePresetFile::Save(*settings, ParticlePresetFile::kDefaultPath, status_)) {
-		LogSystem::Log(status_ + "\n");
-		return false;
-	}
-	savedSettings_ = *settings;
-	status_ = "プリセットを保存しました。";
-	LogSystem::Log("Particle preset saved.\n");
-	return true;
-}
-
-// 選択がParticleの場合はそのComponentを編集し、それ以外では共通プリセットを編集する。
-ParticleSettings* ParticleEditorPanel::GetEditingSettings(IEditableWorld& scene) const {
-	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
-		const EditableObjectView object = scene.GetEditableObject(objectIndex);
-		if (object.id == targetId_) {
-			if (object.type == WorldObjectType::Particle) {
-				return object.particleSettings;
-			}
-		}
-	}
-	return scene.GetParticleSettings();
-}
-
-// 個別Emitterのプリセット書出しでは、共通設定の保存基準を更新しない。
-bool ParticleEditorPanel::SaveEditingPreset(IEditableWorld& scene) {
-	if (targetId_ == kInvalidWorldObjectId) {
-		return Save(scene);
-	}
-	const ParticleSettings* settings = GetEditingSettings(scene);
-	if (settings == nullptr) {
-		return false;
-	}
-	const bool saved = ParticlePresetFile::Save(*settings, ParticlePresetFile::kDefaultPath, status_);
-	if (saved) {
-		status_ = "選択Emitterをプリセットへ書き出しました。配置はシーン保存で保存できます。";
-	}
-	return saved;
-}
-
-// 設定変更の破棄が確認できた操作だけを実行する。
-void ParticleEditorPanel::ApplyPendingAction(IEditableWorld& scene) {
-	ParticleSettings* settings = GetEditingSettings(scene);
-	if (settings == nullptr) {
-		return;
-	}
-	if (pendingAction_ == PresetAction::Load) {
-		if (ParticlePresetFile::Load(*settings, ParticlePresetFile::kDefaultPath, status_)) {
-			if (targetId_ == kInvalidWorldObjectId) {
-				savedSettings_ = *settings;
-			}
-			status_ = "プリセットを読み込みました。";
-			scene.ResetParticlePreview();
-		}
-	} else if (pendingAction_ == PresetAction::Defaults) {
-		*settings = ParticleSettings{};
-		scene.ResetParticlePreview();
-		status_ = "既定値に戻しました。保存すると次回も使用できます。";
-	} else {
-		ParticlePresetKind kind = ParticlePresetKind::Fire;
-		if (pendingAction_ == PresetAction::Smoke) {
-			kind = ParticlePresetKind::Smoke;
-		} else if (pendingAction_ == PresetAction::Sparks) {
-			kind = ParticlePresetKind::Sparks;
-		}
-		const Vector3 emitterPosition = settings->emitterPosition;
-		*settings = MakeParticlePreset(kind);
-		settings->emitterPosition = emitterPosition; // プリセット選択で配置を移動しない。
-		scene.ResetParticlePreview();
-		status_ = "プリセットを適用しました。プレビューで確認し、必要に応じて保存してください。";
-	}
-	pendingAction_ = PresetAction::None;
-}
-
-// 注視要求はSceneパネル側が一度だけ消費する。
-bool ParticleEditorPanel::ConsumeFocusRequest() {
-	const bool requested = focusRequested_;
-	focusRequested_ = false;
-	return requested;
-}
-
 //=============================================================================================//
 // 初期化処理
+
 
 void ParticleEditorPanel::Initialize(IEditableWorld& scene) {
 	scene_ = &scene;
@@ -213,6 +125,7 @@ void ParticleEditorPanel::Initialize(IEditableWorld& scene) {
 
 //=============================================================================================//
 // 更新処理
+
 
 void ParticleEditorPanel::Update(IEditableWorld& scene, bool gamePlaying, WorldObjectId selectedId) {
 	if (scene_ != &scene) {
@@ -246,21 +159,9 @@ void ParticleEditorPanel::Update(IEditableWorld& scene, bool gamePlaying, WorldO
 	}
 }
 
-// 選択中のEmitterだけがTransformを発生位置として使う。
-TransformData* ParticleEditorPanel::GetEditingTransform(IEditableWorld& scene) const {
-	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
-		const EditableObjectView object = scene.GetEditableObject(objectIndex);
-		if (object.id == targetId_) {
-			if (object.type == WorldObjectType::Particle) {
-				return object.transform;
-			}
-		}
-	}
-	return nullptr;
-}
-
 //=============================================================================================//
 // 描画処理
+
 
 void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObjectId selectedId, bool* open) {
 	Update(scene, gamePlaying, selectedId);
@@ -421,4 +322,125 @@ void ParticleEditorPanel::StopPreview(IEditableWorld& scene, bool gamePlaying) {
 		}
 	}
 	scene.SetParticlePreview(preview_);
+}
+
+//=============================================================================================//
+// Getter / 設定・注視位置
+
+
+// 実行中の粒子数ではなく、保存対象の設定だけで未保存状態を判定する。
+bool ParticleEditorPanel::IsDirty(IEditableWorld& scene) const {
+	const ParticleSettings* settings = scene.GetParticleSettings();
+	return scene_ == &scene && settings != nullptr && !EqualParticleSettings(*settings, savedSettings_);
+}
+
+//=============================================================================================//
+// 保存・注視要求
+
+
+// 保存成功時だけ比較基準を更新し、失敗した設定を保存済み扱いにしない。
+bool ParticleEditorPanel::Save(IEditableWorld& scene) {
+	const ParticleSettings* settings = scene.GetParticleSettings();
+	if (settings == nullptr) {
+		return true;
+	}
+	if (!ParticlePresetFile::Save(*settings, ParticlePresetFile::kDefaultPath, status_)) {
+		LogSystem::Log(status_ + "\n");
+		return false;
+	}
+	savedSettings_ = *settings;
+	status_ = "プリセットを保存しました。";
+	LogSystem::Log("Particle preset saved.\n");
+	return true;
+}
+
+// 注視要求はSceneパネル側が一度だけ消費する。
+bool ParticleEditorPanel::ConsumeFocusRequest() {
+	const bool requested = focusRequested_;
+	focusRequested_ = false;
+	return requested;
+}
+
+//=============================================================================================//
+// Getter / 編集設定
+
+
+// 選択がParticleの場合はそのComponentを編集し、それ以外では共通プリセットを編集する。
+ParticleSettings* ParticleEditorPanel::GetEditingSettings(IEditableWorld& scene) const {
+	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
+		const EditableObjectView object = scene.GetEditableObject(objectIndex);
+		if (object.id == targetId_) {
+			if (object.type == WorldObjectType::Particle) {
+				return object.particleSettings;
+			}
+		}
+	}
+	return scene.GetParticleSettings();
+}
+
+// 選択中のEmitterだけがTransformを発生位置として使う。
+TransformData* ParticleEditorPanel::GetEditingTransform(IEditableWorld& scene) const {
+	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
+		const EditableObjectView object = scene.GetEditableObject(objectIndex);
+		if (object.id == targetId_) {
+			if (object.type == WorldObjectType::Particle) {
+				return object.transform;
+			}
+		}
+	}
+	return nullptr;
+}
+
+//=============================================================================================//
+// プリセット反映
+
+
+// 設定変更の破棄が確認できた操作だけを実行する。
+void ParticleEditorPanel::ApplyPendingAction(IEditableWorld& scene) {
+	ParticleSettings* settings = GetEditingSettings(scene);
+	if (settings == nullptr) {
+		return;
+	}
+	if (pendingAction_ == PresetAction::Load) {
+		if (ParticlePresetFile::Load(*settings, ParticlePresetFile::kDefaultPath, status_)) {
+			if (targetId_ == kInvalidWorldObjectId) {
+				savedSettings_ = *settings;
+			}
+			status_ = "プリセットを読み込みました。";
+			scene.ResetParticlePreview();
+		}
+	} else if (pendingAction_ == PresetAction::Defaults) {
+		*settings = ParticleSettings{};
+		scene.ResetParticlePreview();
+		status_ = "既定値に戻しました。保存すると次回も使用できます。";
+	} else {
+		ParticlePresetKind kind = ParticlePresetKind::Fire;
+		if (pendingAction_ == PresetAction::Smoke) {
+			kind = ParticlePresetKind::Smoke;
+		} else if (pendingAction_ == PresetAction::Sparks) {
+			kind = ParticlePresetKind::Sparks;
+		}
+		const Vector3 emitterPosition = settings->emitterPosition;
+		*settings = MakeParticlePreset(kind);
+		settings->emitterPosition = emitterPosition; // プリセット選択で配置を移動しない。
+		scene.ResetParticlePreview();
+		status_ = "プリセットを適用しました。プレビューで確認し、必要に応じて保存してください。";
+	}
+	pendingAction_ = PresetAction::None;
+}
+
+// 個別Emitterのプリセット書出しでは、共通設定の保存基準を更新しない。
+bool ParticleEditorPanel::SaveEditingPreset(IEditableWorld& scene) {
+	if (targetId_ == kInvalidWorldObjectId) {
+		return Save(scene);
+	}
+	const ParticleSettings* settings = GetEditingSettings(scene);
+	if (settings == nullptr) {
+		return false;
+	}
+	const bool saved = ParticlePresetFile::Save(*settings, ParticlePresetFile::kDefaultPath, status_);
+	if (saved) {
+		status_ = "選択Emitterをプリセットへ書き出しました。配置はシーン保存で保存できます。";
+	}
+	return saved;
 }

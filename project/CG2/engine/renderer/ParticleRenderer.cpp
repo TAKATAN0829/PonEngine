@@ -11,8 +11,9 @@
 #include "Mesh.h"
 #include "SrvManager.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // 初期化処理
+
 
 void ParticleRenderer::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
 
@@ -152,8 +153,9 @@ void ParticleRenderer::Initialize(DirectXCommon* dxCommon, SrvManager* srvManage
 	mesh_->Initialize(dxCommon_, MeshType::kPlane);
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 終了処理
+
 
 void ParticleRenderer::Finalize() {
 	dxCommon_->FinalizeDepthSampling();
@@ -163,8 +165,9 @@ void ParticleRenderer::Finalize() {
 	delete mesh_;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // 描画前設定
+
 
 void ParticleRenderer::PreDraw(BlendMode blendMode, bool useBrightnessAlpha, const Matrix4x4& inverseViewProjection, float softDistance) {
 

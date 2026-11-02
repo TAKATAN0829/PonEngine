@@ -11,6 +11,9 @@
 #include <cctype>
 #include "MathUtility.h"
 
+//=============================================================================================//
+// 実装内補助定義
+
 namespace {
 	constexpr size_t kMaxHierarchyDepth = 64;
 
@@ -66,6 +69,80 @@ namespace {
 	}
 }
 
+//=============================================================================================//
+// Getter / オブジェクト一覧
+
+
+// シーンが所有する値への借用参照を返す。追加・削除後は取得し直すこと。
+EditableObjectView WorldObjects::GetEditableObject(size_t index) {
+	if (index >= objects_.size()) {
+		return {};
+	}
+	WorldObjectData& object = objects_[index];
+	return {object.id, object.name.c_str(), &object.transform, &object.color, &object.enableLighting,
+		&object.shininess, &object.model, &object.useRootNodeMatrix, &object.name,
+		&object.active, &object.hasMeshRenderer, object.type, &object.lightIntensity,
+		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId, &object.camera, object.mainCamera,
+		&object.materials, &object.animation, &object.body, &object.collider, &object.motion, &object.light};
+}
+
+// 読取専用の比較では文字列を含むシーン全体を複製しない。
+const WorldObjectData* WorldObjects::GetObjectData(size_t index) const {
+	if (index >= objects_.size()) {
+		return nullptr;
+	}
+	return &objects_[index];
+}
+
+const WorldObjectData* WorldObjects::GetObjectDataById(WorldObjectId identifier) const {
+	return GetObjectData(FindObjectIndex(identifier));
+}
+
+//=============================================================================================//
+// Getter・Setter / 親子変換
+
+
+bool WorldObjects::GetObjectWorldMatrix(WorldObjectId id, Matrix4x4& world) const {
+	world = MathUtility::MakeIdentity4x4();
+	for (size_t depth = 0; depth < kMaxHierarchyDepth; ++depth) {
+		const size_t objectIndex = FindObjectIndex(id);
+		if (objectIndex == objects_.size()) {
+			return false;
+		}
+		const WorldObjectData& object = objects_[objectIndex];
+		world = MathUtility::Multiply(world, MathUtility::MakeAffineMatrix(object.transform.scale, object.transform.rotate, object.transform.translate));
+		id = object.parentId;
+		if (id == kInvalidWorldObjectId) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool WorldObjects::SetObjectWorldTransform(WorldObjectId id, const Matrix4x4& world) {
+	const size_t index = FindObjectIndex(id);
+	if (index == objects_.size()) {
+		return false;
+	}
+	Matrix4x4 local = world;
+	if (objects_[index].parentId != 0) {
+		Matrix4x4 parent{};
+		if (!GetObjectWorldMatrix(objects_[index].parentId,parent)) {
+			return false;
+		}
+		if (!IsInvertibleAffine(parent)) {
+			return false;
+		}
+		local = MathUtility::Multiply(world,MathUtility::Inverse(parent));
+	}
+	TransformData transform{};
+	if (!DecomposeAffine(local,transform)) {
+		return false;
+	}
+	objects_[index].transform = transform;
+	return true;
+}
+
 WorldObjectId WorldObjects::PlacePrefab(const std::string& prefab, WorldObjectId parentId, const Vector3& position, std::string& error) {
 	const std::filesystem::path relative(std::u8string(prefab.begin(), prefab.end()));
 	if (relative.is_absolute() || relative.has_root_name() || relative.extension() != ".ponprefab") {
@@ -91,6 +168,431 @@ WorldObjectId WorldObjects::PlacePrefab(const std::string& prefab, WorldObjectId
 	}
 	return PrefabFile::Instantiate(*this, resolved, parentId, position, error);
 }
+
+bool WorldObjects::SetObjectWorldPosition(WorldObjectId id, const Vector3& position) {
+	const size_t objectIndex = FindObjectIndex(id);
+	if (objectIndex == objects_.size()) {
+		return false;
+	}
+	Vector3 localPosition = position;
+	if (objects_[objectIndex].parentId != kInvalidWorldObjectId) {
+		Matrix4x4 parentWorld{};
+		if (!GetObjectWorldMatrix(objects_[objectIndex].parentId, parentWorld)) {
+			return false;
+		}
+		if (!IsInvertibleAffine(parentWorld)) {
+			return false;
+		}
+		localPosition = MathUtility::Transform(position, MathUtility::Inverse(parentWorld));
+	}
+	if (!std::isfinite(localPosition.x) || !std::isfinite(localPosition.y) || !std::isfinite(localPosition.z)) {
+		return false;
+	}
+	objects_[objectIndex].transform.translate = localPosition;
+	return true;
+}
+
+bool WorldObjects::IsObjectActive(WorldObjectId id) const {
+	for (size_t depth = 0; depth < kMaxHierarchyDepth; ++depth) {
+		const size_t objectIndex = FindObjectIndex(id);
+		if (objectIndex == objects_.size()) {
+			return false;
+		}
+		if (!objects_[objectIndex].active) {
+			return false;
+		}
+		id = objects_[objectIndex].parentId;
+		if (id == kInvalidWorldObjectId) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool WorldObjects::SetObjectParent(WorldObjectId childId, WorldObjectId parentId, std::string& error) {
+	error.clear();
+	const size_t childIndex = FindObjectIndex(childId);
+	if (childIndex == objects_.size()) {
+		error = "Child object does not exist.";
+		return false;
+	}
+	if (objects_[childIndex].parentId == parentId) {
+		return true;
+	}
+	if (parentId != kInvalidWorldObjectId) {
+		if (FindObjectIndex(parentId) == objects_.size()) {
+			error = "Parent object does not exist.";
+			return false;
+		}
+		if (IsDescendantOf(parentId, childId)) {
+			error = "Parenting would create a cycle.";
+			return false;
+		}
+	}
+	Matrix4x4 localMatrix{};
+	if (!GetObjectWorldMatrix(childId, localMatrix)) {
+		error = "Cannot resolve child transform.";
+		return false;
+	}
+	if (parentId != kInvalidWorldObjectId) {
+		Matrix4x4 parentWorld{};
+		if (!GetObjectWorldMatrix(parentId, parentWorld)) {
+			error = "Cannot resolve parent transform.";
+			return false;
+		}
+		if (!IsInvertibleAffine(parentWorld)) {
+			error = "Parent scale is zero or too small.";
+			return false;
+		}
+		localMatrix = MathUtility::Multiply(localMatrix, MathUtility::Inverse(parentWorld));
+	}
+	TransformData localTransform{};
+	if (!DecomposeAffine(localMatrix, localTransform)) {
+		error = "Cannot preserve world transform with this rotation and non-uniform scale.";
+		return false;
+	}
+	std::vector<WorldObjectData> replaced = objects_;
+	replaced[childIndex].parentId = parentId;
+	replaced[childIndex].transform = localTransform;
+	return ReplaceObjects(std::move(replaced), error);
+}
+
+//=============================================================================================//
+// Getter・Setter / メインカメラ
+
+
+// 0を指定するとメイン指定を解除する。失敗時は指定を変更しない。
+bool WorldObjects::SetMainCamera(WorldObjectId id) {
+	if (id != kInvalidWorldObjectId) {
+		const size_t objectIndex = FindObjectIndex(id);
+		if (objectIndex == objects_.size()) {
+			return false;
+		}
+		if (objects_[objectIndex].type != WorldObjectType::Camera) {
+			return false;
+		}
+	}
+	for (WorldObjectData& object : objects_) {
+		object.mainCamera = object.id == id;
+	}
+	return true;
+}
+
+WorldObjectId WorldObjects::GetMainCameraId() const {
+	for (const WorldObjectData& object : objects_) {
+		if (object.mainCamera) {
+			return object.id;
+		}
+	}
+	return kInvalidWorldObjectId;
+}
+
+// カメラの向きは親から継承し、拡縮やせん断は視野へ持ち込まない。
+bool WorldObjects::GetGameCameraView(float aspectRatio, CameraView& view) const {
+	return GetCameraView(GetMainCameraId(), aspectRatio, view);
+}
+
+bool WorldObjects::GetCameraView(WorldObjectId cameraId, float aspectRatio, CameraView& view) const {
+	if (!std::isfinite(aspectRatio) || aspectRatio <= 0) {
+		return false;
+	}
+	const size_t cameraIndex = FindObjectIndex(cameraId);
+	if (cameraIndex >= objects_.size()) {
+		return false;
+	}
+	if (objects_[cameraIndex].type != WorldObjectType::Camera) {
+		return false;
+	}
+	if (!IsObjectActive(cameraId)) {
+		return false;
+	}
+	if (!Validate(objects_[FindObjectIndex(cameraId)])) {
+		return false;
+	}
+	Matrix4x4 world{};
+	if (!GetObjectWorldMatrix(cameraId, world)) {
+		return false;
+	}
+	Vector3 forward = {world.m[2][0], world.m[2][1], world.m[2][2]};
+	Vector3 up = {world.m[1][0], world.m[1][1], world.m[1][2]};
+	if (MathUtility::Length(forward) < 0.000001f) {
+		return false;
+	}
+	forward = MathUtility::Normalize(forward);
+	Vector3 right = CrossProduct(up, forward);
+	if (MathUtility::Length(right) < 0.000001f) {
+		return false;
+	}
+	right = MathUtility::Normalize(right);
+	up = CrossProduct(forward, right);
+	view.cameraWorld = MathUtility::MakeIdentity4x4();
+	view.cameraWorld.m[0][0] = right.x; view.cameraWorld.m[0][1] = right.y; view.cameraWorld.m[0][2] = right.z;
+	view.cameraWorld.m[1][0] = up.x; view.cameraWorld.m[1][1] = up.y; view.cameraWorld.m[1][2] = up.z;
+	view.cameraWorld.m[2][0] = forward.x; view.cameraWorld.m[2][1] = forward.y; view.cameraWorld.m[2][2] = forward.z;
+	view.cameraWorld.m[3][0] = world.m[3][0]; view.cameraWorld.m[3][1] = world.m[3][1]; view.cameraWorld.m[3][2] = world.m[3][2];
+	const CameraSettings& lens = objects_[FindObjectIndex(cameraId)].camera;
+	const Matrix4x4 projection = MathUtility::MakePerspectiveFovMatrix(lens.fieldOfView, aspectRatio, lens.nearClip, lens.farClip);
+	view.viewProjection = MathUtility::Multiply(MathUtility::Inverse(view.cameraWorld), projection);
+	return true;
+}
+
+//=============================================================================================//
+// 追加・複製・削除
+
+
+// ドロップ配置は一括検証してから追加し、失敗した途中のオブジェクトを残さない。
+WorldObjectId WorldObjects::PlaceModel(const std::string& model, WorldObjectId parentId, const Vector3& position, std::string& error) {
+	error.clear();
+	if (!IsSupportedModel(model)) {
+		error = "このモデルはまだ読み込まれていません。";
+		return kInvalidWorldObjectId;
+	}
+	if (objects_.size() >= kMaxObjects) {
+		error = "オブジェクト数の上限です。";
+		return kInvalidWorldObjectId;
+	}
+	if (nextId_ == (std::numeric_limits<WorldObjectId>::max)()) {
+		error = "IDの上限です。";
+		return kInvalidWorldObjectId;
+	}
+	if (!PrepareModel(model,error)) {
+		return kInvalidWorldObjectId;
+	}
+	WorldObjectData object;
+	object.id = nextId_;
+	object.name = model + " #" + std::to_string(object.id);
+	object.model = model;
+	object.parentId = parentId;
+	object.transform.translate = position;
+	if (parentId != kInvalidWorldObjectId) {
+		Matrix4x4 parentWorld{};
+		if (!GetObjectWorldMatrix(parentId, parentWorld)) {
+			error = "親が見つかりません。";
+			return kInvalidWorldObjectId;
+		}
+		if (!IsInvertibleAffine(parentWorld)) {
+			error = "親の拡縮が0に近いため配置できません。";
+			return kInvalidWorldObjectId;
+		}
+		object.transform.translate = MathUtility::Transform(position, MathUtility::Inverse(parentWorld));
+	}
+	std::vector<WorldObjectData> replaced = objects_;
+	replaced.push_back(object);
+	if (!ReplaceObjects(std::move(replaced), error)) {
+		return kInvalidWorldObjectId;
+	}
+	return object.id;
+}
+
+// 新しいIDと既定の設定を持つモデルを追加する。削除済みIDは再利用しない。
+WorldObjectId WorldObjects::AddObject(const std::string& model) {
+	if (!IsSupportedModel(model)) {
+		return kInvalidWorldObjectId;
+	}
+	if (objects_.size() >= kMaxObjects) {
+		return kInvalidWorldObjectId;
+	}
+	if (nextId_ == (std::numeric_limits<WorldObjectId>::max)()) {
+		return kInvalidWorldObjectId;
+	}
+	std::string importError;
+	if (!PrepareModel(model, importError)) {
+		return kInvalidWorldObjectId;
+	}
+	WorldObjectData object;
+	object.id = nextId_;
+	object.model = model;
+	object.name = model + " #" + std::to_string(object.id);
+	objects_.push_back(std::move(object));
+	objectIndices_[nextId_] = objects_.size() - 1;
+	return nextId_++;
+}
+
+// GPUリソースを作らず、種類に応じた編集用データだけを追加する。
+WorldObjectId WorldObjects::CreateObject(WorldObjectType type) {
+	if (type < WorldObjectType::Model || type > WorldObjectType::DirectionalLight) {
+		return kInvalidWorldObjectId;
+	}
+	if (!CanCreateType(type)) {
+		return kInvalidWorldObjectId;
+	}
+	const WorldObjectId createdId = AddObject("plane.gltf");
+	if (createdId == kInvalidWorldObjectId) {
+		return createdId;
+	}
+	WorldObjectData& object = objects_.back();
+	object.type = type;
+	object.hasMeshRenderer = type == WorldObjectType::Model;
+	std::string typeName = "Model";
+	if (type == WorldObjectType::Empty) {
+		typeName = "Empty";
+	}
+	if (type == WorldObjectType::PointLight) {
+		typeName = "Point Light";
+		object.transform.translate.y = 2;
+	}
+	if (type == WorldObjectType::Particle) {
+		typeName = "Particle";
+	}
+	if (type == WorldObjectType::SpotLight || type == WorldObjectType::DirectionalLight) {
+		typeName = LightTypes::GetName(type);
+		object.transform.translate.y = 2;
+		object.transform.rotate.x = 1.57079632679f;
+	}
+	if (type == WorldObjectType::Camera) {
+		typeName = "Camera";
+		object.transform.translate = {0,0,-30};
+		object.mainCamera = GetMainCameraId() == kInvalidWorldObjectId;
+	}
+	object.name = typeName + " #" + std::to_string(createdId);
+	return createdId;
+}
+
+// 設定を値として複製し、新しいIDを付けて元のモデルから独立させる。
+WorldObjectId WorldObjects::DuplicateObject(WorldObjectId id) {
+	if (FindObjectIndex(id) == objects_.size()) {
+		return kInvalidWorldObjectId;
+	}
+	std::vector<WorldObjectData> copies;
+	std::unordered_map<WorldObjectId, WorldObjectId> newIds;
+	WorldObjectId nextId = nextId_;
+	for (const WorldObjectData& object : objects_) {
+		if (!IsDescendantOf(object.id, id)) {
+			continue;
+		}
+		if (nextId == (std::numeric_limits<WorldObjectId>::max)()) {
+			return kInvalidWorldObjectId;
+		}
+		copies.push_back(object);
+		newIds[object.id] = nextId++;
+	}
+	std::vector<WorldObjectData> replaced = objects_;
+	for (WorldObjectData& copy : copies) {
+		copy.id = newIds.at(copy.id);
+		copy.mainCamera = false;
+		// 複製でメイン指定を増やさない。
+		if (copy.parentId != kInvalidWorldObjectId) {
+			if (newIds.contains(copy.parentId)) {
+				copy.parentId = newIds.at(copy.parentId);
+			}
+		}
+		if (copy.name.size() > 200) {
+			copy.name = "Object";
+		}
+		copy.name += " Copy #" + std::to_string(copy.id);
+		replaced.push_back(std::move(copy));
+	}
+	std::string error;
+	if (!ReplaceObjects(std::move(replaced), error)) {
+		return kInvalidWorldObjectId;
+	}
+	return newIds.at(id);
+}
+
+// 指定IDと子孫をまとめて削除し、残るオブジェクトのIDは変更しない。
+bool WorldObjects::RemoveObject(WorldObjectId id) {
+	if (FindObjectIndex(id) == objects_.size()) {
+		return false;
+	}
+	std::unordered_set<WorldObjectId> removedIds;
+	for (const WorldObjectData& object : objects_) {
+		if (IsDescendantOf(object.id, id)) {
+			removedIds.insert(object.id);
+		}
+	}
+	std::vector<WorldObjectData>::iterator objectIterator = objects_.begin();
+	while (objectIterator != objects_.end()) {
+		if (removedIds.contains(objectIterator->id)) {
+			objectIterator = objects_.erase(objectIterator);
+		}
+		else {
+			++objectIterator;
+		}
+	}
+	RebuildObjectIndices();
+	return true;
+}
+
+//=============================================================================================//
+// 一括置換
+
+
+// 全件の検証が済んでから一覧を置き換え、不正データの部分反映を防ぐ。
+bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error) {
+	error.clear();
+	if (objects.size() > kMaxObjects) {
+		error = "Too many scene objects.";
+		return false;
+	}
+	std::unordered_set<WorldObjectId> ids;
+	WorldObjectId nextId = nextId_;
+	size_t lightCount = 0;
+	size_t spotCount = 0;
+	size_t directionalCount = 0;
+	size_t particleCount = 0;
+	size_t mainCameraCount = 0;
+	size_t colliderCount = 0;
+	for (const WorldObjectData& object : objects) {
+		if (object.collider.present) {
+			if (++colliderCount > kMaxWorldColliders) {
+				error = "Scene supports up to 256 colliders.";
+				return false;
+			}
+		}
+		if (!Validate(object)) {
+			error = "Invalid object data or unsupported model.";
+			return false;
+		}
+		if (!ids.insert(object.id).second) {
+			error = "Duplicate object ID.";
+			return false;
+		}
+		if (object.type == WorldObjectType::PointLight) {
+			++lightCount;
+		}
+		if (object.type == WorldObjectType::SpotLight) {
+			++spotCount;
+		}
+		if (object.type == WorldObjectType::DirectionalLight) {
+			++directionalCount;
+		}
+		if (object.type == WorldObjectType::Particle) {
+			++particleCount;
+		}
+		if (object.mainCamera) {
+			if (++mainCameraCount > 1) {
+				error = "Only one main camera is allowed.";
+				return false;
+			}
+		}
+		if (lightCount > kMaxPointLights || spotCount > kMaxSpotLights || directionalCount > kMaxDirectionalLights) {
+			error = "Scene light capacity exceeded (Point:9 / Spot:8 / Directional:4).";
+			return false;
+		}
+		if (particleCount > 32) {
+			error = "Scene supports up to 32 particle emitters.";
+			return false;
+		}
+		if (object.id >= nextId) {
+			nextId = object.id + 1;
+		}
+	}
+	std::unordered_map<WorldObjectId, size_t> indices;
+	for (size_t objectIndex = 0; objectIndex < objects.size(); ++objectIndex) {
+		indices[objects[objectIndex].id] = objectIndex;
+	}
+	if (!ValidateHierarchy(objects, indices, error)) {
+		return false;
+	}
+	objects_ = std::move(objects);
+	objectIndices_ = std::move(indices);
+	nextId_ = nextId;
+	return true;
+}
+
+//=============================================================================================//
+// 保存データ検証
+
 
 // 対応形式とresources内の実ファイルを検証し、外部への参照を防ぐ。
 bool WorldObjects::IsSupportedModel(const std::string& model) {
@@ -260,157 +762,24 @@ bool WorldObjects::Validate(const WorldObjectData& object) {
 	return true;
 }
 
-// シーンが所有する値への借用参照を返す。追加・削除後は取得し直すこと。
-EditableObjectView WorldObjects::GetEditableObject(size_t index) {
-	if (index >= objects_.size()) {
-		return {};
-	}
-	WorldObjectData& object = objects_[index];
-	return {object.id, object.name.c_str(), &object.transform, &object.color, &object.enableLighting,
-		&object.shininess, &object.model, &object.useRootNodeMatrix, &object.name,
-		&object.active, &object.hasMeshRenderer, object.type, &object.lightIntensity,
-		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId, &object.camera, object.mainCamera,
-		&object.materials, &object.animation, &object.body, &object.collider, &object.motion, &object.light};
-}
+//=============================================================================================//
+// Getter / 検索・追加可否
 
-// 読取専用の比較では文字列を含むシーン全体を複製しない。
-const WorldObjectData* WorldObjects::GetObjectData(size_t index) const {
-	if (index >= objects_.size()) {
-		return nullptr;
-	}
-	return &objects_[index];
-}
 
-const WorldObjectData* WorldObjects::GetObjectDataById(WorldObjectId identifier) const {
-	return GetObjectData(FindObjectIndex(identifier));
-}
-
-// GPUリソースを作らず、種類に応じた編集用データだけを追加する。
-WorldObjectId WorldObjects::CreateObject(WorldObjectType type) {
-	if (type < WorldObjectType::Model || type > WorldObjectType::DirectionalLight) {
-		return kInvalidWorldObjectId;
+// 描画リソースの上限は無効状態も含めて数え、Activeを切り替えても破綻させない。
+bool WorldObjects::CanCreateType(WorldObjectType type) const {
+	size_t count = 0;
+	for (const WorldObjectData& object : objects_) {
+		if (object.type == type) {
+			++count;
+		}
 	}
-	if (!CanCreateType(type)) {
-		return kInvalidWorldObjectId;
-	}
-	const WorldObjectId createdId = AddObject("plane.gltf");
-	if (createdId == kInvalidWorldObjectId) {
-		return createdId;
-	}
-	WorldObjectData& object = objects_.back();
-	object.type = type;
-	object.hasMeshRenderer = type == WorldObjectType::Model;
-	std::string typeName = "Model";
-	if (type == WorldObjectType::Empty) {
-		typeName = "Empty";
-	}
-	if (type == WorldObjectType::PointLight) {
-		typeName = "Point Light";
-		object.transform.translate.y = 2;
+	if (LightTypes::IsLight(type)) {
+		return count < LightTypes::GetLimit(type);
 	}
 	if (type == WorldObjectType::Particle) {
-		typeName = "Particle";
+		return count < 32;
 	}
-	if (type == WorldObjectType::SpotLight || type == WorldObjectType::DirectionalLight) {
-		typeName = LightTypes::GetName(type);
-		object.transform.translate.y = 2;
-		object.transform.rotate.x = 1.57079632679f;
-	}
-	if (type == WorldObjectType::Camera) {
-		typeName = "Camera";
-		object.transform.translate = {0,0,-30};
-		object.mainCamera = GetMainCameraId() == kInvalidWorldObjectId;
-	}
-	object.name = typeName + " #" + std::to_string(createdId);
-	return createdId;
-}
-
-// 新しいIDと既定の設定を持つモデルを追加する。削除済みIDは再利用しない。
-WorldObjectId WorldObjects::AddObject(const std::string& model) {
-	if (!IsSupportedModel(model)) {
-		return kInvalidWorldObjectId;
-	}
-	if (objects_.size() >= kMaxObjects) {
-		return kInvalidWorldObjectId;
-	}
-	if (nextId_ == (std::numeric_limits<WorldObjectId>::max)()) {
-		return kInvalidWorldObjectId;
-	}
-	std::string importError;
-	if (!PrepareModel(model, importError)) {
-		return kInvalidWorldObjectId;
-	}
-	WorldObjectData object;
-	object.id = nextId_;
-	object.model = model;
-	object.name = model + " #" + std::to_string(object.id);
-	objects_.push_back(std::move(object));
-	objectIndices_[nextId_] = objects_.size() - 1;
-	return nextId_++;
-}
-
-// 設定を値として複製し、新しいIDを付けて元のモデルから独立させる。
-WorldObjectId WorldObjects::DuplicateObject(WorldObjectId id) {
-	if (FindObjectIndex(id) == objects_.size()) {
-		return kInvalidWorldObjectId;
-	}
-	std::vector<WorldObjectData> copies;
-	std::unordered_map<WorldObjectId, WorldObjectId> newIds;
-	WorldObjectId nextId = nextId_;
-	for (const WorldObjectData& object : objects_) {
-		if (!IsDescendantOf(object.id, id)) {
-			continue;
-		}
-		if (nextId == (std::numeric_limits<WorldObjectId>::max)()) {
-			return kInvalidWorldObjectId;
-		}
-		copies.push_back(object);
-		newIds[object.id] = nextId++;
-	}
-	std::vector<WorldObjectData> replaced = objects_;
-	for (WorldObjectData& copy : copies) {
-		copy.id = newIds.at(copy.id);
-		copy.mainCamera = false;
-		// 複製でメイン指定を増やさない。
-		if (copy.parentId != kInvalidWorldObjectId) {
-			if (newIds.contains(copy.parentId)) {
-				copy.parentId = newIds.at(copy.parentId);
-			}
-		}
-		if (copy.name.size() > 200) {
-			copy.name = "Object";
-		}
-		copy.name += " Copy #" + std::to_string(copy.id);
-		replaced.push_back(std::move(copy));
-	}
-	std::string error;
-	if (!ReplaceObjects(std::move(replaced), error)) {
-		return kInvalidWorldObjectId;
-	}
-	return newIds.at(id);
-}
-
-// 指定IDと子孫をまとめて削除し、残るオブジェクトのIDは変更しない。
-bool WorldObjects::RemoveObject(WorldObjectId id) {
-	if (FindObjectIndex(id) == objects_.size()) {
-		return false;
-	}
-	std::unordered_set<WorldObjectId> removedIds;
-	for (const WorldObjectData& object : objects_) {
-		if (IsDescendantOf(object.id, id)) {
-			removedIds.insert(object.id);
-		}
-	}
-	std::vector<WorldObjectData>::iterator objectIterator = objects_.begin();
-	while (objectIterator != objects_.end()) {
-		if (removedIds.contains(objectIterator->id)) {
-			objectIterator = objects_.erase(objectIterator);
-		}
-		else {
-			++objectIterator;
-		}
-	}
-	RebuildObjectIndices();
 	return true;
 }
 
@@ -421,13 +790,6 @@ size_t WorldObjects::FindObjectIndex(WorldObjectId objectId) const {
 		return objects_.size();
 	}
 	return found->second;
-}
-
-void WorldObjects::RebuildObjectIndices() {
-	objectIndices_.clear();
-	for (size_t objectIndex = 0; objectIndex < objects_.size(); ++objectIndex) {
-		objectIndices_[objects_[objectIndex].id] = objectIndex;
-	}
 }
 
 bool WorldObjects::IsDescendantOf(WorldObjectId objectId, WorldObjectId ancestorId) const {
@@ -447,94 +809,11 @@ bool WorldObjects::IsDescendantOf(WorldObjectId objectId, WorldObjectId ancestor
 	return false;
 }
 
-// 全件の検証が済んでから一覧を置き換え、不正データの部分反映を防ぐ。
-bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error) {
-	error.clear();
-	if (objects.size() > kMaxObjects) {
-		error = "Too many scene objects.";
-		return false;
+void WorldObjects::RebuildObjectIndices() {
+	objectIndices_.clear();
+	for (size_t objectIndex = 0; objectIndex < objects_.size(); ++objectIndex) {
+		objectIndices_[objects_[objectIndex].id] = objectIndex;
 	}
-	std::unordered_set<WorldObjectId> ids;
-	WorldObjectId nextId = nextId_;
-	size_t lightCount = 0;
-	size_t spotCount = 0;
-	size_t directionalCount = 0;
-	size_t particleCount = 0;
-	size_t mainCameraCount = 0;
-	size_t colliderCount = 0;
-	for (const WorldObjectData& object : objects) {
-		if (object.collider.present) {
-			if (++colliderCount > kMaxWorldColliders) {
-				error = "Scene supports up to 256 colliders.";
-				return false;
-			}
-		}
-		if (!Validate(object)) {
-			error = "Invalid object data or unsupported model.";
-			return false;
-		}
-		if (!ids.insert(object.id).second) {
-			error = "Duplicate object ID.";
-			return false;
-		}
-		if (object.type == WorldObjectType::PointLight) {
-			++lightCount;
-		}
-		if (object.type == WorldObjectType::SpotLight) {
-			++spotCount;
-		}
-		if (object.type == WorldObjectType::DirectionalLight) {
-			++directionalCount;
-		}
-		if (object.type == WorldObjectType::Particle) {
-			++particleCount;
-		}
-		if (object.mainCamera) {
-			if (++mainCameraCount > 1) {
-				error = "Only one main camera is allowed.";
-				return false;
-			}
-		}
-		if (lightCount > kMaxPointLights || spotCount > kMaxSpotLights || directionalCount > kMaxDirectionalLights) {
-			error = "Scene light capacity exceeded (Point:9 / Spot:8 / Directional:4).";
-			return false;
-		}
-		if (particleCount > 32) {
-			error = "Scene supports up to 32 particle emitters.";
-			return false;
-		}
-		if (object.id >= nextId) {
-			nextId = object.id + 1;
-		}
-	}
-	std::unordered_map<WorldObjectId, size_t> indices;
-	for (size_t objectIndex = 0; objectIndex < objects.size(); ++objectIndex) {
-		indices[objects[objectIndex].id] = objectIndex;
-	}
-	if (!ValidateHierarchy(objects, indices, error)) {
-		return false;
-	}
-	objects_ = std::move(objects);
-	objectIndices_ = std::move(indices);
-	nextId_ = nextId;
-	return true;
-}
-
-// 描画リソースの上限は無効状態も含めて数え、Activeを切り替えても破綻させない。
-bool WorldObjects::CanCreateType(WorldObjectType type) const {
-	size_t count = 0;
-	for (const WorldObjectData& object : objects_) {
-		if (object.type == type) {
-			++count;
-		}
-	}
-	if (LightTypes::IsLight(type)) {
-		return count < LightTypes::GetLimit(type);
-	}
-	if (type == WorldObjectType::Particle) {
-		return count < 32;
-	}
-	return true;
 }
 
 // 親参照の検証は値の検証と分け、順不同の保存データも正しく扱う。
@@ -574,253 +853,5 @@ bool WorldObjects::ValidateHierarchy(const std::vector<WorldObjectData>& objects
 			parentId = objects[found->second].parentId;
 		}
 	}
-	return true;
-}
-
-bool WorldObjects::GetObjectWorldMatrix(WorldObjectId id, Matrix4x4& world) const {
-	world = MathUtility::MakeIdentity4x4();
-	for (size_t depth = 0; depth < kMaxHierarchyDepth; ++depth) {
-		const size_t objectIndex = FindObjectIndex(id);
-		if (objectIndex == objects_.size()) {
-			return false;
-		}
-		const WorldObjectData& object = objects_[objectIndex];
-		world = MathUtility::Multiply(world, MathUtility::MakeAffineMatrix(object.transform.scale, object.transform.rotate, object.transform.translate));
-		id = object.parentId;
-		if (id == kInvalidWorldObjectId) {
-			return true;
-		}
-	}
-	return false;
-}
-
-bool WorldObjects::IsObjectActive(WorldObjectId id) const {
-	for (size_t depth = 0; depth < kMaxHierarchyDepth; ++depth) {
-		const size_t objectIndex = FindObjectIndex(id);
-		if (objectIndex == objects_.size()) {
-			return false;
-		}
-		if (!objects_[objectIndex].active) {
-			return false;
-		}
-		id = objects_[objectIndex].parentId;
-		if (id == kInvalidWorldObjectId) {
-			return true;
-		}
-	}
-	return false;
-}
-
-bool WorldObjects::SetObjectWorldPosition(WorldObjectId id, const Vector3& position) {
-	const size_t objectIndex = FindObjectIndex(id);
-	if (objectIndex == objects_.size()) {
-		return false;
-	}
-	Vector3 localPosition = position;
-	if (objects_[objectIndex].parentId != kInvalidWorldObjectId) {
-		Matrix4x4 parentWorld{};
-		if (!GetObjectWorldMatrix(objects_[objectIndex].parentId, parentWorld)) {
-			return false;
-		}
-		if (!IsInvertibleAffine(parentWorld)) {
-			return false;
-		}
-		localPosition = MathUtility::Transform(position, MathUtility::Inverse(parentWorld));
-	}
-	if (!std::isfinite(localPosition.x) || !std::isfinite(localPosition.y) || !std::isfinite(localPosition.z)) {
-		return false;
-	}
-	objects_[objectIndex].transform.translate = localPosition;
-	return true;
-}
-
-bool WorldObjects::SetObjectParent(WorldObjectId childId, WorldObjectId parentId, std::string& error) {
-	error.clear();
-	const size_t childIndex = FindObjectIndex(childId);
-	if (childIndex == objects_.size()) {
-		error = "Child object does not exist.";
-		return false;
-	}
-	if (objects_[childIndex].parentId == parentId) {
-		return true;
-	}
-	if (parentId != kInvalidWorldObjectId) {
-		if (FindObjectIndex(parentId) == objects_.size()) {
-			error = "Parent object does not exist.";
-			return false;
-		}
-		if (IsDescendantOf(parentId, childId)) {
-			error = "Parenting would create a cycle.";
-			return false;
-		}
-	}
-	Matrix4x4 localMatrix{};
-	if (!GetObjectWorldMatrix(childId, localMatrix)) {
-		error = "Cannot resolve child transform.";
-		return false;
-	}
-	if (parentId != kInvalidWorldObjectId) {
-		Matrix4x4 parentWorld{};
-		if (!GetObjectWorldMatrix(parentId, parentWorld)) {
-			error = "Cannot resolve parent transform.";
-			return false;
-		}
-		if (!IsInvertibleAffine(parentWorld)) {
-			error = "Parent scale is zero or too small.";
-			return false;
-		}
-		localMatrix = MathUtility::Multiply(localMatrix, MathUtility::Inverse(parentWorld));
-	}
-	TransformData localTransform{};
-	if (!DecomposeAffine(localMatrix, localTransform)) {
-		error = "Cannot preserve world transform with this rotation and non-uniform scale.";
-		return false;
-	}
-	std::vector<WorldObjectData> replaced = objects_;
-	replaced[childIndex].parentId = parentId;
-	replaced[childIndex].transform = localTransform;
-	return ReplaceObjects(std::move(replaced), error);
-}
-
-// 0を指定するとメイン指定を解除する。失敗時は指定を変更しない。
-bool WorldObjects::SetMainCamera(WorldObjectId id) {
-	if (id != kInvalidWorldObjectId) {
-		const size_t objectIndex = FindObjectIndex(id);
-		if (objectIndex == objects_.size()) {
-			return false;
-		}
-		if (objects_[objectIndex].type != WorldObjectType::Camera) {
-			return false;
-		}
-	}
-	for (WorldObjectData& object : objects_) {
-		object.mainCamera = object.id == id;
-	}
-	return true;
-}
-
-WorldObjectId WorldObjects::GetMainCameraId() const {
-	for (const WorldObjectData& object : objects_) {
-		if (object.mainCamera) {
-			return object.id;
-		}
-	}
-	return kInvalidWorldObjectId;
-}
-
-// カメラの向きは親から継承し、拡縮やせん断は視野へ持ち込まない。
-bool WorldObjects::GetGameCameraView(float aspectRatio, CameraView& view) const {
-	return GetCameraView(GetMainCameraId(), aspectRatio, view);
-}
-
-bool WorldObjects::GetCameraView(WorldObjectId cameraId, float aspectRatio, CameraView& view) const {
-	if (!std::isfinite(aspectRatio) || aspectRatio <= 0) {
-		return false;
-	}
-	const size_t cameraIndex = FindObjectIndex(cameraId);
-	if (cameraIndex >= objects_.size()) {
-		return false;
-	}
-	if (objects_[cameraIndex].type != WorldObjectType::Camera) {
-		return false;
-	}
-	if (!IsObjectActive(cameraId)) {
-		return false;
-	}
-	if (!Validate(objects_[FindObjectIndex(cameraId)])) {
-		return false;
-	}
-	Matrix4x4 world{};
-	if (!GetObjectWorldMatrix(cameraId, world)) {
-		return false;
-	}
-	Vector3 forward = {world.m[2][0], world.m[2][1], world.m[2][2]};
-	Vector3 up = {world.m[1][0], world.m[1][1], world.m[1][2]};
-	if (MathUtility::Length(forward) < 0.000001f) {
-		return false;
-	}
-	forward = MathUtility::Normalize(forward);
-	Vector3 right = CrossProduct(up, forward);
-	if (MathUtility::Length(right) < 0.000001f) {
-		return false;
-	}
-	right = MathUtility::Normalize(right);
-	up = CrossProduct(forward, right);
-	view.cameraWorld = MathUtility::MakeIdentity4x4();
-	view.cameraWorld.m[0][0] = right.x; view.cameraWorld.m[0][1] = right.y; view.cameraWorld.m[0][2] = right.z;
-	view.cameraWorld.m[1][0] = up.x; view.cameraWorld.m[1][1] = up.y; view.cameraWorld.m[1][2] = up.z;
-	view.cameraWorld.m[2][0] = forward.x; view.cameraWorld.m[2][1] = forward.y; view.cameraWorld.m[2][2] = forward.z;
-	view.cameraWorld.m[3][0] = world.m[3][0]; view.cameraWorld.m[3][1] = world.m[3][1]; view.cameraWorld.m[3][2] = world.m[3][2];
-	const CameraSettings& lens = objects_[FindObjectIndex(cameraId)].camera;
-	const Matrix4x4 projection = MathUtility::MakePerspectiveFovMatrix(lens.fieldOfView, aspectRatio, lens.nearClip, lens.farClip);
-	view.viewProjection = MathUtility::Multiply(MathUtility::Inverse(view.cameraWorld), projection);
-	return true;
-}
-
-// ドロップ配置は一括検証してから追加し、失敗した途中のオブジェクトを残さない。
-WorldObjectId WorldObjects::PlaceModel(const std::string& model, WorldObjectId parentId, const Vector3& position, std::string& error) {
-	error.clear();
-	if (!IsSupportedModel(model)) {
-		error = "このモデルはまだ読み込まれていません。";
-		return kInvalidWorldObjectId;
-	}
-	if (objects_.size() >= kMaxObjects) {
-		error = "オブジェクト数の上限です。";
-		return kInvalidWorldObjectId;
-	}
-	if (nextId_ == (std::numeric_limits<WorldObjectId>::max)()) {
-		error = "IDの上限です。";
-		return kInvalidWorldObjectId;
-	}
-	if (!PrepareModel(model,error)) {
-		return kInvalidWorldObjectId;
-	}
-	WorldObjectData object;
-	object.id = nextId_;
-	object.name = model + " #" + std::to_string(object.id);
-	object.model = model;
-	object.parentId = parentId;
-	object.transform.translate = position;
-	if (parentId != kInvalidWorldObjectId) {
-		Matrix4x4 parentWorld{};
-		if (!GetObjectWorldMatrix(parentId, parentWorld)) {
-			error = "親が見つかりません。";
-			return kInvalidWorldObjectId;
-		}
-		if (!IsInvertibleAffine(parentWorld)) {
-			error = "親の拡縮が0に近いため配置できません。";
-			return kInvalidWorldObjectId;
-		}
-		object.transform.translate = MathUtility::Transform(position, MathUtility::Inverse(parentWorld));
-	}
-	std::vector<WorldObjectData> replaced = objects_;
-	replaced.push_back(object);
-	if (!ReplaceObjects(std::move(replaced), error)) {
-		return kInvalidWorldObjectId;
-	}
-	return object.id;
-}
-
-bool WorldObjects::SetObjectWorldTransform(WorldObjectId id, const Matrix4x4& world) {
-	const size_t index = FindObjectIndex(id);
-	if (index == objects_.size()) {
-		return false;
-	}
-	Matrix4x4 local = world;
-	if (objects_[index].parentId != 0) {
-		Matrix4x4 parent{};
-		if (!GetObjectWorldMatrix(objects_[index].parentId,parent)) {
-			return false;
-		}
-		if (!IsInvertibleAffine(parent)) {
-			return false;
-		}
-		local = MathUtility::Multiply(world,MathUtility::Inverse(parent));
-	}
-	TransformData transform{};
-	if (!DecomposeAffine(local,transform)) {
-		return false;
-	}
-	objects_[index].transform = transform;
 	return true;
 }

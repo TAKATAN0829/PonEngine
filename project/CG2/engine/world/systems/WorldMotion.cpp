@@ -2,6 +2,10 @@
 #include <cmath>
 #include <numbers>
 
+//=============================================================================================//
+// 初期化・終了処理
+
+
 void WorldMotion::Initialize() {
 	movementStates_.clear();
 }
@@ -10,37 +14,9 @@ void WorldMotion::Finalize() {
 	movementStates_.clear();
 }
 
-void WorldMotion::UpdateRotation(const MotionSettings& settings, float deltaSeconds, TransformData& transform) {
-	if (!settings.hasRotation) {
-		return;
-	}
-	if (!settings.rotationEnabled) {
-		return;
-	}
-	const double radiansStep = static_cast<double>(deltaSeconds) * std::numbers::pi_v<double> / 180;
-	// 速度0の軸は値を変更しない。途中の計算はdoubleとし、長い時間でも角度を有限に保つ。
-	if (settings.rotationDegreesPerSecond.x != 0) {
-		transform.rotate.x = static_cast<float>(std::remainder(transform.rotate.x + settings.rotationDegreesPerSecond.x * radiansStep, 2 * std::numbers::pi_v<double>));
-	}
-	if (settings.rotationDegreesPerSecond.y != 0) {
-		transform.rotate.y = static_cast<float>(std::remainder(transform.rotate.y + settings.rotationDegreesPerSecond.y * radiansStep, 2 * std::numbers::pi_v<double>));
-	}
-	if (settings.rotationDegreesPerSecond.z != 0) {
-		transform.rotate.z = static_cast<float>(std::remainder(transform.rotate.z + settings.rotationDegreesPerSecond.z * radiansStep, 2 * std::numbers::pi_v<double>));
-	}
-}
+//=============================================================================================//
+// 更新処理
 
-void WorldMotion::UpdateMovement(const MotionSettings& settings, float deltaSeconds, TransformData& transform, MovementState& state) {
-	if (!state.initialized) {
-		state.origin = transform.translate;
-		state.initialized = true;
-	}
-	state.elapsed = std::fmod(state.elapsed + deltaSeconds, static_cast<double>(settings.movementPeriod));
-	// 両端で速度が0になる補間。最初の位置を0、半周期で終点、全周期で開始位置に戻す。
-	const double phase = state.elapsed / settings.movementPeriod;
-	const float amount = static_cast<float>((1 - std::cos(phase * 2 * std::numbers::pi_v<double>)) * 0.5);
-	transform.translate = MathUtility::Add(state.origin, MathUtility::Multiply(amount, settings.movementOffset));
-}
 
 void WorldMotion::Update(IWorldObjects& scene, float deltaSeconds) {
 	if (!std::isfinite(deltaSeconds) || deltaSeconds <= 0) {
@@ -85,4 +61,40 @@ void WorldMotion::Update(IWorldObjects& scene, float deltaSeconds) {
 			}
 		}
 	}
+}
+
+//=============================================================================================//
+// 動作の種類別更新
+
+
+void WorldMotion::UpdateRotation(const MotionSettings& settings, float deltaSeconds, TransformData& transform) {
+	if (!settings.hasRotation) {
+		return;
+	}
+	if (!settings.rotationEnabled) {
+		return;
+	}
+	const double radiansStep = static_cast<double>(deltaSeconds) * std::numbers::pi_v<double> / 180;
+	// 速度0の軸は値を変更しない。途中の計算はdoubleとし、長い時間でも角度を有限に保つ。
+	if (settings.rotationDegreesPerSecond.x != 0) {
+		transform.rotate.x = static_cast<float>(std::remainder(transform.rotate.x + settings.rotationDegreesPerSecond.x * radiansStep, 2 * std::numbers::pi_v<double>));
+	}
+	if (settings.rotationDegreesPerSecond.y != 0) {
+		transform.rotate.y = static_cast<float>(std::remainder(transform.rotate.y + settings.rotationDegreesPerSecond.y * radiansStep, 2 * std::numbers::pi_v<double>));
+	}
+	if (settings.rotationDegreesPerSecond.z != 0) {
+		transform.rotate.z = static_cast<float>(std::remainder(transform.rotate.z + settings.rotationDegreesPerSecond.z * radiansStep, 2 * std::numbers::pi_v<double>));
+	}
+}
+
+void WorldMotion::UpdateMovement(const MotionSettings& settings, float deltaSeconds, TransformData& transform, MovementState& state) {
+	if (!state.initialized) {
+		state.origin = transform.translate;
+		state.initialized = true;
+	}
+	state.elapsed = std::fmod(state.elapsed + deltaSeconds, static_cast<double>(settings.movementPeriod));
+	// 両端で速度が0になる補間。最初の位置を0、半周期で終点、全周期で開始位置に戻す。
+	const double phase = state.elapsed / settings.movementPeriod;
+	const float amount = static_cast<float>((1 - std::cos(phase * 2 * std::numbers::pi_v<double>)) * 0.5);
+	transform.translate = MathUtility::Add(state.origin, MathUtility::Multiply(amount, settings.movementOffset));
 }

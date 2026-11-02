@@ -9,8 +9,9 @@
 #include <vector>
 #include "DirectXTex/d3dx12.h"
 
-//=================================================================================================//
+//=============================================================================================//
 // BufferResourceを作る
+
 
 Microsoft::WRL::ComPtr<ID3D12Resource>
 ResourceManager::CreateBufferResource (ID3D12Device* device, size_t sizeInBytes, const char* resourceName) {
@@ -55,8 +56,9 @@ ResourceManager::CreateBufferResource (ID3D12Device* device, size_t sizeInBytes,
 	return resource;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // TextureResourceを作る
+
 
 Microsoft::WRL::ComPtr<ID3D12Resource>
 ResourceManager::CreateTextureResource (ID3D12Device* device, const DirectX::TexMetadata& metadata) {
@@ -99,8 +101,9 @@ ResourceManager::CreateTextureResource (ID3D12Device* device, const DirectX::Tex
 	return resource;
 }
 
-//=================================================================================================//
+//=============================================================================================//
 // TextureResourceにデータを転送
+
 
 [[nodiscard]]
 Microsoft::WRL::ComPtr<ID3D12Resource>

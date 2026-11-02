@@ -4,6 +4,10 @@
 #include <numbers>
 #include <utility>
 
+//=============================================================================================//
+// 旧形式の移行
+
+
 bool LegacyLightMigration::AddLegacyDefaults(std::vector<WorldObjectData>& objects, std::string& error, WorldObjectId minimumId) {
 	if (minimumId >= (std::numeric_limits<WorldObjectId>::max)()-3) {
 		error = "No IDs available for legacy lights.";

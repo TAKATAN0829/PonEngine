@@ -11,10 +11,109 @@
 #include "imgui/imgui.h"
 #endif
 
+//=============================================================================================//
+// 初期化処理
+
+
 void HierarchyPanel::Initialize() {
 	status_.clear();
 	contextTarget_ = kInvalidWorldObjectId;
 }
+
+//=============================================================================================//
+// 描画処理
+
+
+void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
+	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Hierarchy);
+#ifdef USE_IMGUI
+	if (!ImGui::Begin("Hierarchy")) {
+		ImGui::End();
+		return;
+	}
+	if (scene == nullptr) {
+		ImGui::TextUnformatted("No editable scene");
+		ImGui::End();
+		return;
+	}
+	if (!scene->SupportsObjectCollection()) {
+		ImGui::TextUnformatted("Object editing is unavailable");
+		ImGui::End();
+		return;
+	}
+	ImGui::TextDisabled("Scene  /  %zu objects",scene->GetEditableObjectCount());
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Ctrl+クリックで複数選択 / Ctrl+Dで一括複製 / Deleteで一括削除");
+	}
+	ImGui::Separator();
+	HierarchyRequest request;
+	ChildIndices children;
+	for (size_t objectIndex = 0; objectIndex < scene->GetEditableObjectCount(); ++objectIndex) {
+		children[scene->GetEditableObject(objectIndex).parentId].push_back(objectIndex);
+	}
+	DrawBranch(*scene, selection, children, kInvalidWorldObjectId, request);
+	// 空白部分は目立つ操作行を置かず、そのまま最上位へのドロップ先にする。
+	if (!status_.empty()) {
+		ImGui::TextWrapped("%s", status_.c_str());
+	}
+	ImVec2 backgroundSize = ImGui::GetContentRegionAvail();
+	if (backgroundSize.y < 20) {
+		backgroundSize.y = 20;
+	}
+	ImGui::Dummy(backgroundSize);
+	AcceptParentDrop(kInvalidWorldObjectId, request);
+	if (ImGui::IsWindowHovered()) {
+		if (!ImGui::IsAnyItemHovered()) {
+			if (ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+				request.contextRequested = true;
+				request.contextObjectId = kInvalidWorldObjectId;
+			}
+			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+				selection.Clear();
+			}
+		}
+	}
+
+	if (request.requested) {
+		if (scene->SetObjectParent(request.childId, request.parentId, status_)) {
+			selection.Select(request.childId);
+		}
+	}
+	if (!request.model.empty()) {
+		Vector3 position{};
+		if (request.parentId != kInvalidWorldObjectId) {
+			position = scene->GetObjectWorldPosition(request.parentId);
+		}
+		WorldObjectId placedId = 0;
+		if (request.prefab) {
+			placedId = scene->PlacePrefab(request.model, request.parentId, position, status_);
+		} else {
+			placedId = scene->PlaceModel(request.model, request.parentId, position, status_);
+		}
+		if (placedId != kInvalidWorldObjectId) {
+			selection.Select(placedId);
+		}
+	}
+	// PopupのIDは各オブジェクトのPushIDの外側で統一する。
+	if (request.contextRequested) {
+		contextTarget_ = request.contextObjectId;
+		std::snprintf(prefabName_, sizeof(prefabName_), "Prefab_%llu", static_cast<unsigned long long>(contextTarget_));
+		if (!selection.Contains(contextTarget_)) {
+		selection.Select(contextTarget_);
+		}
+		ImGui::OpenPopup("HierarchyContext");
+	}
+	DrawContextMenu(*scene, selection);
+	ImGui::End();
+#else
+	(void)scene;
+	(void)selection;
+#endif
+}
+
+//=============================================================================================//
+// 操作UI・ツリー
+
 
 // 種類別の上限を確認し、新規作成サブメニューを描く。
 void HierarchyPanel::DrawCreateMenu(IEditableWorld& scene, EditorSelection& selection) {
@@ -169,35 +268,39 @@ void HierarchyPanel::DrawContextMenu(IEditableWorld& scene, EditorSelection& sel
 #endif
 }
 
-// ドロップでvectorが置き換わるのはツリー描画がすべて終わってから。
-void HierarchyPanel::AcceptParentDrop(WorldObjectId parentId, HierarchyRequest& request) {
+// 子孫をまとめて保存する。入力にディレクトリを許さず、resources/prefabs内へ置く。
+void HierarchyPanel::DrawPrefabSaveMenu(IEditableWorld& scene) {
 #ifdef USE_IMGUI
-	if (ImGui::BeginDragDropTarget()) {
-		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PON_SCENE_OBJECT");
-		if (payload != nullptr) {
-			if (payload->DataSize == sizeof(WorldObjectId)) {
-				std::memcpy(&request.childId, payload->Data, sizeof(request.childId));
-				request.parentId = parentId;
-				request.requested = true;
-			}
-		}
-		const ImGuiPayload* modelPayload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kType);
-		if (modelPayload == nullptr) {
-			modelPayload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kPrefabType);
-			if (modelPayload != nullptr) {
-				request.prefab = true;
-			}
-		}
-		if (modelPayload != nullptr) {
-			if (ModelAssetPayload::Read(modelPayload->Data, modelPayload->DataSize, request.model)) {
-				request.parentId = parentId;
-			}
-		}
-		ImGui::EndDragDropTarget();
+	if (!ImGui::BeginMenu("Prefabとして保存")) {
+		return;
 	}
+	ImGui::InputText("File Name", prefabName_, sizeof(prefabName_));
+	if (ImGui::MenuItem("保存（同名は上書き）")) {
+		const std::string name = prefabName_;
+		if (name.empty() || name.find_first_of("\\/:*?\"<>|") != std::string::npos || name == "." || name == "..") {
+			status_ = "ファイル名に使えない文字が含まれています。";
+		} else {
+			const std::filesystem::path path = PrefabFile::ResolveSource("prefabs/" + name + ".ponprefab", status_);
+			if (path.empty()) {
+				ImGui::EndMenu();
+				return;
+			}
+			if (PrefabFile::Save(scene, contextTarget_, path, status_)) {
+				std::vector<WorldObjectData> connected = scene.CaptureObjects();
+				for (WorldObjectData& object : connected) {
+					if (object.id == contextTarget_) {
+						object.prefabSource = "prefabs/" + name + ".ponprefab";
+					}
+				}
+				if (scene.ReplaceObjects(std::move(connected), status_)) {
+					status_ = "Prefabを保存し、元Assetへ接続しました。右クリックのPrefabからApply/Revertできます。";
+				}
+			}
+		}
+	}
+	ImGui::EndMenu();
 #else
-	(void)parentId;
-	(void)request;
+	(void)scene;
 #endif
 }
 
@@ -265,125 +368,34 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 #endif
 }
 
-void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
-	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Hierarchy);
+// ドロップでvectorが置き換わるのはツリー描画がすべて終わってから。
+void HierarchyPanel::AcceptParentDrop(WorldObjectId parentId, HierarchyRequest& request) {
 #ifdef USE_IMGUI
-	if (!ImGui::Begin("Hierarchy")) {
-		ImGui::End();
-		return;
-	}
-	if (scene == nullptr) {
-		ImGui::TextUnformatted("No editable scene");
-		ImGui::End();
-		return;
-	}
-	if (!scene->SupportsObjectCollection()) {
-		ImGui::TextUnformatted("Object editing is unavailable");
-		ImGui::End();
-		return;
-	}
-	ImGui::TextDisabled("Scene  /  %zu objects",scene->GetEditableObjectCount());
-	if (ImGui::IsItemHovered()) {
-		ImGui::SetTooltip("Ctrl+クリックで複数選択 / Ctrl+Dで一括複製 / Deleteで一括削除");
-	}
-	ImGui::Separator();
-	HierarchyRequest request;
-	ChildIndices children;
-	for (size_t objectIndex = 0; objectIndex < scene->GetEditableObjectCount(); ++objectIndex) {
-		children[scene->GetEditableObject(objectIndex).parentId].push_back(objectIndex);
-	}
-	DrawBranch(*scene, selection, children, kInvalidWorldObjectId, request);
-	// 空白部分は目立つ操作行を置かず、そのまま最上位へのドロップ先にする。
-	if (!status_.empty()) {
-		ImGui::TextWrapped("%s", status_.c_str());
-	}
-	ImVec2 backgroundSize = ImGui::GetContentRegionAvail();
-	if (backgroundSize.y < 20) {
-		backgroundSize.y = 20;
-	}
-	ImGui::Dummy(backgroundSize);
-	AcceptParentDrop(kInvalidWorldObjectId, request);
-	if (ImGui::IsWindowHovered()) {
-		if (!ImGui::IsAnyItemHovered()) {
-			if (ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
-				request.contextRequested = true;
-				request.contextObjectId = kInvalidWorldObjectId;
-			}
-			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-				selection.Clear();
+	if (ImGui::BeginDragDropTarget()) {
+		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PON_SCENE_OBJECT");
+		if (payload != nullptr) {
+			if (payload->DataSize == sizeof(WorldObjectId)) {
+				std::memcpy(&request.childId, payload->Data, sizeof(request.childId));
+				request.parentId = parentId;
+				request.requested = true;
 			}
 		}
+		const ImGuiPayload* modelPayload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kType);
+		if (modelPayload == nullptr) {
+			modelPayload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kPrefabType);
+			if (modelPayload != nullptr) {
+				request.prefab = true;
+			}
+		}
+		if (modelPayload != nullptr) {
+			if (ModelAssetPayload::Read(modelPayload->Data, modelPayload->DataSize, request.model)) {
+				request.parentId = parentId;
+			}
+		}
+		ImGui::EndDragDropTarget();
 	}
-
-	if (request.requested) {
-		if (scene->SetObjectParent(request.childId, request.parentId, status_)) {
-			selection.Select(request.childId);
-		}
-	}
-	if (!request.model.empty()) {
-		Vector3 position{};
-		if (request.parentId != kInvalidWorldObjectId) {
-			position = scene->GetObjectWorldPosition(request.parentId);
-		}
-		WorldObjectId placedId = 0;
-		if (request.prefab) {
-			placedId = scene->PlacePrefab(request.model, request.parentId, position, status_);
-		} else {
-			placedId = scene->PlaceModel(request.model, request.parentId, position, status_);
-		}
-		if (placedId != kInvalidWorldObjectId) {
-			selection.Select(placedId);
-		}
-	}
-	// PopupのIDは各オブジェクトのPushIDの外側で統一する。
-	if (request.contextRequested) {
-		contextTarget_ = request.contextObjectId;
-		std::snprintf(prefabName_, sizeof(prefabName_), "Prefab_%llu", static_cast<unsigned long long>(contextTarget_));
-		if (!selection.Contains(contextTarget_)) {
-		selection.Select(contextTarget_);
-		}
-		ImGui::OpenPopup("HierarchyContext");
-	}
-	DrawContextMenu(*scene, selection);
-	ImGui::End();
 #else
-	(void)scene;
-	(void)selection;
-#endif
-}
-
-// 子孫をまとめて保存する。入力にディレクトリを許さず、resources/prefabs内へ置く。
-void HierarchyPanel::DrawPrefabSaveMenu(IEditableWorld& scene) {
-#ifdef USE_IMGUI
-	if (!ImGui::BeginMenu("Prefabとして保存")) {
-		return;
-	}
-	ImGui::InputText("File Name", prefabName_, sizeof(prefabName_));
-	if (ImGui::MenuItem("保存（同名は上書き）")) {
-		const std::string name = prefabName_;
-		if (name.empty() || name.find_first_of("\\/:*?\"<>|") != std::string::npos || name == "." || name == "..") {
-			status_ = "ファイル名に使えない文字が含まれています。";
-		} else {
-			const std::filesystem::path path = PrefabFile::ResolveSource("prefabs/" + name + ".ponprefab", status_);
-			if (path.empty()) {
-				ImGui::EndMenu();
-				return;
-			}
-			if (PrefabFile::Save(scene, contextTarget_, path, status_)) {
-				std::vector<WorldObjectData> connected = scene.CaptureObjects();
-				for (WorldObjectData& object : connected) {
-					if (object.id == contextTarget_) {
-						object.prefabSource = "prefabs/" + name + ".ponprefab";
-					}
-				}
-				if (scene.ReplaceObjects(std::move(connected), status_)) {
-					status_ = "Prefabを保存し、元Assetへ接続しました。右クリックのPrefabからApply/Revertできます。";
-				}
-			}
-		}
-	}
-	ImGui::EndMenu();
-#else
-	(void)scene;
+	(void)parentId;
+	(void)request;
 #endif
 }

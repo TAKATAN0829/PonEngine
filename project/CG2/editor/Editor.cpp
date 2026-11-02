@@ -9,8 +9,10 @@
 #include "imgui/imgui.h"
 #endif
 
-
 #ifdef USE_IMGUI
+//=============================================================================================//
+// 実装内補助定義
+
 namespace {
 	enum class PlaybackIcon { Play, Stop, Pause, Step };
 
@@ -48,6 +50,143 @@ namespace {
 }
 #endif
 
+//=============================================================================================//
+// 初期化処理
+
+
+void Editor::Initialize(IEditableWorld* scene) {
+	scene_ = scene;
+	HierarchyPanel::Initialize();
+	InspectorPanel::Initialize();
+	sceneView_.Initialize();
+	selection_.Clear();
+	fileStatus_.clear();
+	loggedStatus_.clear();
+	pendingAction_ = SceneAction::None;
+	openDiscardPrompt_ = false;
+	exitApproved_ = false;
+	if (scene != nullptr) {
+		session_.Initialize(*scene);
+		particleEditor_.Initialize(*scene);
+	} else {
+		session_ = EditorSession{};
+	}
+}
+
+//=============================================================================================//
+// 更新処理
+
+
+void Editor::Update(IEditableWorld* scene) {
+	FrameProfiler::Scope sectionTime(FrameProfiler::Section::History);
+	if (scene == nullptr) {
+		return;
+	}
+	if (!scene->SupportsObjectCollection()) {
+		return;
+	}
+#ifdef USE_IMGUI
+	// UI操作を確定してからショートカットを処理し、その結果も同じフレームで履歴へ記録する。
+	session_.Update(*scene, ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
+	HandleShortcuts(*scene);
+	session_.Update(*scene, ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
+#endif
+	if (!fileStatus_.empty()) {
+		if (fileStatus_ != loggedStatus_) {
+			LogSystem::Log(fileStatus_ + "\n");
+			loggedStatus_ = fileStatus_;
+		}
+	}
+}
+
+//=============================================================================================//
+// 描画処理
+
+
+void Editor::Draw(IEditableWorld* scene) {
+	if (scene_ != scene) {
+		Initialize(scene);
+	}
+	bool sceneAvailable = false;
+	bool dirty = false;
+	if (scene != nullptr) {
+		if (scene->SupportsObjectCollection()) {
+			sceneAvailable = true;
+			dirty = session_.IsDirty(*scene);
+		}
+	}
+	const EditorMenuAction menuAction = layout_.Begin(sceneAvailable, session_.IsPlaying(), dirty, toolVisibility_);
+	if (sceneAvailable) {
+		DrawToolbar(*scene);
+	}
+	layout_.Draw(fileStatus_);
+	if (!sceneAvailable) {
+		HierarchyPanel::Draw(scene, selection_);
+		InspectorPanel::Draw({});
+		performancePanel_.Draw(toolVisibility_.performance);
+		return;
+	}
+	if (menuAction == EditorMenuAction::NewScene) {
+		RequestSceneAction(SceneAction::NewScene, *scene);
+	}
+	if (menuAction == EditorMenuAction::SaveScene) {
+		SaveScene(*scene);
+	}
+	if (menuAction == EditorMenuAction::LoadScene) {
+		RequestSceneAction(SceneAction::LoadScene, *scene);
+	}
+	HierarchyPanel::Draw(scene, selection_);
+	if (toolVisibility_.particleEditor) {
+		particleEditor_.Draw(*scene, session_.IsPlaying(), selection_.Get(), &toolVisibility_.particleEditor);
+	} else {
+		particleEditor_.StopPreview(*scene, session_.IsPlaying());
+	}
+	if (particleEditor_.ConsumeFocusRequest()) {
+		sceneView_.ShowScene();
+		scene->FocusEditorCamera(particleEditor_.GetFocusPosition());
+	}
+	projectPanel_.Draw(*scene, selection_, toolVisibility_);
+	consolePanel_.Draw();
+	sceneView_.Draw(*scene, selection_);
+	InspectorPanel::DrawSelection(*scene,selection_,&toolVisibility_.particleEditor);
+	scene->DrawEditorTools(toolVisibility_);
+	performancePanel_.Draw(toolVisibility_.performance);
+	DrawDiscardPrompt(*scene);
+}
+
+//=============================================================================================//
+// Getter / 再生・終了状態
+
+
+// 一時停止とステップ要求を考慮し、このフレームのゲーム更新可否を返す。
+bool Editor::ShouldSimulate () {
+	return session_.ShouldSimulate ();
+}
+
+//=============================================================================================//
+// 終了要求
+
+
+// ウィンドウの終了要求を受け取り、必要なら未保存データの確認へ回す。
+void Editor::RequestExit (IEditableWorld* scene) {
+	if (pendingAction_ != SceneAction::None) {
+		return;
+	}
+	if (scene == nullptr) {
+		exitApproved_ = true;
+		return;
+	}
+	if (!scene->SupportsObjectCollection()) {
+		exitApproved_ = true;
+		return;
+	}
+	RequestSceneAction (SceneAction::Exit, *scene);
+}
+
+//=============================================================================================//
+// シーン保存・切替
+
+
 // 保存前に再生を終了し、編集用データだけをファイルへ書き込む。
 bool Editor::SaveScene (IEditableWorld& scene) {
 	std::string error;
@@ -64,19 +203,6 @@ bool Editor::SaveScene (IEditableWorld& scene) {
 	session_.MarkSaved (scene);
 	fileStatus_ = "Scene saved.";
 	return true;
-}
-
-// 操作の種類と各保存対象の変更を順に確認する。
-bool Editor::NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) const {
-	if (session_.IsDirty(scene)) {
-		return true;
-	}
-	if (action == SceneAction::Exit) {
-		if (particleEditor_.IsDirty(scene)) {
-			return true;
-		}
-	}
-	return false;
 }
 
 // 未保存の変更がある場合は、処理を保留して保存確認を表示する。
@@ -118,48 +244,22 @@ void Editor::PerformSceneAction (IEditableWorld& scene) {
 	pendingAction_ = SceneAction::None;
 }
 
-// 再生開始時に編集状態を退避し、停止時にはその状態へ戻す。
-void Editor::TogglePlay (IEditableWorld& scene) {
-	sceneView_.ResetInteraction ();
-	std::string error;
-	bool succeeded = false;
-	if (session_.IsPlaying ()) {
-		succeeded = session_.Stop (scene, error);
-		if (succeeded) {
-			fileStatus_ = "Stopped. Edit-mode objects restored.";
-			selection_.Clear ();
-		}
-	} else {
-		succeeded = session_.BeginPlay (scene, error);
-		if (succeeded) {
-			fileStatus_ = "Playing. Object edits will be discarded on Stop.";
+// 操作の種類と各保存対象の変更を順に確認する。
+bool Editor::NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) const {
+	if (session_.IsDirty(scene)) {
+		return true;
+	}
+	if (action == SceneAction::Exit) {
+		if (particleEditor_.IsDirty(scene)) {
+			return true;
 		}
 	}
-	if (!succeeded) {
-		fileStatus_ = error;
-	}
+	return false;
 }
 
-// 一時停止とステップ要求を考慮し、このフレームのゲーム更新可否を返す。
-bool Editor::ShouldSimulate () {
-	return session_.ShouldSimulate ();
-}
+//=============================================================================================//
+// パネル描画
 
-// ウィンドウの終了要求を受け取り、必要なら未保存データの確認へ回す。
-void Editor::RequestExit (IEditableWorld* scene) {
-	if (pendingAction_ != SceneAction::None) {
-		return;
-	}
-	if (scene == nullptr) {
-		exitApproved_ = true;
-		return;
-	}
-	if (!scene->SupportsObjectCollection()) {
-		exitApproved_ = true;
-		return;
-	}
-	RequestSceneAction (SceneAction::Exit, *scene);
-}
 
 // 再生・停止・一時停止・ステップだけを中央へ並べる。
 void Editor::DrawToolbar (IEditableWorld& scene) {
@@ -218,6 +318,7 @@ void Editor::DrawToolbar (IEditableWorld& scene) {
 	(void) scene;
 #endif
 }
+
 // 保存成功または破棄の選択が済むまで、シーンを置き換えない。
 void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 #ifdef USE_IMGUI
@@ -266,6 +367,10 @@ void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 	(void) scene;
 #endif
 }
+
+//=============================================================================================//
+// 入力・再生
+
 
 // 文字入力やポップアップの操作と競合しないときだけショートカットを処理する。
 void Editor::HandleShortcuts(IEditableWorld& scene) {
@@ -327,106 +432,24 @@ void Editor::HandleShortcuts(IEditableWorld& scene) {
 #endif
 }
 
-//=============================================================================================//
-// 初期化処理
-
-void Editor::Initialize(IEditableWorld* scene) {
-	scene_ = scene;
-	HierarchyPanel::Initialize();
-	InspectorPanel::Initialize();
-	sceneView_.Initialize();
-	selection_.Clear();
-	fileStatus_.clear();
-	loggedStatus_.clear();
-	pendingAction_ = SceneAction::None;
-	openDiscardPrompt_ = false;
-	exitApproved_ = false;
-	if (scene != nullptr) {
-		session_.Initialize(*scene);
-		particleEditor_.Initialize(*scene);
+// 再生開始時に編集状態を退避し、停止時にはその状態へ戻す。
+void Editor::TogglePlay (IEditableWorld& scene) {
+	sceneView_.ResetInteraction ();
+	std::string error;
+	bool succeeded = false;
+	if (session_.IsPlaying ()) {
+		succeeded = session_.Stop (scene, error);
+		if (succeeded) {
+			fileStatus_ = "Stopped. Edit-mode objects restored.";
+			selection_.Clear ();
+		}
 	} else {
-		session_ = EditorSession{};
-	}
-}
-
-//=============================================================================================//
-// 更新処理
-
-void Editor::Update(IEditableWorld* scene) {
-	FrameProfiler::Scope sectionTime(FrameProfiler::Section::History);
-	if (scene == nullptr) {
-		return;
-	}
-	if (!scene->SupportsObjectCollection()) {
-		return;
-	}
-#ifdef USE_IMGUI
-	// UI操作を確定してからショートカットを処理し、その結果も同じフレームで履歴へ記録する。
-	session_.Update(*scene, ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
-	HandleShortcuts(*scene);
-	session_.Update(*scene, ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
-#endif
-	if (!fileStatus_.empty()) {
-		if (fileStatus_ != loggedStatus_) {
-			LogSystem::Log(fileStatus_ + "\n");
-			loggedStatus_ = fileStatus_;
+		succeeded = session_.BeginPlay (scene, error);
+		if (succeeded) {
+			fileStatus_ = "Playing. Object edits will be discarded on Stop.";
 		}
 	}
-}
-
-//=============================================================================================//
-// メンバ関数 / Inspector描画
-
-//=============================================================================================//
-// 描画処理
-
-void Editor::Draw(IEditableWorld* scene) {
-	if (scene_ != scene) {
-		Initialize(scene);
+	if (!succeeded) {
+		fileStatus_ = error;
 	}
-	bool sceneAvailable = false;
-	bool dirty = false;
-	if (scene != nullptr) {
-		if (scene->SupportsObjectCollection()) {
-			sceneAvailable = true;
-			dirty = session_.IsDirty(*scene);
-		}
-	}
-	const EditorMenuAction menuAction = layout_.Begin(sceneAvailable, session_.IsPlaying(), dirty, toolVisibility_);
-	if (sceneAvailable) {
-		DrawToolbar(*scene);
-	}
-	layout_.Draw(fileStatus_);
-	if (!sceneAvailable) {
-		HierarchyPanel::Draw(scene, selection_);
-		InspectorPanel::Draw({});
-		performancePanel_.Draw(toolVisibility_.performance);
-		return;
-	}
-	if (menuAction == EditorMenuAction::NewScene) {
-		RequestSceneAction(SceneAction::NewScene, *scene);
-	}
-	if (menuAction == EditorMenuAction::SaveScene) {
-		SaveScene(*scene);
-	}
-	if (menuAction == EditorMenuAction::LoadScene) {
-		RequestSceneAction(SceneAction::LoadScene, *scene);
-	}
-	HierarchyPanel::Draw(scene, selection_);
-	if (toolVisibility_.particleEditor) {
-		particleEditor_.Draw(*scene, session_.IsPlaying(), selection_.Get(), &toolVisibility_.particleEditor);
-	} else {
-		particleEditor_.StopPreview(*scene, session_.IsPlaying());
-	}
-	if (particleEditor_.ConsumeFocusRequest()) {
-		sceneView_.ShowScene();
-		scene->FocusEditorCamera(particleEditor_.GetFocusPosition());
-	}
-	projectPanel_.Draw(*scene, selection_, toolVisibility_);
-	consolePanel_.Draw();
-	sceneView_.Draw(*scene, selection_);
-	DrawInspector(*scene);
-	scene->DrawEditorTools(toolVisibility_);
-	performancePanel_.Draw(toolVisibility_.performance);
-	DrawDiscardPrompt(*scene);
 }

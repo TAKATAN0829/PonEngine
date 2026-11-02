@@ -2,10 +2,13 @@
 
 #include <Windows.h>
 
+//=============================================================================================//
+// 文字コードユーティリティ
+
 namespace StringUtility {
 
 	//=============================================================================================//
-	// 文字列変換 string -> wstring
+	// stringをwstringに変換する
 
 	std::wstring ConvertString (const std::string& str) {
 
@@ -39,7 +42,7 @@ namespace StringUtility {
 	}
 
 	//=============================================================================================//
-	// 文字列変換 wstring -> string
+	// wstringをstringに変換する
 
 	std::string ConvertString (const std::wstring& str) {
 

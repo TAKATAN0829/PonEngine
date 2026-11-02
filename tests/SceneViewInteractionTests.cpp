@@ -178,12 +178,16 @@ void RunSceneViewInteractionTests() {
 	fixture.selection.Select(fixture.scene.CreateObject(WorldObjectType::Camera));
 	fixture.selection.Toggle(fixture.scene.CreateObject(WorldObjectType::PointLight));
 	fixture.Draw();
+	ImGui::NewFrame();
+	InspectorPanel::DrawSelection(fixture.scene,fixture.selection);
+	ImGui::EndFrame();
+	RequireInteraction(fixture.selection.GetIds().size() == 2,"Multiple Inspector changed the selection");
 	for (WorldObjectType type : {WorldObjectType::PointLight,WorldObjectType::SpotLight,WorldObjectType::DirectionalLight}) {
 		const WorldObjectId identifier = fixture.scene.CreateObject(type);
 		fixture.selection.Select(identifier);
 		fixture.Draw(); // 円錐・方向矢印を含む補助表示も同じ操作コンテキストで描く。
 		ImGui::NewFrame();
-		InspectorPanel::Draw(fixture.scene.GetEditableObject(fixture.scene.GetEditableObjectCount()-1),nullptr,&fixture.scene);
+		InspectorPanel::DrawSelection(fixture.scene,fixture.selection);
 		ImGui::EndFrame();
 	}
 	const WorldObjectId selectedBeforeGameView = fixture.selection.Get();

@@ -8,11 +8,17 @@ struct LightSettings {
 	float innerAngle = 0; // 減衰しない中心域。外角以下に保つ。同角度なら硬い境界。
 };
 
+//=============================================================================================//
+// 設定の検証・比較
+
 bool ValidateLightSettings(const LightSettings& settings);
 bool EqualLightSettings(const LightSettings& first, const LightSettings& second);
 
 // ライト分類と作成上限。具体的なシーンや実行Systemを参照せず、共通規則だけを公開する。
 namespace LightTypes {
+	//=============================================================================================//
+	// ライト種別
+
 	bool IsLight(WorldObjectType type);
 	uint32_t GetLimit(WorldObjectType type);
 	const char* GetName(WorldObjectType type);
