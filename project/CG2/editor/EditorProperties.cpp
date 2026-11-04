@@ -31,6 +31,7 @@ bool EditorProperties::Header(const char* title, const char* help) {
 	return expanded;
 
 #else
+	// 使わんので捨てる
 	(void)title;
 
 	(void)help;

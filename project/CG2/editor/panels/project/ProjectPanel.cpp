@@ -659,7 +659,7 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 			typeName = "AUDIO";
 		}
 
-		drawList->AddText({origin.x+28,origin.y+30},IM_COL32(205,215,225,255),typeName);
+		drawList->AddText({origin.x+28,origin.y+30},IM_COL32(55,35,75,255),typeName);
 	}
 
 	drawList->PushClipRect({origin.x+2,origin.y+70},{origin.x+90,origin.y+94},true);

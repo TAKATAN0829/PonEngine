@@ -68,7 +68,8 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 		}
 
 		if (dirty) {
-			ImGui::TextColored({1,0.72f,0.3f,1}, "* 未保存");
+			// 明るいメニューバーでも読める、濃い赤で未保存を示す。
+			ImGui::TextColored({0.45f,0.035f,0.055f,1}, "* 未保存");
 		}
 
 		if (ImGui::BeginMenu("表示 / View")) {
