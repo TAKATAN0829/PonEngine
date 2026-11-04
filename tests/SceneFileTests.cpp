@@ -1,3 +1,4 @@
+void RunSceneManagerTests();
 #include "../project/CG2/editor/EditorSession.h"
 #include "serialization/SceneFile.h"
 #include "IEditableWorld.h"
@@ -14,6 +15,7 @@ void RunPhysicsTests(const std::filesystem::path& directory);
 void RunCollisionTests(const std::filesystem::path& directory);
 void RunMotionTests(const std::filesystem::path& directory);
 void RunEditorWorkflowTests(const std::filesystem::path& directory);
+void RunAssetFileOperationTests(const std::filesystem::path& directory);
 void RunAssetWorkflowTests(const std::filesystem::path& directory);
 void RunPlacementTests();
 void RunEditorSessionTests();
@@ -260,6 +262,7 @@ int main() {
 		RunCameraTests(directory);
 		RunPlacementTests();
 		RunAssetWorkflowTests(directory);
+		RunAssetFileOperationTests(directory);
 		RunEditorWorkflowTests(directory);
 		RunMotionTests(directory);
 		RunCollisionTests(directory);
@@ -269,6 +272,7 @@ int main() {
 		RunParticlePresetTests();
 		RunLightingTests(directory);
 		RunPrimitiveTests(directory);
+		RunSceneManagerTests();
 		std::cout << "Scene, history, viewport and particle preset tests passed\n";
 		return 0;
 	} catch (const std::exception& exception) {

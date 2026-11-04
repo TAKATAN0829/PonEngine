@@ -64,12 +64,21 @@ public:
 	bool GetCameraView(WorldObjectId cameraId, float aspectRatio, CameraView& view) const override;
 
 	//=============================================================================================//
+	// Asset参照の更新
+
+	void RemapAssetPaths(const AssetPathChange& change) override;
+
+	//=============================================================================================//
 	// 追加・複製・削除
 
 	WorldObjectId PlaceModel(const std::string& model, WorldObjectId parentId, const Vector3& position, std::string& error) override;
+
 	WorldObjectId AddObject(const std::string& model) override;
+
 	WorldObjectId CreateObject(WorldObjectType type) override;
+
 	WorldObjectId DuplicateObject(WorldObjectId id) override;
+
 	bool RemoveObject(WorldObjectId id) override;
 
 	//=============================================================================================//
@@ -78,11 +87,17 @@ public:
 	// 全件の検証後に反映し、失敗時は現在の一覧を維持する。
 	bool ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error) override;
 
+	// Asset移動の準備では、移動先の存在確認だけを後回しにしてデータを検証する。
+	bool ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error, bool requireModelFiles);
+
 	//=============================================================================================//
 	// 保存データ検証
 
+	static bool IsSupportedModelPath(const std::string& model);
+
 	static bool IsSupportedModel(const std::string& model);
-	static bool Validate(const WorldObjectData& object);
+
+	static bool Validate(const WorldObjectData& object, bool requireModelFiles = true);
 
 private:
 
@@ -103,13 +118,14 @@ private:
 private:
 
 	//=============================================================================================//
-	// メンバ変数 / 編集データ
+	// 編集データ
 
 	std::unordered_map<WorldObjectId, size_t> objectIndices_; // ID検索をオブジェクト数に比例させない。
+
 	std::vector<WorldObjectData> objects_; // GPUリソースは派生シーン側で別に管理する。
 
 	//=============================================================================================//
-	// メンバ変数 / ID採番
+	// ID採番
 
 	WorldObjectId nextId_ = 1; // Undo・読込で巻き戻さず、削除済みIDを再利用しない。
 };

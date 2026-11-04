@@ -24,6 +24,7 @@ public:
 
 	// Scene描画をBeginとEndで挟み、元のバックバッファへ戻す。
 	void Begin();
+
 	void End();
 
 	//=============================================================================================//
@@ -40,31 +41,35 @@ public:
 	// Getter / Scene画像
 
 	uint64_t GetTextureHandle() const;
+
 	// GPU完了後の画像読出し用。End後の状態はPIXEL_SHADER_RESOURCE、所有権は移さない。
 	ID3D12Resource* GetColorResource() const { return color_.Get(); }
 
 private:
 
 	//=============================================================================================//
-	// メンバ変数 / 外部機能
+	// 外部機能
 
 	DirectXCommon* graphics_ = nullptr; // Engineが所有する描画機能。
+
 	SrvManager* descriptors_ = nullptr; // SRVの採番・解放を借用する。
 
 	//=============================================================================================//
-	// メンバ変数 / SRV・サイズ
+	// SRV・サイズ
 
 	uint32_t descriptorIndex_ = 0; // リサイズ中も同じ番号を維持する。
 	uint32_t depthDescriptorIndex_ = 0; // 深度SRVもTargetごとに所有し、同一フレームで上書きしない。
 	uint32_t width_ = 0;
 	uint32_t height_ = 0;
+
 	bool initialized_ = false; // SRVを解放すべき状態かを表す。
 
 	//=============================================================================================//
-	// メンバ変数 / 描画リソース
+	// 描画リソース
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> color_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> depth_;
+
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> renderHeap_;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> depthHeap_;
 };

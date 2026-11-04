@@ -1,4 +1,5 @@
 #pragma once
+
 #include <algorithm>
 #include <vector>
 
@@ -34,13 +35,19 @@ public:
 	// 更新処理
 
 	void Update (const Matrix4x4& viewProjectionMatrix);
+
 	// シーンの親子変換を解決したワールド行列で描画用データを更新する。
 	void Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& objectWorldMatrix);
+
 	// 共有モデルを書き換えず、このオブジェクト専用の頂点と再生時計を更新する。
 	void UpdateAnimation(const AnimationSettings& settings, float deltaSeconds, bool playing);
+
 	void ResetAnimation();
+
 	float GetAnimationTime() const { return animationTime_; }
+
 	const AABB& GetLocalBounds() const;
+
 	// アニメーション中は現在の変形後頂点を返す。参照はフレーム内だけで使用する。
 	const std::vector<Mesh::VertexData>& GetSurfaceVertices() const;
 
@@ -53,6 +60,7 @@ public:
 	// Model設定
 
 	void SetModel (Model* model);
+
 	// 全体の色・ライティングと各スロットの上書き値を合成する。
 	void SetMaterials(const std::vector<MaterialSettings>& settings);
 
@@ -109,9 +117,11 @@ public:
 	// PointLight設定
 
 	void SetPointLight (const PointLight& pointLight) { pointLightData_->count = 1; pointLightData_->lights[0] = pointLight; }
+
 	// 最大数は呼出元と保存時にも検証するが、GPU転送時にも配列境界を守る。
 	void SetPointLights(const std::vector<PointLight>& lights) {
 		pointLightData_->count = static_cast<uint32_t>((std::min)(lights.size(), static_cast<size_t>(kMaxPointLights)));
+
 		for (uint32_t lightIndex = 0; lightIndex < pointLightData_->count; ++lightIndex) {
 			pointLightData_->lights[lightIndex] = lights[lightIndex];
 		}
@@ -121,10 +131,13 @@ public:
 	// SpotLight設定
 
 	void SetSpotLight (const SpotLight& spotLight) { spotLightData_->count = 1; spotLightData_->lights[0] = spotLight; }
+
 	// Sceneが一度だけ収集した固定長配列を反映する。隠れた既定光源を追加しない。
 	void SetSceneLights(const WorldLightCollection& lights) {
 		*directionalLightData_ = lights.directional;
+
 		*pointLightData_ = lights.points;
+
 		*spotLightData_ = lights.spots;
 	}
 
@@ -176,18 +189,26 @@ private:
 	// Model
 
 	Model* model_ = nullptr;
+
 	std::unique_ptr<Material> material_; // 同じModelを使う別のオブジェクトへ色や光沢を波及させない。
+
 	std::vector<std::unique_ptr<Material>> slotMaterials_;
+
 	bool textureOverride_ = false; // SetTextureによる既存APIの全体上書き。
 
 	//=============================================================================================//
-	// メンバ変数 / アニメーションのインスタンス状態
+	// アニメーションのインスタンス状態
 
 	std::unique_ptr<Mesh> animatedMesh_;
+
 	std::vector<Mesh::VertexData> animatedVertices_;
+
 	AnimationSettings animationSettings_;
+
 	float animationTime_ = 0;
+
 	bool animationInitialized_ = false;
+
 	AABB animatedBounds_{}; // 変形した頂点から求めた選択範囲。
 
 	//=============================================================================================//

@@ -94,8 +94,11 @@ void SrvManager::CreateSRVforTexture2D(
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 
 	srvDesc.Format = format;
+
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+
 	srvDesc.Texture2D.MipLevels = mipLevels;
 
 	dxCommon_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));
@@ -114,11 +117,17 @@ void SrvManager::CreateSRVforStructuredBuffer(
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 
 	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+
 	srvDesc.Buffer.FirstElement = 0;
+
 	srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+
 	srvDesc.Buffer.NumElements = numElements;
+
 	srvDesc.Buffer.StructureByteStride = structureByteStride;
 
 	dxCommon_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));

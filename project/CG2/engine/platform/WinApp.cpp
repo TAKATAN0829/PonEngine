@@ -14,6 +14,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
 	UINT msg,
 	WPARAM wParam,
 	LPARAM lParam);
+
 #endif
 
 //=============================================================================================//
@@ -27,8 +28,11 @@ void WinApp::Initialize() {
 
 	// WindowClass設定
 	wc_.lpfnWndProc = WindowProc;
+
 	wc_.lpszClassName = L"CG2WindowClass";
+
 	wc_.hInstance = GetModuleHandle(nullptr);
+
 	wc_.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
 	// WindowClass登録
@@ -79,7 +83,9 @@ bool WinApp::ProcessMessage() {
 		if (message.message == WM_QUIT) {
 			return true;
 		}
+
 		TranslateMessage(&message);
+
 		DispatchMessage(&message);
 	}
 
@@ -93,6 +99,7 @@ bool WinApp::ProcessMessage() {
 void WinApp::Finalize() {
 	// Windowを閉じる
 	CloseWindow(hwnd_);
+
 	CoUninitialize();
 }
 
@@ -117,6 +124,7 @@ LRESULT CALLBACK WinApp::WindowProc(
 	if (msg == WM_NCCREATE) {
 		// OSのウィンドウとWinAppを対応付け、後続のメッセージから所有者を取得できるようにする。
 		const CREATESTRUCT* creationData = reinterpret_cast<const CREATESTRUCT*>(lParam);
+
 		SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(creationData->lpCreateParams));
 	}
 
@@ -129,18 +137,23 @@ LRESULT CALLBACK WinApp::WindowProc(
 
 		return true;
 	}
+
 #endif
 
 	switch (msg) {
 		case WM_CLOSE: {
 			// ここでは破棄せず、Editorが未保存の変更を確認できるように終了要求だけを残す。
 			WinApp* window = reinterpret_cast<WinApp*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+
 			if (window != nullptr) {
 				window->closeRequested_ = true;
+
 				return 0;
 			}
+
 			break;
 		}
+
 		case WM_DESTROY:
 
 		// OSに終了を通知

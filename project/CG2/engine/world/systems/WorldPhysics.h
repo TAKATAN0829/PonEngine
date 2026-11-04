@@ -1,14 +1,17 @@
 #pragma once
+
 #include "systems/WorldCollision.h"
 #include <unordered_map>
 
 // 並進の重力・接触応答。Colliderの形状計算を共有し、GPUやログには依存しない。
 class WorldPhysics {
 public:
+
 	//=============================================================================================//
 	// 初期化・終了処理
 
 	void Initialize(IWorldObjects& scene); // Play開始時の初速とKinematicの位置を取得する。
+
 	void Finalize(); // Stop時に速度を消す。Transformの復元はEditorSessionが担当する。
 
 	//=============================================================================================//
@@ -20,9 +23,11 @@ public:
 	// Getter / 実行中の速度
 
 	Vector3 GetVelocity(WorldObjectId identifier) const;
+
 	const std::string& GetError() const { return error_; } // 再生中に不正な設定へ変更された場合の理由。
 
 private:
+
 	//=============================================================================================//
 	// 型 / 保存対象外の運動状態・接触候補
 
@@ -31,14 +36,19 @@ private:
 		Vector3 previousPosition{};
 		Vector3 frameStart{}; // Kinematicの移動をサブステップへ分配する。
 		Vector3 frameTarget{};
+
 		BodyMode mode = BodyMode::Static;
+
 		float inverseMass = 0;
+
 		bool active = false;
 	};
 
 	struct ShapeEntry {
 		WorldCollider shape;
+
 		WorldObjectId owner = 0; // 親Rigidbodyの子Colliderも同じ質量として扱う。
+
 		bool trigger = false;
 	};
 
@@ -66,9 +76,11 @@ private:
 	static bool CompareShapes(const ShapeEntry& first, const ShapeEntry& second);
 
 private:
+
 	//=============================================================================================//
-	// メンバ変数 / Rigidbody状態
+	// Rigidbody状態
 
 	std::unordered_map<WorldObjectId, BodyState> bodies_; // IDだけを所有し、借用参照を保持しない。
+
 	std::string error_; // 不正な設定の間は物理だけを止め、爆発的な押し戻しを防ぐ。
 };

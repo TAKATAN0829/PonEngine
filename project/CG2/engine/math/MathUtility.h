@@ -17,7 +17,9 @@ public:
 		Vector3 result{};
 
 		result.x = v1.x + v2.x;
+
 		result.y = v1.y + v2.y;
+
 		result.z = v1.z + v2.z;
 
 		return result;
@@ -27,7 +29,9 @@ public:
 		Vector3 result{};
 
 		result.x = v1.x - v2.x;
+
 		result.y = v1.y - v2.y;
+
 		result.z = v1.z - v2.z;
 
 		return result;
@@ -37,7 +41,9 @@ public:
 		Vector3 result{};
 
 		result.x = scalar * v.x;
+
 		result.y = scalar * v.y;
+
 		result.z = scalar * v.z;
 
 		return result;
@@ -61,7 +67,9 @@ public:
 		}
 
 		result.x = v.x / length;
+
 		result.y = v.y / length;
+
 		result.z = v.z / length;
 
 		return result;
@@ -71,14 +79,18 @@ public:
 		Vector3 result{};
 
 		result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0] + vector.z * matrix.m[2][0] + matrix.m[3][0];
+
 		result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1] + matrix.m[3][1];
+
 		result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2] + matrix.m[3][2];
 
 		float w = vector.x * matrix.m[0][3] + vector.y * matrix.m[1][3] + vector.z * matrix.m[2][3] + matrix.m[3][3];
 
 		if (w != 0.0f) {
 			result.x /= w;
+
 			result.y /= w;
+
 			result.z /= w;
 		}
 
@@ -179,23 +191,35 @@ public:
 		Matrix4x4 result{};
 
 		result.m[0][0] = (+m.m[1][1] * m.m[2][2] * m.m[3][3] - m.m[1][1] * m.m[2][3] * m.m[3][2] - m.m[1][2] * m.m[2][1] * m.m[3][3] + m.m[1][2] * m.m[2][3] * m.m[3][1] + m.m[1][3] * m.m[2][1] * m.m[3][2] - m.m[1][3] * m.m[2][2] * m.m[3][1]) / a;
+
 		result.m[0][1] = (-m.m[0][1] * m.m[2][2] * m.m[3][3] + m.m[0][1] * m.m[2][3] * m.m[3][2] + m.m[0][2] * m.m[2][1] * m.m[3][3] - m.m[0][2] * m.m[2][3] * m.m[3][1] - m.m[0][3] * m.m[2][1] * m.m[3][2] + m.m[0][3] * m.m[2][2] * m.m[3][1]) / a;
+
 		result.m[0][2] = (+m.m[0][1] * m.m[1][2] * m.m[3][3] - m.m[0][1] * m.m[1][3] * m.m[3][2] - m.m[0][2] * m.m[1][1] * m.m[3][3] + m.m[0][2] * m.m[1][3] * m.m[3][1] + m.m[0][3] * m.m[1][1] * m.m[3][2] - m.m[0][3] * m.m[1][2] * m.m[3][1]) / a;
+
 		result.m[0][3] = (-m.m[0][1] * m.m[1][2] * m.m[2][3] + m.m[0][1] * m.m[1][3] * m.m[2][2] + m.m[0][2] * m.m[1][1] * m.m[2][3] - m.m[0][2] * m.m[1][3] * m.m[2][1] - m.m[0][3] * m.m[1][1] * m.m[2][2] + m.m[0][3] * m.m[1][2] * m.m[2][1]) / a;
 
 		result.m[1][0] = (-m.m[1][0] * m.m[2][2] * m.m[3][3] + m.m[1][0] * m.m[2][3] * m.m[3][2] + m.m[1][2] * m.m[2][0] * m.m[3][3] - m.m[1][2] * m.m[2][3] * m.m[3][0] - m.m[1][3] * m.m[2][0] * m.m[3][2] + m.m[1][3] * m.m[2][2] * m.m[3][0]) / a;
+
 		result.m[1][1] = (+m.m[0][0] * m.m[2][2] * m.m[3][3] - m.m[0][0] * m.m[2][3] * m.m[3][2] - m.m[0][2] * m.m[2][0] * m.m[3][3] + m.m[0][2] * m.m[2][3] * m.m[3][0] + m.m[0][3] * m.m[2][0] * m.m[3][2] - m.m[0][3] * m.m[2][2] * m.m[3][0]) / a;
+
 		result.m[1][2] = (-m.m[0][0] * m.m[1][2] * m.m[3][3] + m.m[0][0] * m.m[1][3] * m.m[3][2] + m.m[0][2] * m.m[1][0] * m.m[3][3] - m.m[0][2] * m.m[1][3] * m.m[3][0] - m.m[0][3] * m.m[1][0] * m.m[3][2] + m.m[0][3] * m.m[1][2] * m.m[3][0]) / a;
+
 		result.m[1][3] = (+m.m[0][0] * m.m[1][2] * m.m[2][3] - m.m[0][0] * m.m[1][3] * m.m[2][2] - m.m[0][2] * m.m[1][0] * m.m[2][3] + m.m[0][2] * m.m[1][3] * m.m[2][0] + m.m[0][3] * m.m[1][0] * m.m[2][2] - m.m[0][3] * m.m[1][2] * m.m[2][0]) / a;
 
 		result.m[2][0] = (+m.m[1][0] * m.m[2][1] * m.m[3][3] - m.m[1][0] * m.m[2][3] * m.m[3][1] - m.m[1][1] * m.m[2][0] * m.m[3][3] + m.m[1][1] * m.m[2][3] * m.m[3][0] + m.m[1][3] * m.m[2][0] * m.m[3][1] - m.m[1][3] * m.m[2][1] * m.m[3][0]) / a;
+
 		result.m[2][1] = (-m.m[0][0] * m.m[2][1] * m.m[3][3] + m.m[0][0] * m.m[2][3] * m.m[3][1] + m.m[0][1] * m.m[2][0] * m.m[3][3] - m.m[0][1] * m.m[2][3] * m.m[3][0] - m.m[0][3] * m.m[2][0] * m.m[3][1] + m.m[0][3] * m.m[2][1] * m.m[3][0]) / a;
+
 		result.m[2][2] = (+m.m[0][0] * m.m[1][1] * m.m[3][3] - m.m[0][0] * m.m[1][3] * m.m[3][1] - m.m[0][1] * m.m[1][0] * m.m[3][3] + m.m[0][1] * m.m[1][3] * m.m[3][0] + m.m[0][3] * m.m[1][0] * m.m[3][1] - m.m[0][3] * m.m[1][1] * m.m[3][0]) / a;
+
 		result.m[2][3] = (-m.m[0][0] * m.m[1][1] * m.m[2][3] + m.m[0][0] * m.m[1][3] * m.m[2][1] + m.m[0][1] * m.m[1][0] * m.m[2][3] - m.m[0][1] * m.m[1][3] * m.m[2][0] - m.m[0][3] * m.m[1][0] * m.m[2][1] + m.m[0][3] * m.m[1][1] * m.m[2][0]) / a;
 
 		result.m[3][0] = (-m.m[1][0] * m.m[2][1] * m.m[3][2] + m.m[1][0] * m.m[2][2] * m.m[3][1] + m.m[1][1] * m.m[2][0] * m.m[3][2] - m.m[1][1] * m.m[2][2] * m.m[3][0] - m.m[1][2] * m.m[2][0] * m.m[3][1] + m.m[1][2] * m.m[2][1] * m.m[3][0]) / a;
+
 		result.m[3][1] = (+m.m[0][0] * m.m[2][1] * m.m[3][2] - m.m[0][0] * m.m[2][2] * m.m[3][1] - m.m[0][1] * m.m[2][0] * m.m[3][2] + m.m[0][1] * m.m[2][2] * m.m[3][0] + m.m[0][2] * m.m[2][0] * m.m[3][1] - m.m[0][2] * m.m[2][1] * m.m[3][0]) / a;
+
 		result.m[3][2] = (-m.m[0][0] * m.m[1][1] * m.m[3][2] + m.m[0][0] * m.m[1][2] * m.m[3][1] + m.m[0][1] * m.m[1][0] * m.m[3][2] - m.m[0][1] * m.m[1][2] * m.m[3][0] - m.m[0][2] * m.m[1][0] * m.m[3][1] + m.m[0][2] * m.m[1][1] * m.m[3][0]) / a;
+
 		result.m[3][3] = (+m.m[0][0] * m.m[1][1] * m.m[2][2] - m.m[0][0] * m.m[1][2] * m.m[2][1] - m.m[0][1] * m.m[1][0] * m.m[2][2] + m.m[0][1] * m.m[1][2] * m.m[2][0] + m.m[0][2] * m.m[1][0] * m.m[2][1] - m.m[0][2] * m.m[1][1] * m.m[2][0]) / a;
 
 		return result;
@@ -227,7 +251,9 @@ public:
 		Matrix4x4 result = MakeIdentity4x4();
 
 		result.m[3][0] = translate.x;
+
 		result.m[3][1] = translate.y;
+
 		result.m[3][2] = translate.z;
 
 		return result;
@@ -237,8 +263,11 @@ public:
 		Matrix4x4 result{};
 
 		result.m[0][0] = scale.x;
+
 		result.m[1][1] = scale.y;
+
 		result.m[2][2] = scale.z;
+
 		result.m[3][3] = 1.0f;
 
 		return result;
@@ -248,8 +277,11 @@ public:
 		Matrix4x4 result = MakeIdentity4x4();
 
 		result.m[1][1] = std::cos(radian);
+
 		result.m[1][2] = std::sin(radian);
+
 		result.m[2][1] = -std::sin(radian);
+
 		result.m[2][2] = std::cos(radian);
 
 		return result;
@@ -259,8 +291,11 @@ public:
 		Matrix4x4 result = MakeIdentity4x4();
 
 		result.m[0][0] = std::cos(radian);
+
 		result.m[0][2] = -std::sin(radian);
+
 		result.m[2][0] = std::sin(radian);
+
 		result.m[2][2] = std::cos(radian);
 
 		return result;
@@ -270,8 +305,11 @@ public:
 		Matrix4x4 result = MakeIdentity4x4();
 
 		result.m[0][0] = std::cos(radian);
+
 		result.m[0][1] = std::sin(radian);
+
 		result.m[1][0] = -std::sin(radian);
+
 		result.m[1][1] = std::cos(radian);
 
 		return result;
@@ -303,9 +341,13 @@ public:
 		float f = 1.0f / std::tanf(fovY / 2.0f);
 
 		result.m[0][0] = f / aspectRatio;
+
 		result.m[1][1] = f;
+
 		result.m[2][2] = farClip / (farClip - nearClip);
+
 		result.m[2][3] = 1.0f;
+
 		result.m[3][2] = (-nearClip * farClip) / (farClip - nearClip);
 
 		return result;
@@ -321,11 +363,17 @@ public:
 		Matrix4x4 result{};
 
 		result.m[0][0] = 2.0f / (right - left);
+
 		result.m[1][1] = 2.0f / (top - bottom);
+
 		result.m[2][2] = 1.0f / (farClip - nearClip);
+
 		result.m[3][0] = (left + right) / (left - right);
+
 		result.m[3][1] = (top + bottom) / (bottom - top);
+
 		result.m[3][2] = nearClip / (nearClip - farClip);
+
 		result.m[3][3] = 1.0f;
 
 		return result;
@@ -341,11 +389,17 @@ public:
 		Matrix4x4 result{};
 
 		result.m[0][0] = width / 2.0f;
+
 		result.m[1][1] = -height / 2.0f;
+
 		result.m[2][2] = maxDepth - minDepth;
+
 		result.m[3][0] = left + (width / 2.0f);
+
 		result.m[3][1] = top + (height / 2.0f);
+
 		result.m[3][2] = minDepth;
+
 		result.m[3][3] = 1.0f;
 
 		return result;

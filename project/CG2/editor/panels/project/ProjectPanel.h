@@ -1,14 +1,19 @@
 ﻿#pragma once
+
 #include "IEditableWorld.h"
+#include "../../assets/AssetActionDialog.h"
 #include <filesystem>
 #include <unordered_map>
 #include <vector>
 
 class EditorSelection;
+class EditorSession;
+class ParticleEditorPanel;
 
 // Projectだけの状態を所有する。画像・モデルのGPUリソースは各Managerから借用する。
 class ProjectPanel {
 public:
+
 	//=============================================================================================//
 	// 初期化処理
 
@@ -24,25 +29,34 @@ public:
 	// 描画処理
 
 	// 初回の初期化と一覧更新も含め、Project一画面の処理をまとめる。
-	void Draw(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
+	void Draw(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
+		EditorSession& history, ParticleEditorPanel& particles);
 
 private:
+
 	//=============================================================================================//
 	// 型 / 一覧とプレビュー
 
 	struct AssetEntry {
 		std::filesystem::path path;
+
 		std::string name;
 		std::string extension;
+
 		bool directory = false;
 	};
+
 	struct FolderEntry {
 		std::filesystem::path path;
+
 		size_t depth = 0;
+
 		bool children = false;
 	};
+
 	struct Preview {
 		uint64_t handle = 0;
+
 		float width = 1;
 		float height = 1;
 	};
@@ -51,41 +65,60 @@ private:
 	// ディレクトリ管理
 
 	static bool CompareEntries(const AssetEntry& first, const AssetEntry& second);
+
 	static std::string PathText(const std::filesystem::path& path);
+
 	void OpenDirectory(const std::filesystem::path& path);
+
 	void CacheFolders(const std::filesystem::path& directory, size_t depth);
 
 	//=============================================================================================//
 	// 画面構成
 
-	void DrawContents(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
+	void DrawContents(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
+		EditorSession& history, ParticleEditorPanel& particles);
+
 	void DrawFolders();
+
 	void DrawDirectoryActions(); // パンくず側とAsset一覧側で共通の右クリック操作。
 
 	//=============================================================================================//
 	// Asset操作・プレビュー
 
 	void DrawAsset(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
+
 	void DrawAssetActions(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
+
 	Preview GetPreview(const AssetEntry& entry, IEditableWorld& scene);
 
 private:
+
 	//=============================================================================================//
-	// メンバ変数 / フォルダ・選択・検索
+	// フォルダ・選択・検索
 
 	std::filesystem::path root_;
 	std::filesystem::path directory_;
 	std::filesystem::path selected_;
+
 	std::vector<AssetEntry> entries_;
+
 	std::vector<FolderEntry> folders_;
+
 	char search_[128]{};
+
 	bool revealFolder_ = true;
 
 	//=============================================================================================//
-	// メンバ変数 / 更新要求・プレビュー
+	// 更新要求・プレビュー
 
 	std::unordered_map<std::string, Preview> previews_; // Managerが所有する画像ハンドルをキャッシュする。
+
 	std::string status_;
+
+	AssetActionDialog fileActions_; // ファイル操作と確認画面。シーンのGPUリソースは所有しない。
+
+	bool fileOperationsAllowed_ = false; // 再生中は閲覧だけを許可する。
+
 	bool initialized_ = false;
 	bool refreshRequested_ = false;
 	bool previewLoadedThisFrame_ = false; // 画像・モデルの読込は一フレーム一件まで。

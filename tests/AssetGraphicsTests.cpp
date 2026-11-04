@@ -1,0 +1,177 @@
+#include "AssetGraphicsTests.h"
+#include "GameScene.h"
+#include "ModelManager.h"
+#include "TextureManager.h"
+#include "../project/CG2/editor/assets/AssetFileOperations.h"
+#include "../project/CG2/editor/EditorSession.h"
+#include <chrono>
+#include <stdexcept>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/material.h>
+#include <assimp/postprocess.h>
+
+void RunAssetGraphicsTests(GameScene& scene) {
+    // 実行時resourcesはRunEditorGraphicsTestsがgeneratedへ複製したものだけを使う。
+    const std::filesystem::path resources = std::filesystem::canonical("resources");
+    const std::filesystem::path directory = std::filesystem::path("asset-operation-tests") /
+        std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+
+    const std::filesystem::path source = directory / "Original";
+    const std::filesystem::path destination = directory / "Moved";
+
+    std::filesystem::create_directories(resources / directory);
+
+    std::filesystem::copy(resources / "fence", resources / source, std::filesystem::copy_options::recursive);
+
+    const std::string originalModel = AssetPathChange::Text(source / "fence.obj");
+    const std::string movedModel = AssetPathChange::Text(destination / "fence.obj");
+    const std::string originalTexture = "resources/" + AssetPathChange::Text(source / "fence.png");
+    const std::string movedTexture = "resources/" + AssetPathChange::Text(destination / "fence.png");
+
+    std::string error;
+
+    if (!scene.PrepareModel(originalModel, error)) {
+        throw std::runtime_error("Asset move GPU model preparation failed: " + error);
+    }
+
+    const WorldObjectId identifier = scene.AddObject(originalModel);
+
+    if (identifier == kInvalidWorldObjectId) {
+        throw std::runtime_error("Asset move GPU object creation failed.");
+    }
+
+    scene.GetEditableObject(scene.GetEditableObjectCount() - 1).transform->translate = {20, 0, 0};
+
+    const uint64_t previewBefore = scene.GetModelPreview(originalModel, error);
+    const uint64_t textureBefore = TextureManager::GetInstance()->GetSrvHandleGPU(originalTexture).ptr;
+
+    Model* modelBefore = ModelManager::GetInstance()->FindModel(originalModel);
+
+    if (previewBefore == 0 || modelBefore == nullptr) {
+        throw std::runtime_error("Asset move GPU preview preparation failed.");
+    }
+
+    // 移動前から実行用Object3dとプレビューが存在する状態にする。
+    scene.GameScene::UpdateEditorFrame(nullptr, false);
+
+    EditorSession history;
+
+    history.Initialize(scene);
+
+    scene.GetEditableObject(scene.GetEditableObjectCount() - 1).transform->translate.x = 21;
+
+    history.Update(scene, false);
+
+    AssetFileOperations operations;
+
+    if (!operations.Initialize(resources, error)) {
+        throw std::runtime_error(error);
+    }
+
+    std::vector<AssetReference> references;
+
+    history.CollectAssetReferences(references);
+
+    if (!operations.Move(source, destination, scene, references, error)) {
+        throw std::runtime_error("GPU asset folder move failed: " + error);
+    }
+
+    history.RemapAssetPaths({resources, source, destination});
+
+    if (ModelManager::GetInstance()->FindModel(movedModel) != modelBefore) {
+        throw std::runtime_error("Asset move replaced the existing GPU model.");
+    }
+
+    if (TextureManager::GetInstance()->GetSrvHandleGPU(movedTexture).ptr != textureBefore) {
+        throw std::runtime_error("Asset move replaced the existing texture descriptor.");
+    }
+
+    if (scene.GetModelPreview(movedModel, error) != previewBefore) {
+        throw std::runtime_error("Asset move lost the existing preview descriptor.");
+    }
+
+    if (!history.Undo(scene, error)) {
+        throw std::runtime_error("GPU asset move Undo failed: " + error);
+    }
+
+    if (scene.GetObjectDataById(identifier)->model != movedModel) {
+        throw std::runtime_error("GPU asset move Undo restored an old path.");
+    }
+
+    const std::string finalTexture = "resources/" + AssetPathChange::Text(destination / AssetPathChange::Path("Fence 日本語.png"));
+
+    if (!operations.Move(destination / "fence.png", destination / AssetPathChange::Path("Fence 日本語.png"), scene, references, error)) {
+        throw std::runtime_error("GPU texture rename failed: " + error);
+    }
+
+    if (TextureManager::GetInstance()->GetSrvHandleGPU(finalTexture).ptr != textureBefore) {
+        throw std::runtime_error("Texture rename replaced its descriptor.");
+    }
+
+    // キャッシュではなく移動先のOBJ/MTLも再インポートできることを確認する。
+    Assimp::Importer importer;
+
+    const aiScene* imported = importer.ReadFile(AssetPathChange::Text(resources / destination / "fence.obj"), aiProcess_Triangulate);
+
+    if (imported == nullptr) {
+        throw std::runtime_error("Moved OBJ could not be reimported from disk.");
+    }
+
+    if (imported->mNumMeshes == 0) {
+        throw std::runtime_error("Moved OBJ has no mesh after reimport.");
+    }
+
+    bool importedTextureExists = false;
+
+    for (uint32_t materialIndex = 0; materialIndex < imported->mNumMaterials; ++materialIndex) {
+        aiString texture;
+
+        if (imported->mMaterials[materialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &texture) == AI_SUCCESS) {
+            if (std::filesystem::exists(resources / destination / AssetPathChange::Path(texture.C_Str()))) {
+                importedTextureExists = true;
+            }
+        }
+    }
+
+    if (!importedTextureExists) {
+        throw std::runtime_error("Moved OBJ/MTL texture reference could not be resolved by Assimp.");
+    }
+
+    std::filesystem::copy_file(resources / destination / "fence.obj", resources / destination / "reimport.obj");
+
+    const std::string reimportedModel = AssetPathChange::Text(destination / "reimport.obj");
+
+    if (!scene.PrepareModel(reimportedModel, error)) {
+        throw std::runtime_error("Reimporting a Unicode texture name failed: " + error);
+    }
+
+    const std::vector<ModelMaterialInfo> reimportedMaterials = scene.GetModelMaterials(reimportedModel);
+
+    bool foundReimportedTexture = false;
+
+    for (const ModelMaterialInfo& material : reimportedMaterials) {
+        if (material.texture == finalTexture) {
+            foundReimportedTexture = true;
+        }
+    }
+
+    if (!foundReimportedTexture) {
+        throw std::runtime_error("Unicode texture metadata changed during model reimport.");
+    }
+
+    // GPUキャッシュがInspectorへ公開する情報も、新しいパスと一致する。
+    const std::vector<ModelMaterialInfo> materials = scene.GetModelMaterials(movedModel);
+
+    bool foundMovedTexture = false;
+
+    for (const ModelMaterialInfo& material : materials) {
+        if (material.texture == finalTexture) {
+            foundMovedTexture = true;
+        }
+    }
+
+    if (!foundMovedTexture) {
+        throw std::runtime_error("Imported material metadata retained its old texture path.");
+    }
+}

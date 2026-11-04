@@ -436,4 +436,24 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="editor\panels\game_view\GameViewPanel.cpp" />
     <ClInclude Include="editor\panels\game_view\GameViewPanel.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="application\TitleScene.cpp" />
+    <ClInclude Include="application\TitleScene.h" />
+    <ClCompile Include="engine\world\runtime\WorldScene.cpp" />
+    <ClInclude Include="engine\world\runtime\WorldScene.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="engine\asset\AssetPathChange.h" />
+    <ClCompile Include="engine\asset\AssetPathChange.cpp" />
+    <ClInclude Include="engine\world\objects\WorldAssetReferences.h" />
+    <ClCompile Include="engine\world\objects\WorldAssetReferences.cpp" />
+    <ClInclude Include="editor\assets\AssetDocument.h" />
+    <ClCompile Include="editor\assets\AssetDocument.cpp" />
+    <ClInclude Include="editor\assets\AssetFileOperations.h" />
+    <ClCompile Include="editor\assets\AssetFileOperations.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="editor\assets\AssetActionDialog.h" />
+    <ClCompile Include="editor\assets\AssetActionDialog.cpp" />
+  </ItemGroup>
 </Project>

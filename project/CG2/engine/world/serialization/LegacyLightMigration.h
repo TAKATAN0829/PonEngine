@@ -1,4 +1,5 @@
 ﻿#pragma once
+
 #include "objects/WorldObjectData.h"
 
 // 形式1〜12に保存されなかった旧固定ライトを、通常のオブジェクトへ移行する。

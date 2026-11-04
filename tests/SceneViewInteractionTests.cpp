@@ -1,10 +1,13 @@
-﻿#include "../project/CG2/editor/panels/scene_view/SceneViewPanel.h"
+#include "../project/CG2/editor/panels/scene_view/SceneViewPanel.h"
 #include "../project/CG2/editor/EditorSelection.h"
 #include "objects/WorldObjects.h"
 #include "SceneViewMath.h"
 #include "MathUtility.h"
 #include "../project/CG2/editor/panels/inspector/InspectorPanel.h"
 #include "../project/CG2/editor/panels/performance/PerformancePanel.h"
+#include "../project/CG2/editor/assets/AssetActionDialog.h"
+#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/panels/particle_editor/ParticleEditorPanel.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 #include <cmath>
@@ -210,3 +213,97 @@ void RunSceneViewInteractionTests() {
 	RequireInteraction(performanceWindow != nullptr,"Performance panel did not create its window");
 }
 
+
+// Assetの右クリックメニューから使用箇所の確認画面を実際に開く。OSの入力は送らない。
+namespace {
+    class AssetDialogFixture {
+    public:
+        AssetDialogFixture() {
+            world_.AddObject("plane.gltf");
+
+            world_.GetEditableObject(0).materials->push_back({0, "fence/fence.png"});
+
+            history_.Initialize(world_);
+
+            particles_.Initialize(world_);
+
+            dialog_.Initialize(std::filesystem::canonical("resources"));
+        }
+
+        void Draw(bool openMenu = false) {
+            ImGui::NewFrame();
+
+            ImGui::SetNextWindowPos({0, 0}, ImGuiCond_Always);
+
+            ImGui::SetNextWindowSize({800, 600}, ImGuiCond_Always);
+
+            ImGui::Begin("Asset interaction test");
+
+            if (openMenu) {
+                ImGui::OpenPopup("Asset context");
+            }
+
+            if (ImGui::BeginPopup("Asset context")) {
+                dialog_.DrawMenu(std::filesystem::canonical("resources/fence/fence.png"), false, true);
+
+                const ImVec2 minimum = ImGui::GetItemRectMin();
+                const ImVec2 maximum = ImGui::GetItemRectMax();
+
+                usagePosition = {(minimum.x + maximum.x) * 0.5f, (minimum.y + maximum.y) * 0.5f};
+
+                ImGui::EndPopup();
+            }
+
+            dialog_.Draw(world_, history_, particles_);
+
+            referencesOpen = ImGui::IsPopupOpen("Asset操作");
+
+            ImGui::End();
+
+            ImGui::EndFrame();
+        }
+
+        void ClickUsage(bool pressed) {
+            ImGui::GetIO().AddMousePosEvent(usagePosition.x, usagePosition.y);
+
+            Draw();
+
+            ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left, pressed);
+
+            Draw();
+        }
+
+        ImVec2 usagePosition{};
+
+        bool referencesOpen = false;
+
+    private:
+        InteractionContext context_;
+
+        WorldObjects world_;
+
+        EditorSession history_;
+
+        ParticleEditorPanel particles_;
+
+        AssetActionDialog dialog_;
+    };
+}
+
+void RunAssetDialogInteractionTests() {
+    AssetDialogFixture fixture;
+
+    fixture.Draw();
+
+    fixture.Draw(true);
+
+    fixture.Draw();
+
+    fixture.ClickUsage(true);
+
+    fixture.ClickUsage(false);
+
+    fixture.Draw();
+
+    RequireInteraction(fixture.referencesOpen, "Asset context menu did not open its references modal.");
+}

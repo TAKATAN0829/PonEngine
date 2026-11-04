@@ -1,4 +1,5 @@
 #pragma once
+
 #include "IWorldObjects.h"
 
 enum class PrimitiveType { 
@@ -10,6 +11,7 @@ enum class PrimitiveType {
 namespace WorldPrimitives {
 	inline constexpr const char* kCubeModel = "primitives/Cube.obj";
 	inline constexpr const char* kSphereModel = "primitives/Sphere.obj";
+
 	//=============================================================================================//
 	// 基本形状の作成
 

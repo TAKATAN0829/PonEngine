@@ -32,11 +32,14 @@ public:
 
 	struct VertexData {
 		Vector4 position;
+
 		Vector2 texcoord;
+
 		Vector3 normal;
 	};
 
 public:
+
 	//=============================================================================================//
 	// 初期化
 
@@ -46,6 +49,7 @@ public:
 	// 初期化(頂点データ)
 
 	void Initialize(DirectXCommon* dxCommon, const std::vector<VertexData>& vertices);
+
 	//=============================================================================================//
 	// 更新処理 / インスタンス専用の変形頂点
 
@@ -55,6 +59,7 @@ public:
 	// 描画処理
 
 	void Draw (uint32_t instanceCount = 1);
+
 	// 複数マテリアルの範囲だけを、同じ頂点バッファから描画する。
 	void DrawRange(uint32_t firstIndex, uint32_t indexCount);
 

@@ -19,6 +19,7 @@ public:
 	// 更新処理
 
 	void Update ();
+
 	void SetViewportSize(int32_t width, int32_t height);
 
 	//=============================================================================================//
@@ -32,6 +33,7 @@ public:
 	// Transform取得
 
 	TransformData GetTransform () const;
+
 	Transform* GetTransformAddress ();
 
 	//=============================================================================================//

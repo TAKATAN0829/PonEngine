@@ -31,6 +31,7 @@ public:
 	// Getter
 
 	static std::ofstream& GetLogStream();
+
 	static const std::deque<std::string>& GetRecentMessages() { return recentMessages_; }
 
 private:
@@ -46,5 +47,6 @@ private:
 	// LogFile
 
 	static std::ofstream logStream_;
+
 	static std::deque<std::string> recentMessages_;
 };

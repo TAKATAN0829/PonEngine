@@ -145,6 +145,7 @@ void Sprite::AdjustTextureSize () {
 	const DirectX::TexMetadata& metadata = TextureManager::GetInstance ()->GetMetaData (textureFilePath_);
 
 	textureImageSize_.x = static_cast<float>(metadata.width);
+
 	textureImageSize_.y = static_cast<float>(metadata.height);
 
 	textureLeftTop_ = { 0.f,0.f };
@@ -189,12 +190,14 @@ Matrix4x4 Sprite::MakeUVTransform () const {
 	if (isFlipX_) {
 
 		translate.x += scale.x;
+
 		scale.x = -scale.x;
 	}
 
 	if (isFlipY_) {
 
 		translate.y += scale.y;
+
 		scale.y = -scale.y;
 	}
 

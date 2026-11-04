@@ -8,6 +8,7 @@ class EditorSelection;
 // 選択対象の設定を借用して編集する。オブジェクトは所有しない。
 class InspectorPanel {
 public:
+
 	//=============================================================================================//
 	// 初期化処理
 
@@ -17,10 +18,12 @@ public:
 	// 描画処理
 
 	static void Draw(const EditableObjectView& object, bool* particleEditorOpen = nullptr, IEditableWorld* scene = nullptr);
+
 	// 選択はEditorから借用し、単体と複数選択の表示を同じクラスで切り替える。
 	static void DrawSelection(IEditableWorld& scene, EditorSelection& selection, bool* particleEditorOpen = nullptr);
 
 private:
+
 	//=============================================================================================//
 	// 複数選択
 
@@ -32,6 +35,7 @@ private:
 
 	// モデル既定値と、シーンに保存する上書き設定を区別して編集する。
 	static void DrawMaterials(const EditableObjectView& object, IEditableWorld& scene);
+
 	static void DrawAnimation(const EditableObjectView& object, IEditableWorld& scene);
 
 	//=============================================================================================//
@@ -59,8 +63,9 @@ private:
 	static void DrawMotionComponents(const EditableObjectView& object, IEditableWorld* scene);
 
 private:
+
 	//=============================================================================================//
-	// メンバ変数 / 編集結果
+	// 編集結果
 
 	inline static std::string status_; // 読み込めない画像の理由。シーン切替時に消す。
 };

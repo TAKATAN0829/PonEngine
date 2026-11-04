@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AssetPathChange.h"
+
 // C++
 #include <string>
 #include <vector>
@@ -12,6 +14,7 @@
 #include "ModelAnimation.h"
 
 class ModelCommon;
+
 struct aiNode;
 
 class Model {
@@ -22,7 +25,9 @@ public:
 
 	struct Node {
 		Matrix4x4 localMatrix = MathUtility::MakeIdentity4x4();
+
 		std::string name;
+
 		std::vector<Node> children;
 	};
 
@@ -31,16 +36,23 @@ public:
 
 	struct ModelData {
 		std::vector<Mesh::VertexData> vertices;
+
 		MaterialData material;
+
 		Node rootNode;
+
 		std::vector<ModelMaterialInfo> materials;
+
 		std::vector<uint32_t> textureIndices;
+
 		struct DrawRange {
 			uint32_t firstIndex = 0;
 			uint32_t indexCount = 0;
 			uint32_t materialIndex = 0;
 		};
+
 		std::vector<DrawRange> ranges;
+
 		bool animated = false;
 	};
 
@@ -62,13 +74,24 @@ public:
 	Material* GetMaterial () const { return material_.get (); }
 
 	const Node& GetRootNode () const { return modelData_.rootNode; }
+
 	// 読込時に求めたメッシュの範囲。画面上の選択判定に使用する。
 	const AABB& GetLocalBounds() const { return localBounds_; }
+
 	// 元データは共有し、編集値と変形用メッシュはObject3dが個別に所有する。
 	const std::vector<ModelMaterialInfo>& GetMaterials() const { return modelData_.materials; }
+
 	uint32_t GetTextureIndex(size_t slot) const { return modelData_.textureIndices.at(slot); }
+
 	const std::vector<Mesh::VertexData>& GetVertices() const { return modelData_.vertices; }
+
 	const ModelAnimation* GetAnimation() const { return animation_.get(); }
+
+	//=============================================================================================//
+	// Asset参照の更新
+
+	// 既存のGPUマテリアルを保持し、Inspectorへ公開するパスだけを更新する。
+	void RemapAssetPaths(const AssetPathChange& change);
 
 private:
 
@@ -93,6 +116,7 @@ private:
 	// モデルデータ
 
 	ModelData modelData_;
+
 	AABB localBounds_{};
 
 	//=============================================================================================//
@@ -104,6 +128,8 @@ private:
 	// Material
 
 	std::unique_ptr<Material> material_;
+
 	std::vector<std::unique_ptr<Material>> materials_; // インスタンスを指定しない場合の既定値。
+
 	std::unique_ptr<ModelAnimation> animation_; // ノードとクリップの共有データ。
 };

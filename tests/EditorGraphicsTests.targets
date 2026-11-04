@@ -14,5 +14,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)SceneViewInteractionTests.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)LightingGraphicsTests.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)PrimitiveGraphicsTests.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)SceneTransitionGraphicsTests.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)AssetGraphicsTests.cpp" />
   </ItemGroup>
 </Project>

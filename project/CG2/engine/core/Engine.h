@@ -12,6 +12,7 @@
 #include "ParticleRenderer.h"
 #include "ImGuiSystem.h"
 #include "SceneManager.h"
+
 #ifdef USE_IMGUI
 #include "../../editor/Editor.h"
 #include "SceneRenderTarget.h"
@@ -86,7 +87,7 @@ private:
 
 
 	//=============================================================================================//
-	// メンバ変数 / Particle描画
+	// Particle描画
 
 	ParticleRenderer* particleRenderer_ = nullptr;
 
@@ -103,10 +104,12 @@ private:
 #ifdef USE_IMGUI
 
 	//=============================================================================================//
-	// メンバ変数 / Editor・Scene描画先
+	// Editor・Scene描画先
 
 	// Editorは編集状態を所有し、SceneRenderTargetは画像用GPUリソースを所有する。
 	Editor editor_;
+
 	SceneRenderTarget sceneTarget_;
+
 #endif
 };

@@ -17,7 +17,9 @@ class Mesh;
 class SpriteCommon {
 public:
 	void SetViewportSize(float width, float height) { viewportWidth_ = width; viewportHeight_ = height; }
+
 	float GetViewportWidth() const { return viewportWidth_; }
+
 	float GetViewportHeight() const { return viewportHeight_; }
 
 	//=============================================================================================//

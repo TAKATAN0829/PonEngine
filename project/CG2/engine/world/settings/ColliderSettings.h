@@ -1,4 +1,5 @@
 #pragma once
+
 #include "EngineStructs.h"
 #include <cmath>
 #include <cstddef>
@@ -10,18 +11,20 @@ enum class ColliderShape { Box, Sphere };
 // 一つのオブジェクトに一つの判定形状。押し戻し・重力の設定はRigidbodyが所有する。
 struct ColliderSettings {
 	//=============================================================================================//
-	// メンバ変数 / 存在・有効状態
+	// 存在・有効状態
 
 	bool present = false;
 	bool enabled = true;
 	bool trigger = false; // 通知だけを行い、押し戻しを適用しない。
+
 	ColliderShape shape = ColliderShape::Box;
 
 	//=============================================================================================//
-	// メンバ変数 / Transformに対するローカル形状
+	// Transformに対するローカル形状
 
 	Vector3 center{};
 	Vector3 size = {1,1,1}; // Boxの全幅。親子の回転・拡縮も反映する。
+
 	float radius = 0.5f; // Sphereはワールド変換後の外接球で判定する。
 };
 

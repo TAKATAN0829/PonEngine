@@ -79,23 +79,31 @@ public:
 
 	// 色
 	void SetColor (const Vector4& color);
+
 	// テクスチャ
 	void SetTexture (const std::string& filePath);
+
 	// ブレンドモード
 	void SetBlendMode (BlendMode blendMode);
+
 	// ビルボード
 	void SetUseBillboard(bool useBillboard) { useBillboard_ = useBillboard; }
+
 	// 加速度Field
 	void SetUseAccelerationField(bool useAccelerationField) { useAccelerationField_ = useAccelerationField; }
 
 private:
+
 	//=============================================================================================//
 	// Particle1粒分のデータ
 
 	struct ParticleData {
 		TransformData transform;
+
 		Vector3 velocity;
+
 		Vector4 color;
+
 		float lifeTime;
 		float currentTime;
 	};
@@ -106,6 +114,7 @@ private:
 	struct ParticleForGPU {
 		Matrix4x4 WVP;
 		Matrix4x4 World;
+
 		Vector4 color;
 	};
 
@@ -114,7 +123,9 @@ private:
 
 	struct Emitter {
 		TransformData transform;
+
 		uint32_t count;
+
 		float frequency;
 		float frequencyTime;
 	};
@@ -124,6 +135,7 @@ private:
 
 	struct AccelerationField {
 		Vector3 acceleration;
+
 		AABB area;
 	};
 
@@ -146,7 +158,7 @@ private:
 private:
 
 	//=============================================================================================//
-	// メンバ変数 / Renderer
+	// Renderer
 
 	ParticleRenderer* renderer_ = nullptr;
 
@@ -209,9 +221,14 @@ private:
 	// ビルボード
 
 	bool useBillboard_ = true;
+
 	ParticleSettings settings_;
+
 	bool descriptorAllocated_ = false;
+
 	std::string appliedTexture_;
+
 	bool useBrightnessAlpha_ = false; // Alphaのない画像は黒背景を透明にする。画像変更時だけ判定。
+
 	Matrix4x4 inverseViewProjection_{}; // 深度から交差距離を復元する。Updateで描画カメラに合わせる。
 };

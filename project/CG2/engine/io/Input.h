@@ -1,4 +1,5 @@
 ﻿#pragma once
+
 #include <wrl.h>
 
 #define DIRECTINPUT_VERSION 0x0800

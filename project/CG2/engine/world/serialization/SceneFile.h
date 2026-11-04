@@ -18,7 +18,8 @@ public:
 	// シーン保存
 
 	// 書き終えた一時ファイルだけを置換し、失敗時は元ファイルを残す。
-	static bool Save(IWorldObjects& scene, const std::filesystem::path& path, std::string& error);
+	// requireModelFiles=falseはAsset移動の一時ファイル準備専用。通常保存は存在も確認する。
+	static bool Save(IWorldObjects& scene, const std::filesystem::path& path, std::string& error, bool requireModelFiles = true);
 
 	//=============================================================================================//
 	// シーン読込

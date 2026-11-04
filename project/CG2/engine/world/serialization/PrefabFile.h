@@ -1,10 +1,12 @@
 #pragma once
+
 #include "IWorldObjects.h"
 #include <filesystem>
 
 // Prefabはルートと子孫を保存する。元Assetへの明示的なApply/Revertを提供する。
 class PrefabFile {
 public:
+
 	//=============================================================================================//
 	// 保存 / 読み込み・配置
 

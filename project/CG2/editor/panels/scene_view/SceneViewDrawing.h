@@ -16,9 +16,11 @@ namespace SceneViewDrawing {
 		const Vector3& start, const Vector3& end, ImU32 color, float thickness) {
 		Vector2 screenStart{};
 		Vector2 screenEnd{};
+
 		if (SceneViewMath::ProjectLine(start, end, viewInfo.viewProjection, viewInfo.viewportWidth, viewInfo.viewportHeight, screenStart, screenEnd)) {
 			drawList.AddLine(ToDrawPosition(screenStart, viewportOrigin), ToDrawPosition(screenEnd, viewportOrigin), color, thickness);
 		}
 	}
 }
+
 #endif

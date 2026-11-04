@@ -14,6 +14,7 @@
 // 実装内補助定義
 
 std::ofstream LogSystem::logStream_;
+
 std::deque<std::string> LogSystem::recentMessages_;
 
 //=============================================================================================//
@@ -70,6 +71,7 @@ void LogSystem::Finalize () {
 void LogSystem::Log (const std::string& message) {
 	// Console表示は件数を制限し、長時間起動してもログを無制限に保持しない。
 	recentMessages_.push_back(message.substr(0, 16384));
+
 	if (recentMessages_.size() > 256) { recentMessages_.pop_front(); }
 
 	// 出力ウィンドウに表示
@@ -112,6 +114,7 @@ LONG WINAPI LogSystem::ExportDump (EXCEPTION_POINTERS* exception) {
 
 	// 時刻を取得
 	SYSTEMTIME time;
+
 	GetLocalTime (&time);
 
 	// Dumpsディレクトリ作成
@@ -148,7 +151,9 @@ LONG WINAPI LogSystem::ExportDump (EXCEPTION_POINTERS* exception) {
 	MINIDUMP_EXCEPTION_INFORMATION minidumpInformation{};
 
 	minidumpInformation.ThreadId = threadId;
+
 	minidumpInformation.ExceptionPointers = exception;
+
 	minidumpInformation.ClientPointers = TRUE;
 
 	// Dump出力

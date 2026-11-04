@@ -17,6 +17,7 @@ public:
 	// ファイル保存・読込
 
 	static bool Save(const ParticleSettings& settings, const std::filesystem::path& path, std::string& error);
+
 	static bool Load(ParticleSettings& settings, const std::filesystem::path& path, std::string& error);
 
 	//=============================================================================================//
@@ -24,5 +25,6 @@ public:
 
 	// シーン内Emitterも同じ項目順で保存し、読込は一時値を検証してから反映する。
 	static void WriteSettings(std::ostream& output, const ParticleSettings& settings);
+
 	static bool ReadSettings(std::istream& input, ParticleSettings& settings, unsigned version = 2);
 };

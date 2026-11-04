@@ -21,63 +21,89 @@ namespace {
 	// 形式7のアセット設定。件数と0/1フラグを読込時点で制限する。
 	bool ReadAssetSettings(std::istream& input, WorldObjectData& object) {
 		size_t materialCount = 0;
+
 		input >> materialCount;
+
 		if (!input || materialCount > 256) {
 			return false;
 		}
+
 		object.materials.resize(materialCount);
+
 		for (MaterialSettings& material : object.materials) {
 			int lighting = 0;
+
 			input >> material.slot >> std::quoted(material.texture) >> material.color.x >> material.color.y >> material.color.z >> material.color.w >> material.shininess >> lighting;
+
 			if (lighting != 0 && lighting != 1) {
 				return false;
 			}
+
 			material.lighting = lighting != 0;
 		}
+
 		int autoplay = 0;
 		int loop = 0;
+
 		input >> object.animation.clip >> autoplay >> loop >> object.animation.speed >> object.animation.time;
+
 		if (autoplay != 0 && autoplay != 1) {
 			return false;
 		}
+
 		if (loop != 0 && loop != 1) {
 			return false;
 		}
+
 		object.animation.autoplay = autoplay != 0;
+
 		object.animation.loop = loop != 0;
+
 		return static_cast<bool>(input);
 	}
 
 	void WriteAssetSettings(std::ostream& output, const WorldObjectData& object) {
 		output << ' ' << object.materials.size();
+
 		for (const MaterialSettings& material : object.materials) {
 			output << ' ' << material.slot << ' ' << std::quoted(material.texture) << ' ' << material.color.x << ' ' << material.color.y << ' ' << material.color.z << ' ' << material.color.w << ' ' << material.shininess << ' ' << material.lighting;
 		}
+
 		output << ' ' << object.animation.clip << ' ' << object.animation.autoplay << ' ' << object.animation.loop << ' ' << object.animation.speed << ' ' << object.animation.time;
 	}
 
 	// 形式9の動作Component。存在と有効のフラグは0/1以外を拒否する。
 	bool ReadMotionSettings(std::istream& input, MotionSettings& settings) {
 		int flags[4]{};
+
 		input >> flags[0] >> flags[1] >> settings.rotationDegreesPerSecond.x >> settings.rotationDegreesPerSecond.y >> settings.rotationDegreesPerSecond.z;
+
 		input >> flags[2] >> flags[3] >> settings.movementOffset.x >> settings.movementOffset.y >> settings.movementOffset.z >> settings.movementPeriod;
+
 		if (!input) {
 			return false;
 		}
+
 		for (int flag : flags) {
 			if (flag != 0 && flag != 1) {
 				return false;
 			}
 		}
+
 		settings.hasRotation = flags[0] != 0;
+
 		settings.rotationEnabled = flags[1] != 0;
+
 		settings.hasMovement = flags[2] != 0;
+
 		settings.movementEnabled = flags[3] != 0;
+
 		return ValidateMotionSettings(settings);
 	}
 
 	void WriteMotionSettings(std::ostream& output, const MotionSettings& settings) {
 		output << ' ' << settings.hasRotation << ' ' << settings.rotationEnabled << ' ' << settings.rotationDegreesPerSecond.x << ' ' << settings.rotationDegreesPerSecond.y << ' ' << settings.rotationDegreesPerSecond.z;
+
 		output << ' ' << settings.hasMovement << ' ' << settings.movementEnabled << ' ' << settings.movementOffset.x << ' ' << settings.movementOffset.y << ' ' << settings.movementOffset.z << ' ' << settings.movementPeriod;
 	}
 
@@ -85,21 +111,31 @@ namespace {
 		int present = 0;
 		int enabled = 0;
 		int shape = 0;
+
 		input >> present >> enabled >> shape >> settings.center.x >> settings.center.y >> settings.center.z;
+
 		input >> settings.size.x >> settings.size.y >> settings.size.z >> settings.radius;
+
 		if (!input) {
 			return false;
 		}
+
 		if ((present != 0 && present != 1) || (enabled != 0 && enabled != 1)) {
 			return false;
 		}
+
 		settings.present = present != 0;
+
 		settings.enabled = enabled != 0;
+
 		settings.shape = static_cast<ColliderShape>(shape);
+
 		return ValidateColliderSettings(settings);
 	}
+
 	void WriteColliderSettings(std::ostream& output, const ColliderSettings& settings) {
 		output << ' ' << settings.present << ' ' << settings.enabled << ' ' << static_cast<int>(settings.shape) << ' ' << settings.center.x << ' ' << settings.center.y << ' ' << settings.center.z;
+
 		output << ' ' << settings.size.x << ' ' << settings.size.y << ' ' << settings.size.z << ' ' << settings.radius;
 	}
 
@@ -110,59 +146,85 @@ namespace {
 		int enabled = 0;
 		int mode = 0;
 		int gravity = 0;
+
 		input >> trigger >> present >> enabled >> mode >> gravity;
+
 		input >> object.body.mass >> object.body.gravityScale >> object.body.restitution >> object.body.friction >> object.body.linearDamping;
+
 		input >> object.body.initialVelocity.x >> object.body.initialVelocity.y >> object.body.initialVelocity.z;
+
 		if (!input) {
 			return false;
 		}
+
 		const int flags[] = {trigger,present,enabled,gravity};
+
 		for (int flag : flags) {
 			if (flag != 0 && flag != 1) {
 				return false;
 			}
 		}
+
 		object.collider.trigger = trigger != 0;
+
 		object.body.present = present != 0;
+
 		object.body.enabled = enabled != 0;
+
 		object.body.mode = static_cast<BodyMode>(mode);
+
 		object.body.useGravity = gravity != 0;
+
 		return ValidateBodySettings(object.body);
 	}
+
 	void WriteBodySettings(std::ostream& output, const WorldObjectData& object) {
 		output << ' ' << object.collider.trigger << ' ' << object.body.present << ' ' << object.body.enabled << ' ' << static_cast<int>(object.body.mode) << ' ' << object.body.useGravity;
+
 		output << ' ' << object.body.mass << ' ' << object.body.gravityScale << ' ' << object.body.restitution << ' ' << object.body.friction << ' ' << object.body.linearDamping;
+
 		output << ' ' << object.body.initialVelocity.x << ' ' << object.body.initialVelocity.y << ' ' << object.body.initialVelocity.z;
 	}
 
 	struct Record {
 		WorldObjectId id{};
+
 		unsigned mask{}; // 下位4ビットがTransform・色・ライティング・光沢の有無を表す。
+
 		std::array<float, 14> values{}; // 拡縮・回転・位置・色・光沢の順に保存する。
+
 		int lighting{};
+
 		std::string name;
 		std::string model;
+
 		int rootMatrix = 1;
 		int active = 1;
 		int meshRenderer = 1;
+
 		WorldObjectData components; // 形式4で追加した種類別Componentの値。
 	};
 
 	// 公開されているプロパティの有無をビットへ変換し、保存形式に記録する。
 	unsigned GetPropertyMask(const EditableObjectView& view) {
 		unsigned propertyMask = 0;
+
 		if (view.transform != nullptr) {
 			propertyMask |= 1u;
 		}
+
 		if (view.color != nullptr) {
 			propertyMask |= 2u;
 		}
+
 		if (view.enableLighting != nullptr) {
 			propertyMask |= 4u;
 		}
+
 		if (view.shininess != nullptr) {
 			propertyMask |= 8u;
 		}
+
 		return propertyMask;
 	}
 
@@ -173,6 +235,7 @@ namespace {
 				return false;
 			}
 		}
+
 		return record.id != kInvalidWorldObjectId && record.mask <= 15 &&
 			(record.lighting == 0 || record.lighting == 1) &&
 			(!(record.mask & 8) || (record.values[13] >= 1.0f && record.values[13] <= 500.0f));
@@ -181,10 +244,14 @@ namespace {
 	// 保存形式の数値配列を、シーンが扱うTransformや見た目の設定へ戻す。
 	void ApplyRecordToObject(const Record& record, WorldObjectData& object) {
 		const std::array<float, 14>& values = record.values;
+
 		// 0～2が拡縮、3～5が回転、6～8が位置、9～12が色、13が光沢。
 		object.transform = {{values[0], values[1], values[2]}, {values[3], values[4], values[5]}, {values[6], values[7], values[8]}};
+
 		object.color = {values[9], values[10], values[11], values[12]};
+
 		object.enableLighting = record.lighting != 0;
+
 		object.shininess = values[13];
 	}
 }
@@ -194,54 +261,78 @@ namespace {
 
 
 // 設定を検証して一時ファイルへ書き込み、完了したものだけを保存先へ反映する。
-bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, std::string& error) {
+bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, std::string& error, bool requireModelFiles) {
 	error.clear();
+
 	if (scene.GetEditableObjectCount() > 100000) {
 		error = "Scene exceeds the supported object count.";
+
 		return false;
 	}
+
 	if (scene.SupportsObjectCollection()) {
 		if (scene.GetEditableObjectCount() > WorldObjects::kMaxObjects) {
 			error = "Scene exceeds the supported object count.";
+
 			return false;
 		}
 	}
+
 	std::vector<Record> records;
+
 	const bool collection = scene.SupportsObjectCollection();
+
 	std::vector<WorldObjectData> objects;
+
 	if (collection) {
 		objects = scene.CaptureObjects();
 	}
+
 	if (collection) {
 		if (objects.size() != scene.GetEditableObjectCount()) {
 			error = "Scene object snapshot mismatch.";
+
 			return false;
 		}
 	}
+
 	// 個々の値に加え、種類別の個数上限もファイル作成前に検証する。
 	if (collection) {
 		WorldObjects validator;
-		if (!validator.ReplaceObjects(objects, error)) {
+
+		if (!validator.ReplaceObjects(objects, error, requireModelFiles)) {
 			return false;
 		}
 	}
+
 	std::unordered_set<WorldObjectId> ids;
+
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const EditableObjectView view = scene.GetEditableObject(objectIndex);
+
 		Record record{};
+
 		record.id = view.id;
+
 		record.mask = GetPropertyMask(view);
+
 		if (view.transform) {
 			const TransformData& transform = *view.transform;
+
 			record.values = { transform.scale.x, transform.scale.y, transform.scale.z, transform.rotate.x, transform.rotate.y, transform.rotate.z,
 				transform.translate.x, transform.translate.y, transform.translate.z };
 		}
+
 		if (view.color) {
 			record.values[9] = view.color->x;
+
 			record.values[10] = view.color->y;
+
 			record.values[11] = view.color->z;
+
 			record.values[12] = view.color->w;
 		}
+
 		if (view.enableLighting != nullptr) {
 			if (*view.enableLighting) {
 				record.lighting = 1;
@@ -249,103 +340,154 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 				record.lighting = 0;
 			}
 		}
+
 		if (view.shininess) {
 			record.values[13] = *view.shininess;
 		}
+
 		if (collection) {
-			if (!WorldObjects::Validate(objects[objectIndex])) {
+			if (!WorldObjects::Validate(objects[objectIndex], requireModelFiles)) {
 				error = "Invalid scene object data.";
+
 				return false;
 			}
+
 			if (objects[objectIndex].id != record.id) {
 				error = "Scene object ID mismatch.";
+
 				return false;
 			}
+
 			if (record.mask != 15) {
 				error = "Incomplete scene object properties.";
+
 				return false;
 			}
+
 			record.components = objects[objectIndex];
+
 			record.name = objects[objectIndex].name;
+
 			record.model = objects[objectIndex].model;
+
 			if (!objects[objectIndex].active) {
 				record.active = 0;
 			}
+
 			if (!objects[objectIndex].hasMeshRenderer) {
 				record.meshRenderer = 0;
 			}
+
 			if (objects[objectIndex].useRootNodeMatrix) {
 				record.rootMatrix = 1;
 			} else {
 				record.rootMatrix = 0;
 			}
 		}
+
 		if (!IsValidRecord(record)) {
 			error = "Scene contains invalid values.";
+
 			return false;
 		}
+
 		if (!ids.insert(record.id).second) {
 			error = "Scene contains duplicate IDs.";
+
 			return false;
 		}
+
 		records.push_back(record);
 	}
 
 	std::error_code fileError;
+
 	if (!path.parent_path().empty()) {
 		std::filesystem::create_directories(path.parent_path(), fileError);
 	}
+
 	if (fileError) {
 		error = "Cannot create scene directory: " + fileError.message();
+
 		return false;
 	}
+
 	std::filesystem::path temporary = path;
+
 	temporary += L".tmp";
+
 	std::ofstream outputFile(temporary, std::ios::trunc);
+
 	outputFile.imbue(std::locale::classic());
+
 	outputFile << std::setprecision(std::numeric_limits<float>::max_digits10);
+
 	unsigned formatVersion = 1;
+
 	if (collection) {
 		formatVersion = 13;
 	}
+
 	outputFile << "PON_SCENE " << formatVersion << '\n' << records.size() << '\n';
+
 	for (const Record& record : records) {
 		outputFile << record.id << ' ' << record.mask;
+
 		for (float value : record.values) {
 			outputFile << ' ' << value;
 		}
+
 		outputFile << ' ' << record.lighting;
+
 		if (collection) {
 			outputFile << ' ' << std::quoted(record.name) << ' ' << std::quoted(record.model) << ' ' << record.rootMatrix
 			<< ' ' << record.active << ' ' << record.meshRenderer;
+
 				outputFile << ' ' << static_cast<int>(record.components.type) << ' ' << record.components.lightIntensity
 			<< ' ' << record.components.lightRadius << ' ' << record.components.lightDecay << ' ' << record.components.parentId << ' ';
+
 				outputFile << record.components.camera.fieldOfView << ' ' << record.components.camera.nearClip << ' '
 			<< record.components.camera.farClip << ' ' << record.components.mainCamera << ' ';
+
 				if (record.components.type == WorldObjectType::Particle) {
 				ParticlePresetFile::WriteSettings(outputFile, record.components.particle);
 			}
+
 			WriteAssetSettings(outputFile, record.components);
+
 			outputFile << ' ' << std::quoted(record.components.prefabSource);
+
 			WriteMotionSettings(outputFile, record.components.motion);
+
 			WriteColliderSettings(outputFile, record.components.collider);
+
 			WriteBodySettings(outputFile, record.components);
+
 			outputFile << ' ' << record.components.light.outerAngle << ' ' << record.components.light.innerAngle;
 		}
+
 		outputFile << '\n';
 	}
+
 	outputFile.close();
+
 	if (!outputFile) {
 		error = "Cannot write scene file.";
+
 		std::filesystem::remove(temporary, fileError);
+
 		return false;
 	}
+
 	// 書込完了前に元ファイルを置き換えず、途中失敗による保存データの消失を防ぐ。
 	if (!MoveFileExW(temporary.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
 		error = "Cannot replace scene file (Windows error " + std::to_string(GetLastError()) + ").";
+
 		std::filesystem::remove(temporary, fileError);
+
 		return false;
 	}
+
 	return true;
 }
 
@@ -356,40 +498,59 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 // 対応する保存形式を読み込み、全件の整合性を確認してからシーンへ反映する。
 bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, std::string& error, bool migrateLegacyLights) {
 	error.clear();
+
 	std::ifstream inputFile(path);
+
 	inputFile.imbue(std::locale::classic());
+
 	if (!inputFile) {
 		error = "Cannot open scene file.";
+
 		return false;
 	}
+
 	std::string magic;
+
 	unsigned version{};
+
 	size_t count{};
+
 	const bool collection = scene.SupportsObjectCollection();
+
 	if (!(inputFile >> magic >> version >> count)) {
 		error = "Incomplete scene header.";
+
 		return false;
 	}
+
 	if (magic != "PON_SCENE" || version < 1 || version > 13) {
 		error = "Unsupported scene format.";
+
 		return false;
 	}
+
 	if (count > 100000) {
 		error = "Scene exceeds the supported object count.";
+
 		return false;
 	}
+
 	if (collection) {
 		if (count > WorldObjects::kMaxObjects) {
 			error = "Scene exceeds the supported object count.";
+
 			return false;
 		}
 	} else {
 		if (version != 1) {
 			error = "This scene requires format version 1.";
+
 			return false;
 		}
+
 		if (count != scene.GetEditableObjectCount()) {
 			error = "Scene object count mismatch.";
+
 			return false;
 		}
 	}
@@ -397,240 +558,348 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 	if (collection) {
 		// 形式2以降はシーン全体を復元する。形式1は既定モデルの同じIDへ設定を適用する。
 		std::vector<WorldObjectData> objects;
+
 		if (version == 1) {
 			objects = scene.CaptureObjects();
 		}
+
 		std::unordered_set<WorldObjectId> ids;
+
 		for (size_t objectIndex = 0; objectIndex < count; ++objectIndex) {
 			Record record;
+
 			inputFile >> record.id >> record.mask;
+
 			for (float& value : record.values) {
 				inputFile >> value;
 			}
+
 			inputFile >> record.lighting;
+
 			if (version >= 2) {
 				inputFile >> std::quoted(record.name) >> std::quoted(record.model) >> record.rootMatrix;
 			}
+
 			if (version >= 3) {
 				inputFile >> record.active >> record.meshRenderer;
 			}
+
 			if (version >= 4) {
 				int objectType = 0;
+
 				inputFile >> objectType >> record.components.lightIntensity >> record.components.lightRadius >> record.components.lightDecay;
+
 				if (!inputFile) {
 					error = "Incomplete scene object type.";
+
 					return false;
 				}
+
 				int maximumType = static_cast<int>(WorldObjectType::Camera);
+
 				if (version >= 13) {
 					maximumType = static_cast<int>(WorldObjectType::DirectionalLight);
 				}
+
 				if (objectType < 0 || objectType > maximumType) {
 					error = "Invalid scene object type.";
+
 					return false;
 				}
+
 				if (version >= 5) {
 					inputFile >> record.components.parentId;
 				}
+
 				if (version >= 6) {
 					int mainCamera = 0;
+
 					inputFile >> record.components.camera.fieldOfView >> record.components.camera.nearClip >> record.components.camera.farClip >> mainCamera;
+
 					if (mainCamera != 0 && mainCamera != 1) {
 						error = "Invalid main camera flag.";
+
 						return false;
 					}
+
 					record.components.mainCamera = mainCamera != 0;
 				}
+
 				record.components.type = static_cast<WorldObjectType>(objectType);
+
 				if (record.components.type == WorldObjectType::Particle) {
 					unsigned particleVersion = 1;
+
 					if (version >= 12) {
 						particleVersion = 2;
 					}
+
 					if (!ParticlePresetFile::ReadSettings(inputFile, record.components.particle,particleVersion)) {
 						error = "Invalid scene particle settings.";
+
 						return false;
 					}
 				}
 			}
+
 			if (version >= 7) {
 				if (!ReadAssetSettings(inputFile, record.components)) {
 					error = "Invalid material or animation settings.";
+
 					return false;
 				}
 			}
+
 			if (version >= 8) {
 				inputFile >> std::quoted(record.components.prefabSource);
 			}
+
 			if (version >= 9) {
 				if (!ReadMotionSettings(inputFile, record.components.motion)) {
 					error = "Invalid motion component settings.";
+
 					return false;
 				}
 			}
+
 			if (version >= 10) {
 				if (!ReadColliderSettings(inputFile, record.components.collider)) {
 					error = "Invalid collider settings.";
+
 					return false;
 				}
 			}
+
 			if (version >= 11) {
 				if (!ReadBodySettings(inputFile,record.components)) {
 					error = "Invalid Rigidbody settings.";
+
 					return false;
 				}
 			}
+
 			if (version >= 13) {
 				inputFile >> record.components.light.outerAngle >> record.components.light.innerAngle;
 			}
+
 			if (!inputFile) {
 				error = "Incomplete scene object data.";
+
 				return false;
 			}
+
 			if (!IsValidRecord(record)) {
 				error = "Invalid scene object values.";
+
 				return false;
 			}
+
 			if (record.mask != 15) {
 				error = "Incomplete scene object properties.";
+
 				return false;
 			}
+
 			if (!ids.insert(record.id).second) {
 				error = "Duplicate scene object ID.";
+
 				return false;
 			}
+
 			// 同じカテゴリの0/1フラグは、各項目を個別に検証する。
 			if (record.rootMatrix != 0 && record.rootMatrix != 1) {
 				error = "Invalid root matrix flag.";
+
 				return false;
 			}
+
 			if (record.active != 0 && record.active != 1) {
 				error = "Invalid active flag.";
+
 				return false;
 			}
+
 			if (record.meshRenderer != 0 && record.meshRenderer != 1) {
 				error = "Invalid mesh renderer flag.";
+
 				return false;
 			}
+
 			WorldObjectData object = record.components;
+
 			object.id = record.id;
+
 			ApplyRecordToObject(record, object);
+
 			if (version >= 2) {
 				object.name = record.name;
+
 				object.model = record.model;
+
 				object.useRootNodeMatrix = record.rootMatrix != 0;
+
 				object.active = record.active != 0;
+
 				object.hasMeshRenderer = record.meshRenderer != 0;
+
 				objects.push_back(std::move(object));
 			} else {
 				size_t matchingObjectIndex = 0;
+
 				while (matchingObjectIndex < objects.size() && objects[matchingObjectIndex].id != record.id) {
 					++matchingObjectIndex;
 				}
+
 				if (matchingObjectIndex == objects.size()) {
 					error = "Legacy scene object ID is not present in the current scene.";
+
 					return false;
 				}
+
 				ApplyRecordToObject(record, objects[matchingObjectIndex]);
 			}
 		}
+
 		inputFile >> std::ws;
+
 		if (inputFile.bad() || !inputFile.eof()) {
 			error = "Unexpected data after scene records.";
+
 			return false;
 		}
+
 		if (migrateLegacyLights) {
 			if (version < 13) {
 				if (version == 1) {
 					// 形式1は既存IDへ適用するため、ファイルにない現在のライトを持ち越さない。
 					std::vector<WorldObjectData> legacyObjects;
+
 					for (const WorldObjectData& object : objects) {
 						if (ids.contains(object.id)) {
 							legacyObjects.push_back(object);
 						}
 					}
+
 					objects = std::move(legacyObjects);
 				}
+
 				if (!LegacyLightMigration::AddLegacyDefaults(objects,error,scene.GetNextObjectId())) {
 					return false;
 				}
 			}
 		}
+
 		return scene.ReplaceObjects(std::move(objects), error);
 	}
 
 	std::vector<EditableObjectView> views;
+
 	std::unordered_set<WorldObjectId> sceneIds;
+
 	for (size_t objectIndex = 0; objectIndex < count; ++objectIndex) {
 		EditableObjectView view = scene.GetEditableObject(objectIndex);
+
 		if (view.id == kInvalidWorldObjectId) {
 			error = "Invalid scene object ID.";
+
 			return false;
 		}
+
 		if (!sceneIds.insert(view.id).second) {
 			error = "Duplicate scene object ID.";
+
 			return false;
 		}
+
 		views.push_back(view);
 	}
+
 	std::vector<Record> records(count);
+
 	std::vector<size_t> targets;
+
 	std::unordered_set<WorldObjectId> fileIds;
+
 	for (Record& record : records) {
 		inputFile >> record.id >> record.mask;
+
 		for (float& value : record.values) {
 			inputFile >> value;
 		}
+
 		inputFile >> record.lighting;
+
 		if (!inputFile) {
 			error = "Incomplete scene data.";
+
 			return false;
 		}
+
 		if (!IsValidRecord(record)) {
 			error = "Invalid scene data.";
+
 			return false;
 		}
+
 		if (!fileIds.insert(record.id).second) {
 			error = "Duplicate scene object ID.";
+
 			return false;
 		}
+
 		size_t target = 0;
+
 		while (target < views.size() && views[target].id != record.id) {
 			++target;
 		}
+
 		if (target == views.size()) {
 			error = "Scene object ID mismatch.";
+
 			return false;
 		}
+
 		if (GetPropertyMask(views[target]) != record.mask) {
 			error = "Scene object property mismatch.";
+
 			return false;
 		}
+
 		targets.push_back(target);
 	}
+
 	inputFile >> std::ws;
+
 	if (inputFile.bad() || !inputFile.eof()) {
 		error = "Unexpected data after scene records.";
+
 		return false;
 	}
 
 	// 全レコードの検証後に反映し、後半が不正なファイルでも前半だけ変更されることを防ぐ。
 	for (size_t objectIndex = 0; objectIndex < records.size(); ++objectIndex) {
 		const Record& record = records[objectIndex];
+
 		const std::array<float, 14>& values = record.values;
+
 		EditableObjectView& view = views[targets[objectIndex]];
+
 		if (view.transform) {
 			*view.transform = { {values[0], values[1], values[2]}, {values[3], values[4], values[5]}, {values[6], values[7], values[8]} };
 		}
+
 		if (view.color) {
 			*view.color = {values[9], values[10], values[11], values[12]};
 		}
+
 		if (view.enableLighting) {
 			*view.enableLighting = record.lighting != 0;
 		}
+
 		if (view.shininess) {
 			*view.shininess = values[13];
 		}
 	}
+
 	return true;
 }

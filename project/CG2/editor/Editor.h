@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 // 自作
 #include "EditorSelection.h"
@@ -12,6 +12,7 @@
 
 // C++
 #include <string>
+#include <optional>
 
 // パネルの描画と編集状態の更新をまとめ、保存・再生・終了確認を管理する。
 class Editor {
@@ -22,6 +23,9 @@ public:
 
 	// 対象シーンに合わせて選択・履歴・確認待ちの状態を初期化する。
 	void Initialize(IEditableWorld* scene);
+
+	// 再生中の遷移では履歴と停止時の復元先を保持し、借用画像や選択だけを切り替える。
+	void OnSceneChanged(IEditableWorld* scene, const char* sceneName);
 
 	//=============================================================================================//
 	// 更新処理
@@ -39,13 +43,16 @@ public:
 	// Getter / 再生・終了状態
 
 	bool IsPlaying() const { return session_.IsPlaying(); }
+
 	bool ShouldSimulate(); // Step要求を一度だけ消費して更新可否を返す。
+
 	bool ShouldExit() const { return exitApproved_; }
 
 	//=============================================================================================//
 	// Getter / Scene表示サイズ
 
 	uint32_t GetSceneWidth() const { return sceneView_.GetWidth(); }
+
 	uint32_t GetSceneHeight() const { return sceneView_.GetHeight(); }
 
 	//=============================================================================================//
@@ -71,53 +78,80 @@ private:
 	// シーン保存・切替
 
 	bool SaveScene(IEditableWorld& scene);
+
 	void RequestSceneAction(SceneAction action, IEditableWorld& scene);
+
 	void PerformSceneAction(IEditableWorld& scene);
+
 	bool NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) const;
+
+	// 遷移前のParticleプリセットも、元の保存基準と組にして確認・保存する。
+	bool IsParticlePresetDirty(IEditableWorld& scene) const;
+
+	bool SaveParticlePreset(IEditableWorld& scene);
 
 	//=============================================================================================//
 	// パネル描画
 
 	void DrawToolbar(IEditableWorld& scene);
+
 	void DrawDiscardPrompt(IEditableWorld& scene);
 
 	//=============================================================================================//
 	// 入力・再生
 
 	void HandleShortcuts(IEditableWorld& scene);
+
 	void TogglePlay(IEditableWorld& scene);
+
+	// 遷移中も保存・停止は、最初に再生した編集シーンを対象にする。
+	IEditableWorld& GetEditWorld(IEditableWorld& scene) const;
 
 private:
 
 	//=============================================================================================//
-	// メンバ変数 / 編集対象
+	// 編集対象
 
-	// SceneManagerが所有するシーン。切替検出用に借用し、破棄しない。
+	// SceneManagerが所有するシーン。
 	IEditableWorld* scene_ = nullptr;
+	IEditableWorld* playOrigin_ = nullptr; // SceneManagerが停止まで生存させる、再生開始時の編集対象。
+
+	std::string sceneName_ = "GameScene"; // 現在の場面名を所有し、シーン破棄後の文字列を参照しない。
+
 	EditorSelection selection_;
+
 	EditorSession session_;
 
 	//=============================================================================================//
-	// メンバ変数 / パネル
+	// パネル
 
 	SceneViewPanel sceneView_; // 画像上の選択と移動操作。
+
 	ParticleEditorPanel particleEditor_; // Emitter設定とプレビュー。
+
+	std::optional<ParticleEditorPanel> editParticleEditor_; // 遷移中だけ元の保存基準を保持する。GPUリソースは所有しない。
+
 	ProjectPanel projectPanel_; // フォルダ・Assetの選択とプレビュー。
+
 	ConsolePanel consolePanel_; // ログの検索・表示。
+
 	PerformancePanel performancePanel_; // 計測履歴の選択とCSV出力の表示。
+
 	EditorToolVisibility toolVisibility_; // 補助画面は初期状態ではすべて閉じる。
+
 	EditorLayout layout_; // メニュー・初期ドッキング・通知欄。
 
 	//=============================================================================================//
-	// メンバ変数 / 通知
+	// 通知
 
 	std::string fileStatus_; // 保存・読込の結果。
 	std::string loggedStatus_; // 同じ結果をログへ重複出力しないための比較値。
 
 	//=============================================================================================//
-	// メンバ変数 / 保存確認・終了
+	// 保存確認・終了
 
 	SceneAction pendingAction_ = SceneAction::None; // 保存確認後に実行する操作。
+
 	bool openDiscardPrompt_ = false; // 次の描画で確認ダイアログを開く。
 	bool exitApproved_ = false; // Engineが終了できる状態。
 };

@@ -1,6 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="editor\assets" />
+    <Filter Include="engine\world\runtime" />
     <Filter Include="engine">
       <UniqueIdentifier>{99ef638a-3a6b-45d8-a79c-cf50764d385b}</UniqueIdentifier>
     </Filter>
@@ -452,5 +454,25 @@
 
     <ClCompile Include="editor\panels\game_view\GameViewPanel.cpp"><Filter>editor\panels\game_view</Filter></ClCompile>
     <ClInclude Include="editor\panels\game_view\GameViewPanel.h"><Filter>editor\panels\game_view</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="application\TitleScene.cpp"><Filter>application</Filter></ClCompile>
+    <ClInclude Include="application\TitleScene.h"><Filter>application</Filter></ClInclude>
+    <ClCompile Include="engine\world\runtime\WorldScene.cpp"><Filter>engine\world\runtime</Filter></ClCompile>
+    <ClInclude Include="engine\world\runtime\WorldScene.h"><Filter>engine\world\runtime</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="engine\asset\AssetPathChange.h"><Filter>engine\asset</Filter></ClInclude>
+    <ClCompile Include="engine\asset\AssetPathChange.cpp"><Filter>engine\asset</Filter></ClCompile>
+    <ClInclude Include="engine\world\objects\WorldAssetReferences.h"><Filter>engine\world\objects</Filter></ClInclude>
+    <ClCompile Include="engine\world\objects\WorldAssetReferences.cpp"><Filter>engine\world\objects</Filter></ClCompile>
+    <ClInclude Include="editor\assets\AssetDocument.h"><Filter>editor\assets</Filter></ClInclude>
+    <ClCompile Include="editor\assets\AssetDocument.cpp"><Filter>editor\assets</Filter></ClCompile>
+    <ClInclude Include="editor\assets\AssetFileOperations.h"><Filter>editor\assets</Filter></ClInclude>
+    <ClCompile Include="editor\assets\AssetFileOperations.cpp"><Filter>editor\assets</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="editor\assets\AssetActionDialog.h"><Filter>editor\assets</Filter></ClInclude>
+    <ClCompile Include="editor\assets\AssetActionDialog.cpp"><Filter>editor\assets</Filter></ClCompile>
   </ItemGroup>
 </Project>

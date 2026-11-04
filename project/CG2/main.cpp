@@ -6,6 +6,7 @@
 #include "LogSystem.h"
 #include "D3DResourceLeakChecker.h"
 #include "GameScene.h"
+#include "TitleScene.h"
 
 //=================================================================================================//
 // エントリーポイント
@@ -23,6 +24,7 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR commandLine, 
 	const HRESULT comResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
 	assert(SUCCEEDED(comResult));
+
 	if (FAILED(comResult)) {
 		return 1;
 	}
@@ -37,15 +39,23 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR commandLine, 
 
 	Engine engine;
 
-	engine.Initialize (new GameScene ());
+	const std::string_view arguments(commandLine);
+
+	if (arguments.find("--title") != std::string_view::npos) {
+		engine.Initialize(new TitleScene());
+	} else {
+		engine.Initialize(new GameScene());
+	}
 
 	// 試験でも本番と同じGameSceneの生成・初期化を通し、古いオブジェクトの混在を検出する。
-	const bool startupTest = std::string_view(commandLine) == "--smoke-test";
+	const bool startupTest = arguments.find("--smoke-test") != std::string_view::npos;
+
 	if (startupTest) {
 		engine.Run(90);
 	} else {
 		engine.Run();
 	}
+
 	const bool graphicsErrors = engine.HasGraphicsErrors();
 
 	engine.Finalize ();
@@ -63,5 +73,6 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR commandLine, 
 	if (graphicsErrors) {
 		return 1;
 	}
+
 	return 0;
 }

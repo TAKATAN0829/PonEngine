@@ -79,6 +79,7 @@ void Mesh::Initialize(DirectXCommon* dxCommon, const std::vector<VertexData>& ve
 
 void Mesh::Update(const std::vector<VertexData>& vertices) {
 	assert(vertices.size() == vertexCount_);
+
 	std::memcpy(vertexData_, vertices.data(), sizeof(VertexData) * vertexCount_);
 }
 
@@ -104,6 +105,7 @@ void Mesh::Draw(uint32_t instanceCount) {
 	// 描画
 
 	FrameProfiler::RecordDraw(indexCount_, instanceCount);
+
 	commandList->DrawIndexedInstanced(
 		indexCount_,
 		instanceCount,
@@ -114,11 +116,17 @@ void Mesh::Draw(uint32_t instanceCount) {
 
 void Mesh::DrawRange(uint32_t firstIndex, uint32_t indexCount) {
 	assert(firstIndex <= indexCount_);
+
 	assert(indexCount <= indexCount_ - firstIndex);
+
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
+
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
+
 	commandList->IASetIndexBuffer(&indexBufferView_);
+
 	FrameProfiler::RecordDraw(indexCount, 1);
+
 	commandList->DrawIndexedInstanced(indexCount, 1, firstIndex, 0, 0);
 }
 
@@ -364,10 +372,15 @@ void Mesh::CreateSphere() {
 			uint32_t index = (latIndex * kSubdivision + lonIndex) * 6;
 
 			indexData_[index + 0] = start;
+
 			indexData_[index + 1] = start + kSubdivision + 1;
+
 			indexData_[index + 2] = start + 1;
+
 			indexData_[index + 3] = start + 1;
+
 			indexData_[index + 4] = start + kSubdivision + 1;
+
 			indexData_[index + 5] = start + kSubdivision + 2;
 		}
 	}
@@ -383,39 +396,51 @@ void Mesh::CreatePlane() {
 	// 左上
 
 	vertexData_[0].position = { -1.0f,1.0f,0.0f,1.0f };
+
 	vertexData_[0].texcoord = { 0.0f,0.0f };
+
 	vertexData_[0].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 右上
 
 	vertexData_[1].position = { 1.0f,1.0f,0.0f,1.0f };
+
 	vertexData_[1].texcoord = { 1.0f,0.0f };
+
 	vertexData_[1].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 左下
 
 	vertexData_[2].position = { -1.0f,-1.0f,0.0f,1.0f };
+
 	vertexData_[2].texcoord = { 0.0f,1.0f };
+
 	vertexData_[2].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 右下
 
 	vertexData_[3].position = { 1.0f,-1.0f,0.0f,1.0f };
+
 	vertexData_[3].texcoord = { 1.0f,1.0f };
+
 	vertexData_[3].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// Index
 
 	indexData_[0] = 0;
+
 	indexData_[1] = 1;
+
 	indexData_[2] = 2;
 
 	indexData_[3] = 1;
+
 	indexData_[4] = 3;
+
 	indexData_[5] = 2;
 }
 
@@ -429,39 +454,51 @@ void Mesh::CreateSprite() {
 	// 左上
 
 	vertexData_[0].position = { 0.0f,0.0f,0.0f,1.0f };
+
 	vertexData_[0].texcoord = { 0.0f,0.0f };
+
 	vertexData_[0].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 右上
 
 	vertexData_[1].position = { 1.0f,0.0f,0.0f,1.0f };
+
 	vertexData_[1].texcoord = { 1.0f,0.0f };
+
 	vertexData_[1].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 左下
 
 	vertexData_[2].position = { 0.0f,1.0f,0.0f,1.0f };
+
 	vertexData_[2].texcoord = { 0.0f,1.0f };
+
 	vertexData_[2].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 右下
 
 	vertexData_[3].position = { 1.0f,1.0f,0.0f,1.0f };
+
 	vertexData_[3].texcoord = { 1.0f,1.0f };
+
 	vertexData_[3].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// Index
 
 	indexData_[0] = 0;
+
 	indexData_[1] = 1;
+
 	indexData_[2] = 2;
 
 	indexData_[3] = 1;
+
 	indexData_[4] = 3;
+
 	indexData_[5] = 2;
 }
 
@@ -475,21 +512,27 @@ void Mesh::CreateTriangle() {
 	// 上
 
 	vertexData_[0].position = { 0.0f,1.0f,0.0f,1.0f };
+
 	vertexData_[0].texcoord = { 0.5f,0.0f };
+
 	vertexData_[0].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 左下
 
 	vertexData_[1].position = { -1.0f,-1.0f,0.0f,1.0f };
+
 	vertexData_[1].texcoord = { 0.0f,1.0f };
+
 	vertexData_[1].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
 	// 右下
 
 	vertexData_[2].position = { 1.0f,-1.0f,0.0f,1.0f };
+
 	vertexData_[2].texcoord = { 1.0f,1.0f };
+
 	vertexData_[2].normal = { 0.0f,0.0f,-1.0f };
 
 	//=============================================================================================//
@@ -497,11 +540,15 @@ void Mesh::CreateTriangle() {
 
 	// 表面
 	indexData_[0] = 0;
+
 	indexData_[1] = 1;
+
 	indexData_[2] = 2;
 
 	// 裏面
 	indexData_[3] = 0;
+
 	indexData_[4] = 2;
+
 	indexData_[5] = 1;
 }

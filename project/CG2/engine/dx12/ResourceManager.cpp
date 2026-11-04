@@ -29,11 +29,17 @@ ResourceManager::CreateBufferResource (ID3D12Device* device, size_t sizeInBytes,
 	D3D12_RESOURCE_DESC resourceDesc{};
 
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+
 	resourceDesc.Width = sizeInBytes;
+
 	resourceDesc.Height = 1;
+
 	resourceDesc.DepthOrArraySize = 1;
+
 	resourceDesc.MipLevels = 1;
+
 	resourceDesc.SampleDesc.Count = 1;
+
 	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
 	//=============================================================================================//
@@ -69,11 +75,17 @@ ResourceManager::CreateTextureResource (ID3D12Device* device, const DirectX::Tex
 	D3D12_RESOURCE_DESC resourceDesc{};
 
 	resourceDesc.Width = UINT (metadata.width);
+
 	resourceDesc.Height = UINT (metadata.height);
+
 	resourceDesc.MipLevels = UINT16 (metadata.mipLevels);
+
 	resourceDesc.DepthOrArraySize = UINT16 (metadata.arraySize);
+
 	resourceDesc.Format = metadata.format;
+
 	resourceDesc.SampleDesc.Count = 1;
+
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION (metadata.dimension);
 
 	//=============================================================================================//

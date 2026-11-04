@@ -97,23 +97,32 @@ void SpriteCommon::CreateRootSignature() {
 
 	// Material
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
 	rootParameters[0].Descriptor.ShaderRegister = 0;
 
 	// WVP
 	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+
 	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
 	rootParameters[1].Descriptor.ShaderRegister = 0;
 
 	// Texture
 	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+
 	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
 	rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange;
+
 	rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;
 
 	// DirectionalLight
 	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+
 	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
 	rootParameters[3].Descriptor.ShaderRegister = 1;
 
 	descriptionRootSignature.pParameters = rootParameters;
@@ -189,18 +198,27 @@ void SpriteCommon::CreateGraphicsPipeline() {
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
 
 	inputElementDescs[0].SemanticName = "POSITION";
+
 	inputElementDescs[0].SemanticIndex = 0;
+
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+
 	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	inputElementDescs[1].SemanticName = "TEXCOORD";
+
 	inputElementDescs[1].SemanticIndex = 0;
+
 	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+
 	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	inputElementDescs[2].SemanticName = "NORMAL";
+
 	inputElementDescs[2].SemanticIndex = 0;
+
 	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+
 	inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
@@ -215,12 +233,19 @@ void SpriteCommon::CreateGraphicsPipeline() {
 	D3D12_BLEND_DESC blendDesc{};
 
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
 	blendDesc.RenderTarget[0].BlendEnable = true;
+
 	blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+
 	blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+
 	blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+
 	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+
 	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+
 	blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
 
 	//=============================================================================================//
@@ -230,6 +255,7 @@ void SpriteCommon::CreateGraphicsPipeline() {
 
 	// カリングしない
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	//=============================================================================================//
@@ -246,36 +272,49 @@ void SpriteCommon::CreateGraphicsPipeline() {
 
 	// RootSignature
 	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get ();
+
 	// InputLayout
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
+
 	// VertexShader
 	graphicsPipelineStateDesc.VS = {
 		vertexShaderBlob->GetBufferPointer (),
 		vertexShaderBlob->GetBufferSize ()
 	};
+
 	// PixelShader
 	graphicsPipelineStateDesc.PS = {
 		pixelShaderBlob->GetBufferPointer (),
 		pixelShaderBlob->GetBufferSize ()
 	};
+
 	// BlendState
 	graphicsPipelineStateDesc.BlendState = blendDesc;
+
 	// RasterizerState
 	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+
 	// 書き込むRTVの数
 	graphicsPipelineStateDesc.NumRenderTargets = 1;
+
 	// RTVのフォーマット
 	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
 	// プリミティブトポロジのタイプ
 	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
 	// サンプル数
 	graphicsPipelineStateDesc.SampleDesc.Count = 1;
+
 	// サンプルマスク
 	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
 	// 深度テスト
 	graphicsPipelineStateDesc.DepthStencilState.DepthEnable = false;
+
 	// ステンシルテスト
 	graphicsPipelineStateDesc.DepthStencilState.StencilEnable = false;
+
 	// DSVのフォーマット
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 

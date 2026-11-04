@@ -1,10 +1,13 @@
 #pragma once
+
 #include "IWorldObjects.h"
 
 // 描画中のカメラと表示領域。Editorは描画クラスを直接参照せず、この情報で画面操作を行う。
 struct EditorViewInfo {
 	Matrix4x4 viewProjection{}; // Sceneカメラのビュー射影行列。
+
 	Vector3 cameraPosition{}; // ワールド座標でのカメラ位置。
+
 	float viewportWidth = 0; // 画像上の投影とレイ判定に共通で使う幅。
 	float viewportHeight = 0; // 同じ表示領域の高さ。
 };
@@ -18,10 +21,13 @@ struct EditorToolVisibility {
 };
 
 
+struct AssetPathChange;
+
 // 共通のオブジェクト操作へ、Editorの表示・入力・プレビュー操作を加えた窓口。
 // 実行・保存処理はIWorldObjectsを使い、Editorのパネル型を参照しない。
 class IEditableWorld : public IWorldObjects {
 public:
+
 	//=============================================================================================//
 	// 終了処理
 
@@ -47,22 +53,34 @@ public:
 	// Setter / Scene表示・入力
 
 	virtual void SetEditorViewport(uint32_t width, uint32_t height) { (void)width; (void)height; }
+
 	virtual void SetEditorCameraInput(bool enabled) { (void)enabled; }
+
 	virtual void SetEditorGameView(bool enabled) { (void)enabled; }
+
 	virtual void FocusEditorCamera(const Vector3& position) { (void)position; }
 
 	//=============================================================================================//
 	// Getter / Particle
 
 	virtual ParticleSettings* GetParticleSettings() { return nullptr; }
+
 	virtual size_t GetParticleCount() const { return 0; }
 
 	//=============================================================================================//
 	// Setter / Particleプレビュー
 
 	virtual void SetParticlePreview(const ParticlePreviewState& state) { (void)state; }
+
 	virtual void ResetParticlePreview() {}
+
 	virtual void BurstParticles() {}
+
+	//=============================================================================================//
+	// Asset参照の更新
+
+	// ディスク上の移動が成功した後に呼ぶ。GPUリソースの所有権は変更しない。
+	virtual void RemapAssetPaths(const AssetPathChange& change) { (void)change; }
 
 	//=============================================================================================//
 	// オブジェクト操作

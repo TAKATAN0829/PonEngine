@@ -39,8 +39,11 @@ public:
 	// Texture番号設定
 
 	void SetTextureIndex(uint32_t textureIndex);
+
 	uint32_t GetTextureIndex() const { return textureIndex_; }
+
 	bool GetEnableLighting() const { return materialData_->enableLighting != 0; }
+
 	float GetShininess() const { return materialData_->shininess; }
 
 	//=============================================================================================//
@@ -65,9 +68,13 @@ private:
 
 	struct MaterialForGPU {
 		Vector4 color;
+
 		int32_t enableLighting;
+
 		float padding[3];
+
 		Matrix4x4 uvTransform;
+
 		float shininess;
 	};
 

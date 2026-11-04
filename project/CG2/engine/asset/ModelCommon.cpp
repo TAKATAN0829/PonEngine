@@ -10,6 +10,7 @@
 void ModelCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 
 	assert(dxCommon);
+
 	assert(srvManager);
 
 	dxCommon_ = dxCommon;

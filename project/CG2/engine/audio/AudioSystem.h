@@ -18,6 +18,7 @@
 
 struct ChunkHeader {
 	char id[4];
+
 	int32_t size;
 };
 
@@ -26,6 +27,7 @@ struct ChunkHeader {
 
 struct RiffHeader {
 	ChunkHeader chunk;
+
 	char type[4];
 };
 
@@ -34,6 +36,7 @@ struct RiffHeader {
 
 struct FormatChunk {
 	ChunkHeader chunk;
+
 	WAVEFORMATEX fmt;
 };
 
@@ -42,7 +45,9 @@ struct FormatChunk {
 
 struct SoundData {
 	WAVEFORMATEX wfex;
+
 	BYTE* pBuffer;
+
 	unsigned int bufferSize;
 };
 

@@ -1,6 +1,7 @@
 #include "FrameProfiler.h"
 #include <stdexcept>
 #include "TextureManager.h"
+#include <utility>
 
 // C++
 #include <cassert>
@@ -29,6 +30,7 @@ TextureManager* TextureManager::GetInstance() {
 void TextureManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 
 	assert(dxCommon);
+
 	assert(srvManager);
 
 	dxCommon_ = dxCommon;
@@ -43,6 +45,8 @@ void TextureManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager)
 void TextureManager::Finalize() {
 
 	textureDatas_.clear();
+
+	retiredTextures_.clear();
 
 	srvManager_ = nullptr;
 
@@ -72,14 +76,19 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 	// テクスチャデータを追加して書き込む
 
 	FrameProfiler::Scope loadTime(FrameProfiler::Section::TextureLoad);
+
 	TextureData textureData{};
 
 	DirectX::ScratchImage mipImages = LoadTexture(filePath);
 
 	textureData.metadata = mipImages.GetMetadata();
+
 	textureData.hasTransparency = !mipImages.IsAlphaAllOpaque();
 
 	textureData.resource = ResourceManager::CreateTextureResource(dxCommon_->GetDevice(), textureData.metadata);
+
+	// GPU検証エラーから元の画像ファイルを特定できるよう、リソースへ名前を付ける。
+	textureData.resource->SetName(StringUtility::ConvertString(filePath).c_str());
 
 	textureData.intermediateResource = ResourceManager::UploadTextureData(
 		textureData.resource,
@@ -106,22 +115,58 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 		UINT(textureData.metadata.mipLevels));
 
 	const uint32_t loadedIndex = textureData.srvIndex;
+
     textureDatas_.emplace(filePath, std::move(textureData));
+
     return loadedIndex;
 }
 
 bool TextureManager::TryLoad(const std::string& filePath, std::string& error) {
     error.clear();
+
 	if (textureDatas_.contains(filePath)) {
 		return true;
 	}
+
 	if (srvManager_->IsFull()) {
 		error = "Texture descriptor limit reached.";
+
 		return false;
 	}
+
     try { Load(filePath); }
     catch (const std::exception& failure) { error = failure.what(); return false; }
+
     return true;
+}
+
+//=============================================================================================//
+// Asset参照の更新
+
+void TextureManager::RemapAssetPaths(const AssetPathChange& change) {
+	std::vector<std::string> changedKeys;
+
+	for (const std::pair<const std::string, TextureData>& entry : textureDatas_) {
+		if (change.RemapResource(entry.first) != entry.first) {
+			changedKeys.push_back(entry.first);
+		}
+	}
+
+	for (const std::string& key : changedKeys) {
+		const std::string destination = change.RemapResource(key);
+
+		std::unordered_map<std::string, TextureData>::node_type node = textureDatas_.extract(key);
+
+		if (textureDatas_.contains(destination)) {
+			retiredTextures_.push_back(std::move(textureDatas_.at(destination)));
+
+			textureDatas_.erase(destination);
+		}
+
+		node.key() = destination;
+
+		textureDatas_.insert(std::move(node));
+	}
 }
 
 //=============================================================================================//

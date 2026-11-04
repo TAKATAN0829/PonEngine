@@ -52,8 +52,11 @@ void Camera::SetViewportSize(int32_t width, int32_t height) {
 	if (width <= 0 || height <= 0) {
 		return;
 	}
+
 	clientWidth_ = width;
+
 	clientHeight_ = height;
+
 	Update();
 }
 

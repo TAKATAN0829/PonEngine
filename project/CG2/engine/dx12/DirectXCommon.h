@@ -37,18 +37,27 @@ public:
 	// 描画前処理
 
 	void PreDraw();
+
 	void BindBackBuffer();
+
 	//=============================================================================================//
 	// Particleの深度参照。Targetの所有者がBegin〜Endの間だけ貸す。
 
 	void InitializeDepthSampling(SrvManager* descriptors, uint32_t descriptorIndex);
+
 	void FinalizeDepthSampling();
+
 	void SetDepthTarget(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE renderView,
 		D3D12_CPU_DESCRIPTOR_HANDLE writeView, D3D12_CPU_DESCRIPTOR_HANDLE readView, D3D12_GPU_DESCRIPTOR_HANDLE texture);
+
 	D3D12_GPU_DESCRIPTOR_HANDLE BeginDepthRead();
+
 	void EndDepthRead();
+
 	uint32_t GetDepthWidth() const;
+
 	uint32_t GetDepthHeight() const;
+
 	bool HasValidationErrors() const;
 
 	//=============================================================================================//
@@ -69,21 +78,29 @@ public:
 	ID3D12GraphicsCommandList* GetCommandList() { return commandList_.Get(); }
 
 	ID3D12CommandQueue* GetCommandQueue() { return commandQueue_.Get(); }
+
 	// PostDraw完了後・次のPreDraw前だけ参照可能。所有権は移さない。
 	ID3D12Resource* GetPresentedBuffer() const { return swapChainResources_[backBufferIndex_].Get(); }
 
 private:
+
 	//=============================================================================================//
-	// メンバ変数 / 描画中Targetの深度。ターゲット切替・PostDrawで借用を解除する。
+	// 描画中Targetの深度。ターゲット切替・PostDrawで借用を解除する。
 
 	SrvManager* depthDescriptors_ = nullptr;
+
 	uint32_t depthDescriptorIndex_ = 0;
+
 	D3D12_CPU_DESCRIPTOR_HANDLE depthReadHandle_{};
+
 	ID3D12Resource* activeDepth_ = nullptr;
+
 	D3D12_CPU_DESCRIPTOR_HANDLE activeRenderView_{};
 	D3D12_CPU_DESCRIPTOR_HANDLE activeDepthWriteView_{};
 	D3D12_CPU_DESCRIPTOR_HANDLE activeDepthReadView_{};
+
 	D3D12_GPU_DESCRIPTOR_HANDLE activeDepthTexture_{};
+
 	bool depthReading_ = false;
 
 	//=============================================================================================//
@@ -92,10 +109,12 @@ private:
 	// タイムスタンプ用のQueryHeapと読取専用バッファを初期化する。
 	// 非対応・確保失敗時は描画を継続し、計測値を未取得として扱う。
 	void InitializeGpuTiming();
+
 	// GPU完了済みの結果だけを読み、同じフレームの記録へ渡す。追加待機はしない。
 	void ReadGpuTiming();
 
 	void ResizeIfNeeded();
+
 	uint32_t renderWidth_ = 0;
 	uint32_t renderHeight_ = 0;
 
@@ -259,9 +278,11 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilResource_;
 
 	//=============================================================================================//
-	// メンバ変数 / GPUタイムスタンプ
+	// GPUタイムスタンプ
 
 	Microsoft::WRL::ComPtr<ID3D12QueryHeap> timestampHeap_; // フレームの開始・終了の2点。
+
 	Microsoft::WRL::ComPtr<ID3D12Resource> timestampReadback_; // フェンス完了後にCPUから読む。
+
 	uint64_t timestampFrequency_ = 0; // コマンドキューのticks/秒。0は計測無効。
 };

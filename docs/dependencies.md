@@ -1,6 +1,6 @@
 ﻿# 現在の依存関係
 
-`engine/world`の分類、共有データ・共通操作・Editor操作の分離、ライトの相互依存解消と、タブ単位のPanel配置・クラスごとの.h/.cpp統合を反映した調査。調査対象は`project/CG2`の自作C++ソースとヘッダー143ファイルで、解決できた直接のローカルincludeは重複を除いて315組。外部ライブラリとテストはこの件数に含めない。
+`engine/world`の分類、共有データ・共通操作・Editor操作の分離、ライトの相互依存解消と、タブ単位のPanel配置・クラスごとの.h/.cpp統合を反映した調査。調査対象は`project/CG2`の自作C++ソースとヘッダー157ファイルで、解決できた直接のローカルincludeは重複を除いて353組。外部ライブラリとテストはこの件数に含めない。
 
 includeは条件付きコンパイルの両方の分岐を含めて数えている。ファイル単位のinclude循環は検出していない。ただし、フォルダを単位にすると相互依存がある。include循環がないことと、機能が独立していることは別である。
 
@@ -11,18 +11,21 @@ includeは条件付きコンパイルの両方の分岐を含めて数えてい�
 ```mermaid
 flowchart TD
     Main[main.cpp] --> Game[application / GameScene]
+    Main --> Title[application / TitleScene]
     Main --> Engine[engine/core / Engine]
     Engine --> Manager[world / SceneManager]
     Engine --> Editor[editor / Editorと各Panel]
     Manager --> Scene[world / IScene]
-    Game --> Scene
-    Game --> Objects[world/objects / WorldObjects]
+    Game --> Runtime[world/runtime / WorldScene]
+    Title --> Runtime
+    Runtime --> Scene
+    Runtime --> Objects[world/objects / WorldObjects]
     Editor --> Interface[world / IEditableWorld]
     Objects --> Interface
     Interface --> Common[world / IWorldObjects]
     Common --> Data[objects / WorldObjectData]
-    Game --> Systems[world/systems]
-    Game --> Render[object・renderer・asset・dx12]
+    Runtime --> Systems[world/systems]
+    Runtime --> Render[object・renderer・asset・dx12]
     Data --> Components[world/settings]
     Systems --> Common
     Storage --> Common
@@ -33,9 +36,9 @@ flowchart TD
     Systems --> LightRules
 ```
 
-- `main.cpp`が`GameScene`を生成し、`Engine`へ渡す。
-- `Engine`が実行ループを進め、`SceneManager`が`IScene`を通じて更新・描画する。`SceneManager::Finalize`が現在のシーンを破棄する。
-- `GameScene`は`IScene`と`WorldObjects`を継承する。編集データは`WorldObjects`、描画中のObject・Particle・プレビューと物理などの実行状態は`GameScene`側が保持する。
+- `main.cpp`が`GameScene`を生成し、`Engine`へ渡す。`--title`指定時は`TitleScene`から開始する。
+- `Engine`が実行ループを進め、`SceneManager`が`IScene`を通じて更新・描画する。遷移はPostDrawのGPU完了後に適用する。SceneManagerが現在・遷移待ち・再生開始時の編集シーンを所有し、終了時も解放する。
+- `WorldScene`は`IScene`と`WorldObjects`を継承する。編集データは`WorldObjects`、描画中のObject・Particle・プレビューと物理などの実行状態は`WorldScene`側が保持する。GameSceneとTitleSceneはこの基底を使い、初期配置と場面遷移を定義する。
 - `Editor`は`IEditableWorld`を通じて編集する。`editor`から`application/GameScene.h`への直接includeはない。`world`から`editor`・`application`への直接includeもない。
 - `Engine.h`は`USE_IMGUI`時に`Editor.h`をincludeし、`Editor`を値メンバーとして持つ。ReleaseでEditorを含めない分岐はあるが、共通のEngineクラスにEditorの起動・更新の接続がある。
 - `ui/ImGuiSystem.cpp`も`editor/EditorTheme.h`を参照してEditorの配色を適用する。Engine側からEditor側への直接includeは、この箇所と`Engine.h`の2組ある。
@@ -84,7 +87,7 @@ Editorは選択・履歴・表示要求を所有し、InspectorPanel::DrawSelect
 
 残る主な相互依存はPrefab配置・検証による`objects ↔ serialization`。ライトの種別・上限は共通規則へ、旧形式移行は保存処理側へ移し、`objects ↔ systems`は解消した。systemsから具体的なWorldObjectsへの参照も、serializationからsystemsへの参照もなくなった。
 
-ライトの共通規則は標準ヘッダーとbaseの共有定義だけを参照し、WorldObjectData・WorldObjects・IWorldObjectsを必要としない。GPU配列とCPU側の上限検証は同じLightLimitsを使用する。ファイル単位のinclude件数は共通定義への明示的な参照によって増えているが、機能間の相互依存は減っている。
+ライトの共通規則は標準ヘッダーとtypesの共有定義だけを参照し、WorldObjectData・WorldObjects・IWorldObjectsを必要としない。GPU配列とCPU側の上限検証は同じLightLimitsを使用する。ファイル単位のinclude件数は共通定義への明示的な参照によって増えているが、機能間の相互依存は減っている。
 
 ## 結合が強い箇所
 
@@ -100,9 +103,11 @@ Editorは選択・履歴・表示要求を所有し、InspectorPanel::DrawSelect
 
 `ParticleSettings`が参照する`dx12/BlendMode.h`はenumのみで、DirectXのGPUリソース型を直接持ち込んではいない。ただし、共通設定の型がDirectX実装のフォルダにあるため、依存方向が読み取りにくい。
 
-### GameSceneに実行処理が集中
+### 共通の場面基底とゲーム固有処理を分離
 
-`GameScene`はモデル・Particleの更新、ライト収集、物理・衝突、カメラ、モデルプレビュー、Asset準備とWorld SettingsのImGui表示をまとめている。起動時の組み立て役としての依存は自然だが、ゲーム個別の処理と再利用する実行機能の境目が薄い。
+モデル・Particleの更新、ライト収集、物理・衝突、カメラ、モデルプレビューとAsset準備は`world/runtime/WorldScene`へ移した。GameSceneは保存読込・初期配置・サンプルSpriteのHUD、TitleSceneはタイトル専用の配置を担当する。共通基底からapplicationやEditorへの参照は追加していない。
+
+WorldScene内部には描画・プレビュー・シミュレーションの調整が残る。既存のWorldMotion/WorldPhysics/WorldCollisionへ実処理を委譲しており、同じゲームロジックを各場面へコピーする必要はない。今後さらに分ける場合も、同じクラスを複数cppへ分割せず、独立した責務のクラスへ分ける。
 
 ### Editorと描画基盤の接続
 
@@ -118,8 +123,16 @@ Editorは選択・履歴・表示要求を所有し、InspectorPanel::DrawSelect
 | 完了 | ライトの種別・上限・検証と旧形式移行を分ける | objectsとsystemsの相互依存を解消し、保存からsystemsへの参照も取り除いた |
 | 3 | Prefab配置の呼出境界を整理する | objectsとserializationの相互依存を解く。モデル準備や失敗時の原子性は維持する |
 | 4 | Assetの読込情報とシーン設定を分け、BlendModeの配置を整理する | 共通の型を使う方向を明確にする |
-| 5 | 必要な機能ごとに編集窓口を分け、GameSceneの共通実行処理を抽出する | 一つの型へ機能を追加し続ける構造を抑える |
+| 5 | 共通実行処理はWorldSceneへ抽出済み。次はプレビューなどの独立性を確認する | 一つの型へ機能を追加し続ける構造を抑える |
 
 窓口をメソッドごとに細分化したり、全処理をManager化したりする必要はない。まず共通データと検証の配置を整え、既存のScene保存・Undo/Redo・Prefab・再生停止時の復元をテストしながら依存を減らす。
 
 フォルダ移動・include・Visual Studioのフィルター更新、共有データと共通インターフェースの分離、ライト処理の相互依存解消を実施した。次の対象はPrefab処理の相互依存であり、EnTTや実行時Reflectionの導入はまだ行っていない。
+
+## Projectのファイル操作
+
+ProjectPanelはeditor/assets/AssetActionDialogへ操作を委譲し、AssetFileOperationsがファイル操作、AssetDocumentが各形式の参照を担当する。これらは一つのクラスを複数cppへ分けたものではなく、各責務を同名の.h/.cppにまとめた独立したクラスである。
+
+engine/asset/AssetPathChangeはパスの変換と使用箇所の文字列だけを持ち、ModelManagerなどのGPU型やWorld型を参照しない。world/objects/WorldAssetReferencesがWorldObjectDataの参照を列挙・更新する。WorldObjectsからassetへの新しい参照は、このパス値だけを使うためのものになる。
+
+実行側への通知はIEditableWorld::RemapAssetPathsで行い、WorldSceneが既存GPUキャッシュを更新する。EditorSessionとParticleEditorPanelはそれぞれ自分が所有する保存基準を更新する。Asset操作サービスからEditor本体やWorldSceneの具体型を参照する経路は作っていない。ファイル単位のinclude循環は引き続き検出していない。

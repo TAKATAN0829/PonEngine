@@ -26,7 +26,9 @@ void DirectXCommon::Initialize(WinApp* winApp) {
 
 	// メンバ変数に記録
 	winApp_ = winApp;
+
 	renderWidth_ = WinApp::kClientWidth;
+
 	renderHeight_ = WinApp::kClientHeight;
 
 	// FPS固定初期化
@@ -40,6 +42,7 @@ void DirectXCommon::Initialize(WinApp* winApp) {
 
 	// Command系初期化
 	InitializeCommand();
+
 	InitializeGpuTiming();
 
 	// SwapChain初期化
@@ -67,6 +70,7 @@ void DirectXCommon::Initialize(WinApp* winApp) {
 
 void DirectXCommon::PreDraw() {
 	ResizeIfNeeded();
+
 	if (timestampFrequency_ != 0) {
 		commandList_->EndQuery(timestampHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0);
 	}
@@ -105,6 +109,7 @@ void DirectXCommon::PreDraw() {
 
 	// ClearColor
 	BindBackBuffer(); // 描画先と深度の借用情報を毎フレーム揃える。
+
 	float clearColor[] = { 0.1f,0.25f,0.5f,1.0f };
 
 	// RenderTargetClear
@@ -127,12 +132,17 @@ void DirectXCommon::PreDraw() {
 // Scene用描画先から戻るときに、バックバッファの表示領域も復元する。
 void DirectXCommon::BindBackBuffer() {
 	D3D12_GPU_DESCRIPTOR_HANDLE texture{};
+
 	if (depthDescriptors_ != nullptr) {
 		texture = depthDescriptors_->GetGPUDescriptorHandle(depthDescriptorIndex_);
 	}
+
 	SetDepthTarget(depthStencilResource_.Get(),rtvHandles_[backBufferIndex_],dsvHandle_,depthReadHandle_,texture);
+
     commandList_->OMSetRenderTargets(1, &rtvHandles_[backBufferIndex_], false, &dsvHandle_);
+
     commandList_->RSSetViewports(1, &viewport_);
+
     commandList_->RSSetScissorRects(1, &scissorRect_);
 }
 
@@ -142,80 +152,118 @@ void DirectXCommon::BindBackBuffer() {
 
 void DirectXCommon::InitializeDepthSampling(SrvManager* descriptors, uint32_t descriptorIndex) {
 	depthDescriptors_ = descriptors;
+
 	depthDescriptorIndex_ = descriptorIndex;
+
 	descriptors->CreateSRVforTexture2D(descriptorIndex,depthStencilResource_.Get(),DXGI_FORMAT_R24_UNORM_X8_TYPELESS,1);
 }
 
 void DirectXCommon::FinalizeDepthSampling() {
 	depthDescriptors_ = nullptr;
+
 	activeDepth_ = nullptr;
 }
 
 void DirectXCommon::SetDepthTarget(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE renderView,
 	D3D12_CPU_DESCRIPTOR_HANDLE writeView, D3D12_CPU_DESCRIPTOR_HANDLE readView, D3D12_GPU_DESCRIPTOR_HANDLE texture) {
 	assert(!depthReading_);
+
 	activeDepth_ = resource;
+
 	activeRenderView_ = renderView;
+
 	activeDepthWriteView_ = writeView;
+
 	activeDepthReadView_ = readView;
+
 	activeDepthTexture_ = texture;
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::BeginDepthRead() {
 	assert(activeDepth_ != nullptr);
+
 	assert(!depthReading_);
+
 	D3D12_RESOURCE_BARRIER barrier{};
+
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+
 	barrier.Transition.pResource = activeDepth_;
+
 	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+
 	commandList_->ResourceBarrier(1,&barrier);
+
 	commandList_->OMSetRenderTargets(1,&activeRenderView_,false,&activeDepthReadView_);
+
 	depthReading_ = true;
+
 	return activeDepthTexture_;
 }
 
 void DirectXCommon::EndDepthRead() {
 	assert(depthReading_);
+
 	D3D12_RESOURCE_BARRIER barrier{};
+
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+
 	barrier.Transition.pResource = activeDepth_;
+
 	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+
 	commandList_->OMSetRenderTargets(1,&activeRenderView_,false,&activeDepthWriteView_);
+
 	commandList_->ResourceBarrier(1,&barrier);
+
 	depthReading_ = false;
 }
 
 uint32_t DirectXCommon::GetDepthWidth() const {
 	assert(activeDepth_ != nullptr);
+
 	return static_cast<uint32_t>(activeDepth_->GetDesc().Width);
 }
 
 uint32_t DirectXCommon::GetDepthHeight() const {
 	assert(activeDepth_ != nullptr);
+
 	return activeDepth_->GetDesc().Height;
 }
 
 // 起動試験で実デバイスの検証結果を調べ、描画エラーをビルド成功だけで見逃さない。
 bool DirectXCommon::HasValidationErrors() const {
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> information;
+
 	if (FAILED(device_.As(&information))) {
 		return false;
 	}
+
     const UINT64 messageCount = information->GetNumStoredMessagesAllowedByRetrievalFilter();
+
     for (UINT64 messageIndex = 0; messageIndex < messageCount; ++messageIndex) {
         SIZE_T messageSize = 0;
+
         information->GetMessage(messageIndex, nullptr, &messageSize);
+
         std::vector<unsigned char> storage(messageSize);
+
         D3D12_MESSAGE* message = reinterpret_cast<D3D12_MESSAGE*>(storage.data());
+
         if (SUCCEEDED(information->GetMessage(messageIndex, message, &messageSize)) &&
             (message->Severity == D3D12_MESSAGE_SEVERITY_ERROR || message->Severity == D3D12_MESSAGE_SEVERITY_CORRUPTION)) {
             return true;
         }
     }
+
     return false;
 }
 
@@ -225,6 +273,7 @@ bool DirectXCommon::HasValidationErrors() const {
 
 void DirectXCommon::PostDraw() {
 	assert(!depthReading_);
+
 	activeDepth_ = nullptr;
 
 	// Barrier設定
@@ -246,8 +295,10 @@ void DirectXCommon::PostDraw() {
 	// CommandList閉じる
 	if (timestampFrequency_ != 0) {
 		commandList_->EndQuery(timestampHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 1);
+
 		commandList_->ResolveQueryData(timestampHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, timestampReadback_.Get(), 0);
 	}
+
 	HRESULT hr = commandList_->Close();
 
 	assert(SUCCEEDED(hr));
@@ -261,6 +312,7 @@ void DirectXCommon::PostDraw() {
 	// SwapChainPresent
 	{
 		FrameProfiler::Scope presentTime(FrameProfiler::Section::Present);
+
 		swapChain_->Present(1, 0);
 	}
 
@@ -276,6 +328,7 @@ void DirectXCommon::PostDraw() {
 		fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
 
 		FrameProfiler::Scope waitTime(FrameProfiler::Section::GpuWait);
+
 		WaitForSingleObject(fenceEvent_, INFINITE);
 	}
 
@@ -285,6 +338,7 @@ void DirectXCommon::PostDraw() {
 	// FPS固定
 	{
 		FrameProfiler::Scope limiterTime(FrameProfiler::Section::FrameLimit);
+
 		UpdateFixFPS();
 	}
 
@@ -305,7 +359,9 @@ void DirectXCommon::PostDraw() {
 
 void DirectXCommon::Finalize() {
 	timestampReadback_.Reset();
+
 	timestampHeap_.Reset();
+
 	timestampFrequency_ = 0;
 
 	// FenceEvent解放
@@ -324,34 +380,54 @@ void DirectXCommon::Finalize() {
 // 同じ直接実行キューの2タイムスタンプを使い、CPU待機とGPU処理を分ける。
 void DirectXCommon::InitializeGpuTiming() {
 	timestampFrequency_ = 0;
+
 	uint64_t frequency = 0;
+
 	if (FAILED(commandQueue_->GetTimestampFrequency(&frequency))) {
 		return;
 	}
+
 	if (frequency == 0) {
 		return;
 	}
+
 	D3D12_QUERY_HEAP_DESC queryDescription{};
+
 	queryDescription.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+
 	queryDescription.Count = 2;
+
 	if (FAILED(device_->CreateQueryHeap(&queryDescription, IID_PPV_ARGS(&timestampHeap_)))) {
 		return;
 	}
+
 	D3D12_HEAP_PROPERTIES heapProperties{};
+
 	heapProperties.Type = D3D12_HEAP_TYPE_READBACK;
+
 	D3D12_RESOURCE_DESC bufferDescription{};
+
 	bufferDescription.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+
 	bufferDescription.Width = sizeof(uint64_t) * 2;
+
 	bufferDescription.Height = 1;
+
 	bufferDescription.DepthOrArraySize = 1;
+
 	bufferDescription.MipLevels = 1;
+
 	bufferDescription.SampleDesc.Count = 1;
+
 	bufferDescription.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
 	if (FAILED(device_->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &bufferDescription,
 		D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&timestampReadback_)))) {
 		timestampHeap_.Reset();
+
 		return;
 	}
+
 	timestampFrequency_ = frequency;
 }
 
@@ -360,51 +436,76 @@ void DirectXCommon::ReadGpuTiming() {
 	if (timestampFrequency_ == 0) {
 		return;
 	}
+
 	// デバイス喪失時の完了値は有効なタイムスタンプとして使わない。
 	if (fence_->GetCompletedValue() == UINT64_MAX) {
 		return;
 	}
+
 	if (fence_->GetCompletedValue() < fenceValue_) {
 		return;
 	}
+
 	void* mappedData = nullptr;
+
 	const D3D12_RANGE readRange = {0, sizeof(uint64_t) * 2};
+
 	if (FAILED(timestampReadback_->Map(0, &readRange, &mappedData))) {
 		return;
 	}
+
 	const uint64_t* timestamps = static_cast<const uint64_t*>(mappedData);
+
 	if (timestamps[1] >= timestamps[0]) {
 		const double milliseconds = static_cast<double>(timestamps[1] - timestamps[0]) * 1000.0 / static_cast<double>(timestampFrequency_);
+
 		FrameProfiler::SetGpuMilliseconds(static_cast<float>(milliseconds));
 	}
+
 	const D3D12_RANGE writtenRange = {0, 0};
+
 	timestampReadback_->Unmap(0, &writtenRange);
 }
 
 // 前フレームはPostDrawで待機済みなので、現在の命令を記録する前に安全に作り直せる。
 void DirectXCommon::ResizeIfNeeded() {
     RECT clientArea{};
+
     GetClientRect(winApp_->GetHwnd(), &clientArea);
+
     const uint32_t width = static_cast<uint32_t>(clientArea.right);
     const uint32_t height = static_cast<uint32_t>(clientArea.bottom);
+
 	if (width == 0 || height == 0 || (width == renderWidth_ && height == renderHeight_)) {
 		return;
 	}
+
 	for (Microsoft::WRL::ComPtr<ID3D12Resource>& buffer : swapChainResources_) {
 		buffer.Reset();
 	}
+
     depthStencilResource_.Reset();
+
     const HRESULT resizeResult = swapChain_->ResizeBuffers(kBufferCount, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+
     assert(SUCCEEDED(resizeResult));
+
     renderWidth_ = width;
+
     renderHeight_ = height;
+
     for (uint32_t bufferIndex = 0; bufferIndex < kBufferCount; ++bufferIndex) {
         const HRESULT bufferResult = swapChain_->GetBuffer(bufferIndex, IID_PPV_ARGS(&swapChainResources_[bufferIndex]));
+
         assert(SUCCEEDED(bufferResult));
     }
+
     InitializeRenderTargetView();
+
     InitializeDepthStencilView();
+
     InitializeViewport();
+
     InitializeScissorRect();
 }
 
@@ -424,8 +525,10 @@ void DirectXCommon::InitializeDebugLayer() {
 		debugController->EnableDebugLayer();
 
 #ifdef _DEBUG
+
 		// GPUValidation有効化
 		debugController->SetEnableGPUBasedValidation(TRUE);
+
 #endif
 	}
 
@@ -529,11 +632,17 @@ void DirectXCommon::InitializeSwapChain() {
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
 
 	swapChainDesc.Width = WinApp::kClientWidth;
+
 	swapChainDesc.Height = WinApp::kClientHeight;
+
 	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+
 	swapChainDesc.SampleDesc.Count = 1;
+
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+
 	swapChainDesc.BufferCount = kBufferCount;
+
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 	Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain1 = nullptr;
@@ -655,12 +764,19 @@ void DirectXCommon::InitializeDepthStencilView() {
 	D3D12_RESOURCE_DESC resourceDesc{};
 
 	resourceDesc.Width = renderWidth_;
+
 	resourceDesc.Height = renderHeight_;
+
 	resourceDesc.MipLevels = 1;
+
 	resourceDesc.DepthOrArraySize = 1;
+
 	resourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+
 	resourceDesc.SampleDesc.Count = 1;
+
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 	// Heap設定
@@ -672,6 +788,7 @@ void DirectXCommon::InitializeDepthStencilView() {
 	D3D12_CLEAR_VALUE depthClearValue{};
 
 	depthClearValue.DepthStencil.Depth = 1.0f;
+
 	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	// DepthStencilResource生成
@@ -689,14 +806,20 @@ void DirectXCommon::InitializeDepthStencilView() {
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 
 	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 
 	// DSV生成
 	device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHandle_);
+
 	depthReadHandle_ = dsvHandle_;
+
 	depthReadHandle_.ptr += device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
 	dsvDesc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH | D3D12_DSV_FLAG_READ_ONLY_STENCIL;
+
 	device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, depthReadHandle_);
+
 	if (depthDescriptors_ != nullptr) {
 		depthDescriptors_->CreateSRVforTexture2D(depthDescriptorIndex_,depthStencilResource_.Get(),DXGI_FORMAT_R24_UNORM_X8_TYPELESS,1);
 	}
@@ -709,10 +832,15 @@ void DirectXCommon::InitializeDepthStencilView() {
 void DirectXCommon::InitializeViewport() {
 
 	viewport_.Width = static_cast<float>(renderWidth_);
+
 	viewport_.Height = static_cast<float>(renderHeight_);
+
 	viewport_.TopLeftX = 0.f;
+
 	viewport_.TopLeftY = 0.f;
+
 	viewport_.MinDepth = 0.f;
+
 	viewport_.MaxDepth = 1.f;
 }
 
@@ -723,8 +851,11 @@ void DirectXCommon::InitializeViewport() {
 void DirectXCommon::InitializeScissorRect() {
 
 	scissorRect_.left = 0;
+
 	scissorRect_.right = static_cast<LONG>(renderWidth_);
+
 	scissorRect_.top = 0;
+
 	scissorRect_.bottom = static_cast<LONG>(renderHeight_);
 }
 

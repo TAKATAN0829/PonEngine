@@ -59,24 +59,33 @@ PipelineManager::CreateInputLayout () {
 	// POSITION
 
 	inputElementDescs_[0].SemanticName = "POSITION";
+
 	inputElementDescs_[0].SemanticIndex = 0;
+
 	inputElementDescs_[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+
 	inputElementDescs_[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	//=============================================================================================//
 	// TEXCOORD
 
 	inputElementDescs_[1].SemanticName = "TEXCOORD";
+
 	inputElementDescs_[1].SemanticIndex = 0;
+
 	inputElementDescs_[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+
 	inputElementDescs_[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	//=============================================================================================//
 	// NORMAL
 
 	inputElementDescs_[2].SemanticName = "NORMAL";
+
 	inputElementDescs_[2].SemanticIndex = 0;
+
 	inputElementDescs_[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+
 	inputElementDescs_[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	//=============================================================================================//
@@ -130,69 +139,94 @@ PipelineManager::CreateBlendState (BlendMode blendMode) {
 
 		// Src * SrcA + Dest * (1 - SrcA)
 		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+
 		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+
 		break;
 
 	case kBlendModeAdd:
 
 		// Src * SrcA + Dest * 1
 		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+
 		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+
 		break;
 
 	case kBlendModeSubtract:
 
 		// Dest * 1 - Src * SrcA
 		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+
 		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_REV_SUBTRACT;
+
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+
 		break;
 
 	case kBlendModeMultiply:
 
 		// Src * 0 + Dest * Src
 		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ZERO;
+
 		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_SRC_COLOR;
+
 		break;
 
 	case kBlendModeScreen:
 
 		// Src * (1 - Dest) + Dest * 1
 		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+
 		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+
 		break;
 
 	case kBlendModeLighten:
 
 		// max(Src, Dest)
 		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+
 		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_MAX;
+
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+
 		break;
 
 	case kBlendModeDarken:
 
 		// min(Src, Dest)
 		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+
 		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_MIN;
+
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+
 		break;
 
 	case kBlendModeInvert:
 
 		// Src * (1 - Dest) + Dest * 0
 		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+
 		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+
 		break;
 
 	default:
 
 		assert (false);
+
 		break;
 	}
 

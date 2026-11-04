@@ -4,12 +4,14 @@
 #include "panels/inspector/InspectorPanel.h"
 #include "serialization/SceneFile.h"
 #include "LogSystem.h"
+#include <utility>
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
 #endif
 
 #ifdef USE_IMGUI
+
 //=============================================================================================//
 // 実装内補助定義
 
@@ -21,33 +23,46 @@ namespace {
 		if (active) {
 			ImGui::PushStyleColor (ImGuiCol_Button, { 0.045f,0.10f,0.17f,1 });
 		}
+
 		const bool clicked = ImGui::Button (identifier, { 30,22 });
+
 		if (active) {
 			ImGui::PopStyleColor ();
 		}
+
 		const ImVec2 minimum = ImGui::GetItemRectMin ();
 		const ImVec2 center = { minimum.x + 15, minimum.y + 11 };
+
 		const ImU32 color = ImGui::GetColorU32 (ImGuiCol_Text);
+
 		ImDrawList* drawList = ImGui::GetWindowDrawList ();
+
 		if (icon == PlaybackIcon::Play || icon == PlaybackIcon::Step) {
 			drawList->AddTriangleFilled ({ center.x - 5,center.y - 7 }, { center.x - 5,center.y + 7 }, { center.x + 6,center.y }, color);
 		}
+
 		if (icon == PlaybackIcon::Stop) {
 			drawList->AddRectFilled ({ center.x - 6,center.y - 6 }, { center.x + 6,center.y + 6 }, color);
 		}
+
 		if (icon == PlaybackIcon::Pause) {
 			drawList->AddRectFilled ({ center.x - 6,center.y - 7 }, { center.x - 2,center.y + 7 }, color);
+
 			drawList->AddRectFilled ({ center.x + 2,center.y - 7 }, { center.x + 6,center.y + 7 }, color);
 		}
+
 		if (icon == PlaybackIcon::Step) {
 			drawList->AddRectFilled ({ center.x + 7,center.y - 7 }, { center.x + 10,center.y + 7 }, color);
 		}
+
 		if (ImGui::IsItemHovered (ImGuiHoveredFlags_AllowWhenDisabled)) {
 			ImGui::SetTooltip ("%s", hint);
 		}
+
 		return clicked;
 	}
 }
+
 #endif
 
 //=============================================================================================//
@@ -56,21 +71,81 @@ namespace {
 
 void Editor::Initialize(IEditableWorld* scene) {
 	scene_ = scene;
+
+	playOrigin_ = nullptr;
+
+	editParticleEditor_.reset();
+
 	HierarchyPanel::Initialize();
+
 	InspectorPanel::Initialize();
+
 	sceneView_.Initialize();
+
 	selection_.Clear();
+
 	fileStatus_.clear();
+
 	loggedStatus_.clear();
+
 	pendingAction_ = SceneAction::None;
+
 	openDiscardPrompt_ = false;
+
 	exitApproved_ = false;
+
 	if (scene != nullptr) {
 		session_.Initialize(*scene);
+
 		particleEditor_.Initialize(*scene);
 	} else {
 		session_ = EditorSession{};
 	}
+}
+
+// 再生の履歴は元の編集シーンに属する。遷移先の一時データで初期化し直さない。
+void Editor::OnSceneChanged(IEditableWorld* scene, const char* sceneName) {
+	if (playOrigin_ == nullptr) {
+		Initialize(scene);
+	} else {
+		if (scene != playOrigin_) {
+			if (scene_ == playOrigin_) {
+				// 元のプリセットの未保存状態を、遷移先の初期値で上書きしない。
+				editParticleEditor_.emplace(std::move(particleEditor_));
+			}
+
+			particleEditor_ = ParticleEditorPanel{};
+
+			if (scene != nullptr) {
+				particleEditor_.Initialize(*scene);
+			}
+		} else {
+			if (editParticleEditor_.has_value()) {
+				particleEditor_ = std::move(*editParticleEditor_);
+
+				editParticleEditor_.reset();
+			}
+		}
+
+		scene_ = scene;
+
+		selection_.Clear();
+
+		sceneView_.ResetInteraction();
+
+		HierarchyPanel::Initialize();
+
+		InspectorPanel::Initialize();
+
+		if (!session_.IsPlaying()) {
+			playOrigin_ = nullptr;
+		}
+	}
+
+	// モデルのサムネイルは旧シーンが所有するため、借用ハンドルを引き継がない。
+	projectPanel_ = ProjectPanel{};
+
+	sceneName_ = sceneName;
 }
 
 //=============================================================================================//
@@ -79,21 +154,36 @@ void Editor::Initialize(IEditableWorld* scene) {
 
 void Editor::Update(IEditableWorld* scene) {
 	FrameProfiler::Scope sectionTime(FrameProfiler::Section::History);
+
+	if (playOrigin_ != nullptr) {
+		if (!session_.IsPlaying()) {
+			// Stop直後はまだ遷移先を表示している。復帰前の一時配置を履歴へ入れない。
+			return;
+		}
+	}
+
 	if (scene == nullptr) {
 		return;
 	}
+
 	if (!scene->SupportsObjectCollection()) {
 		return;
 	}
+
 #ifdef USE_IMGUI
+
 	// UI操作を確定してからショートカットを処理し、その結果も同じフレームで履歴へ記録する。
-	session_.Update(*scene, ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
+	session_.Update(GetEditWorld(*scene), ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
+
 	HandleShortcuts(*scene);
-	session_.Update(*scene, ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
+
+	session_.Update(GetEditWorld(*scene), ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
+
 #endif
 	if (!fileStatus_.empty()) {
 		if (fileStatus_ != loggedStatus_) {
 			LogSystem::Log(fileStatus_ + "\n");
+
 			loggedStatus_ = fileStatus_;
 		}
 	}
@@ -107,50 +197,74 @@ void Editor::Draw(IEditableWorld* scene) {
 	if (scene_ != scene) {
 		Initialize(scene);
 	}
+
 	bool sceneAvailable = false;
 	bool dirty = false;
+
 	if (scene != nullptr) {
 		if (scene->SupportsObjectCollection()) {
 			sceneAvailable = true;
-			dirty = session_.IsDirty(*scene);
+
+			dirty = session_.IsDirty(GetEditWorld(*scene));
 		}
 	}
+
 	const EditorMenuAction menuAction = layout_.Begin(sceneAvailable, session_.IsPlaying(), dirty, toolVisibility_);
+
 	if (sceneAvailable) {
 		DrawToolbar(*scene);
 	}
+
 	layout_.Draw(fileStatus_);
+
 	if (!sceneAvailable) {
 		HierarchyPanel::Draw(scene, selection_);
+
 		InspectorPanel::Draw({});
+
 		performancePanel_.Draw(toolVisibility_.performance);
+
 		return;
 	}
+
 	if (menuAction == EditorMenuAction::NewScene) {
 		RequestSceneAction(SceneAction::NewScene, *scene);
 	}
+
 	if (menuAction == EditorMenuAction::SaveScene) {
 		SaveScene(*scene);
 	}
+
 	if (menuAction == EditorMenuAction::LoadScene) {
 		RequestSceneAction(SceneAction::LoadScene, *scene);
 	}
+
 	HierarchyPanel::Draw(scene, selection_);
+
 	if (toolVisibility_.particleEditor) {
 		particleEditor_.Draw(*scene, session_.IsPlaying(), selection_.Get(), &toolVisibility_.particleEditor);
 	} else {
 		particleEditor_.StopPreview(*scene, session_.IsPlaying());
 	}
+
 	if (particleEditor_.ConsumeFocusRequest()) {
 		sceneView_.ShowScene();
+
 		scene->FocusEditorCamera(particleEditor_.GetFocusPosition());
 	}
-	projectPanel_.Draw(*scene, selection_, toolVisibility_);
+
+	projectPanel_.Draw(*scene, selection_, toolVisibility_, session_, particleEditor_);
+
 	consolePanel_.Draw();
+
 	sceneView_.Draw(*scene, selection_);
+
 	InspectorPanel::DrawSelection(*scene,selection_,&toolVisibility_.particleEditor);
+
 	scene->DrawEditorTools(toolVisibility_);
+
 	performancePanel_.Draw(toolVisibility_.performance);
+
 	DrawDiscardPrompt(*scene);
 }
 
@@ -172,14 +286,19 @@ void Editor::RequestExit (IEditableWorld* scene) {
 	if (pendingAction_ != SceneAction::None) {
 		return;
 	}
+
 	if (scene == nullptr) {
 		exitApproved_ = true;
+
 		return;
 	}
+
 	if (!scene->SupportsObjectCollection()) {
 		exitApproved_ = true;
+
 		return;
 	}
+
 	RequestSceneAction (SceneAction::Exit, *scene);
 }
 
@@ -190,24 +309,36 @@ void Editor::RequestExit (IEditableWorld* scene) {
 // 保存前に再生を終了し、編集用データだけをファイルへ書き込む。
 bool Editor::SaveScene (IEditableWorld& scene) {
 	std::string error;
+
 	if (session_.IsPlaying ()) {
-		if (!session_.Stop (scene, error)) {
+		if (!session_.Stop (GetEditWorld(scene), error)) {
 			fileStatus_ = error;
+
 			return false;
 		}
+
+		if (playOrigin_ == &scene) {
+			playOrigin_ = nullptr;
+		}
 	}
-	if (!SceneFile::Save (scene, SceneFile::kDefaultPath, error)) {
+
+	if (!SceneFile::Save (GetEditWorld(scene), SceneFile::kDefaultPath, error)) {
 		fileStatus_ = error;
+
 		return false;
 	}
-	session_.MarkSaved (scene);
+
+	session_.MarkSaved (GetEditWorld(scene));
+
 	fileStatus_ = "Scene saved.";
+
 	return true;
 }
 
 // 未保存の変更がある場合は、処理を保留して保存確認を表示する。
 void Editor::RequestSceneAction(SceneAction action, IEditableWorld& scene) {
 	pendingAction_ = action;
+
 	if (NeedsSaveConfirmation(action, scene)) {
 		openDiscardPrompt_ = true;
 	} else {
@@ -218,43 +349,71 @@ void Editor::RequestSceneAction(SceneAction action, IEditableWorld& scene) {
 // 保存確認が済んだ新規作成・読込・終了を実行し、結果を画面へ通知する。
 void Editor::PerformSceneAction (IEditableWorld& scene) {
 	std::string error;
+
 	bool succeeded = false;
+
 	if (pendingAction_ == SceneAction::LoadScene) {
 		succeeded = SceneFile::Load (scene, SceneFile::kDefaultPath, error,true);
+
 		if (succeeded) {
 			session_.Initialize(scene);
+
 			fileStatus_ = "Scene loaded.";
 		}
 	} else if (pendingAction_ == SceneAction::NewScene) {
 		succeeded = scene.ReplaceObjects ({}, error);
+
 		if (succeeded) {
 			session_.Update(scene, false);
+
 			fileStatus_ = "New empty scene. Save Scene to keep it.";
 		}
 	} else if (pendingAction_ == SceneAction::Exit) {
 		exitApproved_ = true;
+
 		succeeded = true;
 	}
+
 	if (succeeded) {
 		selection_.Clear ();
+
 		sceneView_.ResetInteraction ();
 	} else {
 		fileStatus_ = error;
 	}
+
 	pendingAction_ = SceneAction::None;
 }
 
 // 操作の種類と各保存対象の変更を順に確認する。
 bool Editor::NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) const {
-	if (session_.IsDirty(scene)) {
+	if (session_.IsDirty(GetEditWorld(scene))) {
 		return true;
 	}
+
 	if (action == SceneAction::Exit) {
-		if (particleEditor_.IsDirty(scene)) {
+		if (IsParticlePresetDirty(scene)) {
 			return true;
 		}
 	}
+
 	return false;
+}
+
+bool Editor::IsParticlePresetDirty(IEditableWorld& scene) const {
+	if (editParticleEditor_.has_value()) {
+		return editParticleEditor_->IsDirty(GetEditWorld(scene));
+	}
+
+	return particleEditor_.IsDirty(GetEditWorld(scene));
+}
+
+bool Editor::SaveParticlePreset(IEditableWorld& scene) {
+	if (editParticleEditor_.has_value()) {
+		return editParticleEditor_->Save(GetEditWorld(scene));
+	}
+
+	return particleEditor_.Save(GetEditWorld(scene));
 }
 
 //=============================================================================================//
@@ -264,58 +423,88 @@ bool Editor::NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) co
 // 再生・停止・一時停止・ステップだけを中央へ並べる。
 void Editor::DrawToolbar (IEditableWorld& scene) {
 #ifdef USE_IMGUI
+
 	// シーン管理はメニューへ分離し、中央には再生操作だけを置く。
 	// この行だけ縦の項目間隔を詰め、下の作業領域を広く保つ。
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {ImGui::GetStyle().ItemSpacing.x, 2});
+
 	const float controlsWidth = 3 * 30.0f + 2 * ImGui::GetStyle ().ItemSpacing.x;
 	const float availableWidth = ImGui::GetContentRegionAvail ().x;
 	const float toolbarStart = ImGui::GetCursorPosX();
+
 	const ImVec2 toolbarOrigin = ImGui::GetCursorScreenPos();
+
 	ImGui::GetWindowDrawList()->AddRectFilled(toolbarOrigin,{toolbarOrigin.x+availableWidth,toolbarOrigin.y+24},ImGui::GetColorU32(ImGuiCol_MenuBarBg));
+
 	ImGui::SetCursorPosX(toolbarStart+10);
+
 	ImGui::AlignTextToFramePadding();
-	ImGui::TextDisabled("Scene  /  GameScene");
+
+	ImGui::TextDisabled("Scene  /  %s", sceneName_.c_str());
+
 	ImGui::SameLine();
+
 	if (availableWidth > controlsWidth) {
 		ImGui::SetCursorPosX (toolbarStart + (availableWidth - controlsWidth) * 0.5f);
 	}
+
 	PlaybackIcon playIcon = PlaybackIcon::Play;
+
 	const char* playHint = "再生 (Ctrl+P)";
+
 	if (session_.IsPlaying ()) {
 		playIcon = PlaybackIcon::Stop;
+
 		playHint = "停止 (Ctrl+P)";
 	}
+
 	if (DrawPlaybackButton ("##PlayStop", playIcon, playHint, session_.IsPlaying ())) {
 		TogglePlay (scene);
 	}
+
 	ImGui::SameLine ();
+
 	ImGui::BeginDisabled (!session_.IsPlaying ());
+
 	if (DrawPlaybackButton ("##Pause", PlaybackIcon::Pause, "一時停止 / 再開", session_.IsPaused ())) {
 		session_.TogglePause ();
 	}
+
 	ImGui::EndDisabled ();
+
 	ImGui::SameLine ();
+
 	ImGui::BeginDisabled (!session_.IsPlaying () || !session_.IsPaused ());
+
 	if (DrawPlaybackButton ("##Step", PlaybackIcon::Step, "1フレーム進める", false)) {
 		session_.RequestStep ();
 	}
+
 	ImGui::EndDisabled ();
+
 	if (availableWidth > 440) {
 		ImGui::SameLine();
+
 		ImGui::SetCursorPosX(toolbarStart+availableWidth-90);
+
 		const char* mode = "EDIT MODE";
+
 		if (session_.IsPlaying()) {
 			mode = "PLAY MODE";
+
 			if (session_.IsPaused()) {
 				mode = "PAUSED";
 			}
 		}
+
 		ImGui::TextDisabled("%s",mode);
 	}
+
 	ImGui::PopStyleVar();
 
 #else
 	(void) scene;
+
 #endif
 }
 
@@ -324,47 +513,65 @@ void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 #ifdef USE_IMGUI
 	if (openDiscardPrompt_) {
 		ImGui::OpenPopup ("Unsaved Scene");
+
 		openDiscardPrompt_ = false;
 	}
+
 	if (ImGui::BeginPopupModal ("Unsaved Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		ImGui::TextUnformatted ("未保存の変更を保存してから続行しますか？");
+
 		if (pendingAction_ == SceneAction::Exit) {
-			if (particleEditor_.IsDirty(scene)) {
+			if (IsParticlePresetDirty(scene)) {
 				ImGui::TextUnformatted("Particleプリセットの変更も保存対象です。");
 			}
 		}
+
 		if (ImGui::Button ("Save and Continue")) {
 			bool saved = SaveScene (scene);
+
 			if (saved) {
 				if (pendingAction_ == SceneAction::Exit) {
-					saved = particleEditor_.Save(scene);
+					saved = SaveParticlePreset(scene);
+
 					if (!saved) {
 						fileStatus_ = "Particleプリセットを保存できません。設定値または保存先を確認してください。";
 					}
 				}
 			}
+
 			if (saved) {
 				PerformSceneAction (scene);
+
 				ImGui::CloseCurrentPopup ();
 			}
 		}
+
 		ImGui::SameLine ();
+
 		if (ImGui::Button ("Discard and Continue")) {
 			PerformSceneAction (scene);
+
 			ImGui::CloseCurrentPopup ();
 		}
+
 		ImGui::SameLine ();
+
 		if (ImGui::Button ("Cancel")) {
 			pendingAction_ = SceneAction::None;
+
 			ImGui::CloseCurrentPopup ();
 		}
+
 		if (!fileStatus_.empty ()) {
 			ImGui::TextWrapped ("%s", fileStatus_.c_str ());
 		}
+
 		ImGui::EndPopup ();
 	}
+
 #else
 	(void) scene;
+
 #endif
 }
 
@@ -375,16 +582,20 @@ void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 // 文字入力やポップアップの操作と競合しないときだけショートカットを処理する。
 void Editor::HandleShortcuts(IEditableWorld& scene) {
 #ifdef USE_IMGUI
+
 	// 文字入力・ウィジェット操作・Scene操作・ダイアログはそれぞれ独立して確認する。
 	if (ImGui::GetIO().WantTextInput) {
 		return;
 	}
+
 	if (ImGui::IsAnyItemActive()) {
 		return;
 	}
+
 	if (sceneView_.IsManipulating()) {
 		return;
 	}
+
 	if (ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId)) {
 		return;
 	}
@@ -394,6 +605,7 @@ void Editor::HandleShortcuts(IEditableWorld& scene) {
 			TogglePlay(scene);
 		}
 	}
+
 	if (session_.IsPlaying()) {
 		return;
 	}
@@ -403,12 +615,15 @@ void Editor::HandleShortcuts(IEditableWorld& scene) {
 		if (ImGui::IsKeyPressed(ImGuiKey_N, false)) {
 			RequestSceneAction(SceneAction::NewScene, scene);
 		}
+
 		if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
 			RequestSceneAction(SceneAction::LoadScene, scene);
 		}
+
 		if (ImGui::IsKeyPressed(ImGuiKey_S, false)) {
 			SaveScene(scene);
 		}
+
 		if (ImGui::IsKeyPressed(ImGuiKey_Z, false)) {
 			if (ImGui::GetIO().KeyShift) {
 				session_.Redo(scene, fileStatus_);
@@ -417,39 +632,66 @@ void Editor::HandleShortcuts(IEditableWorld& scene) {
 				session_.Undo(scene, fileStatus_);
 			}
 		}
+
 		if (ImGui::IsKeyPressed(ImGuiKey_Y, false)) {
 			session_.Redo(scene, fileStatus_);
 		}
+
 		if (ImGui::IsKeyPressed(ImGuiKey_D, false)) {
 			selection_.Duplicate(scene, fileStatus_);
 		}
 	}
+
 	if (ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
 		selection_.Remove(scene, fileStatus_);
 	}
+
 #else
 	(void)scene;
+
 #endif
 }
 
 // 再生開始時に編集状態を退避し、停止時にはその状態へ戻す。
 void Editor::TogglePlay (IEditableWorld& scene) {
 	sceneView_.ResetInteraction ();
+
 	std::string error;
+
 	bool succeeded = false;
+
 	if (session_.IsPlaying ()) {
-		succeeded = session_.Stop (scene, error);
+		succeeded = session_.Stop (GetEditWorld(scene), error);
+
 		if (succeeded) {
 			fileStatus_ = "Stopped. Edit-mode objects restored.";
+
+			if (playOrigin_ == &scene) {
+				playOrigin_ = nullptr;
+			}
+
 			selection_.Clear ();
 		}
 	} else {
 		succeeded = session_.BeginPlay (scene, error);
+
 		if (succeeded) {
+			playOrigin_ = &scene;
+
 			fileStatus_ = "Playing. Object edits will be discarded on Stop.";
 		}
 	}
+
 	if (!succeeded) {
 		fileStatus_ = error;
 	}
+}
+
+// 再生中の場面が変わっても、編集前のスナップショットは元の場面にだけ復元する。
+IEditableWorld& Editor::GetEditWorld(IEditableWorld& scene) const {
+	if (playOrigin_ != nullptr) {
+		return *playOrigin_;
+	}
+
+	return scene;
 }

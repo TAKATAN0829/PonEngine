@@ -2,6 +2,8 @@
 
 // 自作
 #include "Input.h"
+#include <memory>
+#include <utility>
 
 class IEditableWorld;
 class Object3dCommon;
@@ -27,6 +29,14 @@ class IScene {
 public:
 
 	virtual ~IScene() = default;
+
+	//=============================================================================================//
+	// Getter / 場面情報・遷移要求
+
+	virtual const char* GetName() const { return "Scene"; }
+
+	// 更新中は要求だけを取り出す。破棄と初期化はSceneManagerがフレーム境界で行う。
+	std::unique_ptr<IScene> TakeNextScene() { return std::move(nextScene_); }
 
 	// 編集機能に対応するシーンだけが窓口を返す。Editorのパネル型には依存しない。
 	virtual IEditableWorld* GetEditableWorld() { return nullptr; }
@@ -60,4 +70,23 @@ public:
 	// 終了処理
 
 	virtual void Finalize() = 0;
+
+protected:
+
+	//=============================================================================================//
+	// シーン遷移
+
+	// 未初期化の次シーンを渡す。同じフレームでは最初の有効な要求を採用する。
+	void RequestSceneChange(std::unique_ptr<IScene> nextScene) {
+		if (nextScene_ == nullptr) {
+			nextScene_ = std::move(nextScene);
+		}
+	}
+
+private:
+
+	//=============================================================================================//
+	// 遷移待ちの場面
+
+	std::unique_ptr<IScene> nextScene_; // 初期化前なので、未使用の要求は通常の破棄で解放する。
 };

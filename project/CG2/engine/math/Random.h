@@ -1,9 +1,11 @@
 #pragma once
+
 #include <random>
 
 class Random
 {
 public:
+
 	//=============================================================================================//
 	// Getter / 乱数エンジン
 
@@ -15,8 +17,9 @@ public:
 	static float Range(float min, float max);
 
 private:
+
 	//=============================================================================================//
-	// メンバ変数 / 乱数エンジン
+	// 乱数エンジン
 
 	static inline std::mt19937 engine_{ std::random_device{}() };
 

@@ -8,12 +8,19 @@
 // 読込後のシーンを基準に、履歴・保存状態・再生状態を初期化する。
 void EditorSession::Initialize(IEditableWorld& scene) {
 	history_.clear();
+
 	history_.push_back(scene.CaptureObjects());
+
 	historyIndex_ = 0;
+
 	savedState_ = history_.front();
+
 	playSnapshot_.clear();
+
 	playing_ = false;
+
 	paused_ = false;
+
 	stepRequested_ = false;
 }
 
@@ -26,26 +33,35 @@ void EditorSession::Update(IEditableWorld& scene, bool interactionActive) {
 	if (playing_) {
 		return;
 	}
+
 	if (interactionActive) {
 		return;
 	}
+
 	if (!scene.SupportsObjectCollection()) {
 		return;
 	}
+
 	if (history_.empty()) {
 		Initialize(scene);
+
 		return;
 	}
+
 	if (MatchesSnapshot(scene, history_[historyIndex_])) {
 		return;
 	}
+
 	// Undo後の新しい編集では、古いRedo側の分岐を残さない。
 	history_.resize(historyIndex_ + 1);
+
 	history_.push_back(scene.CaptureObjects());
+
 	if (history_.size() > kMaxHistoryStates) {
 		// 古い状態から削除し、大きなシーンでも履歴が無制限に増えないようにする。
 		history_.erase(history_.begin());
 	}
+
 	historyIndex_ = history_.size() - 1;
 }
 
@@ -58,9 +74,11 @@ bool EditorSession::CanUndo() const {
 	if (playing_) {
 		return false;
 	}
+
 	if (history_.empty()) {
 		return false;
 	}
+
 	return historyIndex_ > 0;
 }
 
@@ -69,6 +87,7 @@ bool EditorSession::CanRedo() const {
 	if (playing_) {
 		return false;
 	}
+
 	return historyIndex_ + 1 < history_.size();
 }
 
@@ -77,6 +96,7 @@ bool EditorSession::IsDirty(const IEditableWorld& scene) const {
 	if (playing_) {
 		return !AreScenesEqual(playSnapshot_, savedState_);
 	}
+
 	return !MatchesSnapshot(scene, savedState_);
 }
 
@@ -87,10 +107,13 @@ bool EditorSession::IsDirty(const IEditableWorld& scene) const {
 // ステップ要求をここで消費し、次のフレームへ持ち越さない。
 bool EditorSession::ShouldSimulate() {
 	const bool stepRequested = stepRequested_;
+
 	stepRequested_ = false;
+
 	if (!playing_) {
 		return false;
 	}
+
 	return !paused_ || stepRequested;
 }
 
@@ -106,36 +129,71 @@ void EditorSession::MarkSaved(const IEditableWorld& scene) {
 }
 
 //=============================================================================================//
+// Asset参照
+
+void EditorSession::CollectAssetReferences(std::vector<AssetReference>& references) const {
+	for (size_t historyIndex = 0; historyIndex < history_.size(); ++historyIndex) {
+		WorldAssetReferences::Collect(history_[historyIndex], "Undo/Redo " + std::to_string(historyIndex), references);
+	}
+
+	WorldAssetReferences::Collect(savedState_, "Saved state", references);
+
+	WorldAssetReferences::Collect(playSnapshot_, "Play snapshot", references);
+}
+
+void EditorSession::RemapAssetPaths(const AssetPathChange& change) {
+	for (std::vector<WorldObjectData>& snapshot : history_) {
+		WorldAssetReferences::Remap(snapshot, change);
+	}
+
+	WorldAssetReferences::Remap(savedState_, change);
+
+	WorldAssetReferences::Remap(playSnapshot_, change);
+}
+
+//=============================================================================================//
 // 履歴操作
 
 
 // 未確定の編集を記録してから、一つ前の設定を復元する。
 bool EditorSession::Undo(IEditableWorld& scene, std::string& error) {
 	error.clear();
+
 	Update(scene, false);
+
 	if (!CanUndo()) {
 		error = "Nothing to undo.";
+
 		return false;
 	}
+
 	if (!scene.ReplaceObjects(history_[historyIndex_ - 1], error)) {
 		return false;
 	}
+
 	--historyIndex_;
+
 	return true;
 }
 
 // 復元に成功した場合だけ履歴位置を進め、失敗時の状態を保つ。
 bool EditorSession::Redo(IEditableWorld& scene, std::string& error) {
 	error.clear();
+
 	Update(scene, false);
+
 	if (!CanRedo()) {
 		error = "Nothing to redo.";
+
 		return false;
 	}
+
 	if (!scene.ReplaceObjects(history_[historyIndex_ + 1], error)) {
 		return false;
 	}
+
 	++historyIndex_;
+
 	return true;
 }
 
@@ -146,47 +204,70 @@ bool EditorSession::Redo(IEditableWorld& scene, std::string& error) {
 // 復元できる有効なデータであることを確認し、編集状態を退避して再生する。
 bool EditorSession::BeginPlay(IEditableWorld& scene, std::string& error) {
 	error.clear();
+
 	if (playing_) {
 		error = "This scene is already playing.";
+
 		return false;
 	}
+
 	if (!scene.SupportsObjectCollection()) {
 		error = "This scene cannot enter play mode.";
+
 		return false;
 	}
+
 	const std::vector<WorldObjectData> objects = scene.CaptureObjects();
+
 	for (const WorldObjectData& object : objects) {
 		if (!WorldObjects::Validate(object)) {
 			error = "Fix invalid object values before entering play mode.";
+
 			return false;
 		}
 	}
+
 	WorldObjects validator;
+
 	if (!validator.ReplaceObjects(objects,error)) {
 		return false;
 	}
+
 	Update(scene, false);
+
 	playSnapshot_ = objects;
+
 	playing_ = true;
+
 	paused_ = false;
+
 	stepRequested_ = false;
+
 	return true;
 }
 
 // 退避した設定の復元に成功してから、編集モードへ戻す。
 bool EditorSession::Stop(IEditableWorld& scene, std::string& error) {
 	error.clear();
+
 	if (!playing_) {
 		error = "The scene is not playing.";
+
 		return false;
 	}
+
 	if (!scene.ReplaceObjects(playSnapshot_, error)) {
 		return false;
 	}
+
 	playing_ = false;
+
 	paused_ = false;
+
 	stepRequested_ = false;
+
 	playSnapshot_.clear();
+
 	return true;
 }
 
@@ -194,6 +275,7 @@ bool EditorSession::Stop(IEditableWorld& scene, std::string& error) {
 void EditorSession::TogglePause() {
 	if (playing_) {
 		paused_ = !paused_;
+
 		stepRequested_ = false;
 	}
 }
@@ -214,15 +296,19 @@ bool EditorSession::MatchesSnapshot(const IEditableWorld& scene, const std::vect
 	if (scene.GetEditableObjectCount() != snapshot.size()) {
 		return false;
 	}
+
 	for (size_t objectIndex = 0; objectIndex < snapshot.size(); ++objectIndex) {
 		const WorldObjectData* object = scene.GetObjectData(objectIndex);
+
 		if (object == nullptr) {
 			return AreScenesEqual(scene.CaptureObjects(), snapshot);
 		}
+
 		if (!AreObjectsEqual(*object, snapshot[objectIndex])) {
 			return false;
 		}
 	}
+
 	return true;
 }
 
@@ -231,28 +317,36 @@ bool EditorSession::AreObjectsEqual(const WorldObjectData& firstObject, const Wo
 	if (!EqualLightSettings(firstObject.light,secondObject.light)) {
 		return false;
 	}
+
 	if (!EqualBodySettings(firstObject.body,secondObject.body)) {
 		return false;
 	}
+
 	if (!EqualColliderSettings(firstObject.collider, secondObject.collider)) {
 		return false;
 	}
+
 	if (!EqualMotionSettings(firstObject.motion, secondObject.motion)) {
 		return false;
 	}
+
 	if (!EqualAnimationSettings(firstObject.animation, secondObject.animation)) {
 		return false;
 	}
+
 	if (firstObject.materials.size() != secondObject.materials.size()) {
 		return false;
 	}
+
 	for (size_t slotIndex = 0; slotIndex < firstObject.materials.size(); ++slotIndex) {
 		if (!EqualMaterialSettings(firstObject.materials[slotIndex], secondObject.materials[slotIndex])) {
 			return false;
 		}
 	}
+
 	const TransformData& firstTransform = firstObject.transform;
 	const TransformData& secondTransform = secondObject.transform;
+
 	return firstObject.prefabSource == secondObject.prefabSource && firstObject.id == secondObject.id && firstObject.parentId == secondObject.parentId && firstObject.name == secondObject.name &&
 		firstObject.model == secondObject.model && firstObject.active == secondObject.active &&
 		firstObject.hasMeshRenderer == secondObject.hasMeshRenderer &&
@@ -278,10 +372,12 @@ bool EditorSession::AreScenesEqual(const std::vector<WorldObjectData>& firstScen
 	if (firstScene.size() != secondScene.size()) {
 		return false;
 	}
+
 	for (size_t objectIndex = 0; objectIndex < firstScene.size(); ++objectIndex) {
 		if (!AreObjectsEqual(firstScene[objectIndex], secondScene[objectIndex])) {
 			return false;
 		}
 	}
+
 	return true;
 }

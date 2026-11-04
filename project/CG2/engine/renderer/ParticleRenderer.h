@@ -34,8 +34,10 @@ public:
 
 	// 合成方式と画像の透明度方式を、そのDrawだけにRoot Constantsで渡す。
 	void PreDraw(BlendMode blendMode, bool useBrightnessAlpha, const Matrix4x4& inverseViewProjection, float softDistance);
+
 	// モデル描画後〜粒子描画完了まで深度を読取専用にする。コピーやGPU待機は行わない。
 	void BeginPass();
+
 	void EndPass();
 
 	//=============================================================================================//
@@ -48,12 +50,15 @@ public:
 	Mesh* GetMesh() const { return mesh_; }
 
 private:
+
 	//=============================================================================================//
-	// メンバ変数 / 深度参照。GPUハンドルと寸法だけをPass内で保持する。
+	// 深度参照。GPUハンドルと寸法だけをPass内で保持する。
 
 	uint32_t backDepthDescriptor_ = 0;
 	uint32_t nullDepthDescriptor_ = 0;
+
 	D3D12_GPU_DESCRIPTOR_HANDLE passDepth_{};
+
 	float depthWidth_ = 1;
 	float depthHeight_ = 1;
 

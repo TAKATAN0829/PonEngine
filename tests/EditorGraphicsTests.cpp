@@ -1,4 +1,7 @@
-﻿#include "FrameProfiler.h"
+#include "FrameProfiler.h"
+#include "SceneTransitionGraphicsTests.h"
+#include "AssetGraphicsTests.h"
+#include <string_view>
 #include "Engine.h"
 #include "LightingGraphicsTests.h"
 #include "DirectXTex/DirectXTex.h"
@@ -20,6 +23,7 @@
 #include <array>
 
 void RunSceneViewInteractionTests();
+void RunAssetDialogInteractionTests();
 void VerifyPrimitiveAssets(GameScene& scene);
 
 // 実GPUでEditorを描画しながら、高頻度の発生・Pause・Burst・Resetを試験する。
@@ -108,6 +112,10 @@ public:
 	void UpdateEditorFrame(Input* input, bool simulate) override {
 		(void)simulate;
 		++frameNumber_;
+
+		if (frameNumber_ == 6) {
+			RunAssetGraphicsTests(*this);
+		}
 		if (frameNumber_ == 3) {
 			VerifyMouseCamera();
 		}
@@ -267,6 +275,24 @@ public:
 		}
 		if (FAILED(DirectX::SaveToWICFile(*preview.GetImage(0,0,0),DirectX::WIC_FLAGS_NONE,DirectX::GetWICCodec(DirectX::WIC_CODEC_PNG),L"editor-ui.png"))) {
 			throw std::runtime_error("Editor preview PNG save failed.");
+		}
+	}
+	// 検証失敗時に、描画APIの原因をテスト結果へ残す。
+	void PrintGraphicsErrors() const {
+		Microsoft::WRL::ComPtr<ID3D12InfoQueue> messages;
+		if (FAILED(previewGraphics_->GetDevice()->QueryInterface(IID_PPV_ARGS(&messages)))) {
+			return;
+		}
+		for (UINT64 messageIndex = 0; messageIndex < messages->GetNumStoredMessages(); ++messageIndex) {
+			SIZE_T messageSize = 0;
+			messages->GetMessage(messageIndex, nullptr, &messageSize);
+			std::vector<unsigned char> storage(messageSize);
+			D3D12_MESSAGE* message = reinterpret_cast<D3D12_MESSAGE*>(storage.data());
+			if (SUCCEEDED(messages->GetMessage(messageIndex, message, &messageSize))) {
+				if (message->Severity == D3D12_MESSAGE_SEVERITY_ERROR || message->Severity == D3D12_MESSAGE_SEVERITY_CORRUPTION) {
+					std::cerr << message->pDescription << "\n";
+				}
+			}
 		}
 	}
 	bool Passed() const {
@@ -985,14 +1011,24 @@ private:
 };
 
 // 操作対象は試験用プロセス自身だけで、ユーザーのシーンやプリセットは保存しない。
-int main() {
+int main(int argumentCount, char** arguments) {
 	const HRESULT comResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (FAILED(comResult)) {
 		return 1;
 	}
 	LogSystem::Initialize();
 	try {
+		if (argumentCount > 1) {
+			if (std::string_view(arguments[1]) == "--scene-transitions") {
+				RunSceneTransitionGraphicsTests();
+				LogSystem::Finalize();
+				CoUninitialize();
+				return 0;
+			}
+		}
 		RunSceneViewInteractionTests();
+
+		RunAssetDialogInteractionTests();
 		Engine engine;
 		GraphicsTestScene* scene = new GraphicsTestScene();
 		engine.Initialize(scene);
@@ -1001,6 +1037,7 @@ int main() {
 		bool passed = scene->Passed();
 		if (engine.HasGraphicsErrors()) {
 			std::cerr << "GPU validation reported an error.\n";
+			scene->PrintGraphicsErrors();
 			passed = false;
 		}
 		engine.Finalize();

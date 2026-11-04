@@ -1,6 +1,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include "Model.h"
+#include <utility>
 
 // C++
 #include <cassert>
@@ -28,38 +29,49 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 	// モデル読み込み
 
 	modelData_ = LoadModelFile(directoryPath, filename);
+
 	if (modelData_.vertices.empty()) {
 		throw std::runtime_error("Model has no triangle vertices.");
 	}
 
 	if (modelData_.animated) {
 		animation_ = std::make_unique<ModelAnimation>();
+
 		animation_->Initialize(directoryPath + "/" + filename);
+
 		animation_->Update(-1, 0, false, modelData_.vertices);
+
 		modelData_.rootNode.localMatrix = MathUtility::MakeIdentity4x4();
 	}
 
 	// 全頂点を一度だけ走査し、オブジェクトの選択に使うローカル範囲を保持する。
 	if (!modelData_.vertices.empty()) {
 		const Vector4& firstPosition = modelData_.vertices.front().position;
+
 		localBounds_ = {{firstPosition.x, firstPosition.y, firstPosition.z},
 			{firstPosition.x, firstPosition.y, firstPosition.z}};
+
 		for (const Mesh::VertexData& vertex : modelData_.vertices) {
 			if (vertex.position.x < localBounds_.min.x) {
 				localBounds_.min.x = vertex.position.x;
 			}
+
 			if (vertex.position.y < localBounds_.min.y) {
 				localBounds_.min.y = vertex.position.y;
 			}
+
 			if (vertex.position.z < localBounds_.min.z) {
 				localBounds_.min.z = vertex.position.z;
 			}
+
 			if (vertex.position.x > localBounds_.max.x) {
 				localBounds_.max.x = vertex.position.x;
 			}
+
 			if (vertex.position.y > localBounds_.max.y) {
 				localBounds_.max.y = vertex.position.y;
 			}
+
 			if (vertex.position.z > localBounds_.max.z) {
 				localBounds_.max.z = vertex.position.z;
 			}
@@ -84,19 +96,28 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 	// スロットごとにテクスチャと既定色を保持する。
 	for (const ModelMaterialInfo& info : modelData_.materials) {
 		uint32_t textureIndex = TextureManager::GetInstance()->GetSrvIndex("resources/white1x1.png");
+
 		std::string textureError;
+
 		if (!info.texture.empty()) {
 			if (TextureManager::GetInstance()->TryLoad(info.texture, textureError)) {
 				textureIndex = TextureManager::GetInstance()->GetSrvIndex(info.texture);
 			}
 		}
+
 		modelData_.textureIndices.push_back(textureIndex);
+
 		std::unique_ptr<Material> slot = std::make_unique<Material>();
+
 		slot->Initialize(modelCommon_->GetDxCommon(), modelCommon_->GetSrvManager());
+
 		slot->SetTextureIndex(textureIndex);
+
 		slot->SetColor(info.color);
+
 		materials_.push_back(std::move(slot));
 	}
+
 	material_->SetTextureIndex(modelData_.textureIndices.front());
 }
 
@@ -107,18 +128,32 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 // スロットごとの範囲を描画し、別マテリアルの設定を上書きしない。
 void Model::Draw(Material* instanceMaterial, const std::vector<std::unique_ptr<Material>>* slots, Mesh* animatedMesh) {
 	Mesh* drawable = mesh_.get();
+
 	if (animatedMesh != nullptr) {
 		drawable = animatedMesh;
 	}
+
 	for (const ModelData::DrawRange& range : modelData_.ranges) {
 		Material* material = materials_.at(range.materialIndex).get();
+
 		if (slots != nullptr) {
 			material = slots->at(range.materialIndex).get();
 		} else if (instanceMaterial != nullptr) {
 			material = instanceMaterial;
 		}
+
 		material->Bind();
+
 		drawable->DrawRange(range.firstIndex, range.indexCount);
+	}
+}
+
+//=============================================================================================//
+// Asset参照の更新
+
+void Model::RemapAssetPaths(const AssetPathChange& change) {
+	for (ModelMaterialInfo& material : modelData_.materials) {
+		material.texture = change.RemapResource(material.texture);
 	}
 }
 
@@ -136,31 +171,38 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 
 	const aiScene* scene = importer.ReadFile(filePath.c_str(),
 		aiProcess_FlipWindingOrder | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenSmoothNormals);
+
 	if (scene == nullptr) {
 		throw std::runtime_error(importer.GetErrorString());
 	}
+
 	if (!scene->HasMeshes()) {
 		throw std::runtime_error("Model has no mesh.");
 	}
+
 	if (scene->mRootNode == nullptr) {
 		throw std::runtime_error("Model has no root node.");
 	}
 
 	modelData.animated = scene->HasAnimations();
+
 	for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
 		if (scene->mMeshes[meshIndex]->HasBones()) {
 			modelData.animated = true;
 		}
 	}
+
 	if (!modelData.animated) {
 		// 静的モデルだけを焼き込む。アニメーションのノード階層は残す。
 		if (filename != "plane.gltf" && filename != "axis.obj") {
 			scene = importer.ApplyPostProcessing(aiProcess_PreTransformVertices);
+
 			if (scene == nullptr) {
 				throw std::runtime_error(importer.GetErrorString());
 			}
 		}
 	}
+
 	if (scene->mNumMaterials == 0 || scene->mNumMaterials > 256) {
 		throw std::runtime_error("Model supports between 1 and 256 material slots.");
 	}
@@ -171,8 +213,11 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 	for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
 
 		aiMesh* mesh = scene->mMeshes[meshIndex];
+
 		ModelData::DrawRange range;
+
 		range.firstIndex = static_cast<uint32_t>(modelData.vertices.size());
+
 		range.materialIndex = mesh->mMaterialIndex;
 
 		if (!mesh->HasNormals()) {
@@ -193,7 +238,9 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 
 				aiVector3D& position = mesh->mVertices[vertexIndex];
 				aiVector3D& normal = mesh->mNormals[vertexIndex];
+
 				aiVector3D texcoord{};
+
 				if (mesh->HasTextureCoords(0)) {
 					texcoord = mesh->mTextureCoords[0][vertexIndex];
 				}
@@ -201,13 +248,17 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 				Mesh::VertexData vertex{};
 
 				vertex.position = { -position.x,position.y,position.z,1.0f };
+
 				vertex.normal = { -normal.x,normal.y,normal.z };
+
 				vertex.texcoord = { texcoord.x,texcoord.y };
 
 				modelData.vertices.push_back(vertex);
 			}
 		}
+
 		range.indexCount = static_cast<uint32_t>(modelData.vertices.size()) - range.firstIndex;
+
 		modelData.ranges.push_back(range);
 	}
 
@@ -216,21 +267,36 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 
 	for (uint32_t materialIndex = 0; materialIndex < scene->mNumMaterials; ++materialIndex) {
 		const aiMaterial* material = scene->mMaterials[materialIndex];
+
 		ModelMaterialInfo info;
+
 		aiString materialName;
+
 		material->Get(AI_MATKEY_NAME, materialName);
+
 		info.name = materialName.C_Str();
+
 		if (info.name.empty()) {
 			info.name = "Material " + std::to_string(materialIndex);
 		}
+
 		aiColor4D color(1, 1, 1, 1);
+
 		material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+
 		info.color = {color.r, color.g, color.b, color.a};
+
 		if (material->GetTextureCount(aiTextureType_DIFFUSE) != 0) {
 			aiString texturePath;
+
 			material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
-			info.texture = (std::filesystem::path(filePath).parent_path() / texturePath.C_Str()).generic_string();
+
+			// AssimpのUTF-8文字列をANSIへ暗黙変換せず、画像の相対パスを組み立てる。
+			const std::filesystem::path textureFile = AssetPathChange::Path(filePath).parent_path() / AssetPathChange::Path(texturePath.C_Str());
+
+			info.texture = AssetPathChange::Text(textureFile);
 		}
+
 		modelData.materials.push_back(std::move(info));
 	}
 

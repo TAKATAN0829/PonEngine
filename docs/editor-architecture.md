@@ -11,7 +11,7 @@ WorldPrimitivesはCube・Sphereの作成時だけ使う関数群で、通常のW
 ```text
 Engine → Editor → HierarchyPanel / InspectorPanel → ImGui
             ↓
-       IEditableWorld ← WorldObjects ← GameScene
+       IEditableWorld ← WorldObjects ← WorldScene ← GameScene / TitleScene
 Engine → SceneManager → IScene
 ```
 
@@ -21,7 +21,9 @@ Engine → SceneManager → IScene
 - InspectorPanel: 渡されたデータの表示と編集。
 - IEditableWorld: ImGuiを含まない編集対象の列挙・操作契約。
 - WorldObjects: 設定データの一覧、ID採番、追加・削除・複製、全件置換と検証。描画機能には依存しない。
-- GameScene: WorldObjectsの設定を使い、IDごとのObject3dを所有して更新・描画する。
+- WorldScene: WorldObjectsの設定を使い、IDごとのObject3d・Particle・プレビューと物理の実行状態を所有する。
+- GameScene: 既定配置・保存ファイル・共通Particleプリセットの読込とサンプルHUDを定義する。
+- TitleScene: ゲーム配置を読み込まず、専用のCubeとカメラを作り、Enterでゲームへ進む。
 
 GameSceneはEditorの具体クラスを知らない。EditorもGameSceneを知らず、IEditableWorldを受け取る。この引数渡しが依存性の注入に当たる。最初は複雑なイベント機構や汎用リフレクションを導入せず、小さなインターフェースで境界を設けている。
 
@@ -29,9 +31,9 @@ GameSceneはEditorの具体クラスを知らない。EditorもGameSceneを知�
 
 EditableObjectView内のポインタは借用であり、Editor側から破棄しない。追加・削除・読込で無効化されるため、操作後に取得し直し、保持しない。選択にはオブジェクトIDを保持し、毎フレーム検索して対象が存在しなければ解除する。IDはシーン内で一意で、削除や読込後も同一実行中の採番は巻き戻さない。
 
-ImGuiフレーム開始 → Editorで値を編集 → GameSceneの更新 → シーン描画 → ImGui描画、の順に処理し、モデルへの反映が翌フレームへ遅れないようにしている。
+ImGuiフレーム開始 → Editorで値を編集 → WorldSceneと派生シーンの更新 → シーン描画 → ImGui描画、の順に処理し、モデルへの反映が翌フレームへ遅れないようにしている。
 
-設定データとGPUリソースの寿命を分け、GameSceneの更新時に追加・削除を描画用一覧へ反映する。現在のDirectXCommon::PostDrawは毎フレームGPUの完了を待つため、前フレームの参照が終わってからGPUリソースを解放できる。将来フレーム並列化する場合はFenceに基づく遅延解放へ変更する。
+設定データとGPUリソースの寿命を分け、WorldSceneの更新時に追加・削除を描画用一覧へ反映する。現在のDirectXCommon::PostDrawは毎フレームGPUの完了を待つため、前フレームの参照が終わってからGPUリソースを解放できる。将来フレーム並列化する場合はFenceに基づく遅延解放へ変更する。
 
 メッシュはModelManagerのModelを共有し、色・ライティング・光沢・テクスチャ指定を持つMaterialはObject3dごとに所有する。同じモデルを複製しても、一方の色編集が他方へ波及しない。
 
@@ -59,7 +61,7 @@ SceneFileはEditorに依存せず、IEditableWorldを引数に受け取る。コ
 
 Toolbarのアイコンから再生・停止・一時停止・再開・ステップを操作する。編集モードではゲーム更新を止め、カメラ移動と描画データ更新だけを行う。Play時にオブジェクトの設定一覧を保存し、Stop時にその一覧を復元する。再生中の追加・削除・Component変更は保存しない。再生中は保存・新規・読込・Undo/Redoを無効化する。
 
-Pauseはシミュレーションだけを止め、Stepは一度だけ1フレーム進める。現在のGameSceneで時間経過する処理はパーティクルで、Play/Stopの切替時に粒子と発生タイマーをリセットする。ReleaseはEditorを経由せず通常のゲーム更新を行う。今後ゲーム固有の処理をGameScene::Updateへ追加すると、編集・Pause中には呼ばれず、再生またはStep時に実行される。描画とカメラの更新はUpdateEditorFrameで維持する。
+Pauseはシミュレーションだけを止め、Stepは一度だけ1フレーム進める。WorldSceneはMotion・物理・接触・アニメーション・Particleを更新し、Play/Stopの切替時に粒子と発生タイマーをリセットする。ReleaseはEditorを経由せず通常のゲーム更新を行う。今後ゲーム固有の処理をGameScene::Updateへ追加すると、編集・Pause中には呼ばれず、再生またはStep時に実行される。描画とカメラの更新はUpdateEditorFrameで維持する。
 
 Inspectorは必須のTransformと、追加・削除できるMesh Rendererを表示する。Remove Mesh Rendererはモデル設定を保ったまま描画Componentだけを外し、Add Mesh Rendererで戻す。Activeを外したオブジェクトも描画しない。名前・モデル・色・光沢・有効状態・Componentの有無は保存、Undo/Redo、Stop時の復元対象。
 
@@ -77,7 +79,7 @@ EditorSessionはImGui/DX12に依存しない。Inspectorのドラッグや文字
 
 Sceneパネルは、専用レンダーターゲットの画像に選択枠とワールドXYZ軸の移動ギズモを重ねる。モデルをクリックして選択し、何もない場所をクリックすると解除する。UIパネル上のクリックはシーンの選択に使わない。無効なモデルやMesh Rendererを外したモデルはクリック選択の対象外だが、Hierarchyから選択してTransformを編集できる。
 
-モデル読込時に全頂点からローカルAABBを求める。GameSceneはRootNode行列とTransformを描画と同じ順序で適用し、ワールドAABBをEditorへ公開する。クリック位置から近・遠クリップ面の間にレイを作り、交差する範囲のうち手前のモデルを選ぶ。判定はAABB単位であり、穴や透明な部分を含む形状のピクセル単位の選択ではない。
+モデル読込時に全頂点からローカルAABBを求める。WorldSceneはRootNode行列とTransformを描画と同じ順序で適用し、ワールドAABBをEditorへ公開する。クリック位置から近・遠クリップ面の間にレイを作り、交差する範囲のうち手前のモデルを選ぶ。判定はAABB単位であり、穴や透明な部分を含む形状のピクセル単位の選択ではない。
 
 選択すると黄色の範囲枠と移動軸が現れる。軸を左ドラッグして移動し、CtrlでMove Snapの間隔へ合わせる。Escでドラッグ開始位置へ戻す。移動中は履歴の確定を待ち、マウスを離した時点で一件のUndo操作にする。視線に平行で画面上の長さがない軸は操作対象から外すため、その軸を動かす場合はカメラを横へ移すかInspectorを使う。
 
@@ -98,7 +100,7 @@ MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1
 
 ## レイアウト・Particle Editorの追加
 
-操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。EditorLayoutが初期ドッキングを構築し、ImGuiSystemが日本語フォントと配色を設定する。ParticleSettingsとParticlePresetFileはUI・GPUに依存しない。ParticleEditorPanelは設定への借用参照とプレビュー操作だけを持ち、GameSceneがParticleへの適用と実行を担当する。
+操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。EditorLayoutが初期ドッキングを構築し、ImGuiSystemが日本語フォントと配色を設定する。ParticleSettingsとParticlePresetFileはUI・GPUに依存しない。ParticleEditorPanelは設定への借用参照とプレビュー操作だけを持ち、WorldSceneがParticleへの適用と実行を担当する。
 
 
 ### 種類別オブジェクトと保存形式4
@@ -108,7 +110,7 @@ EditorSessionは種類別の値も比較し、複製・Undo/Redo・再生終了�
 SceneFileの形式4は種類とComponent値を保存する。形式1〜3ではModelとして復元し、既存シーンとの互換性を保つ。
 ParticlePresetFileの設定部分の読込・書込を共有し、シーン内Emitterとプリセットで項目の並びを統一する。
 
-GameSceneはWorldLightingでHierarchy内の有効なPoint / Spot / Directionalを収集し、固定長の各LightBufferをメッシュへ渡す。World Settingsの固定ライトは廃止した。旧シーンの移行と現在の上限は「ライトの統合」を参照。
+WorldSceneはWorldLightingでHierarchy内の有効なPoint / Spot / Directionalを収集し、固定長の各LightBufferをメッシュへ渡す。World Settingsの固定ライトは廃止した。旧シーンの移行と現在の上限は「ライトの統合」を参照。
 
 ## engineの基盤フォルダ
 
@@ -117,6 +119,8 @@ GameSceneはWorldLightingでHierarchy内の有効なPoint / Spot / Directional�
 typesへ新しい状態管理や初期化処理を追加しない。coreへ新しい機能の実装を積み上げず、各機能を呼び出す順序を管理する。Editorの画面内容はeditorに置き、uiにはImGuiの基盤処理だけを置く。ログと計測はどの機能からでも参照できるdiagnosticsに集める。
 
 ## engine/worldのファイル分類
+
+`world/runtime/WorldScene`はISceneとWorldObjectsを継承する再利用用の場面基底であり、保存先や初期配置は決めない。GameScene/TitleSceneが初期配置を決め、InitializeSimulationで最初の移動前に物理の初期位置を取得する。GameScene固有のHUDは共通基底へ置かない。
 
 `world`直下には`IScene`・`IWorldObjects`・`IEditableWorld`と`SceneManager`を置く。ゲーム側・Editor側が共有するシーンの窓口と、実行中のシーン切り替えを担当する。
 
@@ -139,7 +143,7 @@ includeは`objects/WorldObjects.h`や`serialization/SceneFile.h`のように、�
 
 `IWorldObjects`は一覧・親子関係・Transform・作成・置換・ゲームカメラの共通操作を定義する。Motion・Collision・Physics・Lightingの実行処理、Scene・Prefabの保存処理、基本形状作成はこの型を受け取る。`IEditableWorld`は`IWorldObjects`を継承し、Editorの表示領域・カメラ入力・Asset／Particleプレビューなどを追加する。インターフェースに不要なInitialize／Update／Drawの空実装は増やさない。
 
-`WorldObjects`は既存の`IEditableWorld`実装を維持し、既存のEditorとGameSceneは同じオブジェクトを共通窓口として渡す。変換用オブジェクト・追加の所有権・毎フレームの一覧コピーは導入しない。保存時の`ReplaceObjects`は従来どおり仮想呼出となり、GameScene側のモデル・テクスチャ準備と失敗時の一括取消を保持する。保存形式は13のまま。
+`WorldObjects`は既存の`IEditableWorld`実装を維持し、既存のEditorとGameSceneは同じオブジェクトを共通窓口として渡す。変換用オブジェクト・追加の所有権・毎フレームの一覧コピーは導入しない。保存時の`ReplaceObjects`は従来どおり仮想呼出となり、WorldScene側のモデル・テクスチャ準備と失敗時の一括取消を保持する。保存形式は13のまま。
 
 ## ライトの統合
 
@@ -161,7 +165,9 @@ Toolbarは再生操作だけを図形アイコンで表示し、履歴操作は�
 
 ## 記述規則と責務の分類
 
-`Sprite.h`と同じ区切り線を使い、公開する初期化・更新・描画・終了、Getter/Setter、内部のメンバ関数、メンバ変数を分類する。各分類の中では、カメラ・履歴・保存確認・Particleなど用途ごとにカテゴリを分ける。ヘッダーには借用参照の寿命、所有者、状態の意味を記載する。
+同じ型・用途の変数宣言が続く場合を除き、処理・関数宣言・役割の違う変数の間は空行を1行入れる。説明コメントは対象の宣言・処理に付け、複数行の式・引数・初期化リストの途中には空行を入れない。includeのまとまりは維持する。
+
+`Sprite.h`と同じ区切り線を使い、公開する初期化・更新・描画・終了、Getter/Setter、内部の処理・状態を分類する。見出しには「メンバ関数」「メンバ変数」を付けず、役割を示す名前を使う。各分類の中では、カメラ・履歴・保存確認・Particleなど用途ごとにカテゴリを分ける。ヘッダーには借用参照の寿命、所有者、状態の意味を記載する。
 
 EditorとDebugCameraはInitialize/Update/Drawへ役割を分け、EditorSessionはInitializeで履歴を初期化し、Updateで確定した編集を記録する。保存・比較の専用クラスはその責務をカテゴリとして示す。
 
@@ -298,3 +304,29 @@ SceneViewPanelは選択・ドラッグ・スナップ・共通タブの状態を
 ProjectPanelはディレクトリ・選択・プレビューの状態を所有し、画面構成とAsset操作もProjectPanel.cppへ置く。Consoleはログを描画中だけ借用し、Projectのキャッシュや更新処理には依存しない。PerformancePanelは履歴の選択とCSV出力結果を自身のメンバーで保持する。
 
 今回の統合では保存形式と操作仕様を維持する。CPUの保存・履歴テスト、専用ImGuiコンテキストでのギズモ・タブ切替・単体／複数Inspectorの操作テストと、実GPUの描画テストで確認する。
+
+## 場面遷移とEditor停止
+
+ISceneは未初期化の次シーンをunique_ptrで要求し、SceneManagerが所有権を引き取る。更新・描画中は現在の場面を保持し、EngineのPostDrawがGPU完了を待った後にApplyPendingSceneで切り替える。初期化済みの場面はFinalize後に破棄し、初期化前に取り消した要求はデストラクタだけで解放する。同じフレームの複数要求は最初の有効なものを採用する。
+
+再生中の最初の遷移で、SceneManagerは再生開始時の編集シーンをeditScene_へ退避し、同じインスタンスを停止まで保持する。それ以降の一時シーンは遷移の都度解放する。EditorはplayOrigin_を借用し、EditorSessionの履歴・保存基準・再生前スナップショットを保持する。Stopでは元の編集シーンにだけスナップショットを復元し、フレーム境界で元のインスタンスへ戻す。停止と遷移要求が重なった場合は停止を優先する。
+
+OnSceneChangedでは選択・ドラッグ・Inspectorの操作結果とParticleプレビュー対象を初期化し、Projectが借用するモデル画像ハンドルのキャッシュを破棄する。履歴は遷移先の配置で作り直さない。ParticleEditorPanelの元の保存基準も遷移中だけ退避し、共通プリセットの未保存状態を保持する。ツールバーの場面名も現在のISceneから渡す。SceneManagerとWorldSceneはEditorやapplicationの具体クラスをincludeしない。
+
+CPU試験は描画完了前に破棄しないこと、Pause、連続遷移、停止優先、同じ編集インスタンスへの復帰、Finalizeの回数を確認する。GPU試験は実際のTitleScene→GameScene→TitleSceneを描画し、ImGui自身へのCtrl+P入力で再生・停止して、保存基準x=2から編集したx=3が再生中にx=9へ変わっても、停止後にx=3へ戻り、Undoでx=2・Redoでx=3へ戻せることを確認する。
+
+## Assetの移動・削除と参照更新
+
+ProjectPanelはAssetActionDialogへ操作要求を渡す。AssetActionDialogが使用箇所と確認画面を表示し、AssetFileOperationsが検証・ステージング・確定・失敗時の復元を担当する。AssetDocumentはScene/Prefab/Particleの既存シリアライズと、OBJ/MTL/glTF/GLBの外部参照を扱う。ファイル操作とパネル描画を一つのクラスへ集めない。
+
+AssetPathChangeはresourcesのルートと変更前後の相対パスだけを保持する。フォルダの要素単位で比較し、Windowsの序数比較で大文字・小文字を扱う。WorldAssetReferencesが保存データの参照を共通規則で列挙・更新する。移動の成功後、IEditableWorld::RemapAssetPathsを通じて実行側へ通知し、EditorSessionが履歴・保存基準を、ParticleEditorPanelが共通プリセットの保存基準を更新する。EditorからModelManagerやTextureManagerを直接操作しない。
+
+WorldSceneはモデル・テクスチャ・モデルプレビューのキャッシュキーを変更し、既存のGPUリソース・モデルへのポインタ・画像ハンドルを保つ。移動先に過去のキャッシュが残っている場合、その古いリソースは受付済みの描画を壊さないよう終了時まで保持する。追加のGPU待機や全モデルの再インポートは行わない。Projectの表示キャッシュは成功通知で更新する。
+
+移動先にファイルがない準備段階では、WorldObjects::ReplaceObjectsとSceneFile::SaveのrequireModelFiles=falseを明示して、パスとデータの形を検証する。通常の追加・保存・読込は既定値trueを使い、モデルの存在検証を維持する。Particleの画像は安全なresources相対パスとして検証し、実行側では読込に失敗した画像を適用しない。
+
+確定前に文書の原本が変わっていないことを確認し、更新文書と変更前のコピーを非表示の回復ディレクトリへ用意する。Assetを二段階のrenameで移し、更新文書を原子的な置換APIで順番に確定する。途中失敗時は適用済みの原本とAssetのパスを復元する。これは複数ファイルをまたぐOSトランザクションではないため、プロセス強制終了への自動回復は実装せず、回復情報と原本を残す。
+
+削除時は再調査し、編集中の配置・保存文書・Undo/Redoの使用箇所が残っていれば拒否する。未使用のものも物理削除せずゴミ箱へ移す。復元と操作範囲の制限はREADMEの「Projectのファイル操作」を参照する。
+
+CPU試験では、Scene・Prefab・Particle・OBJ/MTL・glTF/GLBの更新、空白・Unicode・大文字小文字、旧形式のライト移行、既存ファイルへの上書き拒否、範囲外と自己配下への移動拒否、使用中Assetの削除拒否、ファイルロックによる確定失敗時の復元を確認する。GPU試験では読込済みのモデル・画像・プレビューの同一性、移動後のUndo、空白入り画像名でのAssimp再インポート、継続描画を確認する。専用ImGuiコンテキストで右クリックメニューの使用箇所確認も操作する。

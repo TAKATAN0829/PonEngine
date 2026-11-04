@@ -13,6 +13,8 @@ Push-Location -LiteralPath $runtimeDirectory
 try {
     & (Join-Path $repositoryRoot 'generated/editor-graphics-tests/bin/EditorGraphicsTests.exe')
     if ($LASTEXITCODE -ne 0) { throw '描画またはParticleの動作試験に失敗しました。' }
+    & (Join-Path $repositoryRoot 'generated/editor-graphics-tests/bin/EditorGraphicsTests.exe') --scene-transitions
+    if ($LASTEXITCODE -ne 0) { throw 'シーン遷移またはEditor停止復帰の試験に失敗しました。' }
 } finally {
     Pop-Location
 }

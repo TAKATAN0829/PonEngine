@@ -1,4 +1,5 @@
 #pragma once
+
 #include "objects/WorldObjectData.h"
 #include <cstddef>
 
@@ -6,6 +7,7 @@
 // カメラ入力・編集画面・Assetプレビューには依存せず、データの所有権も取得しない。
 class IWorldObjects {
 public:
+
 	//=============================================================================================//
 	// 終了処理
 
@@ -27,12 +29,14 @@ public:
 	virtual const WorldObjectData* GetObjectDataById(WorldObjectId identifier) const {
 		for (size_t objectIndex = 0; objectIndex < GetEditableObjectCount(); ++objectIndex) {
 			const WorldObjectData* object = GetObjectData(objectIndex);
+
 			if (object != nullptr) {
 				if (object->id == identifier) {
 					return object;
 				}
 			}
 		}
+
 		return nullptr;
 	}
 
@@ -40,40 +44,50 @@ public:
 	WorldObjectId GetBodyOwner(WorldObjectId identifier) const {
 		for (size_t depth = 0; depth < 64; ++depth) {
 			const WorldObjectData* object = GetObjectDataById(identifier);
+
 			if (object == nullptr) {
 				return 0;
 			}
+
 			if (object->body.present) {
 				if (object->body.enabled) {
 					return object->id;
 				}
 			}
+
 			identifier = object->parentId;
 		}
+
 		return 0;
 	}
 
 	// 採番済みIDはUndoや削除の後にも再利用しない。未対応実装は最大IDから求める。
 	virtual WorldObjectId GetNextObjectId() const {
 		WorldObjectId nextIdentifier = 1;
+
 		for (size_t objectIndex = 0; objectIndex < GetEditableObjectCount(); ++objectIndex) {
 			const WorldObjectData* object = GetObjectData(objectIndex);
+
 			if (object != nullptr) {
 				if (object->id >= nextIdentifier) {
 					nextIdentifier = object->id + 1;
 				}
 			}
 		}
+
 		return nextIdentifier;
 	}
 
 	// 親子変換は保存データと共通の行列で扱う。GPU側の参照は公開しない。
 	virtual bool GetObjectWorldMatrix(WorldObjectId, Matrix4x4&) const { return false; }
+
 	Vector3 GetObjectWorldPosition(WorldObjectId id) const {
 		Matrix4x4 world{};
+
 		if (!GetObjectWorldMatrix(id, world)) {
 			return {};
 		}
+
 		return {world.m[3][0], world.m[3][1], world.m[3][2]};
 	}
 
@@ -90,6 +104,7 @@ public:
 
 	virtual bool SetObjectParent(WorldObjectId, WorldObjectId, std::string& error) {
 		error = "This scene does not support parenting.";
+
 		return false;
 	}
 
@@ -110,6 +125,7 @@ public:
 	// Getter / 一覧の保存・復元
 
 	virtual bool SupportsObjectCollection() const { return false; }
+
 	virtual std::vector<WorldObjectData> CaptureObjects() const { return {}; }
 
 	//=============================================================================================//
@@ -121,6 +137,7 @@ public:
 	// 配置に必要な変換・親・モデルを先に検証し、失敗時は一覧を変更しない。
 	virtual WorldObjectId PlaceModel(const std::string&, WorldObjectId, const Vector3&, std::string& error) {
 		error = "This scene does not support model placement.";
+
 		return kInvalidWorldObjectId;
 	}
 
@@ -135,6 +152,7 @@ public:
 	// 実装側は全件を検証してから置換し、失敗時は現在の一覧を維持する。
 	virtual bool ReplaceObjects(std::vector<WorldObjectData>, std::string& error) {
 		error = "This scene does not support object replacement.";
+
 		return false;
 	}
 };
