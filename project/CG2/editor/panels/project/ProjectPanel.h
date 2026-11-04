@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 class EditorSelection;
 class EditorSession;
@@ -30,7 +31,18 @@ public:
 
 	// 初回の初期化と一覧更新も含め、Project一画面の処理をまとめる。
 	void Draw(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
-		EditorSession& history, ParticleEditorPanel& particles);
+		EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath = {});
+
+	//=============================================================================================//
+	// 操作要求
+
+	bool ConsumeOpenScene(std::filesystem::path& path);
+
+	bool ConsumeAssetPathChange(AssetPathChange& change);
+
+	void RequestRefresh() { refreshRequested_ = true; }
+
+	void RevealAsset(const std::filesystem::path& path);
 
 private:
 
@@ -76,7 +88,7 @@ private:
 	// 画面構成
 
 	void DrawContents(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
-		EditorSession& history, ParticleEditorPanel& particles);
+		EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath);
 
 	void DrawFolders();
 
@@ -99,6 +111,10 @@ private:
 	std::filesystem::path root_;
 	std::filesystem::path directory_;
 	std::filesystem::path selected_;
+
+	std::filesystem::path requestedScene_; // ダブルクリック結果をEditorへ一度だけ渡す。
+
+	std::optional<AssetPathChange> changedAssetPath_;
 
 	std::vector<AssetEntry> entries_;
 

@@ -86,6 +86,8 @@ public:
 
 	void RemapAssetPaths(const AssetPathChange& change) override;
 
+	void OnSceneContentsChanged() override;
+
 	//=============================================================================================//
 	// Setter / Scene表示・カメラ
 

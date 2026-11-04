@@ -38,6 +38,8 @@ public:
 
 	const char* GetSceneName() const;
 
+	std::string GetInitialAssetPath() const;
+
 	//=============================================================================================//
 	// Setter / 再生状態
 

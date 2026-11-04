@@ -176,6 +176,26 @@ void ParticleEditorPanel::Initialize(IEditableWorld& scene) {
 	focusRequested_ = false;
 }
 
+void ParticleEditorPanel::ResetScenePreview(IEditableWorld& scene) {
+	scene_ = &scene;
+
+	preview_ = {};
+
+	targetId_ = kInvalidWorldObjectId;
+
+	focusPosition_ = {};
+
+	pendingAction_ = PresetAction::None;
+
+	openPrompt_ = false;
+
+	focusRequested_ = false;
+
+	scene.SetParticlePreview(preview_);
+
+	scene.ResetParticlePreview();
+}
+
 //=============================================================================================//
 // 更新処理
 

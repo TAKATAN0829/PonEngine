@@ -456,4 +456,10 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="editor\assets\AssetActionDialog.h" />
     <ClCompile Include="editor\assets\AssetActionDialog.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="editor\scene\SceneDocument.h" />
+    <ClCompile Include="editor\scene\SceneDocument.cpp" />
+    <ClInclude Include="editor\scene\SceneAssetDialog.h" />
+    <ClCompile Include="editor\scene\SceneAssetDialog.cpp" />
+  </ItemGroup>
 </Project>

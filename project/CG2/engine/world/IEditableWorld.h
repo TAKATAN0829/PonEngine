@@ -82,6 +82,9 @@ public:
 	// ディスク上の移動が成功した後に呼ぶ。GPUリソースの所有権は変更しない。
 	virtual void RemapAssetPaths(const AssetPathChange& change) { (void)change; }
 
+	// 新規作成・Sceneファイル読込後に、保存対象外の実行状態だけを初期化する。
+	virtual void OnSceneContentsChanged() {}
+
 	//=============================================================================================//
 	// オブジェクト操作
 

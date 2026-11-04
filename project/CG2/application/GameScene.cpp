@@ -17,6 +17,8 @@
 void GameScene::Initialize(const SceneContext& context) {
 	WorldScene::Initialize(context);
 
+	initialAssetPath_.clear();
+
 	SetCommonParticleEmission(true);
 
 	//=============================================================================================//
@@ -75,6 +77,10 @@ void GameScene::Initialize(const SceneContext& context) {
 		if (!loadedScene) {
 			LogSystem::Log("Scene load failed: " + error + "\n");
 		}
+	}
+
+	if (loadedScene) {
+		initialAssetPath_ = SceneFile::kDefaultPath;
 	}
 
 	if (!loadedScene) {

@@ -119,6 +119,7 @@ InspectorのTransformは親に対するローカル値で、回転は度数で�
 |---|---|
 | Ctrl+N | 新規シーン |
 | Ctrl+O | 既定の保存シーンを読み込む |
+| Ctrl+Shift+S | 名前を付けて保存 |
 | Ctrl+S | シーン保存 |
 | Ctrl+P | ゲーム再生／停止 |
 | Ctrl+Z | Undo |
@@ -203,14 +204,14 @@ Consoleでは最近のログを検索し、ホバーで全文を表示、右ク�
 
 | 対象 | 保存先 | 主な内容 |
 |---|---|---|
-| シーン | `resources/scenes/GameScene.ponscene` | オブジェクト、親子関係、Transform、Component、個別Emitter |
+| シーン | resources内で選んだ`.ponscene`（起動時の既定は`resources/scenes/GameScene.ponscene`） | オブジェクト、親子関係、Transform、Component、個別Emitter |
 | 共通Particleプリセット | `resources/particles/Default.ponparticle` | 発生・移動・見た目・寿命変化・Soft Particles設定 |
 | Prefab | `resources/prefabs/*.ponprefab` | 対象と子孫の設定 |
 | Editor配置 | `editor-layout.ini` | ドッキング配置 |
 
 現在の書出し形式は**Scene 13 / Particle 2**です。Scene 1〜12とParticle 1も読み込み、新しいParticle項目は従来の見た目を維持する値で補完します。旧シーンの固定ライトは上記の移行を行います。Prefabの読込では移行用のライトを追加しません。再生中の速度・粒子・時計・接触履歴などは保存しません。
 
-新規・読込・終了などで未保存の変更があれば確認を表示します。シーン保存とParticleプリセット書出しは別の操作です。現在のSceneメニューは既定のGameSceneファイルを使い、任意パスのシーン選択には対応していません。
+新規・読込・終了などで未保存の変更があれば確認を表示します。シーン保存とParticleプリセット書出しは別の操作です。Sceneメニューの「開く...」（Ctrl+O）と「名前を付けて保存...」（Ctrl+Shift+S）で、resources内の複数シーンを切り替えられます。ProjectのScene Assetはダブルクリック、または右クリック→「Sceneを開く」で開きます。
 
 ## コード構成と開発方針
 
@@ -302,7 +303,7 @@ Editor経由の移動では、編集中の配置、保存済みScene・Prefab・
 - TitleSceneでEnterを押すとGameSceneへ進み、GameSceneでEscapeを押すとTitleSceneへ戻ります。Releaseでは通常のゲーム更新中に受け付けます。
 - Pause中は遷移しません。Stepはゲーム更新を一回行うため、その回で入力が成立すれば遷移要求を受け付けます。
 - Editorで停止すると、最初に再生したシーンの同じインスタンスへ戻り、再生前のオブジェクトを復元します。遷移中の一時シーンは保存・Undo履歴の対象にしません。
-- Sceneメニューの既定保存先は引き続き`GameScene.ponscene`です。場面ごとのファイル選択・Build Settings・タイトル画面の本制作は、今回の最小サンプルには含めません。
+- Editorの編集中ファイルと、C++のGameScene／TitleSceneの実行時遷移は別に管理します。ゲーム起動時は引き続き`GameScene.ponscene`を読み込みます。Build Settingsや任意のScene Assetへの実行時遷移は今後の範囲です。
 
 `engine/world/runtime/WorldScene`は実際の場面を作るための共通基底です。カメラ・WorldMotion/WorldPhysics/WorldCollisionの実行、モデル・Particle描画、Asset準備・モデルプレビューを担当し、`application/GameScene`と`application/TitleScene`が各場面の初期配置や遷移先を決めます。サンプルSpriteとその設定UI、既定シーン・Particleプリセットの読込はGameSceneに残しています。
 

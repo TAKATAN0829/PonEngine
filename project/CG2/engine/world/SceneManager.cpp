@@ -117,6 +117,14 @@ const char* SceneManager::GetSceneName() const {
 	return currentScene_->GetName();
 }
 
+std::string SceneManager::GetInitialAssetPath() const {
+	if (currentScene_ == nullptr) {
+		return {};
+	}
+
+	return currentScene_->GetInitialAssetPath();
+}
+
 //=============================================================================================//
 // Setter / 再生状態
 

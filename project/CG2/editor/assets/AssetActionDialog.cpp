@@ -112,7 +112,8 @@ void AssetActionDialog::AcceptMoveDrop(const std::filesystem::path& directory, b
 #endif
 }
 
-void AssetActionDialog::Draw(IEditableWorld& scene, EditorSession& history, ParticleEditorPanel& particles) {
+void AssetActionDialog::Draw(IEditableWorld& scene, EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
+	activeScenePath_ = activeScenePath;
 #ifdef USE_IMGUI
 	if (openRequested_) {
 		references_ = CollectReferences(scene, history);
@@ -272,6 +273,10 @@ std::vector<AssetReference> AssetActionDialog::CollectReferences(IEditableWorld&
 	WorldAssetReferences::Collect(scene.CaptureObjects(), "Current scene", references);
 
 	history.CollectAssetReferences(references);
+
+	if (!activeScenePath_.empty()) {
+		references.push_back({AssetPathChange::Text(activeScenePath_.lexically_relative(root_)), "Editor / open scene document"});
+	}
 
 	if (scene.GetParticleSettings() != nullptr) {
 		references.push_back({AssetPathChange::Text(AssetPathChange::Path(scene.GetParticleSettings()->texture).lexically_relative("resources")), "Current scene / shared Particle preset"});

@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="editor\scene" />
     <Filter Include="editor\assets" />
     <Filter Include="engine\world\runtime" />
     <Filter Include="engine">
@@ -474,5 +475,11 @@
   <ItemGroup>
     <ClInclude Include="editor\assets\AssetActionDialog.h"><Filter>editor\assets</Filter></ClInclude>
     <ClCompile Include="editor\assets\AssetActionDialog.cpp"><Filter>editor\assets</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="editor\scene\SceneDocument.h"><Filter>editor\scene</Filter></ClInclude>
+    <ClCompile Include="editor\scene\SceneDocument.cpp"><Filter>editor\scene</Filter></ClCompile>
+    <ClInclude Include="editor\scene\SceneAssetDialog.h"><Filter>editor\scene</Filter></ClInclude>
+    <ClCompile Include="editor\scene\SceneAssetDialog.cpp"><Filter>editor\scene</Filter></ClCompile>
   </ItemGroup>
 </Project>

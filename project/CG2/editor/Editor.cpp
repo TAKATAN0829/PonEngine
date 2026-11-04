@@ -69,7 +69,7 @@ namespace {
 // 初期化処理
 
 
-void Editor::Initialize(IEditableWorld* scene) {
+void Editor::Initialize(IEditableWorld* scene, const std::string& initialPath) {
 	scene_ = scene;
 
 	playOrigin_ = nullptr;
@@ -85,6 +85,14 @@ void Editor::Initialize(IEditableWorld* scene) {
 	selection_.Clear();
 
 	fileStatus_.clear();
+
+	document_.Initialize("resources", AssetPathChange::Path(initialPath), fileStatus_);
+
+	sceneFileDialog_ = SceneAssetDialog{};
+
+	fileDialogAction_ = FileDialogAction::None;
+
+	pendingScenePath_.clear();
 
 	loggedStatus_.clear();
 
@@ -104,9 +112,9 @@ void Editor::Initialize(IEditableWorld* scene) {
 }
 
 // 再生の履歴は元の編集シーンに属する。遷移先の一時データで初期化し直さない。
-void Editor::OnSceneChanged(IEditableWorld* scene, const char* sceneName) {
+void Editor::OnSceneChanged(IEditableWorld* scene, const char* sceneName, const std::string& initialPath) {
 	if (playOrigin_ == nullptr) {
-		Initialize(scene);
+		Initialize(scene, initialPath);
 	} else {
 		if (scene != playOrigin_) {
 			if (scene_ == playOrigin_) {
@@ -205,7 +213,7 @@ void Editor::Draw(IEditableWorld* scene) {
 		if (scene->SupportsObjectCollection()) {
 			sceneAvailable = true;
 
-			dirty = session_.IsDirty(GetEditWorld(*scene));
+			dirty = NeedsSaveConfirmation(SceneAction::NewScene, *scene);
 		}
 	}
 
@@ -235,8 +243,12 @@ void Editor::Draw(IEditableWorld* scene) {
 		SaveScene(*scene);
 	}
 
+	if (menuAction == EditorMenuAction::SaveSceneAs) {
+		OpenSaveDialog(false);
+	}
+
 	if (menuAction == EditorMenuAction::LoadScene) {
-		RequestSceneAction(SceneAction::LoadScene, *scene);
+		OpenSceneDialog();
 	}
 
 	HierarchyPanel::Draw(scene, selection_);
@@ -253,7 +265,19 @@ void Editor::Draw(IEditableWorld* scene) {
 		scene->FocusEditorCamera(particleEditor_.GetFocusPosition());
 	}
 
-	projectPanel_.Draw(*scene, selection_, toolVisibility_, session_, particleEditor_);
+	projectPanel_.Draw(*scene, selection_, toolVisibility_, session_, particleEditor_, document_.GetPath());
+
+	AssetPathChange pathChange;
+
+	if (projectPanel_.ConsumeAssetPathChange(pathChange)) {
+		document_.RemapAssetPaths(pathChange);
+	}
+
+	std::filesystem::path requestedScene;
+
+	if (projectPanel_.ConsumeOpenScene(requestedScene)) {
+		RequestSceneAction(SceneAction::LoadScene, *scene, requestedScene);
+	}
 
 	consolePanel_.Draw();
 
@@ -266,6 +290,8 @@ void Editor::Draw(IEditableWorld* scene) {
 	performancePanel_.Draw(toolVisibility_.performance);
 
 	DrawDiscardPrompt(*scene);
+
+	DrawSceneAssetDialog(*scene);
 }
 
 //=============================================================================================//
@@ -322,7 +348,13 @@ bool Editor::SaveScene (IEditableWorld& scene) {
 		}
 	}
 
-	if (!SceneFile::Save (GetEditWorld(scene), SceneFile::kDefaultPath, error)) {
+	if (!document_.HasPath()) {
+		OpenSaveDialog(pendingAction_ != SceneAction::None);
+
+		return false;
+	}
+
+	if (!document_.Save(GetEditWorld(scene), error)) {
 		fileStatus_ = error;
 
 		return false;
@@ -330,13 +362,59 @@ bool Editor::SaveScene (IEditableWorld& scene) {
 
 	session_.MarkSaved (GetEditWorld(scene));
 
-	fileStatus_ = "Scene saved.";
+	fileStatus_ = "Scene saved: " + AssetPathChange::Text(document_.GetPath());
+
+	projectPanel_.RequestRefresh();
 
 	return true;
 }
 
+void Editor::OpenSceneDialog() {
+	if (pendingAction_ != SceneAction::None) {
+		return;
+	}
+
+	fileDialogAction_ = FileDialogAction::Open;
+
+	sceneFileDialog_.OpenForLoad();
+}
+
+void Editor::OpenSaveDialog(bool beforeAction, const std::filesystem::path& suggestion) {
+	fileDialogAction_ = FileDialogAction::SaveAs;
+
+	if (beforeAction) {
+		fileDialogAction_ = FileDialogAction::SaveBeforeAction;
+	}
+
+	std::filesystem::path filename = suggestion;
+
+	if (filename.empty()) {
+		filename = "scenes/Untitled.ponscene";
+
+		if (document_.HasPath()) {
+			filename = document_.GetPath().lexically_relative(document_.GetRoot());
+		}
+	}
+
+	sceneFileDialog_.OpenForSave(filename);
+}
+
 // 未保存の変更がある場合は、処理を保留して保存確認を表示する。
-void Editor::RequestSceneAction(SceneAction action, IEditableWorld& scene) {
+void Editor::RequestSceneAction(SceneAction action, IEditableWorld& scene, const std::filesystem::path& path) {
+	if (pendingAction_ != SceneAction::None) {
+		return;
+	}
+
+	if (action != SceneAction::Exit) {
+		if (session_.IsPlaying()) {
+			fileStatus_ = "Stop play mode before opening another scene.";
+
+			return;
+		}
+	}
+
+	pendingScenePath_ = path;
+
 	pendingAction_ = action;
 
 	if (NeedsSaveConfirmation(action, scene)) {
@@ -347,26 +425,22 @@ void Editor::RequestSceneAction(SceneAction action, IEditableWorld& scene) {
 }
 
 // 保存確認が済んだ新規作成・読込・終了を実行し、結果を画面へ通知する。
-void Editor::PerformSceneAction (IEditableWorld& scene) {
+void Editor::PerformSceneAction(IEditableWorld& scene) {
 	std::string error;
 
 	bool succeeded = false;
 
 	if (pendingAction_ == SceneAction::LoadScene) {
-		succeeded = SceneFile::Load (scene, SceneFile::kDefaultPath, error,true);
+		succeeded = document_.Open(scene, pendingScenePath_, error);
 
 		if (succeeded) {
-			session_.Initialize(scene);
-
-			fileStatus_ = "Scene loaded.";
+			fileStatus_ = "Scene opened: " + AssetPathChange::Text(document_.GetPath());
 		}
 	} else if (pendingAction_ == SceneAction::NewScene) {
-		succeeded = scene.ReplaceObjects ({}, error);
+		succeeded = document_.New(scene, error);
 
 		if (succeeded) {
-			session_.Update(scene, false);
-
-			fileStatus_ = "New empty scene. Save Scene to keep it.";
+			fileStatus_ = "New untitled scene. Choose a filename when saving.";
 		}
 	} else if (pendingAction_ == SceneAction::Exit) {
 		exitApproved_ = true;
@@ -375,18 +449,50 @@ void Editor::PerformSceneAction (IEditableWorld& scene) {
 	}
 
 	if (succeeded) {
-		selection_.Clear ();
-
-		sceneView_.ResetInteraction ();
+		if (pendingAction_ != SceneAction::Exit) {
+			ResetSceneEditingState(scene);
+		}
 	} else {
 		fileStatus_ = error;
 	}
 
 	pendingAction_ = SceneAction::None;
+
+	pendingScenePath_.clear();
+}
+
+// 読込・新規作成の成功時だけ、前の配置に属する操作状態を解除する。
+void Editor::ResetSceneEditingState(IEditableWorld& scene) {
+	session_.Initialize(scene);
+
+	selection_.Clear();
+
+	sceneView_.Initialize();
+
+	sceneView_.ShowScene();
+
+	scene.SetEditorGameView(false);
+
+	particleEditor_.ResetScenePreview(scene);
+
+	HierarchyPanel::Initialize();
+
+	InspectorPanel::Initialize();
+
+	if (document_.HasPath()) {
+		projectPanel_.RevealAsset(document_.GetPath());
+	} else {
+		projectPanel_.RequestRefresh();
+	}
 }
 
 // 操作の種類と各保存対象の変更を順に確認する。
 bool Editor::NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) const {
+	if (!document_.HasPath()) {
+		if (GetEditWorld(scene).GetEditableObjectCount() > 0) {
+			return true;
+		}
+	}
 	if (session_.IsDirty(GetEditWorld(scene))) {
 		return true;
 	}
@@ -440,7 +546,21 @@ void Editor::DrawToolbar (IEditableWorld& scene) {
 
 	ImGui::AlignTextToFramePadding();
 
-	ImGui::TextDisabled("Scene  /  %s", sceneName_.c_str());
+	std::string displayName = document_.GetName();
+
+	if (session_.IsPlaying()) {
+		if (scene_ != playOrigin_) {
+			displayName = sceneName_;
+		}
+	}
+
+	ImGui::TextDisabled("Scene  /  %s", displayName.c_str());
+
+	if (ImGui::IsItemHovered()) {
+		if (document_.HasPath()) {
+			ImGui::SetTooltip("%s", AssetPathChange::Text(document_.GetPath()).c_str());
+		}
+	}
 
 	ImGui::SameLine();
 
@@ -539,6 +659,12 @@ void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 				}
 			}
 
+			if (!saved) {
+				if (fileDialogAction_ == FileDialogAction::SaveBeforeAction) {
+					ImGui::CloseCurrentPopup();
+				}
+			}
+
 			if (saved) {
 				PerformSceneAction (scene);
 
@@ -559,6 +685,8 @@ void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 		if (ImGui::Button ("Cancel")) {
 			pendingAction_ = SceneAction::None;
 
+			pendingScenePath_.clear();
+
 			ImGui::CloseCurrentPopup ();
 		}
 
@@ -573,6 +701,61 @@ void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 	(void) scene;
 
 #endif
+}
+
+// ファイル選択は結果を返すだけにし、保存成功後にのみ保留中の切替を続行する。
+void Editor::DrawSceneAssetDialog(IEditableWorld& scene) {
+	sceneFileDialog_.Draw(document_);
+
+	std::filesystem::path selected;
+
+	bool overwriteConfirmed = false;
+
+	if (sceneFileDialog_.ConsumeSelection(selected, overwriteConfirmed)) {
+		const FileDialogAction action = fileDialogAction_;
+
+		fileDialogAction_ = FileDialogAction::None;
+
+		if (action == FileDialogAction::Open) {
+			RequestSceneAction(SceneAction::LoadScene, scene, selected);
+		} else {
+			if (document_.SaveAs(GetEditWorld(scene), selected, overwriteConfirmed, fileStatus_)) {
+				session_.MarkSaved(GetEditWorld(scene));
+
+				projectPanel_.RevealAsset(document_.GetPath());
+
+				fileStatus_ = "Scene saved: " + AssetPathChange::Text(document_.GetPath());
+
+				if (action == FileDialogAction::SaveBeforeAction) {
+					bool canContinue = true;
+
+					if (pendingAction_ == SceneAction::Exit) {
+						canContinue = SaveParticlePreset(scene);
+					}
+
+					if (canContinue) {
+						PerformSceneAction(scene);
+					} else {
+						fileStatus_ = "Particle preset save failed. The scene file was saved.";
+
+						openDiscardPrompt_ = true;
+					}
+				}
+			} else {
+				OpenSaveDialog(action == FileDialogAction::SaveBeforeAction, selected.lexically_relative(document_.GetRoot()));
+
+				sceneFileDialog_.SetStatus(fileStatus_);
+			}
+		}
+	}
+
+	if (sceneFileDialog_.ConsumeCancelled()) {
+		if (fileDialogAction_ == FileDialogAction::SaveBeforeAction) {
+			openDiscardPrompt_ = true;
+		}
+
+		fileDialogAction_ = FileDialogAction::None;
+	}
 }
 
 //=============================================================================================//
@@ -617,11 +800,15 @@ void Editor::HandleShortcuts(IEditableWorld& scene) {
 		}
 
 		if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
-			RequestSceneAction(SceneAction::LoadScene, scene);
+			OpenSceneDialog();
 		}
 
 		if (ImGui::IsKeyPressed(ImGuiKey_S, false)) {
-			SaveScene(scene);
+			if (ImGui::GetIO().KeyShift) {
+				OpenSaveDialog(false);
+			} else {
+				SaveScene(scene);
+			}
 		}
 
 		if (ImGui::IsKeyPressed(ImGuiKey_Z, false)) {

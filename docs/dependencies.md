@@ -1,6 +1,6 @@
 ﻿# 現在の依存関係
 
-`engine/world`の分類、共有データ・共通操作・Editor操作の分離、ライトの相互依存解消と、タブ単位のPanel配置・クラスごとの.h/.cpp統合を反映した調査。調査対象は`project/CG2`の自作C++ソースとヘッダー157ファイルで、解決できた直接のローカルincludeは重複を除いて353組。外部ライブラリとテストはこの件数に含めない。
+`engine/world`の分類、共有データ・共通操作・Editor操作の分離、ライトの相互依存解消と、タブ単位のPanel配置・クラスごとの.h/.cpp統合を反映した調査。調査対象は`project/CG2`の自作C++ソースとヘッダー161ファイルで、解決できた直接のローカルincludeは重複を除いて361組。外部ライブラリとテストはこの件数に含めない。
 
 includeは条件付きコンパイルの両方の分岐を含めて数えている。ファイル単位のinclude循環は検出していない。ただし、フォルダを単位にすると相互依存がある。include循環がないことと、機能が独立していることは別である。
 
@@ -136,3 +136,9 @@ ProjectPanelはeditor/assets/AssetActionDialogへ操作を委譲し、AssetFileO
 engine/asset/AssetPathChangeはパスの変換と使用箇所の文字列だけを持ち、ModelManagerなどのGPU型やWorld型を参照しない。world/objects/WorldAssetReferencesがWorldObjectDataの参照を列挙・更新する。WorldObjectsからassetへの新しい参照は、このパス値だけを使うためのものになる。
 
 実行側への通知はIEditableWorld::RemapAssetPathsで行い、WorldSceneが既存GPUキャッシュを更新する。EditorSessionとParticleEditorPanelはそれぞれ自分が所有する保存基準を更新する。Asset操作サービスからEditor本体やWorldSceneの具体型を参照する経路は作っていない。ファイル単位のinclude循環は引き続き検出していない。
+
+## 複数Scene Assetの編集
+
+`editor/scene/SceneDocument`が現在の配置ファイルを所有し、保存・検証・読込を`world/serialization/SceneFile`へ委譲する。`SceneAssetDialog`は選択結果を返し、Editorが未保存確認と履歴・選択の初期化を行う。ProjectPanelは開く要求とAsset改名通知を返すだけで、SceneDocumentやEditor本体を参照しない。
+
+起動時の保存先はIScene→SceneManager→Engine経由のメタデータとして一度だけ渡し、編集中の保存先をゲーム側へ逆参照させない。配置切替後の一時状態の解除はIEditableWorld::OnSceneContentsChangedを使う。WorldからEditorへのincludeは追加していない。

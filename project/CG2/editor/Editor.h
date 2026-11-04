@@ -9,6 +9,8 @@
 #include "panels/console/ConsolePanel.h"
 #include "panels/performance/PerformancePanel.h"
 #include "EditorLayout.h"
+#include "scene/SceneDocument.h"
+#include "scene/SceneAssetDialog.h"
 
 // C++
 #include <string>
@@ -22,10 +24,10 @@ public:
 	// 初期化処理
 
 	// 対象シーンに合わせて選択・履歴・確認待ちの状態を初期化する。
-	void Initialize(IEditableWorld* scene);
+	void Initialize(IEditableWorld* scene, const std::string& initialPath = {});
 
 	// 再生中の遷移では履歴と停止時の復元先を保持し、借用画像や選択だけを切り替える。
-	void OnSceneChanged(IEditableWorld* scene, const char* sceneName);
+	void OnSceneChanged(IEditableWorld* scene, const char* sceneName, const std::string& initialPath = {});
 
 	//=============================================================================================//
 	// 更新処理
@@ -47,6 +49,8 @@ public:
 	bool ShouldSimulate(); // Step要求を一度だけ消費して更新可否を返す。
 
 	bool ShouldExit() const { return exitApproved_; }
+
+	const std::filesystem::path& GetScenePath() const { return document_.GetPath(); }
 
 	//=============================================================================================//
 	// Getter / Scene表示サイズ
@@ -74,14 +78,22 @@ private:
 
 	enum class SceneAction { None, NewScene, LoadScene, Exit };
 
+	enum class FileDialogAction { None, Open, SaveAs, SaveBeforeAction };
+
 	//=============================================================================================//
 	// シーン保存・切替
 
 	bool SaveScene(IEditableWorld& scene);
 
-	void RequestSceneAction(SceneAction action, IEditableWorld& scene);
+	void OpenSceneDialog();
+
+	void OpenSaveDialog(bool beforeAction, const std::filesystem::path& suggestion = {});
+
+	void RequestSceneAction(SceneAction action, IEditableWorld& scene, const std::filesystem::path& path = {});
 
 	void PerformSceneAction(IEditableWorld& scene);
+
+	void ResetSceneEditingState(IEditableWorld& scene);
 
 	bool NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) const;
 
@@ -96,6 +108,8 @@ private:
 	void DrawToolbar(IEditableWorld& scene);
 
 	void DrawDiscardPrompt(IEditableWorld& scene);
+
+	void DrawSceneAssetDialog(IEditableWorld& scene);
 
 	//=============================================================================================//
 	// 入力・再生
@@ -121,6 +135,13 @@ private:
 	EditorSelection selection_;
 
 	EditorSession session_;
+
+	//=============================================================================================//
+	// Sceneファイル
+
+	SceneDocument document_; // 再生中の場面遷移でも、編集元の保存先を保持する。
+
+	SceneAssetDialog sceneFileDialog_;
 
 	//=============================================================================================//
 	// パネル
@@ -149,6 +170,10 @@ private:
 
 	//=============================================================================================//
 	// 保存確認・終了
+
+	std::filesystem::path pendingScenePath_; // 未保存確認中も開く対象を保持する。
+
+	FileDialogAction fileDialogAction_ = FileDialogAction::None;
 
 	SceneAction pendingAction_ = SceneAction::None; // 保存確認後に実行する操作。
 

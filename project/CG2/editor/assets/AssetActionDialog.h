@@ -22,7 +22,7 @@ public:
 
 	void AcceptMoveDrop(const std::filesystem::path& directory, bool allowChanges);
 
-	void Draw(IEditableWorld& scene, EditorSession& history, ParticleEditorPanel& particles);
+	void Draw(IEditableWorld& scene, EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath = {});
 
 	//=============================================================================================//
 	// Getter / 操作結果
@@ -55,6 +55,8 @@ private:
 
 	std::filesystem::path root_;
 	std::filesystem::path source_;
+
+	std::filesystem::path activeScenePath_; // 開いているSceneファイルは未使用Assetとして削除しない。
 
 	Action action_ = Action::None;
 

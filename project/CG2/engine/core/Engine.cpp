@@ -113,7 +113,7 @@ void Engine::Initialize(IScene* firstScene) {
 #ifdef USE_IMGUI
 
 	// シーンの初期化後に編集用の履歴・選択状態を作る。
-	editor_.OnSceneChanged(sceneManager_->GetEditableWorld(), sceneManager_->GetSceneName());
+	editor_.OnSceneChanged(sceneManager_->GetEditableWorld(), sceneManager_->GetSceneName(), sceneManager_->GetInitialAssetPath());
 
 #endif
 }
@@ -275,7 +275,7 @@ void Engine::Run(uint32_t frameLimit) {
 		// PostDrawがGPU完了を待った後にだけ、旧シーンの描画リソースを解放する。
 		if (sceneManager_->ApplyPendingScene()) {
 #ifdef USE_IMGUI
-			editor_.OnSceneChanged(sceneManager_->GetEditableWorld(), sceneManager_->GetSceneName());
+			editor_.OnSceneChanged(sceneManager_->GetEditableWorld(), sceneManager_->GetSceneName(), sceneManager_->GetInitialAssetPath());
 
 #endif
 		}

@@ -103,7 +103,7 @@ void ProjectPanel::Update() {
 
 // Projectの描画単位で更新とプレビューの読込上限を管理する。
 void ProjectPanel::Draw(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
-	EditorSession& history, ParticleEditorPanel& particles) {
+	EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
 	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Project);
 
 	if (!initialized_) {
@@ -116,11 +116,12 @@ void ProjectPanel::Draw(IEditableWorld& scene, const EditorSelection& selection,
 
 	fileOperationsAllowed_ = !history.IsPlaying();
 
-	DrawContents(scene, selection, visibility, history, particles);
+	DrawContents(scene, selection, visibility, history, particles, activeScenePath);
 
 	AssetPathChange change;
 
 	if (fileActions_.ConsumePathChange(change)) {
+		changedAssetPath_ = change;
 		directory_ = root_ / AssetPathChange::Path(change.RemapRelative(PathText(directory_.lexically_relative(root_))));
 
 		if (!selected_.empty()) {
@@ -143,6 +144,45 @@ void ProjectPanel::Draw(IEditableWorld& scene, const EditorSelection& selection,
 			OpenDirectory(root_);
 		}
 	}
+}
+
+//=============================================================================================//
+// 操作要求
+
+bool ProjectPanel::ConsumeOpenScene(std::filesystem::path& path) {
+	if (requestedScene_.empty()) {
+		return false;
+	}
+
+	path = requestedScene_;
+
+	requestedScene_.clear();
+
+	return true;
+}
+
+bool ProjectPanel::ConsumeAssetPathChange(AssetPathChange& change) {
+	if (!changedAssetPath_.has_value()) {
+		return false;
+	}
+
+	change = *changedAssetPath_;
+
+	changedAssetPath_.reset();
+
+	return true;
+}
+
+void ProjectPanel::RevealAsset(const std::filesystem::path& path) {
+	if (!initialized_) {
+		Initialize();
+	}
+
+	OpenDirectory(path.parent_path());
+
+	selected_ = path;
+
+	refreshRequested_ = true;
 }
 
 //=============================================================================================//
@@ -248,7 +288,7 @@ void ProjectPanel::CacheFolders(const std::filesystem::path& directory, size_t d
 
 // Projectのパンくず・検索・フォルダツリー・Asset一覧の配置を担当する。
 void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
-	EditorSession& history, ParticleEditorPanel& particles) {
+	EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
 #ifdef USE_IMGUI
 	if (ImGui::Begin("Project",nullptr,ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
 		const ImVec2 headerOrigin = ImGui::GetCursorScreenPos();
@@ -351,7 +391,7 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 		ImGui::EndTable();
 	}
 
-	fileActions_.Draw(scene, history, particles);
+	fileActions_.Draw(scene, history, particles, activeScenePath);
 
 	ImGui::End();
 
@@ -361,6 +401,8 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 	(void)selection;
 
 	(void)visibility;
+
+	(void)activeScenePath;
 
 	(void)history;
 
@@ -509,6 +551,14 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 
 	if (ImGui::IsItemClicked()) {
 		selected_ = entry.path;
+
+		if (fileOperationsAllowed_) {
+			if (entry.extension == ".ponscene") {
+				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+					requestedScene_ = entry.path;
+				}
+			}
+		}
 	}
 
 	if (entry.directory) {
@@ -647,6 +697,14 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 	}
 
 	const std::string relative = PathText(entry.path.lexically_relative(root_));
+
+	if (entry.extension == ".ponscene") {
+		if (ImGui::MenuItem("Sceneを開く", nullptr, false, fileOperationsAllowed_)) {
+			requestedScene_ = entry.path;
+		}
+
+		return;
+	}
 
 	if (entry.extension == ".ponprefab") {
 		if (ImGui::MenuItem("Prefabをシーンに配置")) {

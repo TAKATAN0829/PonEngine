@@ -41,4 +41,6 @@
 <ClCompile Include="..\project\CG2\editor\assets\AssetFileOperations.cpp" />
 </ItemGroup>
 <ItemGroup><ClCompile Include="AssetFileOperationTests.cpp" /></ItemGroup>
+<ItemGroup><ClCompile Include="..\project\CG2\editor\scene\SceneDocument.cpp" /></ItemGroup>
+<ItemGroup><ClCompile Include="SceneDocumentTests.cpp" /></ItemGroup>
 </Project>

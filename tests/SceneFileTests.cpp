@@ -16,6 +16,7 @@ void RunCollisionTests(const std::filesystem::path& directory);
 void RunMotionTests(const std::filesystem::path& directory);
 void RunEditorWorkflowTests(const std::filesystem::path& directory);
 void RunAssetFileOperationTests(const std::filesystem::path& directory);
+void RunSceneDocumentTests(const std::filesystem::path& directory);
 void RunAssetWorkflowTests(const std::filesystem::path& directory);
 void RunPlacementTests();
 void RunEditorSessionTests();
@@ -263,6 +264,7 @@ int main() {
 		RunPlacementTests();
 		RunAssetWorkflowTests(directory);
 		RunAssetFileOperationTests(directory);
+		RunSceneDocumentTests(directory);
 		RunEditorWorkflowTests(directory);
 		RunMotionTests(directory);
 		RunCollisionTests(directory);

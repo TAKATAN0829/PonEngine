@@ -54,7 +54,11 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 				action = EditorMenuAction::SaveScene;
 			}
 
-			if (ImGui::MenuItem("読込", "Ctrl+O")) {
+			if (ImGui::MenuItem("名前を付けて保存...", "Ctrl+Shift+S")) {
+				action = EditorMenuAction::SaveSceneAs;
+			}
+
+			if (ImGui::MenuItem("開く...", "Ctrl+O")) {
 				action = EditorMenuAction::LoadScene;
 			}
 

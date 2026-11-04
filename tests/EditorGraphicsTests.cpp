@@ -24,6 +24,7 @@
 
 void RunSceneViewInteractionTests();
 void RunAssetDialogInteractionTests();
+void RunSceneDocumentInteractionTests();
 void VerifyPrimitiveAssets(GameScene& scene);
 
 // 実GPUでEditorを描画しながら、高頻度の発生・Pause・Burst・Resetを試験する。
@@ -112,6 +113,10 @@ public:
 	void UpdateEditorFrame(Input* input, bool simulate) override {
 		(void)simulate;
 		++frameNumber_;
+
+		if (frameNumber_ == 4) {
+			RunSceneDocumentInteractionTests();
+		}
 
 		if (frameNumber_ == 6) {
 			RunAssetGraphicsTests(*this);

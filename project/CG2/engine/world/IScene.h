@@ -3,6 +3,7 @@
 // 自作
 #include "Input.h"
 #include <memory>
+#include <string>
 #include <utility>
 
 class IEditableWorld;
@@ -34,6 +35,9 @@ public:
 	// Getter / 場面情報・遷移要求
 
 	virtual const char* GetName() const { return "Scene"; }
+
+	// 起動時に読込成功した配置ファイル。Editorが最初の保存先を決めるための情報。
+	virtual std::string GetInitialAssetPath() const { return {}; }
 
 	// 更新中は要求だけを取り出す。破棄と初期化はSceneManagerがフレーム境界で行う。
 	std::unique_ptr<IScene> TakeNextScene() { return std::move(nextScene_); }

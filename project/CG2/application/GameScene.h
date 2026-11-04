@@ -35,6 +35,8 @@ public:
 
 	const char* GetName() const override { return "GameScene"; }
 
+	std::string GetInitialAssetPath() const override { return initialAssetPath_; }
+
 	//=============================================================================================//
 	// Setter / HUD表示サイズ
 
@@ -47,6 +49,11 @@ private:
 
 	// サンプルHUDの設定は、このHUDを持つゲームシーンだけで扱う。
 	void DrawWorldSettings(bool* open);
+
+	//=============================================================================================//
+	// 起動時の配置ファイル
+
+	std::string initialAssetPath_; // Editorの初回接続用。編集中の保存先はSceneDocumentが所有する。
 
 	//=============================================================================================//
 	// ゲームHUD

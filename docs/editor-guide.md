@@ -49,6 +49,18 @@ Particle Editor・World Settings・Cameraは「表示 / View」から必要な�
 
 ゲームの再生中はParticle設定の編集を無効にする。Particleのプレビュー操作は、ゲームの再生・一時停止とは独立している。
 
+## 複数のシーンを編集する
+
+- Sceneメニューの「開く...」（Ctrl+O）で一覧から選ぶか、resources相対パスを入力する。Projectの`.ponscene`をダブルクリック、または右クリック→「Sceneを開く」でも開ける。
+- Ctrl+Sで編集中のファイルへ保存する。「名前を付けて保存...」（Ctrl+Shift+S）は別の保存先へ切り替え、Undo履歴を保持する。
+- 新規（Ctrl+N）では保存先が外れ、ToolbarにUntitledと表示する。最初の保存で`scenes/Stage01.ponscene`などを指定する。保存先のフォルダは作成され、拡張子を省略すると`.ponscene`を補う。
+- 別の既存ファイルへの保存では上書き確認を表示する。resources外やゴミ箱、リンク先へは保存できない。
+- 未保存の配置がある場合は、保存して続行・破棄して続行・キャンセルから選ぶ。保存先選択をキャンセルすると元の確認へ戻る。読込・保存の失敗時はConsoleと下部の通知に理由を表示する。
+- 新規・読込の成功時は選択・Undo履歴・プレビュー・Editorカメラを初期化する。共通Particleプリセットは別の保存対象なので変更状態を保持する。再生中はシーン切替・保存を無効にする。
+- 開いているScene AssetをProjectで改名・移動すると保存先も追従する。開いているファイルは使用中として扱い、ゴミ箱へ移せない。
+
+ゲーム起動時の読込は引き続き`resources/scenes/GameScene.ponscene`。Editorで別のファイルを開く操作は、C++のGameScene／TitleSceneの実行時遷移とは別。Build Settingsは未対応。
+
 ## 保存の区別
 
 - 「シーン / Scene → 保存」またはCtrl+S：配置・名前・見た目・Component状態・Emitter設定。

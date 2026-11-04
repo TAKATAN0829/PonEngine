@@ -607,6 +607,21 @@ void WorldScene::RemapAssetPaths(const AssetPathChange& change) {
 	}
 }
 
+// 新しい配置へ前の速度・接触・プレビュー・カメラ操作を持ち越さない。
+void WorldScene::OnSceneContentsChanged() {
+	OnPlayStateChanged(false);
+
+	particlePreview_ = {};
+
+	particleBurstRequested_ = false;
+
+	gameView_ = false;
+
+	debugCamera_->Initialize(static_cast<int32_t>(viewportWidth_), static_cast<int32_t>(viewportHeight_));
+
+	debugCamera_->SetEditorInputEnabled(false);
+}
+
 //=============================================================================================//
 // Setter / Scene表示・カメラ
 
