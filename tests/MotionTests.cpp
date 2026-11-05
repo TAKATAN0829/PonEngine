@@ -10,8 +10,8 @@
 #include <stdexcept>
 
 namespace {
-	void RequireMotion(bool condition, const char* message) {
-		if (!condition) {
+	void RequireMotion(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -44,16 +44,16 @@ namespace {
 		runtime.Update(scene, 1);
 		RequireMotion(NearMotion(scene.GetObjectDataById(child)->transform.translate.x, 1), "Movement did not return to start");
 		// 無効な親の子は止まり、有効化後は同じ位相から再開する。
-		*scene.GetEditableObject(0).active = false;
+		*scene.GetEditableObject(0).isActive = false;
 		runtime.Update(scene, 0.5f);
 		RequireMotion(NearMotion(scene.GetObjectDataById(child)->transform.translate.x, 1), "Inactive hierarchy kept moving");
-		*scene.GetEditableObject(0).active = true;
-		settings.rotationEnabled = false;
-		settings.movementEnabled = false;
+		*scene.GetEditableObject(0).isActive = true;
+		settings.isRotationEnabled = false;
+		settings.isMovementEnabled = false;
 		const float stoppedAngle = scene.GetObjectDataById(child)->transform.rotate.y;
 		runtime.Update(scene, 0.5f);
 		RequireMotion(NearMotion(scene.GetObjectDataById(child)->transform.translate.x, 1) && scene.GetObjectDataById(child)->transform.rotate.y == stoppedAngle, "Disabled component kept updating");
-		settings.movementEnabled = true;
+		settings.isMovementEnabled = true;
 		runtime.Update(scene, 0.5f);
 		RequireMotion(NearMotion(scene.GetObjectDataById(child)->transform.translate.x, 3), "Disabled movement advanced its clock");
 		runtime.Update(scene, -1);
@@ -82,14 +82,14 @@ namespace {
 		session.Update(scene, false);
 		std::string error;
 		RequireMotion(session.Undo(scene, error) && !scene.GetObjectData(0)->motion.hasRotation, "Motion add missing from undo");
-		RequireMotion(session.Redo(scene, error) && EqualMotionSettings(scene.GetObjectData(0)->motion, expected), "Motion settings missing from redo");
+		RequireMotion(session.Redo(scene, error) && AreMotionSettingsEqual(scene.GetObjectData(0)->motion, expected), "Motion settings missing from redo");
 		RequireMotion(SceneFile::Save(scene, directory / "motion.ponscene", error), "Motion scene save failed");
 		WorldObjects restored;
 		RequireMotion(SceneFile::Load(restored, directory / "motion.ponscene", error), "Motion scene load failed");
-		RequireMotion(EqualMotionSettings(restored.GetObjectData(0)->motion, expected), "Motion roundtrip failed");
+		RequireMotion(AreMotionSettingsEqual(restored.GetObjectData(0)->motion, expected), "Motion roundtrip failed");
 		RequireMotion(PrefabFile::Save(scene, identifier, directory / "motion.ponprefab", error), "Motion prefab save failed");
 		RequireMotion(PrefabFile::Instantiate(restored, directory / "motion.ponprefab", 0, {}, error) != 0, "Motion prefab placement failed");
-		RequireMotion(EqualMotionSettings(restored.GetObjectData(1)->motion, expected), "Prefab lost motion settings");
+		RequireMotion(AreMotionSettingsEqual(restored.GetObjectData(1)->motion, expected), "Prefab lost motion settings");
 		RequireMotion(session.BeginPlay(scene, error), "Motion Play failed");
 		WorldMotion runtime;
 		runtime.Initialize();
@@ -103,7 +103,7 @@ namespace {
 		RequireMotion(session.Stop(scene, error), "Motion Stop failed");
 		runtime.Initialize();
 		RequireMotion(scene.GetObjectData(0)->transform.translate.y == 0 && scene.GetObjectData(0)->transform.rotate.y == 0, "Stop did not restore editing transform");
-		RequireMotion(EqualMotionSettings(scene.GetObjectData(0)->motion, expected), "Stop discarded component configuration");
+		RequireMotion(AreMotionSettingsEqual(scene.GetObjectData(0)->motion, expected), "Stop discarded component configuration");
 		RequireMotion(session.BeginPlay(scene, error), "Second Motion Play failed");
 		runtime.Initialize();
 		runtime.Update(scene, 0.5f);

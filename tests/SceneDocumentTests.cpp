@@ -9,8 +9,8 @@
 #include <stdexcept>
 
 namespace {
-	void RequireDocument(bool condition, const char* message) {
-		if (!condition) {
+	void RequireDocument(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -131,11 +131,11 @@ void RunSceneDocumentTests(const std::filesystem::path& directory) {
 
 	RequireDocument(locked != INVALID_HANDLE_VALUE, "Cannot lock isolated scene fixture.");
 
-	const bool savedWhileLocked = document.SaveAs(world, alpha, true, error);
+	const bool wasSavedWhileLocked = document.SaveAs(world, alpha, true, error);
 
 	CloseHandle(locked);
 
-	RequireDocument(!savedWhileLocked && document.GetPath() == beta, "Failed Save As changed the active filename.");
+	RequireDocument(!wasSavedWhileLocked && document.GetPath() == beta, "Failed Save As changed the active filename.");
 
 	RequireDocument(ReadDocumentBytes(alpha) == alphaBytes, "Failed Save As damaged existing file bytes.");
 

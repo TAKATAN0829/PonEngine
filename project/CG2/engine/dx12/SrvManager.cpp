@@ -44,6 +44,7 @@ void SrvManager::Initialize(DirectXCommon* dxCommon) {
 
 
 void SrvManager::PreDraw() {
+	// 共有するSRVヒープを描画命令へ設定する。
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { descriptorHeap_.Get() };
 
@@ -55,6 +56,7 @@ void SrvManager::PreDraw() {
 
 
 uint32_t SrvManager::Allocate() {
+	// 再利用できる番号を優先し、空きがなければ次のSRV番号を割り当てる。
 
 	assert(!IsFull());
 
@@ -75,10 +77,23 @@ uint32_t SrvManager::Allocate() {
 
 
 void SrvManager::Free(uint32_t srvIndex) {
+	// 使用済みのSRV番号を、再利用できる一覧へ戻す。
 
 	assert(srvIndex < useIndex_);
 
 	freeIndices_.push(srvIndex);
+}
+
+//=============================================================================================//
+// 上限チェック
+
+bool SrvManager::IsFull() const {
+	// 再利用できる番号と新規割当の上限から、SRVの空きを調べる。
+	if (freeIndices_.empty () && useIndex_ >= kMaxSRVCount) {
+		return true;
+	}
+
+	return false;
 }
 
 //=============================================================================================//
@@ -90,6 +105,7 @@ void SrvManager::CreateSRVforTexture2D(
 	ID3D12Resource* pResource,
 	DXGI_FORMAT format,
 	UINT mipLevels) {
+	// 画像の形式とMip数を設定し、2DテクスチャのSRVを作る。
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 
@@ -113,6 +129,7 @@ void SrvManager::CreateSRVforStructuredBuffer(
 	ID3D12Resource* pResource,
 	UINT numElements,
 	UINT structureByteStride) {
+	// 要素数と要素サイズを設定し、構造化バッファのSRVを作る。
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 
@@ -138,6 +155,7 @@ void SrvManager::CreateSRVforStructuredBuffer(
 
 
 void SrvManager::SetGraphicsRootDescriptorTable(UINT rootParameterIndex, uint32_t srvIndex) {
+	// 指定したRootParameterへSRVのGPUハンドルを設定する。
 
 	dxCommon_->GetCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, GetGPUDescriptorHandle(srvIndex));
 }
@@ -147,6 +165,7 @@ void SrvManager::SetGraphicsRootDescriptorTable(UINT rootParameterIndex, uint32_
 
 
 D3D12_CPU_DESCRIPTOR_HANDLE SrvManager::GetCPUDescriptorHandle(uint32_t srvIndex) {
+	// 指定番号のCPU用記述子ハンドルを取得する。
 
 	D3D12_CPU_DESCRIPTOR_HANDLE handle = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
 
@@ -156,6 +175,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE SrvManager::GetCPUDescriptorHandle(uint32_t srvIndex
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE SrvManager::GetGPUDescriptorHandle(uint32_t srvIndex) {
+	// 指定番号のGPU用記述子ハンドルを取得する。
 
 	D3D12_GPU_DESCRIPTOR_HANDLE handle = descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
 
@@ -169,8 +189,17 @@ D3D12_GPU_DESCRIPTOR_HANDLE SrvManager::GetGPUDescriptorHandle(uint32_t srvIndex
 
 
 uint32_t SrvManager::GetIndex(D3D12_CPU_DESCRIPTOR_HANDLE handle) {
+	// CPU用記述子ハンドルの位置から、ヒープ内の番号を求める。
 
 	D3D12_CPU_DESCRIPTOR_HANDLE start = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
 
 	return static_cast<uint32_t>((handle.ptr - start.ptr) / descriptorSize_);
+}
+
+//=============================================================================================//
+// DescriptorHeap取得
+
+ID3D12DescriptorHeap* SrvManager::GetDescriptorHeap() const {
+	// 描画に使う記述子ヒープを取得する。
+	return descriptorHeap_.Get ();
 }

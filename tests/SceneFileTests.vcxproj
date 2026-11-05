@@ -43,4 +43,16 @@
 <ItemGroup><ClCompile Include="AssetFileOperationTests.cpp" /></ItemGroup>
 <ItemGroup><ClCompile Include="..\project\CG2\editor\scene\SceneDocument.cpp" /></ItemGroup>
 <ItemGroup><ClCompile Include="SceneDocumentTests.cpp" /></ItemGroup>
+  <ItemGroup><ClCompile Include="..\project\CG2\engine\diagnostics\FrameProfiler.cpp" /></ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\project\CG2\editor\AssetDragPayload.cpp" />
+    <ClCompile Include="..\project\CG2\engine\math\MathUtility.cpp" />
+    <ClCompile Include="..\project\CG2\engine\world\IEditableWorld.cpp" />
+    <ClCompile Include="..\project\CG2\engine\world\IScene.cpp" />
+    <ClCompile Include="..\project\CG2\engine\world\IWorldObjects.cpp" />
+    <ClCompile Include="..\project\CG2\engine\world\settings\AssetSettings.cpp" />
+    <ClCompile Include="..\project\CG2\engine\world\settings\ColliderSettings.cpp" />
+    <ClCompile Include="..\project\CG2\engine\world\settings\MotionSettings.cpp" />
+    <ClCompile Include="..\project\CG2\engine\world\settings\RigidBodySettings.cpp" />
+  </ItemGroup>
 </Project>

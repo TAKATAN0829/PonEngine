@@ -24,7 +24,7 @@ public:
 
 	static bool Vector(const char* label, Vector3* value, float speed, float minimum = 0, float maximum = 0);
 
-	static bool Toggle(const char* label, bool* value);
+	static bool Toggle(const char* label, bool* isChecked);
 
 	static bool Combo(const char* label, int* value, const char* choices);
 

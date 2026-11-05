@@ -34,26 +34,22 @@ public:
 	//=============================================================================================//
 	// Getter / 場面情報・遷移要求
 
-	virtual const char* GetName() const { return "Scene"; }
+	virtual const char* GetName() const;
 
 	// 起動時に読込成功した配置ファイル。Editorが最初の保存先を決めるための情報。
-	virtual std::string GetInitialAssetPath() const { return {}; }
+	virtual std::string GetInitialAssetPath() const;
 
 	// 更新中は要求だけを取り出す。破棄と初期化はSceneManagerがフレーム境界で行う。
-	std::unique_ptr<IScene> TakeNextScene() { return std::move(nextScene_); }
+	std::unique_ptr<IScene> TakeNextScene();
 
 	// 編集機能に対応するシーンだけが窓口を返す。Editorのパネル型には依存しない。
-	virtual IEditableWorld* GetEditableWorld() { return nullptr; }
+	virtual IEditableWorld* GetEditableWorld();
 
 	// 再生の開始・停止時に、シーン固有の実行データを初期化するための通知。
-	virtual void OnPlayStateChanged(bool playing) { (void)playing; }
+	virtual void OnPlayStateChanged(bool isPlaying);
 
 	// 通常のシーンは再生中だけ更新する。編集時も描画更新が必要なら派生側で実装する。
-	virtual void UpdateEditorFrame(Input* input, bool simulate) {
-		if (simulate) {
-			Update(input);
-		}
-	}
+	virtual void UpdateEditorFrame(Input* input, bool shouldSimulate);
 
 	//=============================================================================================//
 	// 初期化処理
@@ -81,11 +77,7 @@ protected:
 	// シーン遷移
 
 	// 未初期化の次シーンを渡す。同じフレームでは最初の有効な要求を採用する。
-	void RequestSceneChange(std::unique_ptr<IScene> nextScene) {
-		if (nextScene_ == nullptr) {
-			nextScene_ = std::move(nextScene);
-		}
-	}
+	void RequestSceneChange(std::unique_ptr<IScene> nextScene);
 
 private:
 

@@ -17,7 +17,6 @@
 //=============================================================================================//
 // 初期化処理
 
-
 void Particle::Initialize(ParticleRenderer* renderer) {
 
 	assert(renderer);
@@ -60,7 +59,7 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 
 	instancingSrvIndex_ = srvManager->Allocate();
 
-	descriptorAllocated_ = true;
+	isDescriptorAllocated_ = true;
 
 	srvManager->CreateSRVforStructuredBuffer(
 		instancingSrvIndex_,
@@ -72,14 +71,13 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 //=============================================================================================//
 // 更新処理
 
-
-void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate, bool emit) {
+void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool shouldSimulate, bool shouldEmit) {
 	inverseViewProjection_ = MathUtility::Inverse(viewProjectionMatrix);
 
 	// 一時停止中は発生・移動・経過時間を止め、カメラに合わせた描画データだけを更新する。
 
 	// 頻度による発生
-	if (simulate && emit) {
+	if (shouldSimulate && shouldEmit) {
 		emitter_.frequencyTime += kDeltaTime;
 
 		while (emitter_.frequency <= emitter_.frequencyTime) {
@@ -99,7 +97,7 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 	// ビルボード行列
 	Matrix4x4 billboardMatrix = MathUtility::MakeIdentity4x4();
 
-	if (useBillboard_) {
+	if (isBillboardEnabled_) {
 		billboardMatrix = cameraMatrix;
 
 		billboardMatrix.m[3][0] = 0.f;
@@ -120,8 +118,8 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 			continue;
 		}
 
-		if (simulate) {
-			if (useAccelerationField_) {
+		if (shouldSimulate) {
+			if (isAccelerationFieldEnabled_) {
 
 				particleIterator->velocity = MathUtility::Add(particleIterator->velocity, MathUtility::Multiply(kDeltaTime, accelerationField_.acceleration));
 			}
@@ -158,7 +156,6 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 //=============================================================================================//
 // 描画処理
 
-
 void Particle::Draw() {
 
 	// 確保したResourceの数を超えて描画しない
@@ -169,11 +166,11 @@ void Particle::Draw() {
 
 	float softDistance = 0;
 
-	if (settings_.softParticles) {
+	if (settings_.areSoftParticlesEnabled) {
 		softDistance = settings_.softDistance;
 	}
 
-	renderer_->PreDraw(blendMode_,useBrightnessAlpha_,inverseViewProjection_,softDistance);
+	renderer_->PreDraw(blendMode_,isBrightnessAlphaEnabled_,inverseViewProjection_,softDistance);
 
 	//=============================================================================================//
 	// Material・Texture設定
@@ -194,12 +191,12 @@ void Particle::Draw() {
 //=============================================================================================//
 // 終了処理
 
-
 void Particle::Finalize() {
-	if (descriptorAllocated_) {
+	// 粒子が使用したMaterialとSRVを解放する。
+	if (isDescriptorAllocated_) {
 		renderer_->GetSrvManager()->Free(instancingSrvIndex_);
 
-		descriptorAllocated_ = false;
+		isDescriptorAllocated_ = false;
 	}
 
 	if (material_ != nullptr) {
@@ -213,10 +210,10 @@ void Particle::Finalize() {
 //=============================================================================================//
 // Particle追加
 
-
 // 不正な編集中の値は実行へ反映せず、直前の正常な設定でプレビューを続ける。
 bool Particle::ApplySettings(const ParticleSettings& settings) {
-	if (!ValidateParticleSettings(settings)) {
+	// 設定値を検証してから、Particleの実行設定へ反映する。
+	if (!AreParticleSettingsValid(settings)) {
 		return false;
 	}
 
@@ -240,9 +237,9 @@ bool Particle::ApplySettings(const ParticleSettings& settings) {
 
 	accelerationField_.acceleration = settings.acceleration;
 
-	useAccelerationField_ = settings.accelerationEnabled;
+	isAccelerationFieldEnabled_ = settings.isAccelerationEnabled;
 
-	useBillboard_ = settings.billboard;
+	isBillboardEnabled_ = settings.isBillboardEnabled;
 
 	blendMode_ = settings.blendMode;
 
@@ -253,6 +250,7 @@ bool Particle::ApplySettings(const ParticleSettings& settings) {
 
 // 描画用リソースを残したまま、実行中の粒子と発生タイマーだけを初期化する。
 void Particle::ResetSimulation() {
+	// 現在の設定を残し、粒子と発生タイマーを消す。
 	particles_.clear();
 
 	emitter_.frequencyTime = 0;
@@ -261,11 +259,32 @@ void Particle::ResetSimulation() {
 }
 
 //=============================================================================================//
+// Getter / 現在の粒子数
+
+size_t Particle::GetLiveCount() const {
+	// 現在生存しているParticleの数を取得する。
+	return particles_.size();
+}
+
+//=============================================================================================//
+// Particle追加
+
+void Particle::AddParticles() {
+	// 発生源から生成した粒子を、生存中の一覧へ追加する。
+	particles_.splice(particles_.end(), Emit());
+}
+
+//=============================================================================================//
 // EmitterのTransform
 
+TransformData& Particle::GetEmitterTransform() {
+	// Particleの発生源のTransformを取得する。
+	return emitter_.transform;
+}
 
 // 設定のコピーを作らず、シーン側で解決した発生位置だけを反映する。
 void Particle::SetEmitterPosition(const Vector3& position) {
+	// 親子変換後のワールド位置を、粒子の発生源へ反映する。
 	if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) {
 		return;
 	}
@@ -276,13 +295,14 @@ void Particle::SetEmitterPosition(const Vector3& position) {
 //=============================================================================================//
 // Setter
 
-
 void Particle::SetColor(const Vector4& color) {
+	// 描画に使う色を更新する。
 
 	material_->SetColor(color);
 }
 
 void Particle::SetTexture(const std::string& filePath) {
+	// 画像を読み込み、透明度の扱いと参照するテクスチャを更新する。
 
 	uint32_t textureIndex = TextureManager::GetInstance()->Load(filePath);
 
@@ -290,19 +310,32 @@ void Particle::SetTexture(const std::string& filePath) {
 
 	appliedTexture_ = filePath;
 
-	useBrightnessAlpha_ = !TextureManager::GetInstance()->HasTransparency(filePath);
+	isBrightnessAlphaEnabled_ = !TextureManager::GetInstance()->HasTransparency(filePath);
 }
 
 void Particle::SetBlendMode(BlendMode blendMode) {
+	// 描画時の合成方法を更新する。
 
 	blendMode_ = blendMode;
+}
+
+// ビルボード
+void Particle::SetUseBillboard(bool isBillboardEnabled) {
+	// 粒子をカメラへ向ける描画を使うか切り替える。
+	isBillboardEnabled_ = isBillboardEnabled;
+}
+
+// 加速度Field
+void Particle::SetUseAccelerationField(bool isAccelerationFieldEnabled) {
+	// 加速度Fieldを粒子へ適用するか切り替える。
+	isAccelerationFieldEnabled_ = isAccelerationFieldEnabled;
 }
 
 //=============================================================================================//
 // 新しいParticle生成
 
-
 Particle::ParticleData Particle::MakeNewParticle(const Vector3& translate) {
+	// 設定範囲から乱数を取り、粒子一つ分の初期値を作る。
 
 	ParticleData particle{};
 
@@ -320,7 +353,7 @@ Particle::ParticleData Particle::MakeNewParticle(const Vector3& translate) {
 
 	particle.color = settings_.color;
 
-	if (settings_.randomColor) {
+	if (settings_.isRandomColorEnabled) {
 		particle.color.x *= Random::Range(0.0f, 1.0f);
 
 		particle.color.y *= Random::Range(0.0f, 1.0f);
@@ -337,7 +370,6 @@ Particle::ParticleData Particle::MakeNewParticle(const Vector3& translate) {
 
 //=============================================================================================//
 // Emitterから指定個数のParticleを作る
-
 
 std::list<Particle::ParticleData> Particle::Emit() {
 

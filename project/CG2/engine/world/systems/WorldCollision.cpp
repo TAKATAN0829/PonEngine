@@ -8,28 +8,34 @@
 
 namespace {
 	Vector3 CrossEdges(const Vector3& first, const Vector3& second) {
+		// 二つの辺の外積を、分離軸の候補として求める。
 		return {first.y*second.z-first.z*second.y, first.z*second.x-first.x*second.z, first.x*second.y-first.y*second.x};
 	}
 
 	Vector3 FaceNormal(const WorldCollider& box, size_t axisIndex) {
+		// 二つの辺の外積から面の法線を求める。
 		return CrossEdges(MathUtility::Normalize(box.halfEdges[(axisIndex+1)%3]),MathUtility::Normalize(box.halfEdges[(axisIndex+2)%3]));
 	}
 
 	float LengthSquared(const Vector3& vector) {
+		// 平方根を使わず、ベクトルの長さの二乗を求める。
 		return MathUtility::Dot(vector, vector);
 	}
 
-	bool BoundsOverlap(const AABB& first, const AABB& second) {
+	bool DoBoundsOverlap(const AABB& first, const AABB& second) {
+		// 各軸の最小・最大値を比較し、範囲の重なりを調べる。
 		return first.min.x <= second.max.x && first.max.x >= second.min.x &&
 			first.min.y <= second.max.y && first.max.y >= second.min.y && first.min.z <= second.max.z && first.max.z >= second.min.z;
 	}
 
-	bool CompareMinimum(const WorldCollider& first, const WorldCollider& second) {
+	bool ShouldSortBoundsBefore(const WorldCollider& first, const WorldCollider& second) {
+		// 範囲の最小値で比較し、衝突候補を走査する順序を決める。
 		return first.bounds.min.x < second.bounds.min.x;
 	}
 
 	// 分離軸は正規化し、極端な拡縮でも判定の単位を揃える。
-	bool SeparatesBoxes(const WorldCollider& first, const WorldCollider& second, const Vector3& candidate) {
+	bool DoesSeparateBoxes(const WorldCollider& first, const WorldCollider& second, const Vector3& candidate) {
+		// 指定軸へ両Boxを投影し、離れているか調べる。
 		const float length = MathUtility::Length(candidate);
 
 		if (length < 0.0000001f) {
@@ -49,18 +55,19 @@ namespace {
 		return std::abs(MathUtility::Dot(MathUtility::Subtract(first.center, second.center), axis)) > extent + 0.00001f;
 	}
 
-	bool BoxesIntersect(const WorldCollider& first, const WorldCollider& second) {
+	bool DoBoxesIntersect(const WorldCollider& first, const WorldCollider& second) {
+		// 両Boxの面と辺から分離軸を調べ、交差を判定する。
 		for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {
-			if (SeparatesBoxes(first, second, FaceNormal(first,axisIndex))) {
+			if (DoesSeparateBoxes(first, second, FaceNormal(first,axisIndex))) {
 				return false;
 			}
 
-			if (SeparatesBoxes(first, second, FaceNormal(second,axisIndex))) {
+			if (DoesSeparateBoxes(first, second, FaceNormal(second,axisIndex))) {
 				return false;
 			}
 
 			for (size_t otherAxis = 0; otherAxis < 3; ++otherAxis) {
-				if (SeparatesBoxes(first, second, CrossEdges(MathUtility::Normalize(first.halfEdges[axisIndex]), MathUtility::Normalize(second.halfEdges[otherAxis])))) {
+				if (DoesSeparateBoxes(first, second, CrossEdges(MathUtility::Normalize(first.halfEdges[axisIndex]), MathUtility::Normalize(second.halfEdges[otherAxis])))) {
 					return false;
 				}
 			}
@@ -71,6 +78,7 @@ namespace {
 
 	// 点が三角形の頂点・辺・面のどの領域にあるかで最近点を求める。
 	Vector3 ClosestTrianglePoint(const Vector3& point, const Vector3& first, const Vector3& second, const Vector3& third) {
+		// 頂点・辺・面のどこが最近点になるか順に判定する。
 		const Vector3 firstEdge = MathUtility::Subtract(second, first);
 		const Vector3 secondEdge = MathUtility::Subtract(third, first);
 		const Vector3 firstOffset = MathUtility::Subtract(point, first);
@@ -128,17 +136,17 @@ namespace {
 	bool BoxSphereIntersect(const WorldCollider& box, const WorldCollider& sphere) {
 		const Vector3 offset = MathUtility::Subtract(sphere.center, box.center);
 
-		bool inside = true;
+		bool isInside = true;
 
 		for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {
 			const Vector3 normal = MathUtility::Normalize(FaceNormal(box,axisIndex));
 
 			if (std::abs(MathUtility::Dot(offset, normal)) > std::abs(MathUtility::Dot(box.halfEdges[axisIndex], normal))) {
-				inside = false;
+				isInside = false;
 			}
 		}
 
-		if (inside) {
+		if (isInside) {
 			return true;
 		}
 
@@ -158,6 +166,7 @@ namespace {
 
 	// 最小の押し戻し距離を持つ分離軸を保持する。
 	bool ContactAxis(const WorldCollider& first, const WorldCollider& second, const Vector3& candidate, CollisionContact& contact) {
+		// 両形状を候補軸へ投影し、最小の押し戻し量を更新する。
 		const float length = MathUtility::Length(candidate);
 
 		if (length < 0.0000001f) {
@@ -194,6 +203,7 @@ namespace {
 	}
 
 	bool BoxContact(const WorldCollider& first, const WorldCollider& second, CollisionContact& contact) {
+		// 両方のBoxから候補軸を作り、接触方向と押し戻し量を求める。
 		contact.penetration = (std::numeric_limits<float>::max)();
 
 		for (size_t axis = 0; axis < 3; ++axis) {
@@ -216,11 +226,12 @@ namespace {
 	}
 
 	bool BoxSphereContact(const WorldCollider& box, const WorldCollider& sphere, CollisionContact& contact) {
+		// Box上の最近点を求め、Sphereとの接触を調べる。
 		const Vector3 offset = MathUtility::Subtract(sphere.center,box.center);
 
 		float nearestFace = (std::numeric_limits<float>::max)();
 
-		bool inside = true;
+		bool isInside = true;
 
 		for (size_t axis = 0; axis < 3; ++axis) {
 			Vector3 normal = MathUtility::Normalize(FaceNormal(box,axis));
@@ -229,7 +240,7 @@ namespace {
 			const float distance = std::abs(MathUtility::Dot(box.halfEdges[axis],normal)) - std::abs(projection);
 
 			if (distance < 0) {
-				inside = false;
+				isInside = false;
 			}
 
 			if (distance < nearestFace) {
@@ -243,7 +254,7 @@ namespace {
 			}
 		}
 
-		if (inside) {
+		if (isInside) {
 			contact.penetration = sphere.radius + nearestFace;
 
 			return true;
@@ -289,6 +300,7 @@ namespace {
 
 
 void WorldCollision::Initialize() {
+	// 接触とイベントの前回の記録を消す。
 	contacts_.clear();
 
 	events_.clear();
@@ -297,6 +309,7 @@ void WorldCollision::Initialize() {
 }
 
 void WorldCollision::Finalize() {
+	// 衝突判定に使った一時データを消す。
 	Initialize();
 }
 
@@ -305,6 +318,7 @@ void WorldCollision::Finalize() {
 
 
 void WorldCollision::Update(IWorldObjects& scene) {
+	// 有効な形状を集め、候補を絞って接触とイベントを更新する。
 	events_.clear();
 
 	std::vector<WorldCollider> shapes;
@@ -316,11 +330,11 @@ void WorldCollision::Update(IWorldObjects& scene) {
 			continue;
 		}
 
-		if (!object->collider.present) {
+		if (!object->collider.isPresent) {
 			continue;
 		}
 
-		if (!object->collider.enabled) {
+		if (!object->collider.isEnabled) {
 			continue;
 		}
 
@@ -345,7 +359,8 @@ void WorldCollision::Update(IWorldObjects& scene) {
 		}
 	}
 
-	std::sort(shapes.begin(),shapes.end(),CompareMinimum);
+	// 範囲の順に並べ、接触し得る候補だけを詳しく調べる。
+	std::sort(shapes.begin(),shapes.end(),ShouldSortBoundsBefore);
 
 	std::set<std::pair<WorldObjectId,WorldObjectId>> current;
 
@@ -363,7 +378,7 @@ void WorldCollision::Update(IWorldObjects& scene) {
 				}
 			}
 
-			if (Intersects(shapes[firstIndex],shapes[secondIndex])) {
+			if (DoShapesIntersect(shapes[firstIndex],shapes[secondIndex])) {
 				const WorldObjectId firstId = (std::min)(shapes[firstIndex].identifier,shapes[secondIndex].identifier);
 				const WorldObjectId secondId = (std::max)(shapes[firstIndex].identifier,shapes[secondIndex].identifier);
 
@@ -398,9 +413,27 @@ void WorldCollision::Update(IWorldObjects& scene) {
 //=============================================================================================//
 // Getter / 接触通知・形状
 
+const std::vector<CollisionEvent>& WorldCollision::GetEvents() const {
+	// 現在の衝突イベント一覧を取得する。
+	return events_;
+}
+
+size_t WorldCollision::GetContactCount() const {
+	// 現在の接触件数を取得する。
+	return contacts_.size();
+}
+
+bool WorldCollision::IsTouching(WorldObjectId identifier) const {
+	// 接触中のID一覧に対象が含まれるか確認する。
+	if (touching_.contains(identifier)) {
+		return true;
+	}
+
+	return false;
+}
 
 bool WorldCollision::BuildWorld(const ColliderSettings& settings, const Matrix4x4& world, WorldCollider& result) {
-	if (!ValidateColliderSettings(settings)) {
+	if (!AreColliderSettingsValid(settings)) {
 		return false;
 	}
 
@@ -469,14 +502,15 @@ bool WorldCollision::BuildWorld(const ColliderSettings& settings, const Matrix4x
 	return true;
 }
 
-bool WorldCollision::Intersects(const WorldCollider& first, const WorldCollider& second) {
-	if (!BoundsOverlap(first.bounds, second.bounds)) {
+bool WorldCollision::DoShapesIntersect(const WorldCollider& first, const WorldCollider& second) {
+	// 形状の種類に合わせた交差判定を呼ぶ。
+	if (!DoBoundsOverlap(first.bounds, second.bounds)) {
 		return false;
 	}
 
 	if (first.shape == ColliderShape::Box) {
 		if (second.shape == ColliderShape::Box) {
-			return BoxesIntersect(first,second);
+			return DoBoxesIntersect(first,second);
 		}
 
 		return BoxSphereIntersect(first,second);
@@ -492,9 +526,10 @@ bool WorldCollision::Intersects(const WorldCollider& first, const WorldCollider&
 }
 
 bool WorldCollision::GetContact(const WorldCollider& first, const WorldCollider& second, CollisionContact& contact) {
+	// 形状の組合せに応じて、接触方向と押し戻し量を求める。
 	contact = {};
 
-	if (!BoundsOverlap(first.bounds,second.bounds)) {
+	if (!DoBoundsOverlap(first.bounds,second.bounds)) {
 		return false;
 	}
 
@@ -535,6 +570,7 @@ bool WorldCollision::GetContact(const WorldCollider& first, const WorldCollider&
 }
 
 Vector3 WorldCollision::GetCorner(const WorldCollider& box, size_t cornerIndex) {
+	// 頂点番号の各ビットから、Boxの対応する角を求める。
 	Vector3 corner = box.center;
 
 	for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {

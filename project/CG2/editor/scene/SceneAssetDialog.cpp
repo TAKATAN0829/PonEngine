@@ -11,19 +11,21 @@
 // 表示要求・描画
 
 void SceneAssetDialog::OpenForLoad() {
-	saving_ = false;
+	// 読込用の入力状態を用意し、ファイル選択画面を開く予約をする。
+	isSaving_ = false;
 
 	input_[0] = '\0';
 
 	status_.clear();
 
-	overwritePending_ = false;
+	isOverwritePending_ = false;
 
-	openRequested_ = true;
+	isOpenRequested_ = true;
 }
 
 void SceneAssetDialog::OpenForSave(const std::filesystem::path& suggestion) {
-	saving_ = true;
+	// 保存先の候補を入力欄へ入れ、保存用の選択画面を予約する。
+	isSaving_ = true;
 
 	const std::string text = AssetPathChange::Text(suggestion);
 
@@ -31,25 +33,27 @@ void SceneAssetDialog::OpenForSave(const std::filesystem::path& suggestion) {
 
 	status_.clear();
 
-	overwritePending_ = false;
+	isOverwritePending_ = false;
 
-	openRequested_ = true;
+	isOpenRequested_ = true;
 }
 
 void SceneAssetDialog::Draw(const SceneDocument& document) {
+	// 読込と保存の用途を切り替え、パス入力とScene一覧を表示する。
 #ifdef USE_IMGUI
-	const bool focusInput = openRequested_;
+	const bool shouldFocusInput = isOpenRequested_;
 
-	if (openRequested_) {
+	// 開く要求が来たときだけファイル一覧を走査する。
+	if (isOpenRequested_) {
 		Scan(document);
 
-		selectionReady_ = false;
+		isSelectionReady_ = false;
 
-		cancelled_ = false;
+		wasCancelled_ = false;
 
 		ImGui::OpenPopup("Sceneファイル");
 
-		openRequested_ = false;
+		isOpenRequested_ = false;
 	}
 
 	if (!ImGui::BeginPopupModal("Sceneファイル", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -58,7 +62,7 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 
 	const char* action = "開く";
 
-	if (saving_) {
+	if (isSaving_) {
 		action = "保存";
 	}
 
@@ -66,17 +70,18 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 
 	ImGui::SetNextItemWidth(480);
 
-	if (focusInput) {
+	// 開いた直後はパス入力へフォーカスを移す。
+	if (shouldFocusInput) {
 		ImGui::SetKeyboardFocusHere();
 	}
 
-	const bool submitPath = ImGui::InputText("##ScenePath", input_, sizeof(input_), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+	const bool wasPathSubmitted = ImGui::InputText("##ScenePath", input_, sizeof(input_), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
 
 	if (ImGui::IsItemEdited()) {
-		overwritePending_ = false;
+		isOverwritePending_ = false;
 	}
 
-	if (submitPath) {
+	if (wasPathSubmitted) {
 		Submit(document, false);
 	}
 
@@ -92,9 +97,9 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 		if (ImGui::Selectable(label.c_str(), label == input_, ImGuiSelectableFlags_AllowDoubleClick)) {
 			std::snprintf(input_, sizeof(input_), "%s", label.c_str());
 
-			overwritePending_ = false;
+			isOverwritePending_ = false;
 
-			if (!saving_) {
+			if (!isSaving_) {
 				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 					Submit(document, false);
 				}
@@ -108,7 +113,8 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 		ImGui::TextWrapped("%s", status_.c_str());
 	}
 
-	if (overwritePending_) {
+	// 上書き確認が必要な選択は、明示的な許可を待つ。
+	if (isOverwritePending_) {
 		ImGui::TextUnformatted("既存のSceneファイルを上書きしますか？");
 
 		if (ImGui::Button("上書きする")) {
@@ -118,7 +124,7 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 		ImGui::SameLine();
 
 		if (ImGui::Button("戻る")) {
-			overwritePending_ = false;
+			isOverwritePending_ = false;
 		}
 	} else {
 		if (ImGui::Button(action)) {
@@ -129,12 +135,12 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 	ImGui::SameLine();
 
 	if (ImGui::Button("キャンセル")) {
-		cancelled_ = true;
+		wasCancelled_ = true;
 
 		ImGui::CloseCurrentPopup();
 	}
 
-	if (selectionReady_) {
+	if (isSelectionReady_) {
 		ImGui::CloseCurrentPopup();
 	}
 
@@ -147,32 +153,40 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 //=============================================================================================//
 // Getter / 選択結果
 
-bool SceneAssetDialog::ConsumeSelection(std::filesystem::path& path, bool& overwriteConfirmed) {
-	if (!selectionReady_) {
+bool SceneAssetDialog::ConsumeSelection(std::filesystem::path& path, bool& isOverwriteConfirmed) {
+	// 選択したパスと上書き確認の結果を取り出す。
+	if (!isSelectionReady_) {
 		return false;
 	}
 
 	path = selected_;
 
-	overwriteConfirmed = selectedOverwrite_;
+	isOverwriteConfirmed = isSelectedOverwriteConfirmed_;
 
-	selectionReady_ = false;
+	isSelectionReady_ = false;
 
 	return true;
 }
 
 bool SceneAssetDialog::ConsumeCancelled() {
-	const bool cancelled = cancelled_;
+	// ファイル選択の取消要求を取り出し、要求を解除する。
+	const bool wasCancelled = wasCancelled_;
 
-	cancelled_ = false;
+	wasCancelled_ = false;
 
-	return cancelled;
+	return wasCancelled;
+}
+
+void SceneAssetDialog::SetStatus(const std::string& status) {
+	// 直近の操作結果の通知を更新する。
+	status_ = status;
 }
 
 //=============================================================================================//
 // 候補の走査・選択
 
 void SceneAssetDialog::Scan(const SceneDocument& document) {
+	// ゴミ箱とリンク先を除外し、選択できるSceneファイルを集める。
 	scenes_.clear();
 
 	std::error_code error;
@@ -186,6 +200,7 @@ void SceneAssetDialog::Scan(const SceneDocument& document) {
 	while (!error && iterator != end) {
 		++inspected;
 
+		// 走査量を制限し、大きなフォルダでUIが長時間止まるのを防ぐ。
 		if (inspected > 10000 || scenes_.size() >= 512) {
 			status_ = "一覧の上限です。必要なSceneは相対パスで指定できます。";
 
@@ -194,15 +209,16 @@ void SceneAssetDialog::Scan(const SceneDocument& document) {
 
 		const DWORD attributes = GetFileAttributesW(iterator->path().c_str());
 
-		bool skip = AssetPathChange::Contains(".editor-trash", iterator->path().filename());
+		bool shouldSkip = AssetPathChange::DoesContain(".editor-trash", iterator->path().filename());
 
 		if (attributes != INVALID_FILE_ATTRIBUTES) {
 			if ((attributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0) {
-				skip = true;
+				shouldSkip = true;
 			}
 		}
 
-		if (skip) {
+		if (shouldSkip) {
+			// ゴミ箱とリンク先の中へは入らない。
 			iterator.disable_recursion_pending();
 		} else {
 			if (iterator->is_regular_file(error)) {
@@ -225,23 +241,25 @@ void SceneAssetDialog::Scan(const SceneDocument& document) {
 		status_ = error.message();
 	}
 
+	// 表示するSceneの順序を揃える。
 	std::sort(scenes_.begin(), scenes_.end());
 }
 
-void SceneAssetDialog::Submit(const SceneDocument& document, bool overwriteConfirmed) {
-	if (!document.ResolvePath(AssetPathChange::Path(input_), !saving_, selected_, status_)) {
+void SceneAssetDialog::Submit(const SceneDocument& document, bool isOverwriteConfirmed) {
+	// 入力パスを検証し、必要な上書き確認が済んだ選択結果を返す。
+	if (!document.ResolvePath(AssetPathChange::Path(input_), !isSaving_, selected_, status_)) {
 		return;
 	}
 
-	if (saving_) {
+	if (isSaving_) {
 		std::error_code error;
 
 		if (std::filesystem::exists(selected_, error)) {
-			const bool currentFile = AssetPathChange::Contains(document.GetPath(), selected_) && AssetPathChange::Contains(selected_, document.GetPath());
+			const bool isCurrentFile = AssetPathChange::DoesContain(document.GetPath(), selected_) && AssetPathChange::DoesContain(selected_, document.GetPath());
 
-			if (!currentFile) {
-				if (!overwriteConfirmed) {
-					overwritePending_ = true;
+			if (!isCurrentFile) {
+				if (!isOverwriteConfirmed) {
+					isOverwritePending_ = true;
 
 					return;
 				}
@@ -255,7 +273,7 @@ void SceneAssetDialog::Submit(const SceneDocument& document, bool overwriteConfi
 		}
 	}
 
-	selectedOverwrite_ = overwriteConfirmed;
+	isSelectedOverwriteConfirmed_ = isOverwriteConfirmed;
 
-	selectionReady_ = true;
+	isSelectionReady_ = true;
 }

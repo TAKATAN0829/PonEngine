@@ -7,10 +7,12 @@
 
 
 void WorldMotion::Initialize() {
+	// 回転・往復移動の開始位置の記録を初期化する。
 	movementStates_.clear();
 }
 
 void WorldMotion::Finalize() {
+	// 保存対象外の動作状態を消す。
 	movementStates_.clear();
 }
 
@@ -29,13 +31,13 @@ void WorldMotion::Update(IWorldObjects& scene, float deltaSeconds) {
 	while (state != movementStates_.end()) {
 		const WorldObjectData* object = scene.GetObjectDataById(state->first);
 
-		bool removeState = object == nullptr;
+		bool shouldRemoveState = object == nullptr;
 
 		if (object != nullptr) {
-			removeState = !object->motion.hasMovement;
+			shouldRemoveState = !object->motion.hasMovement;
 		}
 
-		if (removeState) {
+		if (shouldRemoveState) {
 			state = movementStates_.erase(state);
 		} else {
 			++state;
@@ -53,24 +55,24 @@ void WorldMotion::Update(IWorldObjects& scene, float deltaSeconds) {
 			continue;
 		}
 
-		if (!ValidateMotionSettings(*object.motion)) {
+		if (!AreMotionSettingsValid(*object.motion)) {
 			continue;
 		}
 
 		UpdateRotation(*object.motion, deltaSeconds, *object.transform);
 
-		bool physicsMovement = false;
+		bool isPhysicsMovement = false;
 
 		if (object.body != nullptr) {
-			physicsMovement = object.body->present && object.body->enabled && object.body->mode == BodyMode::Dynamic;
+			isPhysicsMovement = object.body->isPresent && object.body->isEnabled && object.body->mode == BodyMode::Dynamic;
 		}
 
-		if (physicsMovement) {
+		if (isPhysicsMovement) {
 			continue;
 		}
 
 		if (object.motion->hasMovement) {
-			if (object.motion->movementEnabled) {
+			if (object.motion->isMovementEnabled) {
 				UpdateMovement(*object.motion, deltaSeconds, *object.transform, movementStates_[object.id]);
 			}
 		}
@@ -86,7 +88,7 @@ void WorldMotion::UpdateRotation(const MotionSettings& settings, float deltaSeco
 		return;
 	}
 
-	if (!settings.rotationEnabled) {
+	if (!settings.isRotationEnabled) {
 		return;
 	}
 
@@ -107,10 +109,10 @@ void WorldMotion::UpdateRotation(const MotionSettings& settings, float deltaSeco
 }
 
 void WorldMotion::UpdateMovement(const MotionSettings& settings, float deltaSeconds, TransformData& transform, MovementState& state) {
-	if (!state.initialized) {
+	if (!state.isInitialized) {
 		state.origin = transform.translate;
 
-		state.initialized = true;
+		state.isInitialized = true;
 	}
 
 	state.elapsed = std::fmod(state.elapsed + deltaSeconds, static_cast<double>(settings.movementPeriod));

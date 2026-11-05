@@ -18,11 +18,11 @@ public:
 	//=============================================================================================//
 	// Getter / 選択結果
 
-	bool ConsumeSelection(std::filesystem::path& path, bool& overwriteConfirmed);
+	bool ConsumeSelection(std::filesystem::path& path, bool& isOverwriteConfirmed);
 
 	bool ConsumeCancelled();
 
-	void SetStatus(const std::string& status) { status_ = status; }
+	void SetStatus(const std::string& status);
 
 private:
 	//=============================================================================================//
@@ -30,7 +30,7 @@ private:
 
 	void Scan(const SceneDocument& document);
 
-	void Submit(const SceneDocument& document, bool overwriteConfirmed);
+	void Submit(const SceneDocument& document, bool isOverwriteConfirmed);
 
 	//=============================================================================================//
 	// 表示と操作結果
@@ -43,10 +43,10 @@ private:
 
 	std::filesystem::path selected_;
 
-	bool saving_ = false;
-	bool openRequested_ = false;
-	bool overwritePending_ = false;
-	bool selectedOverwrite_ = false;
-	bool selectionReady_ = false;
-	bool cancelled_ = false;
+	bool isSaving_ = false;
+	bool isOpenRequested_ = false;
+	bool isOverwritePending_ = false;
+	bool isSelectedOverwriteConfirmed_ = false;
+	bool isSelectionReady_ = false;
+	bool wasCancelled_ = false;
 };

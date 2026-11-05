@@ -16,18 +16,18 @@ public:
 	//=============================================================================================//
 	// 描画処理
 
-	void DrawMenu(const std::filesystem::path& source, bool directory, bool allowChanges);
+	void DrawMenu(const std::filesystem::path& source, bool isDirectory, bool areChangesAllowed);
 
-	void DrawCreateMenu(const std::filesystem::path& directory, bool allowChanges);
+	void DrawCreateMenu(const std::filesystem::path& directory, bool areChangesAllowed);
 
-	void AcceptMoveDrop(const std::filesystem::path& directory, bool allowChanges);
+	void AcceptMoveDrop(const std::filesystem::path& directory, bool areChangesAllowed);
 
 	void Draw(IEditableWorld& scene, EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath = {});
 
 	//=============================================================================================//
 	// Getter / 操作結果
 
-	const std::string& GetStatus() const { return status_; }
+	const std::string& GetStatus() const;
 
 	bool ConsumeRefresh();
 
@@ -68,8 +68,8 @@ private:
 
 	AssetPathChange pathChange_;
 
-	bool openRequested_ = false;
-	bool inspected_ = false;
-	bool refreshRequested_ = false;
-	bool pathChanged_ = false;
+	bool isOpenRequested_ = false;
+	bool isInspected_ = false;
+	bool isRefreshRequested_ = false;
+	bool hasPathChanged_ = false;
 };

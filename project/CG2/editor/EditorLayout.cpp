@@ -12,7 +12,7 @@
 
 
 // メニューとドッキング用の親を画面全体に置き、各作業領域を分割する。
-EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dirty, EditorToolVisibility& visibility) {
+EditorMenuAction EditorLayout::Begin(bool isSceneAvailable, bool isPlaying, bool hasUnsavedChanges, EditorToolVisibility& visibility) {
 	EditorMenuAction action = EditorMenuAction::None;
 
 #ifdef USE_IMGUI
@@ -44,7 +44,7 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 		ImGui::TextUnformatted("PonEngine");
 
 		if (ImGui::BeginMenu("シーン / Scene")) {
-			ImGui::BeginDisabled(!sceneAvailable || playing);
+			ImGui::BeginDisabled(!isSceneAvailable || isPlaying);
 
 			if (ImGui::MenuItem("新規", "Ctrl+N")) {
 				action = EditorMenuAction::NewScene;
@@ -67,14 +67,14 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 			ImGui::EndMenu();
 		}
 
-		if (dirty) {
+		if (hasUnsavedChanges) {
 			// 明るいメニューバーでも読める、濃い赤で未保存を示す。
 			ImGui::TextColored({0.45f,0.035f,0.055f,1}, "* 未保存");
 		}
 
 		if (ImGui::BeginMenu("表示 / View")) {
 			if (ImGui::MenuItem("初期レイアウトに戻す")) {
-				resetRequested_ = true;
+				isResetRequested_ = true;
 
 				visibility = {};
 			}
@@ -83,13 +83,13 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 
 			ImGui::TextDisabled("補助画面 / Tools");
 
-			ImGui::MenuItem("Particle Editor", nullptr, &visibility.particleEditor);
+			ImGui::MenuItem("Particle Editor", nullptr, &visibility.isParticleEditorVisible);
 
-			ImGui::MenuItem("World Settings", nullptr, &visibility.worldSettings);
+			ImGui::MenuItem("World Settings", nullptr, &visibility.areWorldSettingsVisible);
 
-			ImGui::MenuItem("Camera", nullptr, &visibility.camera);
+			ImGui::MenuItem("Camera", nullptr, &visibility.isCameraVisible);
 
-			ImGui::MenuItem("Performance / パフォーマンス", nullptr, &visibility.performance);
+			ImGui::MenuItem("Performance / パフォーマンス", nullptr, &visibility.isPerformanceVisible);
 
 			ImGui::EndMenu();
 		}
@@ -99,7 +99,7 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 
 	const ImGuiID dockSpaceId = ImGui::GetID("PonEngineDockspaceV5");
 
-	if (resetRequested_) {
+	if (isResetRequested_) {
 		ImGui::DockBuilderRemoveNode(dockSpaceId);
 	}
 
@@ -131,7 +131,7 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 
 		ImGui::DockBuilderFinish(dockSpaceId);
 
-		resetRequested_ = false;
+		isResetRequested_ = false;
 	}
 
 	// 空のUI項目を挟まず、再生バーの上余白だけを2px確保する。
@@ -141,11 +141,11 @@ EditorMenuAction EditorLayout::Begin(bool sceneAvailable, bool playing, bool dir
 
 	// 変数の値を使わずに捨てる
 	// ここでの(void)は”捨てる”という意味
-	(void)sceneAvailable;
+	(void)isSceneAvailable;
 
-	(void)playing;
+	(void)isPlaying;
 
-	(void)dirty;
+	(void)hasUnsavedChanges;
 
 	(void)visibility;
 
@@ -183,7 +183,7 @@ void EditorLayout::Draw(const std::string& status) {
 	const FrameProfiler::Sample& sample = FrameProfiler::GetLatest();
 
 	if (sample.frameMilliseconds > 0) {
-		if (sample.gpuTimingValid) {
+		if (sample.isGpuTimingValid) {
 			std::snprintf(statistics,sizeof(statistics),"%.0f FPS  |  %.2f ms  |  GPU %.2f ms",1000.0f/sample.frameMilliseconds,sample.frameMilliseconds,sample.gpuMilliseconds);
 		} else {
 			std::snprintf(statistics,sizeof(statistics),"%.0f FPS  |  %.2f ms",1000.0f/sample.frameMilliseconds,sample.frameMilliseconds);
@@ -194,9 +194,9 @@ void EditorLayout::Draw(const std::string& status) {
 
 	float messageWidth = width-16;
 
-	const bool showStatistics = width > statisticsWidth+120;
+	const bool shouldShowStatistics = width > statisticsWidth+120;
 
-	if (showStatistics) {
+	if (shouldShowStatistics) {
 		messageWidth -= statisticsWidth+20;
 	}
 
@@ -218,7 +218,7 @@ void EditorLayout::Draw(const std::string& status) {
 		}
 	}
 
-	if (showStatistics) {
+	if (shouldShowStatistics) {
 		ImGui::SetCursorScreenPos({origin.x+width-statisticsWidth-8,origin.y+2});
 
 		ImGui::TextDisabled("%s",statistics);

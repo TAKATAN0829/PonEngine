@@ -40,7 +40,7 @@ public:
 
 	bool ConsumeAssetPathChange(AssetPathChange& change);
 
-	void RequestRefresh() { refreshRequested_ = true; }
+	void RequestRefresh();
 
 	void RevealAsset(const std::filesystem::path& path);
 
@@ -55,7 +55,7 @@ private:
 		std::string name;
 		std::string extension;
 
-		bool directory = false;
+		bool isDirectory = false;
 	};
 
 	struct FolderEntry {
@@ -63,7 +63,7 @@ private:
 
 		size_t depth = 0;
 
-		bool children = false;
+		bool hasChildren = false;
 	};
 
 	struct Preview {
@@ -76,7 +76,7 @@ private:
 	//=============================================================================================//
 	// ディレクトリ管理
 
-	static bool CompareEntries(const AssetEntry& first, const AssetEntry& second);
+	static bool ShouldSortEntryBefore(const AssetEntry& first, const AssetEntry& second);
 
 	static std::string PathText(const std::filesystem::path& path);
 
@@ -122,7 +122,7 @@ private:
 
 	char search_[128]{};
 
-	bool revealFolder_ = true;
+	bool shouldRevealFolder_ = true;
 
 	//=============================================================================================//
 	// 更新要求・プレビュー
@@ -133,9 +133,9 @@ private:
 
 	AssetActionDialog fileActions_; // ファイル操作と確認画面。シーンのGPUリソースは所有しない。
 
-	bool fileOperationsAllowed_ = false; // 再生中は閲覧だけを許可する。
+	bool areFileOperationsAllowed_ = false; // 再生中は閲覧だけを許可する。
 
-	bool initialized_ = false;
-	bool refreshRequested_ = false;
-	bool previewLoadedThisFrame_ = false; // 画像・モデルの読込は一フレーム一件まで。
+	bool isInitialized_ = false;
+	bool isRefreshRequested_ = false;
+	bool wasPreviewLoadedThisFrame_ = false; // 画像・モデルの読込は一フレーム一件まで。
 };

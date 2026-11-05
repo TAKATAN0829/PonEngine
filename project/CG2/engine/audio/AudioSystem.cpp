@@ -167,6 +167,7 @@ SoundData AudioSystem::LoadWave (const char* filename) {
 
 
 void AudioSystem::UnloadWave (SoundData* soundData) {
+	// 読み込んだ波形データを解放し、保持していた情報を消す。
 
 	delete[] soundData->pBuffer;
 

@@ -34,6 +34,7 @@ namespace {
 
 	// 選択軸に直交する二軸を使い、回転リング上の一点を求める。
 	Vector3 GetRotationRingPoint(const Vector3& origin, float radius, size_t axisIndex, int segment) {
+		// 回転軸と角度から、円周上の点を求める。
 		const float angle = static_cast<float>(segment) * 6.283185307f / 48;
 
 		const Vector3 horizontal = MathUtility::Multiply(std::cos(angle), kAxisDirections[(axisIndex + 1) % 3]);
@@ -45,6 +46,7 @@ namespace {
 	// 判定と描画を分け、重なったリングでは最も近い一軸だけを強調する。
 	float GetRotationRingDistance(const EditorViewInfo& viewInfo, const Vector3& origin,
 		float radius, size_t axisIndex, const Vector2& mousePosition) {
+		// 円周を線分で近似し、マウスから最も近い距離を求める。
 		float nearest = 1000000;
 
 		for (int segment = 0; segment < 48; ++segment) {
@@ -63,6 +65,7 @@ namespace {
 
 	void DrawRotationRing(const EditorViewInfo& viewInfo, const ImVec2& viewportOrigin,
 		const Vector3& origin, float radius, size_t axisIndex, ImU32 color, float thickness) {
+		// 回転ギズモの円周を線分に分けて描く。
 		for (int segment = 0; segment < 48; ++segment) {
 			SceneViewDrawing::DrawWorldLine(*ImGui::GetWindowDrawList(),viewInfo,viewportOrigin,
 				GetRotationRingPoint(origin,radius,axisIndex,segment),
@@ -72,6 +75,7 @@ namespace {
 
 	// モデルのワールドAABBの十二辺を表示し、クリック判定に使う範囲を確認できるようにする。
 	void DrawSelectionBounds(ImDrawList& drawList, const EditorViewInfo& viewInfo, const ImVec2& viewportOrigin, const AABB& bounds) {
+		// 選択対象の範囲を画面へ投影し、枠線を描く。
 		Vector3 corners[8]{};
 
 		for (size_t cornerIndex = 0; cornerIndex < 8; ++cornerIndex) {
@@ -103,6 +107,7 @@ namespace {
 namespace {
 	// ワールド原点のXZ平面へ補助線を描く。
 	void DrawGrid(ImDrawList& drawList, const EditorViewInfo& viewInfo, const ImVec2& viewportOrigin) {
+		// 一定間隔のワールド線を画面へ投影し、床の目盛りを描く。
 		for (int gridIndex = -10; gridIndex <= 10; ++gridIndex) {
 			const float gridPosition = static_cast<float>(gridIndex);
 
@@ -190,6 +195,7 @@ namespace {
 #ifdef USE_IMGUI
 namespace {
 	void DrawColliderLine(const EditorViewInfo& view, const ImVec2& origin, const Vector3& first, const Vector3& second, ImU32 color) {
+		// Colliderの線分を画面へ投影して描く。
 		Vector2 firstScreen{};
 		Vector2 secondScreen{};
 
@@ -205,6 +211,7 @@ namespace {
 	}
 
 	Vector3 SpherePoint(const WorldCollider& sphere, size_t axis, size_t segment) {
+		// 球面上の角度を、Colliderのワールド座標へ変換する。
 		const float angle = static_cast<float>(segment) * 2 * std::numbers::pi_v<float> / 48;
 
 		Vector3 offset{};
@@ -230,12 +237,14 @@ namespace {
 #ifdef USE_IMGUI
 namespace {
 	Vector3 CrossDirections(const Vector3& first, const Vector3& second) {
+		// 二つの方向ベクトルから、両方に垂直な方向を求める。
 		return {first.y*second.z-first.z*second.y,first.z*second.x-first.x*second.z,first.x*second.y-first.y*second.x};
 	}
 
 	// Spotは実際の全開角・ワールド距離を使う。Directionalは照射方向だけを矢印にする。
 	void DrawDirectedLight(const EditableObjectView& object, const Matrix4x4& world, const Vector3& direction,
 		const EditorViewInfo& view, const ImVec2& origin) {
+		// ライトの方向と種類に応じた補助形状を描く。
 		const Vector3 position = {world.m[3][0],world.m[3][1],world.m[3][2]};
 
 		Vector3 hint = {0,1,0};
@@ -324,6 +333,7 @@ namespace {
 	}
 
 	Vector3 LightCirclePoint(const Vector3& center, float radius, size_t axisIndex, size_t segment) {
+		// ライトの軸に垂直な円周上の点を求める。
 		const float angle = static_cast<float>(segment)*2*std::numbers::pi_v<float>/64;
 
 		Vector3 offset = {std::cos(angle),std::sin(angle),0};
@@ -346,6 +356,7 @@ namespace {
 
 // タブ・画像領域・操作の呼出し順を管理する。個々の描画・操作は同じcpp内の機能別の区切りへまとめる。
 void SceneViewPanel::Initialize() {
+	// 表示サイズとギズモの操作状態を初期化する。
 	ResetInteraction();
 
 	dragStartPosition_ = {};
@@ -354,7 +365,7 @@ void SceneViewPanel::Initialize() {
 
 	dragStartDistance_ = 0;
 
-	forceScene_ = false;
+	shouldShowScene_ = false;
 }
 
 //=============================================================================================//
@@ -363,6 +374,7 @@ void SceneViewPanel::Initialize() {
 
 // 共通の描画先とタブ切替を管理し、表示内容は各タブの実装へ任せる。
 void SceneViewPanel::Draw(IEditableWorld& scene, EditorSelection& selection) {
+	// Scene／Gameのタブを描き、画像上の入力を選択や操作へ渡す。
 	FrameProfiler::Scope sectionTime(FrameProfiler::Section::SceneView);
 
 #ifdef USE_IMGUI
@@ -379,29 +391,29 @@ void SceneViewPanel::Draw(IEditableWorld& scene, EditorSelection& selection) {
 	if (ImGui::BeginTabBar("SceneViewTabs")) {
 		ImGuiTabItemFlags sceneFlags = ImGuiTabItemFlags_None;
 
-		if (forceScene_) {
+		if (shouldShowScene_) {
 			sceneFlags = ImGuiTabItemFlags_SetSelected;
 		}
 
 		if (ImGui::BeginTabItem("SceneView", nullptr, sceneFlags)) {
-			gameView_ = false;
+			isGameView_ = false;
 
 			ImGui::EndTabItem();
 		}
 
 		if (ImGui::BeginTabItem("GameView")) {
-			gameView_ = true;
+			isGameView_ = true;
 
 			ImGui::EndTabItem();
 		}
 
 		ImGui::EndTabBar();
 
-		forceScene_ = false;
+		shouldShowScene_ = false;
 	}
 
-	if (gameView_) {
-		if (dragging_) {
+	if (isGameView_) {
+		if (isDragging_) {
 			CancelDrag(scene);
 		}
 
@@ -421,11 +433,47 @@ void SceneViewPanel::Draw(IEditableWorld& scene, EditorSelection& selection) {
 }
 
 //=============================================================================================//
+// Getter / 操作状態・画像サイズ
+
+bool SceneViewPanel::IsManipulating() const {
+	// ギズモで配置を変更している途中か確認する。
+	if (isDragging_) {
+		return true;
+	}
+
+	return false;
+}
+
+uint32_t SceneViewPanel::GetWidth() const {
+	// Scene画像の幅を取得する。
+	return width_;
+}
+
+uint32_t SceneViewPanel::GetHeight() const {
+	// Scene画像の高さを取得する。
+	return height_;
+}
+
+//=============================================================================================//
+// Setter / 表示画像・タブ
+
+void SceneViewPanel::SetTexture(uint64_t textureHandle) {
+	// 指定画像を読み込み、描画時のテクスチャ参照を更新する。
+	textureHandle_ = textureHandle;
+}
+
+void SceneViewPanel::ShowScene() {
+	// 次の描画でSceneViewのタブを選択するよう要求する。
+	shouldShowScene_ = true;
+}
+
+//=============================================================================================//
 // 操作の解除
 
 
 void SceneViewPanel::ResetInteraction() {
-	dragging_ = false;
+	// ギズモの操作状態と未確定の要求を解除する。
+	isDragging_ = false;
 
 	draggedObject_ = kInvalidWorldObjectId;
 
@@ -470,7 +518,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 				}
 			}
 
-			if (snapEnabled_ || ImGui::GetIO().KeyCtrl) {
+			if (isSnapEnabled_ || ImGui::GetIO().KeyCtrl) {
 				const float increment = snapAngle_ * 0.0174532925f;
 
 				angle = std::round(angle / increment) * increment;
@@ -511,7 +559,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 			float movement = axisDistance - dragStartDistance_;
 
 			if (tool_ == TransformTool::Move) {
-				if (snapEnabled_ || ImGui::GetIO().KeyCtrl) {
+				if (isSnapEnabled_ || ImGui::GetIO().KeyCtrl) {
 					movement = std::round(movement / snapDistance_) * snapDistance_;
 				}
 			}
@@ -519,13 +567,13 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 			if (tool_ == TransformTool::Scale) {
 				float factor = 1.0f + movement / dragAxisLength_;
 
-				if (snapEnabled_ || ImGui::GetIO().KeyCtrl) {
+				if (isSnapEnabled_ || ImGui::GetIO().KeyCtrl) {
 					factor = 1.0f + std::round((factor-1.0f)/snapScale_)*snapScale_;
 				}
 
 				factor = (std::clamp)(factor,0.01f,100.0f);
 
-				if (groupDrag_) {
+				if (isGroupDrag_) {
 					// ワールドの任意軸へ拡縮する。TRSで表せないせん断は全体を拒否する。
 					Matrix4x4 scale = MathUtility::MakeIdentity4x4();
 
@@ -593,6 +641,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 
 
 void SceneViewPanel::CancelDrag(IEditableWorld& scene) {
+	// 操作前のTransformへ戻し、ドラッグ状態を解除する。
 	for (const DragObject& target : dragObjects_) {
 		const EditableObjectView object = FindObject(scene, target.identifier);
 
@@ -605,6 +654,7 @@ void SceneViewPanel::CancelDrag(IEditableWorld& scene) {
 }
 
 bool SceneViewPanel::ApplyDragTransform(IEditableWorld& scene, const Matrix4x4& delta) {
+	// ドラッグの変換行列を選択ルートへ適用する。
 	for (const DragObject& target : dragObjects_) {
 		if (!scene.SetObjectWorldTransform(target.identifier, MathUtility::Multiply(target.world, delta))) {
 			for (const DragObject& restore : dragObjects_) {
@@ -632,6 +682,7 @@ bool SceneViewPanel::ApplyDragTransform(IEditableWorld& scene, const Matrix4x4& 
 
 // 選択・Asset配置の窓口。オブジェクトへの借用参照は操作のたびに取得し直す。
 EditableObjectView SceneViewPanel::FindObject(IEditableWorld& scene, WorldObjectId objectId) {
+	// 指定IDに一致する編集対象を一覧から探す。
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const EditableObjectView object = scene.GetEditableObject(objectIndex);
 
@@ -650,7 +701,7 @@ EditableObjectView SceneViewPanel::FindObject(IEditableWorld& scene, WorldObject
 // 編集カメラ・選択・配置・ギズモを描く。ウィンドウとタブの開始終了は呼出元が管理する。
 void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection) {
 #ifdef USE_IMGUI
-	EditableObjectView selectedObject = FindObject(scene, selection.Get());
+	EditableObjectView selectedObject = FindObject(scene, selection.GetPrimarySelectedObjectId());
 
 	int selectedTool = static_cast<int>(tool_);
 
@@ -673,13 +724,13 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 	}
 
 	if (ImGui::BeginPopup("SceneViewOptions")) {
-		ImGui::MenuItem("Grid",nullptr,&showGrid_);
+		ImGui::MenuItem("Grid",nullptr,&shouldShowGrid_);
 
-		ImGui::MenuItem("Camera / Light Guides",nullptr,&showGuides_);
+		ImGui::MenuItem("Camera / Light Guides",nullptr,&shouldShowGuides_);
 
 		ImGui::Separator();
 
-		ImGui::MenuItem("Snap / 常時スナップ",nullptr,&snapEnabled_);
+		ImGui::MenuItem("Snap / 常時スナップ",nullptr,&isSnapEnabled_);
 
 		ImGui::SetNextItemWidth(100);
 
@@ -697,7 +748,7 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 
 		ImGui::Separator();
 
-		if (ImGui::MenuItem("選択対象を注視",nullptr,false,selectedObject.transform != nullptr && !dragging_)) {
+		if (ImGui::MenuItem("選択対象を注視",nullptr,false,selectedObject.transform != nullptr && !isDragging_)) {
 			scene.FocusEditorCamera(scene.GetObjectWorldPosition(selectedObject.id));
 		}
 
@@ -708,7 +759,7 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 
 	ImGui::AlignTextToFramePadding();
 
-	if (snapEnabled_) {
+	if (isSnapEnabled_) {
 		ImGui::TextDisabled("Snap ON");
 	} else {
 		ImGui::TextDisabled("Scene Camera");
@@ -734,7 +785,7 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 		return; // 借用した選択データは配列の再配置後に使わない。
 	}
 
-	const bool imageHovered = ImGui::IsItemHovered() && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId);
+	const bool isImageHovered = ImGui::IsItemHovered() && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId);
 
 	EditorViewInfo viewInfo;
 
@@ -746,7 +797,7 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 
 	const Vector2 mousePosition = {ImGui::GetIO().MousePos.x - viewportOrigin.x, ImGui::GetIO().MousePos.y - viewportOrigin.y};
 
-	if (dragging_) {
+	if (isDragging_) {
 		Update(scene, viewInfo, mousePosition);
 	}
 
@@ -760,19 +811,19 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 
 	DrawGuides(scene, selection, viewInfo, viewportOrigin);
 
-	const bool clickedGizmo = DrawGizmo(scene, selection, viewInfo, viewportOrigin, mousePosition, imageHovered);
+	const bool wasGizmoClicked = DrawGizmo(scene, selection, viewInfo, viewportOrigin, mousePosition, isImageHovered);
 
 	drawList.PopClipRect();
 
-	if (!dragging_ && !clickedGizmo) {
-		if (imageHovered) {
+	if (!isDragging_ && !wasGizmoClicked) {
+		if (isImageHovered) {
 			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 				PickObject(scene, selection, viewInfo, mousePosition);
 			}
 		}
 	}
 
-	scene.SetEditorCameraInput(imageHovered && !dragging_ && !ImGui::IsAnyItemActive());
+	scene.SetEditorCameraInput(isImageHovered && !isDragging_ && !ImGui::IsAnyItemActive());
 
 #else
 	(void)scene;
@@ -784,6 +835,7 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 
 #ifdef USE_IMGUI
 bool SceneViewPanel::ResizeViewport(IEditableWorld& scene, const ImVec2& availableSize) {
+	// 表示領域に合わせてScene描画の寸法とカメラを更新する。
 	if (textureHandle_ == 0) {
 		ResetInteraction();
 
@@ -799,7 +851,7 @@ bool SceneViewPanel::ResizeViewport(IEditableWorld& scene, const ImVec2& availab
 	const uint32_t nextWidth = static_cast<uint32_t>((std::min)(availableSize.x, 4096.0f));
 	const uint32_t nextHeight = static_cast<uint32_t>((std::min)(availableSize.y, 4096.0f));
 
-	if (dragging_) {
+	if (isDragging_) {
 		if (width_ != nextWidth || height_ != nextHeight) {
 			CancelDrag(scene);
 		}
@@ -826,9 +878,10 @@ bool SceneViewPanel::ResizeViewport(IEditableWorld& scene, const ImVec2& availab
 
 // グリッドとメッシュを持たない対象のマーカーを重ねる。
 void SceneViewPanel::DrawOverlay(IEditableWorld& scene, const EditorViewInfo& viewInfo, const ImVec2& origin) {
+	// SceneView上へ操作状態などの補助情報を重ねる。
 	ImDrawList& drawList = *ImGui::GetWindowDrawList();
 
-	if (showGrid_) {
+	if (shouldShowGrid_) {
 		DrawGrid(drawList,viewInfo,origin);
 	}
 
@@ -839,6 +892,7 @@ void SceneViewPanel::DrawOverlay(IEditableWorld& scene, const EditorViewInfo& vi
 
 #ifdef USE_IMGUI
 void SceneViewPanel::DrawColliders(IEditableWorld& scene, const EditorSelection& selection, const EditorViewInfo& view, const ImVec2& origin) {
+	// 有効なColliderを取り出し、種類に応じた補助線を描く。
 	for (WorldObjectId identifier : selection.GetIds()) {
 		const WorldObjectData* object = scene.GetObjectDataById(identifier);
 
@@ -846,7 +900,7 @@ void SceneViewPanel::DrawColliders(IEditableWorld& scene, const EditorSelection&
 			continue;
 		}
 
-		if (!object->collider.present) {
+		if (!object->collider.isPresent) {
 			continue;
 		}
 
@@ -868,7 +922,7 @@ void SceneViewPanel::DrawColliders(IEditableWorld& scene, const EditorSelection&
 			color = IM_COL32(255,100,90,255);
 		}
 
-		if (!object->collider.enabled) {
+		if (!object->collider.isEnabled) {
 			color = IM_COL32(150,150,150,180);
 		} else if (!scene.IsObjectActive(identifier)) {
 			color = IM_COL32(150,150,150,180);
@@ -898,7 +952,7 @@ void SceneViewPanel::DrawColliders(IEditableWorld& scene, const EditorSelection&
 
 #ifdef USE_IMGUI
 void SceneViewPanel::DrawGuides(IEditableWorld& scene, const EditorSelection& selection, const EditorViewInfo& view, const ImVec2& origin) {
-	if (!showGuides_) {
+	if (!shouldShowGuides_) {
 		return;
 	}
 
@@ -957,6 +1011,7 @@ void SceneViewPanel::DrawGuides(IEditableWorld& scene, const EditorSelection& se
 bool SceneViewPanel::BeginDrag(IEditableWorld& scene, EditorSelection& selection, const EditorViewInfo& viewInfo,
 	const Vector2& mousePosition, const Vector2& screenOrigin, const Vector3& axisOrigin,
 	const Vector3& axisDirection, float axisLength, size_t axisIndex) {
+	// 操作軸と開始時の配置を記録し、ギズモのドラッグを開始する。
 	Vector3 rayOrigin{};
 	Vector3 rayDirection{};
 
@@ -995,11 +1050,11 @@ bool SceneViewPanel::BeginDrag(IEditableWorld& scene, EditorSelection& selection
 		return false;
 	}
 
-	const EditableObjectView selected = FindObject(scene,selection.Get());
+	const EditableObjectView selected = FindObject(scene,selection.GetPrimarySelectedObjectId());
 
-	groupDrag_ = selection.GetIds().size() > 1;
+	isGroupDrag_ = selection.GetIds().size() > 1;
 
-	dragging_ = true;
+	isDragging_ = true;
 
 	draggedObject_ = selected.id;
 
@@ -1030,8 +1085,8 @@ bool SceneViewPanel::BeginDrag(IEditableWorld& scene, EditorSelection& selection
 
 // ギズモの描画・ヒット判定と、ドラッグ開始値の取得を担当する。
 bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection, const EditorViewInfo& viewInfo,
-	const ImVec2& viewportOrigin, const Vector2& mousePosition, bool imageHovered) {
-	const EditableObjectView object = FindObject(scene,selection.Get());
+	const ImVec2& viewportOrigin, const Vector2& mousePosition, bool isImageHovered) {
+	const EditableObjectView object = FindObject(scene,selection.GetPrimarySelectedObjectId());
 
 	if (object.transform == nullptr) {
 		return false;
@@ -1041,7 +1096,7 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 
 	// 操作できない種類・ツールの組合せでも、選択枠は維持する。
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
-		if (selection.Contains(scene.GetEditableObject(objectIndex).id)) {
+		if (selection.DoesContain(scene.GetEditableObject(objectIndex).id)) {
 			AABB bounds{};
 
 			if (scene.GetEditableObjectBounds(objectIndex,bounds)) {
@@ -1079,7 +1134,7 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 
 		Vector2 end{};
 
-		bool visible = false;
+		bool isVisible = false;
 	};
 
 	AxisHandle handles[3]{};
@@ -1109,18 +1164,18 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 
 		const Vector3 axisEnd = MathUtility::Add(axisOrigin,MathUtility::Multiply(axisLength,handles[axisIndex].direction));
 
-		handles[axisIndex].visible = SceneViewMath::Project(axisEnd,viewInfo.viewProjection,
+		handles[axisIndex].isVisible = SceneViewMath::Project(axisEnd,viewInfo.viewProjection,
 			viewInfo.viewportWidth,viewInfo.viewportHeight,handles[axisIndex].end);
 
 		float distance = 1000000;
 
 		if (tool_ == TransformTool::Rotate) {
-			handles[axisIndex].visible = true;
+			handles[axisIndex].isVisible = true;
 
 			distance = GetRotationRingDistance(viewInfo,axisOrigin,axisLength,axisIndex,mousePosition);
-		} else if (handles[axisIndex].visible) {
+		} else if (handles[axisIndex].isVisible) {
 			if (std::hypot(handles[axisIndex].end.x-screenOrigin.x,handles[axisIndex].end.y-screenOrigin.y) < 12) {
-				handles[axisIndex].visible = false;
+				handles[axisIndex].isVisible = false;
 
 				continue;
 			}
@@ -1128,7 +1183,7 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 			distance = SceneViewMath::DistanceToSegment(mousePosition,screenOrigin,handles[axisIndex].end);
 		}
 
-		if (imageHovered && distance < nearest) {
+		if (isImageHovered && distance < nearest) {
 			nearest = distance;
 
 			hoveredAxis = axisIndex;
@@ -1136,21 +1191,21 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 	}
 
 	for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {
-		if (!handles[axisIndex].visible) {
+		if (!handles[axisIndex].isVisible) {
 			continue;
 		}
 
-		bool highlighted = hoveredAxis == axisIndex;
+		bool isHighlighted = hoveredAxis == axisIndex;
 
-		if (dragging_) {
-			highlighted = dragAxisIndex_ == axisIndex;
+		if (isDragging_) {
+			isHighlighted = dragAxisIndex_ == axisIndex;
 		}
 
 		ImU32 color = kAxisColors[axisIndex];
 
 		float thickness = 2;
 
-		if (highlighted) {
+		if (isHighlighted) {
 			color = IM_COL32(255,230,90,255);
 
 			thickness = 4;
@@ -1181,7 +1236,7 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 		drawList.AddText({end.x+7,end.y-7},color,kAxisNames[axisIndex]);
 	}
 
-	if (dragging_ || hoveredAxis >= 3) {
+	if (isDragging_ || hoveredAxis >= 3) {
 		return false;
 	}
 
@@ -1203,18 +1258,19 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 
 #ifdef USE_IMGUI
 bool SceneViewPanel::AcceptModelDrop(IEditableWorld& scene, EditorSelection& selection, const ImVec2& viewportOrigin) {
+	// ドロップされたAssetを検証し、シーンへの配置要求へ変換する。
 	if (!ImGui::BeginDragDropTarget()) {
 		return false;
 	}
 
 	const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kType);
 
-	bool prefab = false;
+	bool isPrefab = false;
 
 	if (payload == nullptr) {
 		payload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kPrefabType);
 
-		prefab = payload != nullptr;
+		isPrefab = payload != nullptr;
 	}
 
 	std::string model;
@@ -1280,7 +1336,7 @@ bool SceneViewPanel::AcceptModelDrop(IEditableWorld& scene, EditorSelection& sel
 
 	WorldObjectId placedId = 0;
 
-	if (prefab) {
+	if (isPrefab) {
 		placedId = scene.PlacePrefab(model, kInvalidWorldObjectId, position, placementStatus_);
 	} else {
 		placedId = scene.PlaceModel(model, kInvalidWorldObjectId, position, placementStatus_);
@@ -1300,6 +1356,7 @@ bool SceneViewPanel::AcceptModelDrop(IEditableWorld& scene, EditorSelection& sel
 #ifdef USE_IMGUI
 void SceneViewPanel::PickObject(IEditableWorld& scene, EditorSelection& selection, const EditorViewInfo& viewInfo,
 	const Vector2& mousePosition) {
+	// 画面からレイを作り、最も手前にある選択対象を探す。
 	Vector3 rayOrigin{};
 	Vector3 rayDirection{};
 

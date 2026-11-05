@@ -41,7 +41,7 @@ public:
 	//=============================================================================================//
 	// Getter / GPU検証結果
 
-	bool HasGraphicsErrors() const { return dxCommon_->HasValidationErrors(); }
+	bool HasGraphicsErrors() const;
 
 private:
 

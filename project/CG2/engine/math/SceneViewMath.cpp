@@ -12,6 +12,7 @@
 namespace {
 	// 同次座標の半空間へ線分のパラメータ範囲を絞る。
 	bool ClipLineInterval(float firstDistance, float secondDistance, float& start, float& end) {
+		// 線分がクリップ範囲に入る区間を狭める。
 		if (!std::isfinite(firstDistance) || !std::isfinite(secondDistance)) {
 			return false;
 		}
@@ -30,6 +31,7 @@ namespace {
 	}
 
 	Vector4 ToClipPosition(const Vector3& position, const Matrix4x4& matrix) {
+		// ワールド位置にビュー射影行列を適用し、透視除算前の位置を求める。
 		return {
 			position.x*matrix.m[0][0]+position.y*matrix.m[1][0]+position.z*matrix.m[2][0]+matrix.m[3][0],
 			position.x*matrix.m[0][1]+position.y*matrix.m[1][1]+position.z*matrix.m[2][1]+matrix.m[3][1],
@@ -38,6 +40,7 @@ namespace {
 	}
 
 	Vector3 CrossProduct(const Vector3& first, const Vector3& second) {
+		// 成分ごとの積と差から外積を求める。
 		return {first.y * second.z - first.z * second.y,
 			first.z * second.x - first.x * second.z,
 			first.x * second.y - first.y * second.x};
@@ -50,6 +53,7 @@ namespace {
 
 bool SceneViewMath::ProjectLine(const Vector3& start, const Vector3& end, const Matrix4x4& viewProjection,
 	float viewportWidth, float viewportHeight, Vector2& screenStart, Vector2& screenEnd) {
+	// 線分をクリップ範囲で切り取り、画面上の両端を求める。
 	if (!std::isfinite(viewportWidth) || !std::isfinite(viewportHeight) || viewportWidth <= 0 || viewportHeight <= 0) {
 		return false;
 	}
@@ -86,6 +90,7 @@ bool SceneViewMath::ProjectLine(const Vector3& start, const Vector3& end, const 
 
 float SceneViewMath::GetHandleLength(const Vector3& origin, const Matrix4x4& viewProjection,
 	float viewportWidth, float viewportHeight, float pixelLength) {
+	// 画面上の見やすさに合わせたギズモの長さを取得する。
 	Vector2 screen{};
 
 	if (!Project(origin, viewProjection, viewportWidth, viewportHeight, screen)) {
@@ -116,6 +121,7 @@ float SceneViewMath::GetHandleLength(const Vector3& origin, const Matrix4x4& vie
 
 
 Vector3 SceneViewMath::GetPlacementPosition(const Vector3& origin, const Vector3& direction, float rayLength, float hitDistance) {
+	// レイと配置面の交点を求め、ドロップ先の位置にする。
     float distance = (std::min)(10.0f, rayLength);
 
     if (hitDistance >= 0 && hitDistance <= rayLength) {
@@ -134,6 +140,7 @@ Vector3 SceneViewMath::GetPlacementPosition(const Vector3& origin, const Vector3
 // 同次座標の除算前に奥行を確認し、背面の点が画面へ反転して現れることを防ぐ。
 bool SceneViewMath::Project(const Vector3& worldPosition, const Matrix4x4& viewProjection,
     float viewportWidth, float viewportHeight, Vector2& screenPosition) {
+	// ワールド位置を投影し、画面内の座標へ変換する。
     if (!std::isfinite(viewportWidth) || !std::isfinite(viewportHeight) || viewportWidth <= 0 || viewportHeight <= 0) {
         return false;
     }
@@ -196,6 +203,7 @@ bool SceneViewMath::CreateRay(const Vector2& screenPosition, const Matrix4x4& vi
 // Moller-Trumbore法。頂点の表裏と負の拡縮に依存せず表面へ配置する。
 bool SceneViewMath::IntersectTriangle(const Vector3& origin, const Vector3& direction,
 	const Vector3& first, const Vector3& second, const Vector3& third, float& distance) {
+	// レイと三角形の交差を調べ、表面までの距離を求める。
 	const Vector3 firstEdge = MathUtility::Subtract(second, first);
 	const Vector3 secondEdge = MathUtility::Subtract(third, first);
 	const Vector3 perpendicular = CrossProduct(direction, secondEdge);
@@ -236,6 +244,7 @@ bool SceneViewMath::IntersectTriangle(const Vector3& origin, const Vector3& dire
 // レイの後方にあるモデルを選ばないよう、交差区間を距離0から始める。
 bool SceneViewMath::IntersectBounds(const Vector3& rayOrigin, const Vector3& rayDirection,
     const AABB& bounds, float& hitDistance) {
+	// レイをローカル空間へ移し、対象の範囲との交差を調べる。
     if (!std::isfinite(MathUtility::Length(rayOrigin)) || !std::isfinite(MathUtility::Length(rayDirection)) ||
         MathUtility::Length(rayDirection) < 0.00001f || bounds.min.x > bounds.max.x ||
         bounds.min.y > bounds.max.y || bounds.min.z > bounds.max.z) {
@@ -258,6 +267,7 @@ bool SceneViewMath::IntersectBounds(const Vector3& rayOrigin, const Vector3& ray
 
 // 頂点番号の各ビットを使い、最小側・最大側の全組合せを列挙する。
 AABB SceneViewMath::TransformBounds(const AABB& localBounds, const Matrix4x4& worldMatrix) {
+	// 範囲の各頂点を変換し、新しい最小値と最大値を求める。
     AABB worldBounds{};
 
     for (size_t cornerIndex = 0; cornerIndex < 8; ++cornerIndex) {
@@ -312,6 +322,7 @@ AABB SceneViewMath::TransformBounds(const AABB& localBounds, const Matrix4x4& wo
 // 正規化済みのレイと軸を受け取り、軸の原点からの符号付き距離を返す。
 bool SceneViewMath::GetAxisDistance(const Vector3& rayOrigin, const Vector3& rayDirection,
     const Vector3& axisOrigin, const Vector3& axisDirection, float& axisDistance) {
+	// 画面のレイと操作軸の関係から、軸方向の移動量を求める。
     const float directionDot = MathUtility::Dot(rayDirection, axisDirection);
     const float denominator = 1 - directionDot * directionDot;
 
@@ -329,6 +340,7 @@ bool SceneViewMath::GetAxisDistance(const Vector3& rayOrigin, const Vector3& ray
 
 // 線分の外側では端点までの距離を使い、離れた延長線をクリック対象にしない。
 float SceneViewMath::DistanceToSegment(const Vector2& point, const Vector2& start, const Vector2& end) {
+	// 点から線分上の最近点を求め、画面上の距離を返す。
     const Vector2 direction = {end.x - start.x, end.y - start.y};
 
     const float lengthSquared = direction.x * direction.x + direction.y * direction.y;
@@ -356,6 +368,7 @@ float SceneViewMath::DistanceToSegment(const Vector2& point, const Vector2& star
 // 平行なレイでは除算せず、その軸の範囲内に始点があるか確認する。
 bool SceneViewMath::IntersectSlab(float rayOrigin, float rayDirection, float minimum, float maximum,
     float& nearDistance, float& farDistance) {
+	// 各軸の範囲から、レイがBoxを通る区間を絞る。
     if (std::abs(rayDirection) < 0.00001f) {
         return rayOrigin >= minimum && rayOrigin <= maximum;
     }

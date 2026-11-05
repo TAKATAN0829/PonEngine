@@ -29,16 +29,16 @@ public:
 	//=============================================================================================//
 	// Getter
 
-	bool IsCloseRequested() const { return closeRequested_; }
+	bool IsCloseRequested() const;
 
-	HWND GetHwnd() const { return hwnd_; }
+	HWND GetHwnd() const;
 
-	HINSTANCE GetHInstance() const { return wc_.hInstance; }
+	HINSTANCE GetHInstance() const;
 
 	//=============================================================================================//
 	// Setter / 終了要求
 
-	void ClearCloseRequest() { closeRequested_ = false; }
+	void ClearCloseRequest();
 
 	void ConfirmClose(); // 保存確認後にだけウィンドウを破棄する。
 
@@ -66,7 +66,7 @@ private:
 
 	HWND hwnd_ = nullptr;
 
-	bool closeRequested_ = false;
+	bool isCloseRequested_ = false;
 
 	//=============================================================================================//
 	// WindowClass

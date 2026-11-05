@@ -141,6 +141,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstri
 
 
 void ShaderCompiler::Finalize () {
+	// シェーダーコンパイラのインターフェースを解放する。
 
 	includeHandler_.Reset ();
 

@@ -24,7 +24,7 @@ public:
 
 	Vector3 GetVelocity(WorldObjectId identifier) const;
 
-	const std::string& GetError() const { return error_; } // 再生中に不正な設定へ変更された場合の理由。
+	const std::string& GetError() const; // 再生中に不正な設定へ変更された場合の理由。
 
 private:
 
@@ -41,7 +41,7 @@ private:
 
 		float inverseMass = 0;
 
-		bool active = false;
+		bool isActive = false;
 	};
 
 	struct ShapeEntry {
@@ -49,7 +49,7 @@ private:
 
 		WorldObjectId owner = 0; // 親Rigidbodyの子Colliderも同じ質量として扱う。
 
-		bool trigger = false;
+		bool isTrigger = false;
 	};
 
 	//=============================================================================================//
@@ -73,7 +73,7 @@ private:
 
 	float GetInverseMass(WorldObjectId identifier) const;
 
-	static bool CompareShapes(const ShapeEntry& first, const ShapeEntry& second);
+	static bool ShouldSortShapeBefore(const ShapeEntry& first, const ShapeEntry& second);
 
 private:
 

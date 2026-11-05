@@ -19,12 +19,14 @@ namespace {
 	constexpr size_t kMaxHierarchyDepth = 64;
 
 	Vector3 CrossProduct(const Vector3& first, const Vector3& second) {
+		// 成分ごとの積と差から外積を求める。
 		return {first.y * second.z - first.z * second.y,
 			first.z * second.x - first.x * second.z, first.x * second.y - first.y * second.x};
 	}
 
 	// 逆行列を作る前に、ゼロ拡縮などで潰れた親の変換を拒否する。
 	bool IsInvertibleAffine(const Matrix4x4& matrix) {
+		// 平行移動以外の成分から、逆変換できる行列か確認する。
 		const Vector3 firstRow = {matrix.m[0][0], matrix.m[0][1], matrix.m[0][2]};
 		const Vector3 secondRow = {matrix.m[1][0], matrix.m[1][1], matrix.m[1][2]};
 		const Vector3 thirdRow = {matrix.m[2][0], matrix.m[2][1], matrix.m[2][2]};
@@ -34,6 +36,7 @@ namespace {
 
 	// 行ベクトルのS*Rx*Ry*Rz*TをローカルTRSへ戻す。せん断を近似して見た目を変えない。
 	bool DecomposeAffine(const Matrix4x4& matrix, TransformData& result) {
+		// 行列から位置・回転・拡縮を取り出し、表現できる変換か検証する。
 		Vector3 basis[3] = {{matrix.m[0][0],matrix.m[0][1],matrix.m[0][2]},
 			{matrix.m[1][0],matrix.m[1][1],matrix.m[1][2]}, {matrix.m[2][0],matrix.m[2][1],matrix.m[2][2]}};
 
@@ -89,24 +92,30 @@ namespace {
 //=============================================================================================//
 // Getter / オブジェクト一覧
 
+size_t WorldObjects::GetEditableObjectCount() const {
+	// 編集中のオブジェクト数を取得する。
+	return objects_.size();
+}
 
 // シーンが所有する値への借用参照を返す。追加・削除後は取得し直すこと。
 EditableObjectView WorldObjects::GetEditableObject(size_t index) {
+	// 一覧の範囲を確認し、設定を書き換えるための参照を返す。
 	if (index >= objects_.size()) {
 		return {};
 	}
 
 	WorldObjectData& object = objects_[index];
 
-	return {object.id, object.name.c_str(), &object.transform, &object.color, &object.enableLighting,
-		&object.shininess, &object.model, &object.useRootNodeMatrix, &object.name,
-		&object.active, &object.hasMeshRenderer, object.type, &object.lightIntensity,
-		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId, &object.camera, object.mainCamera,
+	return {object.id, object.name.c_str(), &object.transform, &object.color, &object.isLightingEnabled,
+		&object.shininess, &object.model, &object.isRootNodeMatrixUsed, &object.name,
+		&object.isActive, &object.hasMeshRenderer, object.type, &object.lightIntensity,
+		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId, &object.camera, object.isMainCamera,
 		&object.materials, &object.animation, &object.body, &object.collider, &object.motion, &object.light};
 }
 
 // 読取専用の比較では文字列を含むシーン全体を複製しない。
 const WorldObjectData* WorldObjects::GetObjectData(size_t index) const {
+	// 添字の範囲を確認して、保存対象の設定を参照する。
 	if (index >= objects_.size()) {
 		return nullptr;
 	}
@@ -115,14 +124,35 @@ const WorldObjectData* WorldObjects::GetObjectData(size_t index) const {
 }
 
 const WorldObjectData* WorldObjects::GetObjectDataById(WorldObjectId identifier) const {
+	// IDに対応するオブジェクトの設定を検索する。
 	return GetObjectData(FindObjectIndex(identifier));
+}
+
+WorldObjectId WorldObjects::GetNextObjectId() const {
+	// 次の作成に使用する未使用IDを取得する。
+	return nextId_;
+}
+
+const std::vector<WorldObjectData>& WorldObjects::GetObjects() const {
+	// 保存対象のオブジェクト一覧を取得する。
+	return objects_;
+}
+
+std::vector<WorldObjectData> WorldObjects::CaptureObjects() const {
+	// 保存や履歴に使うため、設定一覧を値として返す。
+	return objects_;
+}
+
+bool WorldObjects::HasObjectCollectionSupport() const {
+	// 設定一覧の保存と置換に対応する実装か返す。
+	return true;
 }
 
 //=============================================================================================//
 // Getter・Setter / 親子変換
 
-
 bool WorldObjects::GetObjectWorldMatrix(WorldObjectId id, Matrix4x4& world) const {
+	// 親のTransformを順に合成し、ワールド行列を求める。
 	world = MathUtility::MakeIdentity4x4();
 
 	for (size_t depth = 0; depth < kMaxHierarchyDepth; ++depth) {
@@ -147,6 +177,7 @@ bool WorldObjects::GetObjectWorldMatrix(WorldObjectId id, Matrix4x4& world) cons
 }
 
 bool WorldObjects::SetObjectWorldTransform(WorldObjectId id, const Matrix4x4& world) {
+	// 親の変換を除き、保存できるローカルTransformへ分解する。
 	const size_t index = FindObjectIndex(id);
 
 	if (index == objects_.size()) {
@@ -181,6 +212,7 @@ bool WorldObjects::SetObjectWorldTransform(WorldObjectId id, const Matrix4x4& wo
 }
 
 WorldObjectId WorldObjects::PlacePrefab(const std::string& prefab, WorldObjectId parentId, const Vector3& position, std::string& error) {
+	// Prefabの階層を読み込み、新しいIDへ置き換えて配置する。
 	const std::filesystem::path relative(std::u8string(prefab.begin(), prefab.end()));
 
 	if (relative.is_absolute() || relative.has_root_name() || relative.extension() != ".ponprefab") {
@@ -218,6 +250,7 @@ WorldObjectId WorldObjects::PlacePrefab(const std::string& prefab, WorldObjectId
 }
 
 bool WorldObjects::SetObjectWorldPosition(WorldObjectId id, const Vector3& position) {
+	// 親の逆行列を使い、ワールド位置をローカル位置へ変換する。
 	const size_t objectIndex = FindObjectIndex(id);
 
 	if (objectIndex == objects_.size()) {
@@ -250,6 +283,7 @@ bool WorldObjects::SetObjectWorldPosition(WorldObjectId id, const Vector3& posit
 }
 
 bool WorldObjects::IsObjectActive(WorldObjectId id) const {
+	// 自身と親の有効状態をたどり、実際に表示・更新する対象か判定する。
 	for (size_t depth = 0; depth < kMaxHierarchyDepth; ++depth) {
 		const size_t objectIndex = FindObjectIndex(id);
 
@@ -257,7 +291,7 @@ bool WorldObjects::IsObjectActive(WorldObjectId id) const {
 			return false;
 		}
 
-		if (!objects_[objectIndex].active) {
+		if (!objects_[objectIndex].isActive) {
 			return false;
 		}
 
@@ -272,6 +306,7 @@ bool WorldObjects::IsObjectActive(WorldObjectId id) const {
 }
 
 bool WorldObjects::SetObjectParent(WorldObjectId childId, WorldObjectId parentId, std::string& error) {
+	// 循環と変換を検証し、見た目を保って親子関係を変更する。
 	error.clear();
 
 	const size_t childIndex = FindObjectIndex(childId);
@@ -286,6 +321,7 @@ bool WorldObjects::SetObjectParent(WorldObjectId childId, WorldObjectId parentId
 		return true;
 	}
 
+	// 新しい親の存在と、親子の循環を確認する。
 	if (parentId != kInvalidWorldObjectId) {
 		if (FindObjectIndex(parentId) == objects_.size()) {
 			error = "Parent object does not exist.";
@@ -293,6 +329,7 @@ bool WorldObjects::SetObjectParent(WorldObjectId childId, WorldObjectId parentId
 			return false;
 		}
 
+		// 自分の子孫を親にする循環を拒否する。
 		if (IsDescendantOf(parentId, childId)) {
 			error = "Parenting would create a cycle.";
 
@@ -346,9 +383,9 @@ bool WorldObjects::SetObjectParent(WorldObjectId childId, WorldObjectId parentId
 //=============================================================================================//
 // Getter・Setter / メインカメラ
 
-
 // 0を指定するとメイン指定を解除する。失敗時は指定を変更しない。
 bool WorldObjects::SetMainCamera(WorldObjectId id) {
+	// 指定IDが有効なCameraか確認し、メイン指定を切り替える。
 	if (id != kInvalidWorldObjectId) {
 		const size_t objectIndex = FindObjectIndex(id);
 
@@ -362,15 +399,16 @@ bool WorldObjects::SetMainCamera(WorldObjectId id) {
 	}
 
 	for (WorldObjectData& object : objects_) {
-		object.mainCamera = object.id == id;
+		object.isMainCamera = object.id == id;
 	}
 
 	return true;
 }
 
 WorldObjectId WorldObjects::GetMainCameraId() const {
+	// メインに指定されているカメラのIDを取得する。
 	for (const WorldObjectData& object : objects_) {
-		if (object.mainCamera) {
+		if (object.isMainCamera) {
 			return object.id;
 		}
 	}
@@ -380,10 +418,12 @@ WorldObjectId WorldObjects::GetMainCameraId() const {
 
 // カメラの向きは親から継承し、拡縮やせん断は視野へ持ち込まない。
 bool WorldObjects::GetGameCameraView(float aspectRatio, CameraView& view) const {
+	// メインカメラの視野情報を取得する。
 	return GetCameraView(GetMainCameraId(), aspectRatio, view);
 }
 
 bool WorldObjects::GetCameraView(WorldObjectId cameraId, float aspectRatio, CameraView& view) const {
+	// 指定カメラの視野情報を取得する。
 	if (!std::isfinite(aspectRatio) || aspectRatio <= 0) {
 		return false;
 	}
@@ -402,7 +442,7 @@ bool WorldObjects::GetCameraView(WorldObjectId cameraId, float aspectRatio, Came
 		return false;
 	}
 
-	if (!Validate(objects_[FindObjectIndex(cameraId)])) {
+	if (!IsObjectValid(objects_[FindObjectIndex(cameraId)])) {
 		return false;
 	}
 
@@ -454,15 +494,16 @@ bool WorldObjects::GetCameraView(WorldObjectId cameraId, float aspectRatio, Came
 // Asset参照の更新
 
 void WorldObjects::RemapAssetPaths(const AssetPathChange& change) {
+	// キャッシュや保存基準のパスも含め、Asset移動の結果を反映する。
 	WorldAssetReferences::Remap(objects_, change);
 }
 
 //=============================================================================================//
 // 追加・複製・削除
 
-
 // ドロップ配置は一括検証してから追加し、失敗した途中のオブジェクトを残さない。
 WorldObjectId WorldObjects::PlaceModel(const std::string& model, WorldObjectId parentId, const Vector3& position, std::string& error) {
+	// モデルと親子変換を検証し、配置できる場合だけ一覧へ追加する。
 	error.clear();
 
 	if (!IsSupportedModel(model)) {
@@ -530,6 +571,7 @@ WorldObjectId WorldObjects::PlaceModel(const std::string& model, WorldObjectId p
 
 // 新しいIDと既定の設定を持つモデルを追加する。削除済みIDは再利用しない。
 WorldObjectId WorldObjects::AddObject(const std::string& model) {
+	// モデルの種類と作成可否を確認して、新しいオブジェクトを追加する。
 	if (!IsSupportedModel(model)) {
 		return kInvalidWorldObjectId;
 	}
@@ -565,6 +607,7 @@ WorldObjectId WorldObjects::AddObject(const std::string& model) {
 
 // GPUリソースを作らず、種類に応じた編集用データだけを追加する。
 WorldObjectId WorldObjects::CreateObject(WorldObjectType type) {
+	// 種類に応じた初期設定を作り、一覧へ追加する。
 	if (type < WorldObjectType::Model || type > WorldObjectType::DirectionalLight) {
 		return kInvalidWorldObjectId;
 	}
@@ -614,7 +657,7 @@ WorldObjectId WorldObjects::CreateObject(WorldObjectType type) {
 
 		object.transform.translate = {0,0,-30};
 
-		object.mainCamera = GetMainCameraId() == kInvalidWorldObjectId;
+		object.isMainCamera = GetMainCameraId() == kInvalidWorldObjectId;
 	}
 
 	object.name = typeName + " #" + std::to_string(createdId);
@@ -653,7 +696,7 @@ WorldObjectId WorldObjects::DuplicateObject(WorldObjectId id) {
 	for (WorldObjectData& copy : copies) {
 		copy.id = newIds.at(copy.id);
 
-		copy.mainCamera = false;
+		copy.isMainCamera = false;
 
 		// 複製でメイン指定を増やさない。
 		if (copy.parentId != kInvalidWorldObjectId) {
@@ -682,6 +725,7 @@ WorldObjectId WorldObjects::DuplicateObject(WorldObjectId id) {
 
 // 指定IDと子孫をまとめて削除し、残るオブジェクトのIDは変更しない。
 bool WorldObjects::RemoveObject(WorldObjectId id) {
+	// 対象とその子孫を除いた一覧を作り、まとめて削除する。
 	if (FindObjectIndex(id) == objects_.size()) {
 		return false;
 	}
@@ -713,21 +757,24 @@ bool WorldObjects::RemoveObject(WorldObjectId id) {
 //=============================================================================================//
 // 一括置換
 
-
 // 全件の検証が済んでから一覧を置き換え、不正データの部分反映を防ぐ。
 bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error) {
+	// 設定一覧を検証してから、編集中の配置を置き換える。
 	return ReplaceObjects(std::move(objects), error, true);
 }
 
-bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error, bool requireModelFiles) {
+bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error, bool areModelFilesRequired) {
+	// 設定一覧を検証してから、編集中の配置を置き換える。
 	error.clear();
 
+	// 個数上限を超えた一覧は、配置へ反映しない。
 	if (objects.size() > kMaxObjects) {
 		error = "Too many scene objects.";
 
 		return false;
 	}
 
+	// IDの重複を検出しながら、種類別の個数も数える。
 	std::unordered_set<WorldObjectId> ids;
 
 	WorldObjectId nextId = nextId_;
@@ -740,7 +787,7 @@ bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::str
 	size_t colliderCount = 0;
 
 	for (const WorldObjectData& object : objects) {
-		if (object.collider.present) {
+		if (object.collider.isPresent) {
 			if (++colliderCount > kMaxWorldColliders) {
 				error = "Scene supports up to 256 colliders.";
 
@@ -748,12 +795,13 @@ bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::str
 			}
 		}
 
-		if (!Validate(object, requireModelFiles)) {
+		if (!IsObjectValid(object, areModelFilesRequired)) {
 			error = "Invalid object data or unsupported model: " + std::to_string(object.id) + " / " + object.model;
 
 			return false;
 		}
 
+		// 同じIDの重複は選択や親子参照を壊すため拒否する。
 		if (!ids.insert(object.id).second) {
 			error = "Duplicate object ID.";
 
@@ -776,7 +824,7 @@ bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::str
 			++particleCount;
 		}
 
-		if (object.mainCamera) {
+		if (object.isMainCamera) {
 			if (++mainCameraCount > 1) {
 				error = "Only one main camera is allowed.";
 
@@ -801,16 +849,19 @@ bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::str
 		}
 	}
 
+	// 検証用のID検索表を作る。
 	std::unordered_map<WorldObjectId, size_t> indices;
 
 	for (size_t objectIndex = 0; objectIndex < objects.size(); ++objectIndex) {
 		indices[objects[objectIndex].id] = objectIndex;
 	}
 
+	// 親の存在・循環・深さを、置換前に検証する。
 	if (!ValidateHierarchy(objects, indices, error)) {
 		return false;
 	}
 
+	// 全件の検証に成功したので、一覧と検索表をまとめて切り替える。
 	objects_ = std::move(objects);
 
 	objectIndices_ = std::move(indices);
@@ -823,9 +874,9 @@ bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::str
 //=============================================================================================//
 // 保存データ検証
 
-
 // 対応拡張子とresources相対パスの形だけを検証する。
 bool WorldObjects::IsSupportedModelPath(const std::string& model) {
+	// モデルの拡張子とパスの構成を確認する。
 	if (model == "plane.gltf" || model == "axis.obj") {
 		return true;
 	}
@@ -860,6 +911,7 @@ bool WorldObjects::IsSupportedModelPath(const std::string& model) {
 }
 
 bool WorldObjects::IsSupportedModel(const std::string& model) {
+	// 組込モデルまたは利用できるモデルファイルか確認する。
 	if (!IsSupportedModelPath(model)) {
 		return false;
 	}
@@ -900,20 +952,20 @@ bool WorldObjects::IsSupportedModel(const std::string& model) {
 }
 
 // 保存や復元に使えない数値・名前・ID・モデル指定を検出する。
-bool WorldObjects::Validate(const WorldObjectData& object, bool requireModelFiles) {
-	if (!ValidateLightSettings(object.light)) {
+bool WorldObjects::IsObjectValid(const WorldObjectData& object, bool areModelFilesRequired) {
+	if (!AreLightSettingsValid(object.light)) {
 		return false;
 	}
 
-	if (!ValidateBodySettings(object.body)) {
+	if (!AreBodySettingsValid(object.body)) {
 		return false;
 	}
 
-	if (!ValidateColliderSettings(object.collider)) {
+	if (!AreColliderSettingsValid(object.collider)) {
 		return false;
 	}
 
-	if (!ValidateMotionSettings(object.motion)) {
+	if (!AreMotionSettingsValid(object.motion)) {
 		return false;
 	}
 
@@ -962,7 +1014,7 @@ bool WorldObjects::Validate(const WorldObjectData& object, bool requireModelFile
 		return false;
 	}
 
-	if (requireModelFiles) {
+	if (areModelFilesRequired) {
 		if (!IsSupportedModel(object.model)) {
 			return false;
 		}
@@ -1040,7 +1092,7 @@ bool WorldObjects::Validate(const WorldObjectData& object, bool requireModelFile
 	}
 
 	if (object.type == WorldObjectType::Particle) {
-		if (!ValidateParticleSettings(object.particle)) {
+		if (!AreParticleSettingsValid(object.particle)) {
 			return false;
 		}
 	}
@@ -1057,7 +1109,7 @@ bool WorldObjects::Validate(const WorldObjectData& object, bool requireModelFile
 		return false;
 	}
 
-	if (object.mainCamera) {
+	if (object.isMainCamera) {
 		if (object.type != WorldObjectType::Camera) {
 			return false;
 		}
@@ -1069,9 +1121,9 @@ bool WorldObjects::Validate(const WorldObjectData& object, bool requireModelFile
 //=============================================================================================//
 // Getter / 検索・追加可否
 
-
 // 描画リソースの上限は無効状態も含めて数え、Activeを切り替えても破綻させない。
 bool WorldObjects::CanCreateType(WorldObjectType type) const {
+	// 種類ごとの個数制限を確認し、追加できるか判定する。
 	size_t count = 0;
 
 	for (const WorldObjectData& object : objects_) {
@@ -1093,6 +1145,7 @@ bool WorldObjects::CanCreateType(WorldObjectType type) const {
 
 // ID検索はハッシュ表を使い、親をたどるたびに一覧を走査しない。
 size_t WorldObjects::FindObjectIndex(WorldObjectId objectId) const {
+	// ID検索用の一覧から、対象の位置を求める。
 	const std::unordered_map<WorldObjectId, size_t>::const_iterator found = objectIndices_.find(objectId);
 
 	if (found == objectIndices_.end()) {
@@ -1103,6 +1156,7 @@ size_t WorldObjects::FindObjectIndex(WorldObjectId objectId) const {
 }
 
 bool WorldObjects::IsDescendantOf(WorldObjectId objectId, WorldObjectId ancestorId) const {
+	// 親を順にたどり、指定した祖先に含まれるか確認する。
 	for (size_t depth = 0; depth < kMaxHierarchyDepth; ++depth) {
 		if (objectId == kInvalidWorldObjectId) {
 			return false;
@@ -1125,6 +1179,7 @@ bool WorldObjects::IsDescendantOf(WorldObjectId objectId, WorldObjectId ancestor
 }
 
 void WorldObjects::RebuildObjectIndices() {
+	// 現在の一覧から、IDと添字の対応を作り直す。
 	objectIndices_.clear();
 
 	for (size_t objectIndex = 0; objectIndex < objects_.size(); ++objectIndex) {
@@ -1162,17 +1217,17 @@ bool WorldObjects::ValidateHierarchy(const std::vector<WorldObjectData>& objects
 			}
 
 			// Dynamicの子はColliderだけで構成し、独立したRigidbodyの二重移動を防ぐ。
-			if (object.body.present && object.body.enabled) {
+			if (object.body.isPresent && object.body.isEnabled) {
 				const RigidBodySettings& parentBody = objects[found->second].body;
 
-				if (parentBody.present && parentBody.enabled && parentBody.mode == BodyMode::Dynamic) {
+				if (parentBody.isPresent && parentBody.isEnabled && parentBody.mode == BodyMode::Dynamic) {
 					error = "Rigidbody cannot have a Dynamic Rigidbody ancestor. Use child Colliders without another Rigidbody.";
 
 					return false;
 				}
 
 				if (object.body.mode == BodyMode::Dynamic) {
-					if (parentBody.present && parentBody.enabled && parentBody.mode == BodyMode::Kinematic) {
+					if (parentBody.isPresent && parentBody.isEnabled && parentBody.mode == BodyMode::Kinematic) {
 						error = "Dynamic Rigidbody requires a stationary parent. Put the Dynamic body outside the Kinematic hierarchy.";
 
 						return false;

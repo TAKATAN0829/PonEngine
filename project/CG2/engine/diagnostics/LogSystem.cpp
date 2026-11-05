@@ -11,13 +11,6 @@
 #pragma comment(lib,"Dbghelp.lib")
 
 //=============================================================================================//
-// 実装内補助定義
-
-std::ofstream LogSystem::logStream_;
-
-std::deque<std::string> LogSystem::recentMessages_;
-
-//=============================================================================================//
 // 初期化
 
 
@@ -101,9 +94,14 @@ void LogSystem::Log (std::ostream& os, const std::string& message) {
 //=============================================================================================//
 // Getter
 
-
 std::ofstream& LogSystem::GetLogStream () {
+	// ログの書込先を取得する。
 	return logStream_;
+}
+
+const std::deque<std::string>& LogSystem::GetRecentMessages() {
+	// Consoleへ表示する最近のログを取得する。
+	return recentMessages_;
 }
 
 //=============================================================================================//

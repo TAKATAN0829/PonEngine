@@ -15,8 +15,8 @@
 #include <string>
 
 namespace {
-	void RequireInteraction(bool condition, const char* message) {
-		if (!condition) {
+	void RequireInteraction(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -46,8 +46,8 @@ namespace {
 
 	class InteractionScene : public WorldObjects {
 	public:
-		void SetEditorGameView(bool enabled) override { gameView = enabled; }
-		void SetEditorCameraInput(bool enabled) override { cameraInput = enabled; }
+		void SetEditorGameView(bool isEnabled) override { isGameView = isEnabled; }
+		void SetEditorCameraInput(bool isEnabled) override { isCameraInputEnabled = isEnabled; }
 		void SetEditorViewport(uint32_t width, uint32_t height) override {
 			view.viewportWidth = static_cast<float>(width);
 			view.viewportHeight = static_cast<float>(height);
@@ -62,8 +62,8 @@ namespace {
 		}
 		EditorViewInfo view{};
 		mutable ImVec2 imageOrigin{};
-		bool gameView = false;
-		bool cameraInput = false;
+		bool isGameView = false;
+		bool isCameraInputEnabled = false;
 	};
 
 	class InteractionFixture {
@@ -84,14 +84,14 @@ namespace {
 		}
 		ImVec2 Center() const {
 			Vector2 projected{};
-			RequireInteraction(SceneViewMath::Project(scene.GetObjectWorldPosition(selection.Get()),scene.view.viewProjection,
+			RequireInteraction(SceneViewMath::Project(scene.GetObjectWorldPosition(selection.GetPrimarySelectedObjectId()),scene.view.viewProjection,
 				scene.view.viewportWidth,scene.view.viewportHeight,projected),"Interaction pivot not visible");
 			return {scene.imageOrigin.x+projected.x,scene.imageOrigin.y+projected.y};
 		}
-		void Mouse(const ImVec2& position, bool pressed) {
+		void Mouse(const ImVec2& position, bool isPressed) {
 			ImGui::GetIO().AddMousePosEvent(position.x,position.y);
 			Draw(); // Popupへ移った場合もホバー先を確定してから押下する。
-			ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left,pressed);
+			ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left,isPressed);
 			Draw();
 		}
 		void ChooseTool(size_t toolIndex) {
@@ -138,7 +138,7 @@ void RunSceneViewInteractionTests() {
 	fixture.Mouse({center.x+40,center.y},true);
 	RequireInteraction(fixture.panel.IsManipulating(),"Move handle was not picked");
 	fixture.Mouse({center.x+80,center.y},true);
-	RequireInteraction(fixture.scene.GetObjectWorldPosition(fixture.selection.Get()).x > 0,"Move drag did not move object");
+	RequireInteraction(fixture.scene.GetObjectWorldPosition(fixture.selection.GetPrimarySelectedObjectId()).x > 0,"Move drag did not move object");
 	fixture.Mouse({center.x+80,center.y},false);
 	RequireInteraction(!fixture.panel.IsManipulating(),"Move drag did not finish");
 	fixture.scene.GetEditableObject(0).transform->translate = {};
@@ -147,7 +147,7 @@ void RunSceneViewInteractionTests() {
 	ImGui::GetIO().AddKeyEvent(ImGuiMod_Ctrl,true);
 	fixture.Mouse({center.x+40,center.y},true);
 	fixture.Mouse({center.x+95,center.y},true);
-	const float moved = fixture.scene.GetObjectWorldPosition(fixture.selection.Get()).x;
+	const float moved = fixture.scene.GetObjectWorldPosition(fixture.selection.GetPrimarySelectedObjectId()).x;
 	if (moved <= 0 || std::abs(moved-std::round(moved)) >= 0.001f) {
 		throw std::runtime_error("Move Ctrl snap failed: "+std::to_string(moved)+" Ctrl="+std::to_string(ImGui::GetIO().KeyCtrl)+" drag="+std::to_string(fixture.panel.IsManipulating()));
 	}
@@ -193,21 +193,21 @@ void RunSceneViewInteractionTests() {
 		InspectorPanel::DrawSelection(fixture.scene,fixture.selection);
 		ImGui::EndFrame();
 	}
-	const WorldObjectId selectedBeforeGameView = fixture.selection.Get();
+	const WorldObjectId selectedBeforeGameView = fixture.selection.GetPrimarySelectedObjectId();
 	fixture.ChooseView(1);
-	RequireInteraction(fixture.scene.gameView,"GameView tab did not select the game camera");
-	RequireInteraction(!fixture.scene.cameraInput,"GameView enabled the editor camera input");
-	RequireInteraction(fixture.selection.Get() == selectedBeforeGameView,"GameView changed object selection");
+	RequireInteraction(fixture.scene.isGameView,"GameView tab did not select the game camera");
+	RequireInteraction(!fixture.scene.isCameraInputEnabled,"GameView enabled the editor camera input");
+	RequireInteraction(fixture.selection.GetPrimarySelectedObjectId() == selectedBeforeGameView,"GameView changed object selection");
 	RequireInteraction(!fixture.panel.IsManipulating(),"GameView retained a gizmo drag");
 	fixture.panel.ShowScene();
 	fixture.Draw();
 	fixture.Draw();
-	RequireInteraction(!fixture.scene.gameView,"SceneView could not be restored after GameView");
+	RequireInteraction(!fixture.scene.isGameView,"SceneView could not be restored after GameView");
 	// OptionalなPerformanceも専用パネルとしてBegin/Endを完結させる。
 	PerformancePanel performance;
-	bool performanceVisible = true;
+	bool isPerformanceVisible = true;
 	ImGui::NewFrame();
-	performance.Draw(performanceVisible);
+	performance.Draw(isPerformanceVisible);
 	ImGui::EndFrame();
 	const ImGuiWindow* performanceWindow = ImGui::FindWindowByName("Performance");
 	RequireInteraction(performanceWindow != nullptr,"Performance panel did not create its window");
@@ -230,7 +230,7 @@ namespace {
             dialog_.Initialize(std::filesystem::canonical("resources"));
         }
 
-        void Draw(bool openMenu = false) {
+        void Draw(bool isMenuOpen = false) {
             ImGui::NewFrame();
 
             ImGui::SetNextWindowPos({0, 0}, ImGuiCond_Always);
@@ -239,7 +239,7 @@ namespace {
 
             ImGui::Begin("Asset interaction test");
 
-            if (openMenu) {
+            if (isMenuOpen) {
                 ImGui::OpenPopup("Asset context");
             }
 
@@ -256,26 +256,26 @@ namespace {
 
             dialog_.Draw(world_, history_, particles_);
 
-            referencesOpen = ImGui::IsPopupOpen("Asset操作");
+            areReferencesOpen = ImGui::IsPopupOpen("Asset操作");
 
             ImGui::End();
 
             ImGui::EndFrame();
         }
 
-        void ClickUsage(bool pressed) {
+        void ClickUsage(bool isPressed) {
             ImGui::GetIO().AddMousePosEvent(usagePosition.x, usagePosition.y);
 
             Draw();
 
-            ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left, pressed);
+            ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left, isPressed);
 
             Draw();
         }
 
         ImVec2 usagePosition{};
 
-        bool referencesOpen = false;
+        bool areReferencesOpen = false;
 
     private:
         InteractionContext context_;
@@ -305,5 +305,5 @@ void RunAssetDialogInteractionTests() {
 
     fixture.Draw();
 
-    RequireInteraction(fixture.referencesOpen, "Asset context menu did not open its references modal.");
+    RequireInteraction(fixture.areReferencesOpen, "Asset context menu did not open its references modal.");
 }

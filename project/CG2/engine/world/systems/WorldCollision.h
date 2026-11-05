@@ -25,7 +25,7 @@ struct CollisionEvent {
 	WorldObjectId first = 0;
 	WorldObjectId second = 0;
 
-	bool entering = false; // trueは接触開始、falseは接触終了。Stayは通知しない。
+	bool isEntering = false; // trueは接触開始、falseは接触終了。Stayは通知しない。
 };
 
 // 法線はfirstからsecondへの向き。押し戻すときfirstを逆向き、secondを同じ向きへ動かす。
@@ -56,15 +56,15 @@ public:
 
 	static constexpr size_t kMaxColliders = kMaxWorldColliders;
 
-	const std::vector<CollisionEvent>& GetEvents() const { return events_; }
+	const std::vector<CollisionEvent>& GetEvents() const;
 
-	size_t GetContactCount() const { return contacts_.size(); }
+	size_t GetContactCount() const;
 
-	bool IsTouching(WorldObjectId identifier) const { return touching_.contains(identifier); }
+	bool IsTouching(WorldObjectId identifier) const;
 
 	static bool BuildWorld(const ColliderSettings& settings, const Matrix4x4& world, WorldCollider& result);
 
-	static bool Intersects(const WorldCollider& first, const WorldCollider& second);
+	static bool DoShapesIntersect(const WorldCollider& first, const WorldCollider& second);
 
 	static bool GetContact(const WorldCollider& first, const WorldCollider& second, CollisionContact& contact);
 

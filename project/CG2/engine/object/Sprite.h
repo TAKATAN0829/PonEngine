@@ -42,62 +42,62 @@ public:
 	//=============================================================================================//
 	// Position
 
-	const Vector2& GetPosition() const { return position_; }
+	const Vector2& GetPosition() const;
 
-	void SetPosition(const Vector2& position) { position_ = position; }
+	void SetPosition(const Vector2& position);
 
 	//=============================================================================================//
 	// Rotation
 
-	float GetRotation() const { return rotation_; }
+	float GetRotation() const;
 
-	void SetRotation(float rotation) { rotation_ = rotation; }
+	void SetRotation(float rotation);
 
 	//=============================================================================================//
 	// Size
 
-	const Vector2& GetSize() const { return size_; }
+	const Vector2& GetSize() const;
 
-	void SetSize(const Vector2& size) { size_ = size; }
+	void SetSize(const Vector2& size);
 
 	//=============================================================================================//
 	// AnchorPoint
 
-	const Vector2& GetAnchorPoint() const { return anchorPoint_; }
+	const Vector2& GetAnchorPoint() const;
 
-	void SetAnchorPoint(const Vector2& anchorPoint) { anchorPoint_ = anchorPoint; }
+	void SetAnchorPoint(const Vector2& anchorPoint);
 
 	//=============================================================================================//
 	// Flip
 
-	bool GetIsFlipX() const { return isFlipX_; }
+	bool IsFlippedHorizontally() const;
 
-	void SetIsFlipX(bool isFlipX) { isFlipX_ = isFlipX; }
+	void SetIsFlipX(bool isFlipX);
 
-	bool GetIsFlipY() const { return isFlipY_; }
+	bool IsFlippedVertically() const;
 
-	void SetIsFlipY(bool isFlipY) { isFlipY_ = isFlipY; }
+	void SetIsFlipY(bool isFlipY);
 
 	//=============================================================================================//
 	// TextureLeftTop
 
-	const Vector2& GetTextureLeftTop() const { return textureLeftTop_; }
+	const Vector2& GetTextureLeftTop() const;
 
-	void SetTextureLeftTop(const Vector2& textureLeftTop) { textureLeftTop_ = textureLeftTop; }
+	void SetTextureLeftTop(const Vector2& textureLeftTop);
 
 	//=============================================================================================//
 	// TextureSize
 
-	const Vector2& GetTextureSize() const { return textureSize_; }
+	const Vector2& GetTextureSize() const;
 
-	void SetTextureSize(const Vector2& textureSize) { textureSize_ = textureSize; }
+	void SetTextureSize(const Vector2& textureSize);
 
 	//=============================================================================================//
 	// Color
 
-	const Vector4& GetColor() const { return material_->GetColor(); }
+	const Vector4& GetColor() const;
 
-	void SetColor(const Vector4& color) { material_->SetColor(color); }
+	void SetColor(const Vector4& color);
 
 	//=============================================================================================//
 	// Texture設定

@@ -20,7 +20,7 @@ void TitleScene::Initialize(const SceneContext& context) {
 
 	titleCube.color = {0.2f, 0.65f, 1, 1};
 
-	titleCube.enableLighting = false;
+	titleCube.isLightingEnabled = false;
 
 	titleCube.transform.rotate = {0.3f, 0, 0};
 
@@ -38,7 +38,7 @@ void TitleScene::Initialize(const SceneContext& context) {
 
 	titleCamera.hasMeshRenderer = false;
 
-	titleCamera.mainCamera = true;
+	titleCamera.isMainCamera = true;
 
 	titleCamera.transform.translate = {0, 0, -4};
 
@@ -57,6 +57,7 @@ void TitleScene::Initialize(const SceneContext& context) {
 // 更新処理
 
 void TitleScene::Update(Input* input) {
+	// 入力による場面遷移を確認し、共通のゲーム更新を進める。
 	if (input != nullptr) {
 		if (CanHandleGameInput()) {
 			if (input->IsTriggerKey(DIK_RETURN)) {
@@ -66,4 +67,12 @@ void TitleScene::Update(Input* input) {
 	}
 
 	WorldScene::Update(input);
+}
+
+//=============================================================================================//
+// Getter / 場面情報
+
+const char* TitleScene::GetName() const {
+	// C++側の場面を識別する名前を返す。
+	return "TitleScene";
 }

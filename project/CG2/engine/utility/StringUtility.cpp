@@ -11,6 +11,7 @@ namespace StringUtility {
 	// stringをwstringに変換する
 
 	std::wstring ConvertString (const std::string& str) {
+		// 変換に必要な文字数を調べ、Windows APIで文字コードを変換する。
 
 		if (str.empty ()) {
 			return std::wstring ();
@@ -45,6 +46,7 @@ namespace StringUtility {
 	// wstringをstringに変換する
 
 	std::string ConvertString (const std::wstring& str) {
+		// 変換に必要な文字数を調べ、Windows APIで文字コードを変換する。
 
 		if (str.empty ()) {
 			return std::string ();

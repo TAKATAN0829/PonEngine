@@ -6,8 +6,9 @@
 // 実装内補助定義
 
 namespace {
-	bool InvalidBodyAncestor(IWorldObjects& scene, const WorldObjectData& child) {
-		if (!child.body.enabled) {
+	bool HasInvalidBodyAncestor(IWorldObjects& scene, const WorldObjectData& child) {
+		// 親のRigidbodyの構成をたどり、対応できない配置を調べる。
+		if (!child.body.isEnabled) {
 			return false;
 		}
 
@@ -20,7 +21,7 @@ namespace {
 				break;
 			}
 
-			if (parent->body.present && parent->body.enabled) {
+			if (parent->body.isPresent && parent->body.isEnabled) {
 				if (parent->body.mode == BodyMode::Dynamic) {
 					return true;
 				}
@@ -39,7 +40,8 @@ namespace {
 	}
 
 	bool IsActiveBody(IWorldObjects& scene, const WorldObjectData& object) {
-		if (!object.body.enabled) {
+		// オブジェクトとRigidbodyが有効な状態か確認する。
+		if (!object.body.isEnabled) {
 			return false;
 		}
 
@@ -47,10 +49,11 @@ namespace {
 	}
 
 	RigidBodySettings GetMaterial(IWorldObjects& scene, WorldObjectId identifier) {
+		// 接触計算で使うRigidbodyの反発係数と摩擦を取得する。
 		const WorldObjectData* object = scene.GetObjectDataById(identifier);
 
 		if (object != nullptr) {
-			if (object->body.present) {
+			if (object->body.isPresent) {
 				return object->body;
 			}
 		}
@@ -62,14 +65,15 @@ namespace {
 //=============================================================================================//
 // 初期化・終了処理
 
-
 void WorldPhysics::Initialize(IWorldObjects& scene) {
+	// 前の速度を消し、現在の配置から物理の初期状態を作る。
 	bodies_.clear();
 
 	RefreshBodies(scene,0);
 }
 
 void WorldPhysics::Finalize() {
+	// 実行中のBodyと失敗通知を消す。
 	bodies_.clear();
 
 	error_.clear();
@@ -77,7 +81,6 @@ void WorldPhysics::Finalize() {
 
 //=============================================================================================//
 // 更新処理
-
 
 void WorldPhysics::Update(IWorldObjects& scene, float deltaSeconds) {
 	if (!std::isfinite(deltaSeconds) || deltaSeconds <= 0) {
@@ -121,8 +124,8 @@ void WorldPhysics::Update(IWorldObjects& scene, float deltaSeconds) {
 //=============================================================================================//
 // Getter / 実行中の速度
 
-
 Vector3 WorldPhysics::GetVelocity(WorldObjectId identifier) const {
+	// 指定オブジェクトの実行中の速度を取得する。
 	const std::unordered_map<WorldObjectId,BodyState>::const_iterator found = bodies_.find(identifier);
 
 	if (found == bodies_.end()) {
@@ -132,31 +135,38 @@ Vector3 WorldPhysics::GetVelocity(WorldObjectId identifier) const {
 	return found->second.velocity;
 }
 
+const std::string& WorldPhysics::GetError() const {
+	// 直近の処理で記録した失敗理由を取得する。
+	return error_;
+}
+
 //=============================================================================================//
 // 速度・移動・接触解決
 
-
 void WorldPhysics::RefreshBodies(IWorldObjects& scene, float deltaSeconds) {
+	// 有効なRigidbodyを収集し、追加・削除・設定変更を実行状態へ反映する。
 	error_.clear();
 
 	std::unordered_map<WorldObjectId,BodyState>::iterator iterator = bodies_.begin();
 
+	// 削除されたRigidbodyの実行状態を取り除く。
 	while (iterator != bodies_.end()) {
 		const WorldObjectData* object = scene.GetObjectDataById(iterator->first);
 
-		bool removed = object == nullptr;
+		bool wasRemoved = object == nullptr;
 
 		if (object != nullptr) {
-			removed = !object->body.present;
+			wasRemoved = !object->body.isPresent;
 		}
 
-		if (removed) {
+		if (wasRemoved) {
 			iterator = bodies_.erase(iterator);
 		} else {
 			++iterator;
 		}
 	}
 
+	// 現在の配置に合わせ、新規Bodyや設定変更を反映する。
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const WorldObjectData* object = scene.GetObjectData(objectIndex);
 
@@ -164,11 +174,11 @@ void WorldPhysics::RefreshBodies(IWorldObjects& scene, float deltaSeconds) {
 			continue;
 		}
 
-		if (!object->body.present) {
+		if (!object->body.isPresent) {
 			continue;
 		}
 
-		if (!ValidateBodySettings(object->body)) {
+		if (!AreBodySettingsValid(object->body)) {
 			error_ = "Invalid Rigidbody settings on object " + std::to_string(object->id) + ". Fix the values to resume physics.";
 
 			if (bodies_.contains(object->id)) {
@@ -176,13 +186,13 @@ void WorldPhysics::RefreshBodies(IWorldObjects& scene, float deltaSeconds) {
 
 				bodies_.at(object->id).velocity = {};
 
-				bodies_.at(object->id).active = false;
+				bodies_.at(object->id).isActive = false;
 			}
 
 			continue;
 		}
 
-		if (InvalidBodyAncestor(scene,*object)) {
+		if (HasInvalidBodyAncestor(scene,*object)) {
 			error_ = "Unsupported Rigidbody hierarchy at object " + std::to_string(object->id) + ". Dynamic needs a stationary parent and cannot own another enabled Rigidbody. Physics paused until fixed.";
 
 			continue;
@@ -190,15 +200,15 @@ void WorldPhysics::RefreshBodies(IWorldObjects& scene, float deltaSeconds) {
 
 		const Vector3 position = scene.GetObjectWorldPosition(object->id);
 
-		bool reset = !bodies_.contains(object->id);
+		bool shouldReset = !bodies_.contains(object->id);
 
 		BodyState& state = bodies_[object->id];
 
 		if (state.mode != object->body.mode) {
-			reset = true;
+			shouldReset = true;
 		}
 
-		if (reset) {
+		if (shouldReset) {
 			state = {};
 
 			state.mode = object->body.mode;
@@ -210,13 +220,13 @@ void WorldPhysics::RefreshBodies(IWorldObjects& scene, float deltaSeconds) {
 
 		state.inverseMass = 0;
 
-		const bool active = IsActiveBody(scene,*object);
+		const bool isActive = IsActiveBody(scene,*object);
 
 		state.frameStart = position;
 
 		state.frameTarget = position;
 
-		if (active) {
+		if (isActive) {
 			if (state.mode == BodyMode::Dynamic) {
 				state.inverseMass = 1 / object->body.mass;
 			}
@@ -226,7 +236,7 @@ void WorldPhysics::RefreshBodies(IWorldObjects& scene, float deltaSeconds) {
 			state.velocity = {};
 
 			if (state.mode == BodyMode::Kinematic) {
-				if (active && state.active) {
+				if (isActive && state.isActive) {
 					if (deltaSeconds > 0) {
 						state.velocity = MathUtility::Multiply(1 / deltaSeconds,MathUtility::Subtract(position,state.previousPosition));
 
@@ -236,13 +246,14 @@ void WorldPhysics::RefreshBodies(IWorldObjects& scene, float deltaSeconds) {
 			}
 		}
 
-		state.active = active;
+		state.isActive = isActive;
 
 		state.previousPosition = position;
 	}
 }
 
 void WorldPhysics::Integrate(IWorldObjects& scene, float deltaSeconds) {
+	// 重力と速度から、この時間区間での位置の変化を求める。
 	for (std::pair<const WorldObjectId,BodyState>& entry : bodies_) {
 		BodyState& state = entry.second;
 
@@ -256,7 +267,7 @@ void WorldPhysics::Integrate(IWorldObjects& scene, float deltaSeconds) {
 			continue;
 		}
 
-		if (object->body.useGravity) {
+		if (object->body.isGravityEnabled) {
 			state.velocity.y -= 9.8f * object->body.gravityScale * deltaSeconds;
 		}
 
@@ -276,7 +287,7 @@ void WorldPhysics::AdvanceKinematics(IWorldObjects& scene, float fraction) {
 	bool hasKinematic = false;
 
 	for (const std::pair<const WorldObjectId,BodyState>& entry : bodies_) {
-		if (entry.second.active) {
+		if (entry.second.isActive) {
 			if (entry.second.mode == BodyMode::Kinematic) {
 				hasKinematic = true;
 
@@ -293,7 +304,7 @@ void WorldPhysics::AdvanceKinematics(IWorldObjects& scene, float fraction) {
 	std::vector<std::pair<size_t,WorldObjectId>> kinematics;
 
 	for (const std::pair<const WorldObjectId,BodyState>& entry : bodies_) {
-		if (entry.second.active) {
+		if (entry.second.isActive) {
 			if (entry.second.mode == BodyMode::Kinematic) {
 				size_t depth = 0;
 
@@ -334,7 +345,7 @@ void WorldPhysics::Solve(IWorldObjects& scene) {
 			return;
 		}
 
-		bool touched = false;
+		bool wasTouched = false;
 
 		for (size_t first = 0; first < entries.size(); ++first) {
 			for (size_t second = first+1; second < entries.size(); ++second) {
@@ -342,18 +353,19 @@ void WorldPhysics::Solve(IWorldObjects& scene) {
 					break;
 				}
 
-				touched |= ResolvePair(scene,entries[first],entries[second]);
+				wasTouched |= ResolvePair(scene,entries[first],entries[second]);
 			}
 		}
 
 		// 空中やTriggerだけのシーンでは、残りの反復を省く。
-		if (!touched) {
+		if (!wasTouched) {
 			break;
 		}
 	}
 }
 
 std::vector<WorldPhysics::ShapeEntry> WorldPhysics::CollectShapes(IWorldObjects& scene) const {
+	// 有効なColliderを収集し、接触判定用の形状へ変換する。
 	std::vector<ShapeEntry> entries;
 
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
@@ -363,11 +375,11 @@ std::vector<WorldPhysics::ShapeEntry> WorldPhysics::CollectShapes(IWorldObjects&
 			continue;
 		}
 
-		if (!object->collider.present) {
+		if (!object->collider.isPresent) {
 			continue;
 		}
 
-		if (!object->collider.enabled) {
+		if (!object->collider.isEnabled) {
 			continue;
 		}
 
@@ -395,18 +407,18 @@ std::vector<WorldPhysics::ShapeEntry> WorldPhysics::CollectShapes(IWorldObjects&
 
 		entry.owner = scene.GetBodyOwner(object->id);
 
-		entry.trigger = object->collider.trigger;
+		entry.isTrigger = object->collider.isTrigger;
 
 		entries.push_back(entry);
 	}
 
-	std::sort(entries.begin(),entries.end(),CompareShapes);
+	std::sort(entries.begin(),entries.end(),ShouldSortShapeBefore);
 
 	return entries;
 }
 
 bool WorldPhysics::ResolvePair(IWorldObjects& scene, const ShapeEntry& first, const ShapeEntry& second) {
-	if (first.trigger || second.trigger) {
+	if (first.isTrigger || second.isTrigger) {
 		return false;
 	}
 
@@ -548,6 +560,7 @@ void WorldPhysics::MoveBody(IWorldObjects& scene, WorldObjectId identifier, cons
 }
 
 float WorldPhysics::GetInverseMass(WorldObjectId identifier) const {
+	// 動かせる物体だけ質量の逆数を返し、固定物体は0として扱う。
 	const std::unordered_map<WorldObjectId,BodyState>::const_iterator found = bodies_.find(identifier);
 
 	if (found == bodies_.end()) {
@@ -557,6 +570,7 @@ float WorldPhysics::GetInverseMass(WorldObjectId identifier) const {
 	return found->second.inverseMass;
 }
 
-bool WorldPhysics::CompareShapes(const ShapeEntry& first, const ShapeEntry& second) {
+bool WorldPhysics::ShouldSortShapeBefore(const ShapeEntry& first, const ShapeEntry& second) {
+	// 範囲の最小X座標で並べ、衝突候補を調べる順序を揃える。
 	return first.shape.bounds.min.x < second.shape.bounds.min.x;
 }

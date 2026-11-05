@@ -10,8 +10,8 @@
 #include <fstream>
 
 namespace {
-	void RequireWorkflow(bool condition, const char* message) {
-		if (!condition) {
+	void RequireWorkflow(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -26,7 +26,7 @@ namespace {
 		selection.Select(parent);
 		selection.Toggle(child);
 		selection.Toggle(independent);
-		RequireWorkflow(selection.Get() == independent && selection.GetIds().size() == 3, "Primary/multiple selection incorrect");
+		RequireWorkflow(selection.GetPrimarySelectedObjectId() == independent && selection.GetIds().size() == 3, "Primary/multiple selection incorrect");
 		RequireWorkflow(selection.GetRoots(scene).size() == 2, "Selected child must not be operated twice");
 		EditorSession history;
 		history.Initialize(scene);
@@ -42,11 +42,11 @@ namespace {
 		RequireWorkflow(selection.Remove(scene, error) && scene.GetEditableObjectCount() == 4, "Batch subtree removal incorrect");
 		selection.Select(independent);
 		selection.Toggle(independent);
-		RequireWorkflow(selection.Get() == 0, "Ctrl toggle did not deselect");
+		RequireWorkflow(selection.GetPrimarySelectedObjectId() == 0, "Ctrl toggle did not deselect");
 		const WorldObjectId retired = scene.AddObject("axis.obj");
 		RequireWorkflow(scene.RemoveObject(retired), "Retired ID removal failed");
 		selection.Select(independent);
-		RequireWorkflow(selection.Duplicate(scene, error) && selection.Get() > retired, "Batch duplicate reused a deleted ID");
+		RequireWorkflow(selection.Duplicate(scene, error) && selection.GetPrimarySelectedObjectId() > retired, "Batch duplicate reused a deleted ID");
 		selection.Clear();
 		// 最後の複製だけが上限を超えても、最初の複製まで元シーンへ反映しない。
 		WorldObjects lightScene;
@@ -141,7 +141,7 @@ namespace {
 		RequireWorkflow(FrameProfiler::GetCount() == 600 && FrameProfiler::GetSample(0).number == 6, "Profiler ring buffer incorrect");
 		RequireWorkflow(FrameProfiler::GetLatest().drawCalls == 2 && FrameProfiler::GetLatest().triangles == 21 && FrameProfiler::GetLatest().instances == 11, "Draw counters confused calls/instances");
 		RequireWorkflow(FrameProfiler::GetLatest().uiDrawCalls == 1, "UI counter missing");
-		RequireWorkflow(FrameProfiler::GetLatest().gpuTimingValid && FrameProfiler::GetLatest().gpuMilliseconds == 0.5f, "GPU duration was not retained in frame history");
+		RequireWorkflow(FrameProfiler::GetLatest().isGpuTimingValid && FrameProfiler::GetLatest().gpuMilliseconds == 0.5f, "GPU duration was not retained in frame history");
 		const uint64_t latest = FrameProfiler::GetLatest().number;
 		FrameProfiler::SetPaused(true);
 		FrameProfiler::BeginFrame();
@@ -165,14 +165,14 @@ namespace {
 		FrameProfiler::BeginFrame();
 		FrameProfiler::SetGpuMilliseconds(-1);
 		FrameProfiler::EndFrame();
-		RequireWorkflow(!FrameProfiler::GetLatest().gpuTimingValid, "Invalid GPU time was accepted");
+		RequireWorkflow(!FrameProfiler::GetLatest().isGpuTimingValid, "Invalid GPU time was accepted");
 		FrameProfiler::BeginFrame();
 		FrameProfiler::SetGpuMilliseconds(0);
 		FrameProfiler::EndFrame();
-		RequireWorkflow(FrameProfiler::GetLatest().gpuTimingValid && FrameProfiler::GetLatest().gpuMilliseconds == 0, "Valid zero GPU time was treated as missing");
+		RequireWorkflow(FrameProfiler::GetLatest().isGpuTimingValid && FrameProfiler::GetLatest().gpuMilliseconds == 0, "Valid zero GPU time was treated as missing");
 		FrameProfiler::BeginFrame();
 		FrameProfiler::EndFrame();
-		RequireWorkflow(!FrameProfiler::GetLatest().gpuTimingValid, "A missing GPU sample reused the previous frame");
+		RequireWorkflow(!FrameProfiler::GetLatest().isGpuTimingValid, "A missing GPU sample reused the previous frame");
 	}
 }
 

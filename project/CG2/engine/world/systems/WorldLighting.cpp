@@ -9,6 +9,7 @@
 
 // 実行中の向きとGPU用一覧だけを計算し、具体的なシーン管理や保存処理は使わない。
 bool WorldLighting::GetDirection(const Matrix4x4& world, Vector3& direction) {
+	// ライトがワールド空間で向く方向を取得する。
 	direction = {world.m[2][0],world.m[2][1],world.m[2][2]};
 
 	const float length = MathUtility::Length(direction);
@@ -23,6 +24,7 @@ bool WorldLighting::GetDirection(const Matrix4x4& world, Vector3& direction) {
 }
 
 WorldLightCollection WorldLighting::Collect(const IWorldObjects& scene) {
+	// 有効なライトだけを種類ごとに集め、GPU配列の上限内へ収める。
 	WorldLightCollection collection;
 
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {

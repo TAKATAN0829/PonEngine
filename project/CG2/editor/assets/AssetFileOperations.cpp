@@ -13,6 +13,7 @@
 
 namespace {
 	std::string LowerExtension(const std::filesystem::path& path) {
+		// 拡張子の大文字・小文字を揃えて比較できるようにする。
 		std::string extension = AssetPathChange::Text(path.extension());
 
 		for (char& character : extension) {
@@ -23,6 +24,7 @@ namespace {
 	}
 
 	bool ReadBytes(const std::filesystem::path& path, std::string& bytes) {
+		// ファイルをバイナリで開き、内容をバイト列として読み込む。
 		std::ifstream input(path, std::ios::binary);
 
 		if (!input) {
@@ -35,6 +37,7 @@ namespace {
 	}
 
 	bool WriteBytes(const std::filesystem::path& path, const std::string& bytes) {
+		// バイト列をファイルへ書き込み、書込結果を確認する。
 		std::ofstream output(path, std::ios::binary | std::ios::trunc);
 
 		output.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
@@ -50,7 +53,7 @@ namespace {
 		std::filesystem::path backup;
 		std::filesystem::path updated;
 
-		bool applied = false;
+		bool wasApplied = false;
 	};
 }
 
@@ -58,6 +61,7 @@ namespace {
 // 初期化処理
 
 bool AssetFileOperations::Initialize(const std::filesystem::path& root, std::string& error) {
+	// ルートの実体パスを確認し、操作可能な範囲を決める。
 	error.clear();
 
 	std::error_code fileError;
@@ -92,22 +96,22 @@ bool AssetFileOperations::Review(const std::filesystem::path& source, const std:
 	}
 
 	for (const AssetReference& reference : liveReferences) {
-		if (AssetPathChange::Contains(relative, AssetPathChange::Path(reference.path))) {
+		if (AssetPathChange::DoesContain(relative, AssetPathChange::Path(reference.path))) {
 			usages_.push_back(reference);
 		}
 	}
 
 	for (const AssetDocument& document : documents_) {
 		// 同じフォルダごとゴミ箱へ移す参照元は、外部からの使用箇所には含めない。
-		if (!AssetPathChange::Contains(relative, document.GetPath())) {
+		if (!AssetPathChange::DoesContain(relative, document.GetPath())) {
 			for (const AssetReference& reference : document.GetReferences()) {
-				if (AssetPathChange::Contains(relative, AssetPathChange::Path(reference.path))) {
+				if (AssetPathChange::DoesContain(relative, AssetPathChange::Path(reference.path))) {
 					usages_.push_back(reference);
 				}
 			}
 		}
 
-		if (document.IsOpaque() && !AssetPathChange::Contains(relative, document.GetPath())) {
+		if (document.IsOpaque() && !AssetPathChange::DoesContain(relative, document.GetPath())) {
 			const std::string extension = LowerExtension(relative);
 
 			if (std::filesystem::is_directory(root_ / relative) || extension == ".fbx" || extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".dds" || extension == ".tga") {
@@ -125,6 +129,11 @@ bool AssetFileOperations::Review(const std::filesystem::path& source, const std:
 	error = failure.what();
 
 	return false;
+}
+
+const std::vector<AssetReference>& AssetFileOperations::GetUsages() const {
+	// 調査で見つかったAssetの使用箇所を取得する。
+	return usages_;
 }
 
 //=============================================================================================//
@@ -164,7 +173,7 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 
 	for (const AssetDocument& document : documents_) {
 		if (document.IsOpaque()) {
-			if (AssetPathChange::Contains(change.source, document.GetPath())) {
+			if (AssetPathChange::DoesContain(change.source, document.GetPath())) {
 				error = "FBX file relocation requires dependency-aware re-export.";
 
 				return false;
@@ -178,8 +187,8 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 		return false;
 	}
 
-	if (AssetPathChange::Contains(change.source, change.destination)) {
-		if (!AssetPathChange::Contains(change.destination, change.source)) {
+	if (AssetPathChange::DoesContain(change.source, change.destination)) {
+		if (!AssetPathChange::DoesContain(change.destination, change.source)) {
 			error = "A folder cannot be moved inside itself.";
 
 			return false;
@@ -188,9 +197,9 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 
 	std::error_code fileError;
 
-	const bool directory = std::filesystem::is_directory(root_ / change.source, fileError);
+	const bool isDirectory = std::filesystem::is_directory(root_ / change.source, fileError);
 
-	if (!directory) {
+	if (!isDirectory) {
 		if (LowerExtension(change.source) != LowerExtension(change.destination)) {
 			error = "Keep the original file extension when renaming.";
 
@@ -246,7 +255,7 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 
 		particle.texture = change.RemapResource(particle.texture);
 
-		if (!ValidateParticleSettings(particle)) {
+		if (!AreParticleSettingsValid(particle)) {
 			error = "The destination path cannot be stored in Particle settings.";
 
 			return false;
@@ -326,27 +335,27 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 
 	std::filesystem::rename(holding, root_ / change.destination, fileError);
 
-	bool success = !fileError;
+	bool isSuccessful = !fileError;
 
-	if (success) {
+	if (isSuccessful) {
 		for (StagedDocument& file : staged) {
 			if (!MoveFileExW(file.updated.c_str(), file.destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-				success = false;
+				isSuccessful = false;
 
 				break;
 			}
 
-			file.applied = true;
+			file.wasApplied = true;
 		}
 	}
 
-	if (!success) {
-		bool restored = true;
+	if (!isSuccessful) {
+		bool wasRestored = true;
 
 		for (StagedDocument& file : staged) {
-			if (file.applied) {
+			if (file.wasApplied) {
 				if (!MoveFileExW(file.backup.c_str(), file.destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-					restored = false;
+					wasRestored = false;
 				}
 			}
 		}
@@ -359,7 +368,7 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 
 		error = "Asset update failed. Recovery copies: " + AssetPathChange::Text(recovery);
 
-		if (fileError || !restored) {
+		if (fileError || !wasRestored) {
 			error += " / Automatic restoration was incomplete; keep the recovery directory.";
 		}
 
@@ -378,8 +387,10 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 
 bool AssetFileOperations::MoveToTrash(const std::filesystem::path& source, const std::vector<AssetReference>& liveReferences,
 	std::filesystem::path& trashPath, std::string& error) try {
+	// 使用箇所を確認し、参照されていない対象を復旧可能な場所へ移す。
 	trashPath.clear();
 
+	// 現在の配置・履歴・保存ファイルから使用箇所を再確認する。
 	if (!Review(source, liveReferences, error)) {
 		return false;
 	}
@@ -430,6 +441,7 @@ bool AssetFileOperations::MoveToTrash(const std::filesystem::path& source, const
 }
 
 bool AssetFileOperations::CreateFolder(const std::filesystem::path& destination, std::string& error) try {
+	// resources内の保存先を確認し、新しいフォルダを作る。
 	std::filesystem::path relative;
 
 	if (!ValidatePath(destination, false, relative, error)) {
@@ -473,7 +485,7 @@ bool AssetFileOperations::ValidatePath(const std::filesystem::path& path, bool m
 
 	relative = absolute.lexically_relative(root_);
 
-	if (!AssetPathChange::Contains(root_, absolute) || relative.empty() || relative == ".") {
+	if (!AssetPathChange::DoesContain(root_, absolute) || relative.empty() || relative == ".") {
 		error = "Choose an asset inside resources; the resources root cannot be modified.";
 
 		return false;
@@ -484,7 +496,7 @@ bool AssetFileOperations::ValidatePath(const std::filesystem::path& path, bool m
 	for (const std::filesystem::path& part : relative) {
 		const std::wstring name = part.native();
 
-		if (name.empty() || name == L".." || AssetPathChange::Contains(".editor-trash", part) || name.back() == L'.' || name.back() == L' ') {
+		if (name.empty() || name == L".." || AssetPathChange::DoesContain(".editor-trash", part) || name.back() == L'.' || name.back() == L' ') {
 			error = "Invalid or reserved asset path.";
 
 			return false;
@@ -566,6 +578,7 @@ bool AssetFileOperations::ValidatePath(const std::filesystem::path& path, bool m
 }
 
 bool AssetFileOperations::Scan(std::string& error) {
+	// 走査件数を制限しながら、対象フォルダのファイルと参照を調べる。
 	documents_.clear();
 
 	assetPaths_.clear();
@@ -583,7 +596,7 @@ bool AssetFileOperations::Scan(std::string& error) {
 	while (!fileError && iterator != end) {
 		const std::filesystem::path path = iterator->path();
 
-		if (AssetPathChange::Contains(".editor-trash", path.filename())) {
+		if (AssetPathChange::DoesContain(".editor-trash", path.filename())) {
 			iterator.disable_recursion_pending();
 		} else {
 			const DWORD attributes = GetFileAttributesW(path.c_str());
@@ -644,6 +657,7 @@ bool AssetFileOperations::Scan(std::string& error) {
 }
 
 bool AssetFileOperations::IsProtected(const std::filesystem::path& relative) const {
+	// 組込Assetやコードから直接参照する保存先への操作を防ぐ。
 	static const char* builtins[] = {
 		"plane.gltf", "axis.obj", "circle.png", "white1x1.png", "uvChecker.png",
 		"primitives/Cube.obj", "primitives/Sphere.obj", "scenes/GameScene.ponscene",
@@ -651,11 +665,11 @@ bool AssetFileOperations::IsProtected(const std::filesystem::path& relative) con
 	};
 
 	for (const char* builtin : builtins) {
-		if (AssetPathChange::Contains(relative, builtin)) {
+		if (AssetPathChange::DoesContain(relative, builtin)) {
 			return true;
 		}
 
-		if (AssetPathChange::Contains("shaders", relative)) {
+		if (AssetPathChange::DoesContain("shaders", relative)) {
 			return true;
 		}
 	}
@@ -664,6 +678,7 @@ bool AssetFileOperations::IsProtected(const std::filesystem::path& relative) con
 }
 
 std::filesystem::path AssetFileOperations::CreateRecoveryDirectory(std::string& error) const {
+	// 復旧用ファイルが既存データと重ならない保存先を作る。
 	const std::filesystem::path trashRoot = root_ / ".editor-trash";
 
 	const DWORD attributes = GetFileAttributesW(trashRoot.c_str());

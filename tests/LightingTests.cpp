@@ -12,8 +12,8 @@
 #include <stdexcept>
 
 namespace {
-	void RequireLight(bool condition, const char* message) {
-		if (!condition) {
+	void RequireLight(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -60,10 +60,10 @@ void RunLightingTests(const std::filesystem::path& directory) {
 	RequireLight(std::abs(lights.points.lights[0].position.y-expected.y)<0.0001f,"Point ignored parent transform");
 	RequireLight(std::abs(MathUtility::Length(lights.spots.lights[0].direction)-1)<0.0001f,"Spot direction contains parent scale");
 	RequireLight(lights.spots.lights[0].cosFalloffStart > lights.spots.lights[0].cosAngle,"Spot cone angles reversed");
-	*scene.GetEditableObject(0).active = false;
+	*scene.GetEditableObject(0).isActive = false;
 	lights = WorldLighting::Collect(scene);
 	RequireLight(lights.points.count == 0 && lights.spots.count == 0 && lights.directional.count == 0,"Inactive parent left lights enabled");
-	*scene.GetEditableObject(0).active = true;
+	*scene.GetEditableObject(0).isActive = true;
 	scene.GetEditableObject(0).transform->scale = {};
 	lights = WorldLighting::Collect(scene);
 	RequireLight(lights.spots.count == 0 && lights.directional.count == 0,"Degenerate light direction accepted");
@@ -81,7 +81,7 @@ void RunLightingTests(const std::filesystem::path& directory) {
 	RequireLight(SceneFile::Save(scene,saved,error),"Light scene save failed");
 	WorldObjects loaded;
 	RequireLight(SceneFile::Load(loaded,saved,error),"Light scene load failed");
-	RequireLight(EqualLightSettings(*scene.GetEditableObject(2).light,*loaded.GetEditableObject(2).light),"Light angles lost in save");
+	RequireLight(AreLightSettingsEqual(*scene.GetEditableObject(2).light,*loaded.GetEditableObject(2).light),"Light angles lost in save");
 	RequireLight(loaded.GetObjectData(3)->type == WorldObjectType::DirectionalLight,"Directional type lost in save");
 	const std::filesystem::path prefab = directory/"lights.ponprefab";
 	RequireLight(PrefabFile::Save(scene,root,prefab,error),"Light prefab save failed");

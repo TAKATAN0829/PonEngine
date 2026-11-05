@@ -44,26 +44,26 @@ public:
 	//=============================================================================================//
 	// Getter / 再生・終了状態
 
-	bool IsPlaying() const { return session_.IsPlaying(); }
+	bool IsPlaying() const;
 
 	bool ShouldSimulate(); // Step要求を一度だけ消費して更新可否を返す。
 
-	bool ShouldExit() const { return exitApproved_; }
+	bool ShouldExit() const;
 
-	const std::filesystem::path& GetScenePath() const { return document_.GetPath(); }
+	const std::filesystem::path& GetScenePath() const;
 
 	//=============================================================================================//
 	// Getter / Scene表示サイズ
 
-	uint32_t GetSceneWidth() const { return sceneView_.GetWidth(); }
+	uint32_t GetSceneWidth() const;
 
-	uint32_t GetSceneHeight() const { return sceneView_.GetHeight(); }
+	uint32_t GetSceneHeight() const;
 
 	//=============================================================================================//
 	// Setter / Scene画像
 
 	// 描画先が所有するSRVハンドルを借用する。
-	void SetSceneTexture(uint64_t textureHandle) { sceneView_.SetTexture(textureHandle); }
+	void SetSceneTexture(uint64_t textureHandle);
 
 	//=============================================================================================//
 	// 終了要求
@@ -87,7 +87,7 @@ private:
 
 	void OpenSceneDialog();
 
-	void OpenSaveDialog(bool beforeAction, const std::filesystem::path& suggestion = {});
+	void OpenSaveDialog(bool shouldSaveBeforeAction, const std::filesystem::path& suggestion = {});
 
 	void RequestSceneAction(SceneAction action, IEditableWorld& scene, const std::filesystem::path& path = {});
 
@@ -95,7 +95,7 @@ private:
 
 	void ResetSceneEditingState(IEditableWorld& scene);
 
-	bool NeedsSaveConfirmation(SceneAction action, IEditableWorld& scene) const;
+	bool IsSaveConfirmationNeeded(SceneAction action, IEditableWorld& scene) const;
 
 	// 遷移前のParticleプリセットも、元の保存基準と組にして確認・保存する。
 	bool IsParticlePresetDirty(IEditableWorld& scene) const;
@@ -177,6 +177,6 @@ private:
 
 	SceneAction pendingAction_ = SceneAction::None; // 保存確認後に実行する操作。
 
-	bool openDiscardPrompt_ = false; // 次の描画で確認ダイアログを開く。
-	bool exitApproved_ = false; // Engineが終了できる状態。
+	bool shouldOpenDiscardPrompt_ = false; // 次の描画で確認ダイアログを開く。
+	bool isExitApproved_ = false; // Engineが終了できる状態。
 };

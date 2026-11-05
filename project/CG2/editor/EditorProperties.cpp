@@ -14,7 +14,7 @@ bool EditorProperties::Header(const char* title, const char* help) {
 #ifdef USE_IMGUI
 	ImGui::Spacing();
 
-	const bool expanded = ImGui::CollapsingHeader(title,ImGuiTreeNodeFlags_DefaultOpen);
+	const bool isExpanded = ImGui::CollapsingHeader(title,ImGuiTreeNodeFlags_DefaultOpen);
 
 	if (help != nullptr) {
 		// DrawListへの描画だけを行い、見出しの右クリック対象を変えない。
@@ -28,7 +28,7 @@ bool EditorProperties::Header(const char* title, const char* help) {
 		}
 	}
 
-	return expanded;
+	return isExpanded;
 
 #else
 	// 使わんので捨てる
@@ -42,6 +42,7 @@ bool EditorProperties::Header(const char* title, const char* help) {
 }
 
 bool EditorProperties::Begin(const char* identifier) {
+	// プロパティを名前と編集欄の二列で表示する準備をする。
 #ifdef USE_IMGUI
 	ImGui::PushID(identifier);
 
@@ -68,6 +69,7 @@ bool EditorProperties::Begin(const char* identifier) {
 }
 
 void EditorProperties::Row(const char* label) {
+	// プロパティ名と編集欄を別の列へ配置する。
 #ifdef USE_IMGUI
 	ImGui::TableNextRow();
 
@@ -88,6 +90,7 @@ void EditorProperties::Row(const char* label) {
 }
 
 void EditorProperties::End() {
+	// 開始したプロパティの表とスタイル設定を終了する。
 #ifdef USE_IMGUI
 	ImGui::EndTable();
 
@@ -101,16 +104,17 @@ void EditorProperties::End() {
 
 
 bool EditorProperties::Float(const char* label, float* value, float speed, float minimum, float maximum, const char* format) {
+	// 数値の編集欄へ範囲と刻みを渡し、変更の有無を返す。
 #ifdef USE_IMGUI
 	Row(label);
 
 	ImGui::PushID(label);
 
-	const bool changed = ImGui::DragFloat("##Value",value,speed,minimum,maximum,format,ImGuiSliderFlags_AlwaysClamp);
+	const bool hasChanged = ImGui::DragFloat("##Value",value,speed,minimum,maximum,format,ImGuiSliderFlags_AlwaysClamp);
 
 	ImGui::PopID();
 
-	return changed;
+	return hasChanged;
 
 #else
 	(void)label; (void)value; (void)speed; (void)minimum; (void)maximum; (void)format;
@@ -121,6 +125,7 @@ bool EditorProperties::Float(const char* label, float* value, float speed, float
 }
 
 bool EditorProperties::Vector(const char* label, Vector3* value, float speed, float minimum, float maximum) {
+	// 三成分の編集欄を並べ、いずれかが変わったか返す。
 #ifdef USE_IMGUI
 	Row(label);
 
@@ -134,7 +139,7 @@ bool EditorProperties::Vector(const char* label, Vector3* value, float speed, fl
 
 	float* components[] = {&value->x,&value->y,&value->z};
 
-	bool changed = false;
+	bool hasChanged = false;
 
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None;
 
@@ -157,14 +162,14 @@ bool EditorProperties::Vector(const char* label, Vector3* value, float speed, fl
 
 		ImGui::SetNextItemWidth(width);
 
-		changed |= ImGui::DragFloat("##Axis",components[axisIndex],speed,minimum,maximum,"%.2f",flags);
+		hasChanged |= ImGui::DragFloat("##Axis",components[axisIndex],speed,minimum,maximum,"%.2f",flags);
 
 		ImGui::PopID();
 	}
 
 	ImGui::PopID();
 
-	return changed;
+	return hasChanged;
 
 #else
 	(void)label; (void)value; (void)speed; (void)minimum; (void)maximum;
@@ -174,20 +179,21 @@ bool EditorProperties::Vector(const char* label, Vector3* value, float speed, fl
 #endif
 }
 
-bool EditorProperties::Toggle(const char* label, bool* value) {
+bool EditorProperties::Toggle(const char* label, bool* isChecked) {
+	// UIでbool値を切り替え、変更があったか返す。
 #ifdef USE_IMGUI
 	Row(label);
 
 	ImGui::PushID(label);
 
-	const bool changed = ImGui::Checkbox("##Value",value);
+	const bool hasChanged = ImGui::Checkbox("##Value",isChecked);
 
 	ImGui::PopID();
 
-	return changed;
+	return hasChanged;
 
 #else
-	(void)label; (void)value;
+	(void)label; (void)isChecked;
 
 	return false;
 
@@ -195,16 +201,17 @@ bool EditorProperties::Toggle(const char* label, bool* value) {
 }
 
 bool EditorProperties::Combo(const char* label, int* value, const char* choices) {
+	// 候補の選択欄を表示し、選んだ項目を設定へ反映する。
 #ifdef USE_IMGUI
 	Row(label);
 
 	ImGui::PushID(label);
 
-	const bool changed = ImGui::Combo("##Value",value,choices);
+	const bool hasChanged = ImGui::Combo("##Value",value,choices);
 
 	ImGui::PopID();
 
-	return changed;
+	return hasChanged;
 
 #else
 	(void)label; (void)value; (void)choices;
@@ -215,16 +222,17 @@ bool EditorProperties::Combo(const char* label, int* value, const char* choices)
 }
 
 bool EditorProperties::Color(const char* label, Vector4* value) {
+	// 色の編集欄を表示し、変更した値を呼出側へ返す。
 #ifdef USE_IMGUI
 	Row(label);
 
 	ImGui::PushID(label);
 
-	const bool changed = ImGui::ColorEdit4("##Value",&value->x);
+	const bool hasChanged = ImGui::ColorEdit4("##Value",&value->x);
 
 	ImGui::PopID();
 
-	return changed;
+	return hasChanged;
 
 #else
 	(void)label; (void)value;

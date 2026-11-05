@@ -33,7 +33,7 @@ public:
 	// 描画前設定
 
 	// 合成方式と画像の透明度方式を、そのDrawだけにRoot Constantsで渡す。
-	void PreDraw(BlendMode blendMode, bool useBrightnessAlpha, const Matrix4x4& inverseViewProjection, float softDistance);
+	void PreDraw(BlendMode blendMode, bool isBrightnessAlphaEnabled, const Matrix4x4& inverseViewProjection, float softDistance);
 
 	// モデル描画後〜粒子描画完了まで深度を読取専用にする。コピーやGPU待機は行わない。
 	void BeginPass();
@@ -43,11 +43,11 @@ public:
 	//=============================================================================================//
 	// Getter
 
-	DirectXCommon* GetDxCommon() const { return dxCommon_; }
+	DirectXCommon* GetDxCommon() const;
 
-	SrvManager* GetSrvManager() const { return srvManager_; }
+	SrvManager* GetSrvManager() const;
 
-	Mesh* GetMesh() const { return mesh_; }
+	Mesh* GetMesh() const;
 
 private:
 

@@ -31,7 +31,7 @@ public:
 	void Update(Input* input) override;
 
 	// 編集・Pause中もカメラと描画用データは更新する。
-	void UpdateEditorFrame(Input* input, bool simulate) override;
+	void UpdateEditorFrame(Input* input, bool shouldSimulate) override;
 
 	//=============================================================================================//
 	// 描画処理
@@ -50,7 +50,7 @@ public:
 	// Getter / Editor・Scene表示
 
 	// 接触色は保存対象外の最新ゲーム更新結果から取得する。
-	bool IsColliderTouching(WorldObjectId identifier) const override { return collision_.IsTouching(identifier); }
+	bool IsColliderTouching(WorldObjectId identifier) const override;
 
 	// Projectから要求されたモデルの専用サムネイルを取得する。
 	uint64_t GetModelPreview(const std::string& model, std::string& error) override;
@@ -69,11 +69,11 @@ public:
 
 	bool IsAnimationPreviewPlaying(WorldObjectId objectId) const override;
 
-	void SetAnimationPreview(WorldObjectId objectId, bool playing, bool reset) override;
+	void SetAnimationPreview(WorldObjectId objectId, bool isPlaying, bool shouldReset) override;
 
 	bool ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error) override;
 
-	IEditableWorld* GetEditableWorld() override { return this; }
+	IEditableWorld* GetEditableWorld() override;
 
 	bool GetEditorViewInfo(EditorViewInfo& viewInfo) const override;
 
@@ -93,29 +93,29 @@ public:
 
 	void SetEditorViewport(uint32_t width, uint32_t height) override;
 
-	void SetEditorCameraInput(bool enabled) override;
+	void SetEditorCameraInput(bool isEnabled) override;
 
-	void SetEditorGameView(bool enabled) override { gameView_ = enabled; }
+	void SetEditorGameView(bool isEnabled) override;
 
 	void FocusEditorCamera(const Vector3& position) override;
 
 	//=============================================================================================//
 	// Getter / Particle
 
-	ParticleSettings* GetParticleSettings() override { return &particleSettings_; }
+	ParticleSettings* GetParticleSettings() override;
 
 	size_t GetParticleCount() const override;
 
 	//=============================================================================================//
 	// Setter / Particle操作
 
-	void SetParticlePreview(const ParticlePreviewState& state) override { particlePreview_ = state; }
+	void SetParticlePreview(const ParticlePreviewState& state) override;
 
 	void ResetParticlePreview() override;
 
-	void BurstParticles() override { particleBurstRequested_ = true; }
+	void BurstParticles() override;
 
-	void OnPlayStateChanged(bool playing) override;
+	void OnPlayStateChanged(bool isPlaying) override;
 
 protected:
 
@@ -128,13 +128,13 @@ protected:
 	// EditorではGameViewを選び、文字入力やメニューを操作していないときだけ受け付ける。
 	bool CanHandleGameInput() const;
 
-	bool IsPlaying() const { return playing_; } // 派生シーンの設定UIも再生中は編集を止める。
+	bool IsPlaying() const; // 派生シーンの設定UIも再生中は編集を止める。
 
 	//=============================================================================================//
 	// Setter / 共通Particle
 
 	// 個別Emitterとは別のサンプル発生。必要な場面だけが明示的に有効にする。
-	void SetCommonParticleEmission(bool enabled) { commonParticleEmission_ = enabled; }
+	void SetCommonParticleEmission(bool isEnabled);
 
 	//=============================================================================================//
 	// 実行状態の初期化
@@ -168,9 +168,9 @@ private:
 
 	bool IsParticlePreviewTarget(WorldObjectId objectId) const;
 
-	bool ShouldSimulateEmitter(WorldObjectId objectId, bool gameEmissionEnabled) const;
+	bool ShouldSimulateEmitter(WorldObjectId objectId, bool isGameEmissionEnabled) const;
 
-	bool ShouldEmitEmitter(WorldObjectId objectId, bool gameEmissionEnabled) const;
+	bool ShouldEmitEmitter(WorldObjectId objectId, bool isGameEmissionEnabled) const;
 
 	//=============================================================================================//
 	// 型 / モデル描画データ
@@ -180,7 +180,7 @@ private:
 
 		std::string model;
 
-		bool animationPreview = false; // Editor内での個別再生。保存・履歴には含めない。
+		bool isAnimationPreviewEnabled = false; // Editor内での個別再生。保存・履歴には含めない。
 	};
 
 	// 描画結果と専用描画リソースを一組で保持する。
@@ -191,7 +191,7 @@ private:
 
 		Matrix4x4 world{};
 
-		bool rendered = false;
+		bool wasRendered = false;
 	};
 
 private:
@@ -247,8 +247,8 @@ private:
 
 	WorldMotion motion_; // 保存対象外の開始位置と往復移動の時計。
 
-	bool simulationEnabled_ = true; // このフレームに時間経過を進めるかどうか。
-	bool playing_ = false; // Pause中もtrueとなる、再生モード自体の状態。
+	bool isSimulationEnabled_ = true; // このフレームに時間経過を進めるかどうか。
+	bool isPlaying_ = false; // Pause中もtrueとなる、再生モード自体の状態。
 
 	//=============================================================================================//
 	// Particle設定
@@ -257,13 +257,13 @@ private:
 
 	ParticlePreviewState particlePreview_;
 
-	bool particleBurstRequested_ = false;
-	bool commonParticleEmission_ = false; // タイトルなど、Emitterを置かない場面の意図しない発生を防ぐ。
+	bool isParticleBurstRequested_ = false;
+	bool isCommonParticleEmissionEnabled_ = false; // タイトルなど、Emitterを置かない場面の意図しない発生を防ぐ。
 
 	//=============================================================================================//
 	// Scene表示
 
-	bool gameView_ = false; // Gameタブならゲームカメラを使用する。
+	bool isGameView_ = false; // Gameタブならゲームカメラを使用する。
 
 	uint32_t viewportWidth_ = 1600;
 	uint32_t viewportHeight_ = 900;

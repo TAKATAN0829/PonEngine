@@ -9,7 +9,7 @@ struct MotionSettings {
 	// 回転Component
 
 	bool hasRotation = false;
-	bool rotationEnabled = true;
+	bool isRotationEnabled = true;
 
 	Vector3 rotationDegreesPerSecond = {0, 45, 0}; // 各ローカルEuler角へ加える度/秒。
 
@@ -17,7 +17,7 @@ struct MotionSettings {
 	// 往復移動Component
 
 	bool hasMovement = false;
-	bool movementEnabled = true;
+	bool isMovementEnabled = true;
 
 	Vector3 movementOffset = {0, 2, 0}; // 開始位置から終点までの、親座標系での変位。
 
@@ -25,30 +25,6 @@ struct MotionSettings {
 };
 
 // 無効・取り外し中の設定も検証し、後から有効化した時の異常値を防ぐ。
-inline bool ValidateMotionSettings(const MotionSettings& settings) {
-	
-	const float speeds[] = {settings.rotationDegreesPerSecond.x, settings.rotationDegreesPerSecond.y, settings.rotationDegreesPerSecond.z};
+bool AreMotionSettingsValid(const MotionSettings& settings);
 
-	for (float speed : speeds) {
-		if (!std::isfinite(speed) || std::abs(speed) > 3600) {
-			return false;
-		}
-	}
-
-	const float offsets[] = {settings.movementOffset.x, settings.movementOffset.y, settings.movementOffset.z};
-	
-	for (float offset : offsets) {
-		if (!std::isfinite(offset) || std::abs(offset) > 100000) {
-			return false;
-		}
-	}
-
-	return std::isfinite(settings.movementPeriod) && settings.movementPeriod >= 0.01f && settings.movementPeriod <= 3600;
-}
-
-inline bool EqualMotionSettings(const MotionSettings& first, const MotionSettings& second) {
-	return first.hasRotation == second.hasRotation && first.rotationEnabled == second.rotationEnabled &&
-		first.rotationDegreesPerSecond.x == second.rotationDegreesPerSecond.x && first.rotationDegreesPerSecond.y == second.rotationDegreesPerSecond.y && first.rotationDegreesPerSecond.z == second.rotationDegreesPerSecond.z &&
-		first.hasMovement == second.hasMovement && first.movementEnabled == second.movementEnabled &&
-		first.movementOffset.x == second.movementOffset.x && first.movementOffset.y == second.movementOffset.y && first.movementOffset.z == second.movementOffset.z && first.movementPeriod == second.movementPeriod;
-}
+bool AreMotionSettingsEqual(const MotionSettings& first, const MotionSettings& second);

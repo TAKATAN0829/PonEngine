@@ -14,6 +14,7 @@
 
 
 void Object3dCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
+	// 3D描画で借用する機能を保持し、Pipelineとカメラ用データを作る。
 
 	assert(dxCommon);
 
@@ -35,6 +36,7 @@ void Object3dCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager,
 
 
 void Object3dCommon::DrawSettingCommon() {
+	// 共通のRootSignatureとPipelineを描画命令へ設定する。
 
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
@@ -52,8 +54,30 @@ void Object3dCommon::DrawSettingCommon() {
 
 
 void Object3dCommon::SetBlendMode(BlendMode blendMode) {
+	// 描画時の合成方法を更新する。
 
 	dxCommon_->GetCommandList()->SetPipelineState(pipelineStates_[blendMode].Get());
+}
+
+//=============================================================================================//
+// カメラ位置設定
+
+void Object3dCommon::SetCameraPosition(const Vector3& position) {
+	// ライティング計算で使うカメラ位置をGPU用データへ設定する。
+	cameraData_->worldPosition = position;
+}
+
+//=============================================================================================//
+// Getter
+
+DirectXCommon* Object3dCommon::GetDxCommon() const {
+	// 借用している共通描画機能を取得する。
+	return dxCommon_;
+}
+
+SrvManager* Object3dCommon::GetSrvManager() const {
+	// 借用している共有SRV管理機能を取得する。
+	return srvManager_;
 }
 
 //=============================================================================================//
@@ -61,6 +85,7 @@ void Object3dCommon::SetBlendMode(BlendMode blendMode) {
 
 
 void Object3dCommon::CreateRootSignature() {
+	// シェーダーへ渡す定数とテクスチャの配置を定義する。
 
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 
@@ -195,6 +220,7 @@ void Object3dCommon::CreateGraphicsPipeline() {
 
 
 void Object3dCommon::CreateCameraResource() {
+	// カメラ情報をGPUへ渡すバッファを確保し、書込先を取得する。
 
 	cameraResource_ = ResourceManager::CreateBufferResource(dxCommon_->GetDevice(), sizeof(CameraForGPU), "cameraResource");
 

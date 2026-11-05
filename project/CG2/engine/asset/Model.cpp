@@ -34,7 +34,7 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 		throw std::runtime_error("Model has no triangle vertices.");
 	}
 
-	if (modelData_.animated) {
+	if (modelData_.isAnimated) {
 		animation_ = std::make_unique<ModelAnimation>();
 
 		animation_->Initialize(directoryPath + "/" + filename);
@@ -127,6 +127,7 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 
 // スロットごとの範囲を描画し、別マテリアルの設定を上書きしない。
 void Model::Draw(Material* instanceMaterial, const std::vector<std::unique_ptr<Material>>* slots, Mesh* animatedMesh) {
+	// Materialスロットに対応する頂点範囲を順に描画する。
 	Mesh* drawable = mesh_.get();
 
 	if (animatedMesh != nullptr) {
@@ -149,9 +150,50 @@ void Model::Draw(Material* instanceMaterial, const std::vector<std::unique_ptr<M
 }
 
 //=============================================================================================//
+// Getter
+
+Material* Model::GetMaterial() const {
+	// モデルが使うMaterialを取得する。
+	return material_.get ();
+}
+
+const Model::Node& Model::GetRootNode() const {
+	// モデルのルートノードを取得する。
+	return modelData_.rootNode;
+}
+
+// 読込時に求めたメッシュの範囲。画面上の選択判定に使用する。
+const AABB& Model::GetLocalBounds() const {
+	// 読込時に求めたモデルの範囲を参照で返す。
+	return localBounds_;
+}
+
+// 元データは共有し、編集値と変形用メッシュはObject3dが個別に所有する。
+const std::vector<ModelMaterialInfo>& Model::GetMaterials() const {
+	// モデルのMaterial一覧を取得する。
+	return modelData_.materials;
+}
+
+uint32_t Model::GetTextureIndex(size_t slot) const {
+	// 使用するテクスチャの番号を取得する。
+	return modelData_.textureIndices.at(slot);
+}
+
+const std::vector<Mesh::VertexData>& Model::GetVertices() const {
+	// モデルの頂点一覧を取得する。
+	return modelData_.vertices;
+}
+
+const ModelAnimation* Model::GetAnimation() const {
+	// モデルのアニメーション情報を取得する。
+	return animation_.get();
+}
+
+//=============================================================================================//
 // Asset参照の更新
 
 void Model::RemapAssetPaths(const AssetPathChange& change) {
+	// キャッシュや保存基準のパスも含め、Asset移動の結果を反映する。
 	for (ModelMaterialInfo& material : modelData_.materials) {
 		material.texture = change.RemapResource(material.texture);
 	}
@@ -184,15 +226,15 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 		throw std::runtime_error("Model has no root node.");
 	}
 
-	modelData.animated = scene->HasAnimations();
+	modelData.isAnimated = scene->HasAnimations();
 
 	for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
 		if (scene->mMeshes[meshIndex]->HasBones()) {
-			modelData.animated = true;
+			modelData.isAnimated = true;
 		}
 	}
 
-	if (!modelData.animated) {
+	if (!modelData.isAnimated) {
 		// 静的モデルだけを焼き込む。アニメーションのノード階層は残す。
 		if (filename != "plane.gltf" && filename != "axis.obj") {
 			scene = importer.ApplyPostProcessing(aiProcess_PreTransformVertices);
@@ -313,6 +355,7 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 
 
 Model::Node Model::ReadNode(aiNode* node) {
+	// ノードの変換と子ノードを読み込み、モデルの階層を組み立てる。
 
 	Node result;
 

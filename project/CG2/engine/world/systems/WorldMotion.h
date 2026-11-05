@@ -31,7 +31,7 @@ private:
 
 		double elapsed = 0; // 大きな累積誤差を避けるためdoubleで保持する。
 
-		bool initialized = false;
+		bool isInitialized = false;
 	};
 
 	//=============================================================================================//

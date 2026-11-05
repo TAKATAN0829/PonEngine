@@ -9,6 +9,26 @@
 #include "Mesh.h"
 
 //=============================================================================================//
+// スプライト共通部
+
+void SpriteCommon::SetViewportSize(float width, float height) {
+	// 表示サイズを保存し、必要な投影や描画基準へ反映する。
+	viewportWidth_ = width;
+
+	viewportHeight_ = height;
+}
+
+float SpriteCommon::GetViewportWidth() const {
+	// Spriteの描画基準となる幅を取得する。
+	return viewportWidth_;
+}
+
+float SpriteCommon::GetViewportHeight() const {
+	// Spriteの描画基準となる高さを取得する。
+	return viewportHeight_;
+}
+
+//=============================================================================================//
 // 初期化処理
 
 
@@ -58,8 +78,27 @@ void SpriteCommon::DrawSettingCommon() {
 
 
 void SpriteCommon::Finalize() {
+	// Sprite描画で共有するメッシュを解放する。
 
 	delete mesh_;
+}
+
+//=============================================================================================//
+// Getter
+
+DirectXCommon* SpriteCommon::GetDxCommon() const {
+	// 借用している共通描画機能を取得する。
+	return dxCommon_;
+}
+
+SrvManager* SpriteCommon::GetSrvManager() const {
+	// 借用している共有SRV管理機能を取得する。
+	return srvManager_;
+}
+
+Mesh* SpriteCommon::GetMesh() const {
+	// 共有しているメッシュを取得する。
+	return mesh_;
 }
 
 //=============================================================================================//

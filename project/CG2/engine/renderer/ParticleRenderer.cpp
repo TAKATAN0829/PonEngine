@@ -198,6 +198,7 @@ void ParticleRenderer::Initialize(DirectXCommon* dxCommon, SrvManager* srvManage
 
 
 void ParticleRenderer::Finalize() {
+	// Particle描画で共有するメッシュと深度参照を解放する。
 	dxCommon_->FinalizeDepthSampling();
 
 	srvManager_->Free(backDepthDescriptor_);
@@ -211,7 +212,7 @@ void ParticleRenderer::Finalize() {
 // 描画前設定
 
 
-void ParticleRenderer::PreDraw(BlendMode blendMode, bool useBrightnessAlpha, const Matrix4x4& inverseViewProjection, float softDistance) {
+void ParticleRenderer::PreDraw(BlendMode blendMode, bool isBrightnessAlphaEnabled, const Matrix4x4& inverseViewProjection, float softDistance) {
 
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
@@ -246,7 +247,7 @@ void ParticleRenderer::PreDraw(BlendMode blendMode, bool useBrightnessAlpha, con
 
 	surfaceSettings.height = depthHeight_;
 
-	if (useBrightnessAlpha) {
+	if (isBrightnessAlphaEnabled) {
 		surfaceSettings.brightnessAlpha = 1;
 	}
 
@@ -271,6 +272,7 @@ void ParticleRenderer::PreDraw(BlendMode blendMode, bool useBrightnessAlpha, con
 }
 
 void ParticleRenderer::BeginPass() {
+	// 今回のParticle描画で使う深度の参照を開始する。
 	assert(passDepth_.ptr == 0);
 
 	passDepth_ = dxCommon_->BeginDepthRead();
@@ -281,7 +283,26 @@ void ParticleRenderer::BeginPass() {
 }
 
 void ParticleRenderer::EndPass() {
+	// 深度の参照を終え、描画側へ状態を戻す。
 	dxCommon_->EndDepthRead();
 
 	passDepth_ = {};
+}
+
+//=============================================================================================//
+// Getter
+
+DirectXCommon* ParticleRenderer::GetDxCommon() const {
+	// 借用している共通描画機能を取得する。
+	return dxCommon_;
+}
+
+SrvManager* ParticleRenderer::GetSrvManager() const {
+	// 借用している共有SRV管理機能を取得する。
+	return srvManager_;
+}
+
+Mesh* ParticleRenderer::GetMesh() const {
+	// 共有しているメッシュを取得する。
+	return mesh_;
 }

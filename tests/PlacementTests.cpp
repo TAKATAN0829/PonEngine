@@ -7,8 +7,8 @@
 #include <limits>
 
 namespace {
-	void CheckPlacement(bool condition) {
-		if (!condition) {
+	void CheckPlacement(bool isConditionSatisfied) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error("Model placement regression");
 		}
 	}

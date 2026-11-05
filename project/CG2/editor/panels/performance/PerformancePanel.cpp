@@ -14,6 +14,7 @@
 namespace {
 	// 一覧の時間はCPU区間。GPU待機時間をGPU描画時間として解釈しない。
 	void DrawPerformanceDetails(const FrameProfiler::Sample& sample) {
+		// 選択フレームの計測区間を比較し、負荷の内訳を表示する。
 		ImGui::Text("Frame #%llu: %.2f ms", static_cast<unsigned long long>(sample.number), sample.frameMilliseconds);
 
 		float framesPerSecond = 0;
@@ -27,7 +28,7 @@ namespace {
 
 		ImGui::Text("Triangles: %llu   Instances: %llu", static_cast<unsigned long long>(sample.triangles), static_cast<unsigned long long>(sample.instances));
 
-		if (sample.gpuTimingValid) {
+		if (sample.isGpuTimingValid) {
 			ImGui::Text("GPU execution: %.3f ms", sample.gpuMilliseconds);
 		} else {
 			ImGui::TextDisabled("GPU execution: N/A（未対応または計測結果未取得）");
@@ -57,6 +58,7 @@ namespace {
 	}
 
 	void DrawPerformanceHistory(int& selectedFrame_) {
+		// 固定長の履歴からフレーム時間の推移を描く。
 		std::array<float, FrameProfiler::kHistorySize> durations{};
 
 		float average = 0;
@@ -97,24 +99,25 @@ namespace {
 
 
 // 画面を開いていなくても固定長で記録を続け、発生後に履歴を調べられるようにする。
-void PerformancePanel::Draw(bool& visible) {
+void PerformancePanel::Draw(bool& isVisible) {
+	// 記録の停止・ピーク・選択フレームを操作し、計測履歴を表示する。
 #ifdef USE_IMGUI
-	if (!visible) {
+	if (!isVisible) {
 		return;
 	}
 
 	ImGui::SetNextWindowSize({590, 650}, ImGuiCond_FirstUseEver);
 
-	if (!ImGui::Begin("Performance", &visible)) {
+	if (!ImGui::Begin("Performance", &isVisible)) {
 		ImGui::End();
 
 		return;
 	}
 
-	bool paused = FrameProfiler::IsPaused();
+	bool isPaused = FrameProfiler::IsPaused();
 
-	if (ImGui::Checkbox("記録を一時停止（ゲームは継続）", &paused)) {
-		FrameProfiler::SetPaused(paused);
+	if (ImGui::Checkbox("記録を一時停止（ゲームは継続）", &isPaused)) {
+		FrameProfiler::SetPaused(isPaused);
 
 		selectedFrame_ = (std::max)(0, static_cast<int>(FrameProfiler::GetCount()) - 1);
 	}
@@ -129,7 +132,7 @@ void PerformancePanel::Draw(bool& visible) {
 
 	DrawPerformanceHistory(selectedFrame_);
 
-	ImGui::Checkbox("最も重かったフレームを表示", &inspectPeak_);
+	ImGui::Checkbox("最も重かったフレームを表示", &shouldInspectPeak_);
 
 	if (FrameProfiler::IsPaused()) {
 		ImGui::SliderInt("履歴フレーム", &selectedFrame_, 0, static_cast<int>(FrameProfiler::GetCount()) - 1);
@@ -141,7 +144,7 @@ void PerformancePanel::Draw(bool& visible) {
 		sample = &FrameProfiler::GetSample(static_cast<size_t>(selectedFrame_));
 	}
 
-	if (inspectPeak_) {
+	if (shouldInspectPeak_) {
 		sample = &FrameProfiler::GetPeak();
 	}
 
@@ -164,7 +167,7 @@ void PerformancePanel::Draw(bool& visible) {
 	if (ImGui::Button("最大フレームをリセット")) {
 		FrameProfiler::ResetPeak();
 
-		inspectPeak_ = false;
+		shouldInspectPeak_ = false;
 	}
 
 	ImGui::TextWrapped("%s", exportStatus_.c_str());
@@ -172,7 +175,7 @@ void PerformancePanel::Draw(bool& visible) {
 	ImGui::End();
 
 #else
-	(void)visible;
+	(void)isVisible;
 
 #endif
 }

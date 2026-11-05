@@ -31,12 +31,12 @@ private:
 		WorldObjectId childId = kInvalidWorldObjectId;
 		WorldObjectId parentId = kInvalidWorldObjectId;
 
-		bool requested = false;
+		bool isRequested = false;
 
 		std::string model; // Projectからのモデル配置要求。
 
-		bool prefab = false; // 同じ固定長パスをPrefab配置にも使う。
-		bool contextRequested = false; // 行のIDスコープを抜けてからメニューを開く。
+		bool isPrefab = false; // 同じ固定長パスをPrefab配置にも使う。
+		bool isContextRequested = false; // 行のIDスコープを抜けてからメニューを開く。
 
 		WorldObjectId contextObjectId = kInvalidWorldObjectId;
 	};

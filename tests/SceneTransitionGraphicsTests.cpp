@@ -14,43 +14,43 @@ namespace {
 		int originFinalizations = 0;
 		int gameFinalizations = 0;
 		int returnFinalizations = 0;
-		bool restored = false;
-		bool undone = false;
-		bool redone = false;
+		bool wasRestored = false;
+		bool wasUndone = false;
+		bool wasRedone = false;
 	};
 
 	class TransitionTitleScene : public TitleScene {
 	public:
-		TransitionTitleScene(TransitionState& state, bool origin) : state_(state), origin_(origin) {}
+		TransitionTitleScene(TransitionState& state, bool isOriginScene) : state_(state), isOriginScene_(isOriginScene) {}
 		void Initialize(const SceneContext& context) override {
 			TitleScene::Initialize(context);
-			if (origin_) {
+			if (isOriginScene_) {
 				++state_.originInitializations;
 				GetEditableObject(0).transform->translate.x = 2;
 			}
 		}
 		void Update(Input* input) override;
-		void UpdateEditorFrame(Input* input, bool simulate) override {
-			TitleScene::UpdateEditorFrame(input, simulate);
-			if (origin_) {
+		void UpdateEditorFrame(Input* input, bool shouldSimulate) override {
+			TitleScene::UpdateEditorFrame(input, shouldSimulate);
+			if (isOriginScene_) {
 				if (state_.frame >= 21) {
 					if (GetEditableObject(0).transform->translate.x == 2) {
-						state_.undone = true;
+						state_.wasUndone = true;
 					}
 				}
-				if (state_.undone) {
+				if (state_.wasUndone) {
 					if (state_.frame >= 27) {
 						if (GetEditableObject(0).transform->translate.x == 3) {
-							state_.redone = true;
+							state_.wasRedone = true;
 						}
 					}
 				}
 			}
-			if (origin_) {
+			if (isOriginScene_) {
 				if (state_.phase == 2) {
-					if (!simulate) {
+					if (!shouldSimulate) {
 						if (GetEditableObject(0).transform->translate.x == 3) {
-							state_.restored = true;
+							state_.wasRestored = true;
 						}
 					}
 				}
@@ -59,7 +59,7 @@ namespace {
 		void DrawEditorTools(EditorToolVisibility& visibility) override {
 			TitleScene::DrawEditorTools(visibility);
 			++state_.frame;
-			if (origin_) {
+			if (isOriginScene_) {
 				if (state_.frame == 1) {
 					// 保存基準x=2から編集x=3を履歴へ入れ、遷移後もUndo/Redoできるか調べる。
 					GetEditableObject(0).transform->translate.x = 3;
@@ -92,7 +92,7 @@ namespace {
 			}
 		}
 		void Finalize() override {
-			if (origin_) {
+			if (isOriginScene_) {
 				++state_.originFinalizations;
 			} else {
 				++state_.returnFinalizations;
@@ -101,7 +101,7 @@ namespace {
 		}
 	private:
 		TransitionState& state_;
-		bool origin_ = false;
+		bool isOriginScene_ = false;
 	};
 
 	class TransitionGameScene : public GameScene {
@@ -132,7 +132,7 @@ namespace {
 
 	void TransitionTitleScene::Update(Input* input) {
 		TitleScene::Update(input);
-		if (origin_) {
+		if (isOriginScene_) {
 			if (state_.phase == 0) {
 				// 再生前にx=3だった編集データが、遷移・停止後に戻ることを確認する。
 				GetEditableObject(0).transform->translate.x = 9;
@@ -148,15 +148,15 @@ void RunSceneTransitionGraphicsTests() {
 	Engine engine;
 	engine.Initialize(new TransitionTitleScene(state, true));
 	engine.Run(90);
-	const bool graphicsErrors = engine.HasGraphicsErrors();
+	const bool hasGraphicsErrors = engine.HasGraphicsErrors();
 	engine.Finalize();
-	if (graphicsErrors) {
+	if (hasGraphicsErrors) {
 		throw std::runtime_error("GPU validation failed during scene transitions.");
 	}
-	if (state.phase != 2 || !state.restored || !state.undone || !state.redone || state.originInitializations != 1 ||
+	if (state.phase != 2 || !state.wasRestored || !state.wasUndone || !state.wasRedone || state.originInitializations != 1 ||
 		state.originFinalizations != 1 || state.gameFinalizations != 1 || state.returnFinalizations != 1) {
-		std::cerr << "phase=" << state.phase << " restored=" << state.restored
-			<< " undo/redo=" << state.undone << "/" << state.redone
+		std::cerr << "phase=" << state.phase << " restored=" << state.wasRestored
+			<< " undo/redo=" << state.wasUndone << "/" << state.wasRedone
 			<< " origin init/final=" << state.originInitializations << "/" << state.originFinalizations
 			<< " game final=" << state.gameFinalizations << " return final=" << state.returnFinalizations << "\n";
 		throw std::runtime_error("Title/Game transitions or editor Stop restoration failed.");

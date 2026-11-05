@@ -10,14 +10,14 @@ public:
 	// 描画処理
 
 	// 表示メニューの開閉状態を受け取り、閉じたら呼出元にも反映する。
-	void Draw(bool& visible);
+	void Draw(bool& isVisible);
 
 private:
 
 	//=============================================================================================//
 	// 履歴の表示と出力結果
 
-	bool inspectPeak_ = false; // 最新フレームの代わりに最大負荷の記録を表示する。
+	bool shouldInspectPeak_ = false; // 最新フレームの代わりに最大負荷の記録を表示する。
 
 	int selectedFrame_ = 0; // 記録停止中に確認する履歴の添字。
 

@@ -65,25 +65,25 @@ void GameScene::Initialize(const SceneContext& context) {
 
 	const bool hasSavedScene = std::filesystem::exists(SceneFile::kDefaultPath, fileError);
 
-	bool loadedScene = false;
+	bool wasSceneLoaded = false;
 
 	if (fileError) {
 		LogSystem::Log("Scene file check failed: " + fileError.message() + "\n");
 	} else if (hasSavedScene) {
 		std::string error;
 
-		loadedScene = SceneFile::Load(*this, SceneFile::kDefaultPath, error,true);
+		wasSceneLoaded = SceneFile::Load(*this, SceneFile::kDefaultPath, error,true);
 
-		if (!loadedScene) {
+		if (!wasSceneLoaded) {
 			LogSystem::Log("Scene load failed: " + error + "\n");
 		}
 	}
 
-	if (loadedScene) {
+	if (wasSceneLoaded) {
 		initialAssetPath_ = SceneFile::kDefaultPath;
 	}
 
-	if (!loadedScene) {
+	if (!wasSceneLoaded) {
 		std::vector<WorldObjectData> initial = CaptureObjects();
 
 		if (!LegacyLightMigration::AddLegacyDefaults(initial,sceneError)) {
@@ -148,10 +148,11 @@ void GameScene::Draw() {
 }
 
 void GameScene::DrawEditorTools(EditorToolVisibility& visibility) {
+	// 共通の補助画面を描き、Spriteの編集画面も表示する。
 	WorldScene::DrawEditorTools(visibility);
 
-	if (visibility.worldSettings) {
-		DrawWorldSettings(&visibility.worldSettings);
+	if (visibility.areWorldSettingsVisible) {
+		DrawWorldSettings(&visibility.areWorldSettingsVisible);
 	}
 }
 
@@ -159,6 +160,7 @@ void GameScene::DrawEditorTools(EditorToolVisibility& visibility) {
 // 終了処理
 
 void GameScene::Finalize() {
+	// サンプルHUDを解放してから、共通のシーンを終了する。
 	sprite_->Finalize();
 
 	sprite_.reset();
@@ -167,9 +169,23 @@ void GameScene::Finalize() {
 }
 
 //=============================================================================================//
+// Getter / 場面情報
+
+const char* GameScene::GetName() const {
+	// C++側の場面を識別する名前を返す。
+	return "GameScene";
+}
+
+std::string GameScene::GetInitialAssetPath() const {
+	// 起動時に読み込んだシーンファイルのパスを取得する。
+	return initialAssetPath_;
+}
+
+//=============================================================================================//
 // Setter / HUD表示サイズ
 
 void GameScene::SetEditorViewport(uint32_t width, uint32_t height) {
+	// SceneViewの寸法をカメラや描画基準へ反映する。
 	WorldScene::SetEditorViewport(width, height);
 
 	if (width == 0 || height == 0) {
@@ -182,7 +198,7 @@ void GameScene::SetEditorViewport(uint32_t width, uint32_t height) {
 //=============================================================================================//
 // 設定パネル描画
 
-void GameScene::DrawWorldSettings(bool* open) {
+void GameScene::DrawWorldSettings(bool* isOpen) {
 #ifdef USE_IMGUI
 
 	//=============================================================================================//
@@ -190,7 +206,7 @@ void GameScene::DrawWorldSettings(bool* open) {
 
 	ImGui::SetNextWindowSize({390, 480}, ImGuiCond_FirstUseEver);
 
-	if (!ImGui::Begin("World Settings", open)) {
+	if (!ImGui::Begin("World Settings", isOpen)) {
 		ImGui::End();
 
 		return;
@@ -215,7 +231,7 @@ void GameScene::DrawWorldSettings(bool* open) {
 	ImGui::End();
 
 #else
-	(void)open;
+	(void)isOpen;
 
 #endif
 }

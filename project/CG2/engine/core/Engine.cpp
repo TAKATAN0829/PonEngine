@@ -128,7 +128,7 @@ void Engine::Run(uint32_t frameLimit) {
 	uint32_t renderedFrames = 0;
 
 #ifdef USE_IMGUI
-	bool previousPlayState = false;
+	bool wasPlaying = false;
 
 #endif
 
@@ -205,13 +205,13 @@ void Engine::Run(uint32_t frameLimit) {
 		// シーン更新
 
 #ifdef USE_IMGUI
-		const bool playing = editor_.IsPlaying();
+		const bool isPlaying = editor_.IsPlaying();
 
-		if (playing != previousPlayState) {
+		if (isPlaying != wasPlaying) {
 			// 開始・停止したフレームだけ通知し、粒子の初期化などを毎フレーム繰り返さない。
-			sceneManager_->SetPlayState(playing);
+			sceneManager_->SetPlayState(isPlaying);
 
-			previousPlayState = playing;
+			wasPlaying = isPlaying;
 		}
 
 		{
@@ -379,4 +379,16 @@ void Engine::Finalize() {
 	winApp_->Finalize();
 
 	delete winApp_;
+}
+
+//=============================================================================================//
+// Getter / GPU検証結果
+
+bool Engine::HasGraphicsErrors() const {
+	// 描画機能が記録したGPU検証エラーの有無を確認する。
+	if (dxCommon_->HasValidationErrors()) {
+		return true;
+	}
+
+	return false;
 }

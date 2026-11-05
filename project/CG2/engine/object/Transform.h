@@ -15,24 +15,24 @@ public:
 	//=============================================================================================//
 	// Setter
 
-	void SetParent(Transform* parent) { parent_ = parent; }
+	void SetParent(Transform* parent);
 
-	void SetScale(const Vector3& scale) { local_.scale = scale; }
+	void SetScale(const Vector3& scale);
 
-	void SetRotate(const Vector3& rotate) { local_.rotate = rotate; }
+	void SetRotate(const Vector3& rotate);
 
-	void SetTranslate(const Vector3& translate) { local_.translate = translate; }
+	void SetTranslate(const Vector3& translate);
 
 	//=============================================================================================//
 	// Getter
 
-	const TransformData& GetLocalTransform() const { return local_; }
+	const TransformData& GetLocalTransform() const;
 
-	const Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }
+	const Matrix4x4& GetWorldMatrix() const;
 
-	Vector3 GetWorldPosition() const { return { worldMatrix_.m[3][0], worldMatrix_.m[3][1], worldMatrix_.m[3][2] }; }
+	Vector3 GetWorldPosition() const;
 
-	Transform* GetParent() const { return parent_; }
+	Transform* GetParent() const;
 
 public:
 

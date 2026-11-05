@@ -11,6 +11,7 @@
 // 初期化処理
 
 void AssetActionDialog::Initialize(const std::filesystem::path& root) {
+	// resourcesのルートを保持し、ファイル操作の準備をする。
 	root_ = root;
 
 	operations_.Initialize(root, status_);
@@ -19,11 +20,12 @@ void AssetActionDialog::Initialize(const std::filesystem::path& root) {
 //=============================================================================================//
 // 描画処理
 
-void AssetActionDialog::DrawMenu(const std::filesystem::path& source, bool directory, bool allowChanges) {
+void AssetActionDialog::DrawMenu(const std::filesystem::path& source, bool isDirectory, bool areChangesAllowed) {
+	// 選択したAssetに対するファイル操作のメニューを作る。
 #ifdef USE_IMGUI
 	ImGui::Separator();
 
-	bool canModify = allowChanges;
+	bool canModify = areChangesAllowed;
 
 	if (source == root_) {
 		canModify = false;
@@ -49,33 +51,35 @@ void AssetActionDialog::DrawMenu(const std::filesystem::path& source, bool direc
 		Request(Action::References, source);
 	}
 
-	if (directory) {
-		DrawCreateMenu(source, allowChanges);
+	if (isDirectory) {
+		DrawCreateMenu(source, areChangesAllowed);
 	}
 #else
 	(void)source;
 
-	(void)directory;
+	(void)isDirectory;
 
-	(void)allowChanges;
+	(void)areChangesAllowed;
 #endif
 }
 
-void AssetActionDialog::DrawCreateMenu(const std::filesystem::path& directory, bool allowChanges) {
+void AssetActionDialog::DrawCreateMenu(const std::filesystem::path& directory, bool areChangesAllowed) {
+	// フォルダを作成する操作をメニューへ並べる。
 #ifdef USE_IMGUI
-	if (ImGui::MenuItem("フォルダを作成...", nullptr, false, allowChanges)) {
+	if (ImGui::MenuItem("フォルダを作成...", nullptr, false, areChangesAllowed)) {
 		Request(Action::CreateFolder, directory);
 	}
 #else
 	(void)directory;
 
-	(void)allowChanges;
+	(void)areChangesAllowed;
 #endif
 }
 
-void AssetActionDialog::AcceptMoveDrop(const std::filesystem::path& directory, bool allowChanges) {
+void AssetActionDialog::AcceptMoveDrop(const std::filesystem::path& directory, bool areChangesAllowed) {
+	// Projectのドロップ内容から移動先と対象を確認する。
 #ifdef USE_IMGUI
-	if (!allowChanges) {
+	if (!areChangesAllowed) {
 		return;
 	}
 
@@ -108,25 +112,26 @@ void AssetActionDialog::AcceptMoveDrop(const std::filesystem::path& directory, b
 #else
 	(void)directory;
 
-	(void)allowChanges;
+	(void)areChangesAllowed;
 #endif
 }
 
 void AssetActionDialog::Draw(IEditableWorld& scene, EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
+	// 保留中の要求を開き、使用箇所と実行前の確認を表示する。
 	activeScenePath_ = activeScenePath;
 #ifdef USE_IMGUI
-	if (openRequested_) {
+	if (isOpenRequested_) {
 		references_ = CollectReferences(scene, history);
 
-		inspected_ = true;
+		isInspected_ = true;
 
 		if (action_ != Action::CreateFolder) {
-			inspected_ = operations_.Review(source_, references_, status_);
+			isInspected_ = operations_.Review(source_, references_, status_);
 		}
 
 		ImGui::OpenPopup("Asset操作");
 
-		openRequested_ = false;
+		isOpenRequested_ = false;
 	}
 
 	if (!ImGui::BeginPopupModal("Asset操作", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -176,19 +181,19 @@ void AssetActionDialog::Draw(IEditableWorld& scene, EditorSession& history, Part
 	}
 
 	if (action_ != Action::References) {
-		bool allowed = inspected_;
+		bool isAllowed = isInspected_;
 
 		if (history.IsPlaying()) {
-			allowed = false;
+			isAllowed = false;
 		}
 
 		if (action_ == Action::Delete) {
 			if (!operations_.GetUsages().empty()) {
-				allowed = false;
+				isAllowed = false;
 			}
 		}
 
-		ImGui::BeginDisabled(!allowed);
+		ImGui::BeginDisabled(!isAllowed);
 
 		if (ImGui::Button("実行")) {
 			if (Execute(scene, history, particles)) {
@@ -222,22 +227,29 @@ void AssetActionDialog::Draw(IEditableWorld& scene, EditorSession& history, Part
 //=============================================================================================//
 // Getter / 操作結果
 
+const std::string& AssetActionDialog::GetStatus() const {
+	// 直近の操作結果の通知を取得する。
+	return status_;
+}
+
 bool AssetActionDialog::ConsumeRefresh() {
-	const bool requested = refreshRequested_;
+	// 一覧の更新要求を取り出し、要求を解除する。
+	const bool isRequested = isRefreshRequested_;
 
-	refreshRequested_ = false;
+	isRefreshRequested_ = false;
 
-	return requested;
+	return isRequested;
 }
 
 bool AssetActionDialog::ConsumePathChange(AssetPathChange& change) {
-	if (!pathChanged_) {
+	// パス変更の通知を取り出し、処理済みにする。
+	if (!hasPathChanged_) {
 		return false;
 	}
 
 	change = pathChange_;
 
-	pathChanged_ = false;
+	hasPathChanged_ = false;
 
 	return true;
 }
@@ -246,6 +258,7 @@ bool AssetActionDialog::ConsumePathChange(AssetPathChange& change) {
 // 操作の準備・確定
 
 void AssetActionDialog::Request(Action action, const std::filesystem::path& source) {
+	// 対象と操作種別を保持し、実行前の確認を準備する。
 	action_ = action;
 
 	source_ = source;
@@ -264,10 +277,11 @@ void AssetActionDialog::Request(Action action, const std::filesystem::path& sour
 
 	status_.clear();
 
-	openRequested_ = true;
+	isOpenRequested_ = true;
 }
 
 std::vector<AssetReference> AssetActionDialog::CollectReferences(IEditableWorld& scene, const EditorSession& history) const {
+	// 編集中の配置と履歴が参照するAssetを集める。
 	std::vector<AssetReference> references;
 
 	WorldAssetReferences::Collect(scene.CaptureObjects(), "Current scene", references);
@@ -329,7 +343,7 @@ bool AssetActionDialog::Execute(IEditableWorld& scene, EditorSession& history, P
 
 			particles.RemapAssetPaths(pathChange_);
 
-			pathChanged_ = true;
+			hasPathChanged_ = true;
 		}
 	}
 
@@ -339,7 +353,7 @@ bool AssetActionDialog::Execute(IEditableWorld& scene, EditorSession& history, P
 		status_ = "Asset操作が完了しました。参照とUndo履歴を更新しました。";
 	}
 
-	refreshRequested_ = true;
+	isRefreshRequested_ = true;
 
 	return true;
 }

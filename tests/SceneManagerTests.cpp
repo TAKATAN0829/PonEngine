@@ -9,7 +9,7 @@ namespace {
 		int drawn = 0;
 		int finalized = 0;
 		int destroyed = 0;
-		bool playing = false;
+		bool isPlaying = false;
 	};
 
 	class TrackedScene : public IScene {
@@ -20,15 +20,15 @@ namespace {
 		void Update(Input*) override { ++counts_.updated; }
 		void Draw() override { ++counts_.drawn; }
 		void Finalize() override { ++counts_.finalized; }
-		void OnPlayStateChanged(bool playing) override { counts_.playing = playing; }
+		void OnPlayStateChanged(bool isPlaying) override { counts_.isPlaying = isPlaying; }
 		const char* GetName() const override { return "TrackedScene"; }
 		void Queue(std::unique_ptr<IScene> nextScene) { RequestSceneChange(std::move(nextScene)); }
 	private:
 		SceneCounts& counts_;
 	};
 
-	void RequireSceneState(bool condition, const char* message) {
-		if (!condition) {
+	void RequireSceneState(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -54,7 +54,7 @@ void RunSceneManagerTests() {
 	RequireSceneState(original.drawn == 1 && game.initialized == 0, "Scene switched before frame completion.");
 	RequireSceneState(manager.ApplyPendingScene(), "Pending scene was not applied.");
 	RequireSceneState(original.finalized == 0 && original.destroyed == 0, "Editor origin was destroyed during play.");
-	RequireSceneState(game.initialized == 1 && game.playing, "Next scene did not inherit play state.");
+	RequireSceneState(game.initialized == 1 && game.isPlaying, "Next scene did not inherit play state.");
 	TrackedScene* titleScene = new TrackedScene(title);
 	gameScene->Queue(std::unique_ptr<IScene>(titleScene));
 	manager.Update(nullptr);
@@ -67,7 +67,7 @@ void RunSceneManagerTests() {
 	manager.SetPlayState(false);
 	RequireSceneState(title.finalized == 0, "Stop destroyed the scene before frame completion.");
 	RequireSceneState(manager.ApplyPendingScene(), "Stop did not restore the original scene.");
-	RequireSceneState(original.initialized == 1 && !original.playing, "Restored scene was reinitialized or kept playing.");
+	RequireSceneState(original.initialized == 1 && !original.isPlaying, "Restored scene was reinitialized or kept playing.");
 	RequireSceneState(title.finalized == 1 && title.destroyed == 1, "Stopped scene resources were not released.");
 	RequireSceneState(cancelled.initialized == 0 && cancelled.finalized == 0 && cancelled.destroyed == 1,
 		"An uninitialized request was finalized or leaked.");

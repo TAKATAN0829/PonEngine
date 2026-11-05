@@ -67,6 +67,7 @@ void WinApp::Initialize() {
 
 
 void WinApp::Update() {
+	// 現時点ではフレームごとの追加処理を行わない。
 
 }
 
@@ -104,11 +105,38 @@ void WinApp::Finalize() {
 }
 
 //=============================================================================================//
+// Getter
+
+bool WinApp::IsCloseRequested() const {
+	// 保存確認を待っているウィンドウ終了要求があるか確認する。
+	if (isCloseRequested_) {
+		return true;
+	}
+
+	return false;
+}
+
+HWND WinApp::GetHwnd() const {
+	// 生成したウィンドウのハンドルを取得する。
+	return hwnd_;
+}
+
+HINSTANCE WinApp::GetHInstance() const {
+	// 起動時に受け取ったアプリのインスタンスハンドルを取得する。
+	return wc_.hInstance;
+}
+
+//=============================================================================================//
 // Setter / 終了要求
 
+void WinApp::ClearCloseRequest() {
+	// 確認待ちの終了要求を取り消す。
+	isCloseRequested_ = false;
+}
 
 // 保存確認が済んだ後にウィンドウを破棄し、通常の終了メッセージを発生させる。
 void WinApp::ConfirmClose() {
+	// 終了確認が完了したことをウィンドウへ通知する。
 	DestroyWindow(hwnd_);
 }
 
@@ -146,7 +174,7 @@ LRESULT CALLBACK WinApp::WindowProc(
 			WinApp* window = reinterpret_cast<WinApp*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
 			if (window != nullptr) {
-				window->closeRequested_ = true;
+				window->isCloseRequested_ = true;
 
 				return 0;
 			}

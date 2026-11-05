@@ -13,8 +13,8 @@
 
 namespace {
 	// 失敗した条件を実行元へ返し、検証漏れを成功扱いにしない。
-	void RequireParticleCondition(bool condition, const char* message) {
-		if (!condition) {
+	void RequireParticleCondition(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -33,9 +33,9 @@ void RunParticlePresetTests() {
 	settings.particleScale = {0.3f,0.4f,0.5f};
 	settings.color = {0.2f,0.4f,0.8f,0.6f};
 	settings.acceleration = {0,-9.8f,0};
-	settings.accelerationEnabled = true;
-	settings.randomColor = true;
-	settings.billboard = false;
+	settings.isAccelerationEnabled = true;
+	settings.isRandomColorEnabled = true;
+	settings.isBillboardEnabled = false;
 	settings.spawnCount = 80;
 	settings.interval = 0.03f;
 	settings.lifetimeMinimum = 0.5f;
@@ -46,20 +46,20 @@ void RunParticlePresetTests() {
 	std::string error;
 	RequireParticleCondition(ParticlePresetFile::Save(settings, presetPath, error), "Particle save failed");
 	settings = {};
-	RequireParticleCondition(ParticlePresetFile::Load(settings, presetPath, error) && EqualParticleSettings(settings, original),
+	RequireParticleCondition(ParticlePresetFile::Load(settings, presetPath, error) && AreParticleSettingsEqual(settings, original),
 		"Particle settings did not roundtrip");
 	settings.spawnCount = 0;
 	RequireParticleCondition(!ParticlePresetFile::Save(settings, presetPath, error), "Invalid emission count was saved");
-	RequireParticleCondition(ParticlePresetFile::Load(settings, presetPath, error) && EqualParticleSettings(settings, original),
+	RequireParticleCondition(ParticlePresetFile::Load(settings, presetPath, error) && AreParticleSettingsEqual(settings, original),
 		"Rejected save damaged the existing preset");
 	settings.velocityMinimum.x = 100;
-	RequireParticleCondition(!ValidateParticleSettings(settings), "Inverted velocity range was accepted");
+	RequireParticleCondition(!AreParticleSettingsValid(settings), "Inverted velocity range was accepted");
 	settings = original;
 	settings.lifetimeMinimum = 8;
-	RequireParticleCondition(!ValidateParticleSettings(settings), "Inverted lifetime range was accepted");
+	RequireParticleCondition(!AreParticleSettingsValid(settings), "Inverted lifetime range was accepted");
 	settings = original;
 	settings.interval = std::numeric_limits<float>::quiet_NaN();
-	RequireParticleCondition(!ValidateParticleSettings(settings), "Non-finite particle setting was accepted");
+	RequireParticleCondition(!AreParticleSettingsValid(settings), "Non-finite particle setting was accepted");
 
 	std::ifstream source(presetPath);
 	const std::string contents((std::istreambuf_iterator<char>(source)), std::istreambuf_iterator<char>());
@@ -69,7 +69,7 @@ void RunParticlePresetTests() {
 	broken << "PON_PARTICLE 99\n";
 	broken.close();
 	settings = original;
-	RequireParticleCondition(!ParticlePresetFile::Load(settings, brokenPath, error) && EqualParticleSettings(settings, original),
+	RequireParticleCondition(!ParticlePresetFile::Load(settings, brokenPath, error) && AreParticleSettingsEqual(settings, original),
 		"Rejected load changed particle settings");
 	broken.open(brokenPath);
 	broken << contents << "extra";
@@ -80,7 +80,7 @@ void RunParticlePresetTests() {
 	broken.open(brokenPath);
 	broken << unknownTexture;
 	broken.close();
-	RequireParticleCondition(!ParticlePresetFile::Load(settings, brokenPath, error) && EqualParticleSettings(settings, original),
+	RequireParticleCondition(!ParticlePresetFile::Load(settings, brokenPath, error) && AreParticleSettingsEqual(settings, original),
 		"Unknown particle texture was accepted");
 	RequireParticleCondition(!ParticlePresetFile::Load(settings, directory / "missing", error), "Missing preset was accepted");
 
@@ -93,13 +93,13 @@ void RunParticlePresetTests() {
 	broken << legacy;
 	broken.close();
 	RequireParticleCondition(ParticlePresetFile::Load(settings,brokenPath,error),"Legacy particle preset no longer loads");
-	RequireParticleCondition(!settings.softParticles && !settings.lifetimeAppearance,"Legacy particle appearance changed");
+	RequireParticleCondition(!settings.areSoftParticlesEnabled && !settings.isLifetimeAppearanceEnabled,"Legacy particle appearance changed");
 	const ParticleAppearance oldAppearance = EvaluateParticleAppearance(settings,{1,0.5f,0.2f,0.8f},0.25f);
 	RequireParticleCondition(std::abs(oldAppearance.color.w-0.6f)<0.0001f && oldAppearance.size == 1,"Legacy lifetime fade changed");
 
 	for (ParticlePresetKind kind : {ParticlePresetKind::Fire,ParticlePresetKind::Smoke,ParticlePresetKind::Sparks}) {
 		const ParticleSettings preset = MakeParticlePreset(kind);
-		RequireParticleCondition(ValidateParticleSettings(preset),"Built-in particle preset invalid");
+		RequireParticleCondition(AreParticleSettingsValid(preset),"Built-in particle preset invalid");
 		const ParticleAppearance birth = EvaluateParticleAppearance(preset,preset.color,0);
 		const ParticleAppearance middle = EvaluateParticleAppearance(preset,preset.color,0.5f);
 		const ParticleAppearance death = EvaluateParticleAppearance(preset,preset.color,1);
@@ -112,10 +112,10 @@ void RunParticlePresetTests() {
 	}
 	settings = MakeParticlePreset(ParticlePresetKind::Smoke);
 	settings.softDistance = std::numeric_limits<float>::infinity();
-	RequireParticleCondition(!ValidateParticleSettings(settings),"Non-finite soft distance accepted");
+	RequireParticleCondition(!AreParticleSettingsValid(settings),"Non-finite soft distance accepted");
 	settings = original;
 	settings.endColor.x = std::numeric_limits<float>::quiet_NaN();
-	RequireParticleCondition(!ValidateParticleSettings(settings),"Non-finite end color accepted");
+	RequireParticleCondition(!AreParticleSettingsValid(settings),"Non-finite end color accepted");
 
 	// Scene・Prefab・Undoでも新しい項目を失わず、旧Scene11のParticleも読める。
 	WorldObjects scene;
@@ -125,16 +125,16 @@ void RunParticlePresetTests() {
 	session.Initialize(scene);
 	scene.GetEditableObject(0).particleSettings->endSize = 0.12f;
 	session.Update(scene,false);
-	RequireParticleCondition(session.Undo(scene,error) && EqualParticleSettings(*scene.GetEditableObject(0).particleSettings,original),"Particle lifetime undo lost fields");
+	RequireParticleCondition(session.Undo(scene,error) && AreParticleSettingsEqual(*scene.GetEditableObject(0).particleSettings,original),"Particle lifetime undo lost fields");
 	RequireParticleCondition(session.Redo(scene,error),"Particle lifetime redo failed");
 	const std::filesystem::path scenePath = directory/"lifetime.ponscene";
 	RequireParticleCondition(SceneFile::Save(scene,scenePath,error),"Particle lifetime scene save failed");
 	WorldObjects loaded;
-	RequireParticleCondition(SceneFile::Load(loaded,scenePath,error) && EqualParticleSettings(*scene.GetEditableObject(0).particleSettings,*loaded.GetEditableObject(0).particleSettings),"Particle lifetime scene roundtrip failed");
+	RequireParticleCondition(SceneFile::Load(loaded,scenePath,error) && AreParticleSettingsEqual(*scene.GetEditableObject(0).particleSettings,*loaded.GetEditableObject(0).particleSettings),"Particle lifetime scene roundtrip failed");
 	const std::filesystem::path prefabPath = directory/"lifetime.ponprefab";
 	RequireParticleCondition(PrefabFile::Save(scene,emitter,prefabPath,error),"Particle lifetime prefab save failed");
 	RequireParticleCondition(PrefabFile::Instantiate(loaded,prefabPath,0,{},error) != 0,"Particle lifetime prefab instantiate failed");
-	RequireParticleCondition(EqualParticleSettings(*scene.GetEditableObject(0).particleSettings,*loaded.GetEditableObject(1).particleSettings),"Prefab lost lifetime appearance");
+	RequireParticleCondition(AreParticleSettingsEqual(*scene.GetEditableObject(0).particleSettings,*loaded.GetEditableObject(1).particleSettings),"Prefab lost lifetime appearance");
 	std::ifstream savedScene(scenePath);
 	std::string legacyScene((std::istreambuf_iterator<char>(savedScene)),std::istreambuf_iterator<char>());
 	std::ostringstream serializedParticle;
@@ -150,5 +150,5 @@ void RunParticlePresetTests() {
 	oldScene << legacyScene;
 	oldScene.close();
 	RequireParticleCondition(SceneFile::Load(loaded,directory/"legacy11.ponscene",error),"Scene11 particle compatibility broken");
-	RequireParticleCondition(!loaded.GetEditableObject(0).particleSettings->softParticles && !loaded.GetEditableObject(0).particleSettings->lifetimeAppearance,"Scene11 defaults changed");
+	RequireParticleCondition(!loaded.GetEditableObject(0).particleSettings->areSoftParticlesEnabled && !loaded.GetEditableObject(0).particleSettings->isLifetimeAppearanceEnabled,"Scene11 defaults changed");
 }

@@ -12,9 +12,9 @@ struct LightSettings {
 //=============================================================================================//
 // 設定の検証・比較
 
-bool ValidateLightSettings(const LightSettings& settings);
+bool AreLightSettingsValid(const LightSettings& settings);
 
-bool EqualLightSettings(const LightSettings& first, const LightSettings& second);
+bool AreLightSettingsEqual(const LightSettings& first, const LightSettings& second);
 
 // ライト分類と作成上限。具体的なシーンや実行Systemを参照せず、共通規則だけを公開する。
 namespace LightTypes {

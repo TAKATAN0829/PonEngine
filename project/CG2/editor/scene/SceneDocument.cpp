@@ -8,10 +8,12 @@
 // 初期化処理
 
 bool SceneDocument::Initialize(const std::filesystem::path& resources, const std::filesystem::path& initialPath, std::string& error) {
+	// resourcesの実体パスを決め、起動時に読込済みの保存先を引き継ぐ。
 	path_.clear();
 
 	std::error_code fileError;
 
+	// パス比較の基準となるresourcesの実体を確認する。
 	root_ = std::filesystem::canonical(resources, fileError);
 
 	if (fileError) {
@@ -32,7 +34,27 @@ bool SceneDocument::Initialize(const std::filesystem::path& resources, const std
 //=============================================================================================//
 // Getter / 編集中のファイル
 
+const std::filesystem::path& SceneDocument::GetRoot() const {
+	// 操作対象となるresourcesのルートを取得する。
+	return root_;
+}
+
+const std::filesystem::path& SceneDocument::GetPath() const {
+	// 編集中のファイルのパスを取得する。
+	return path_;
+}
+
+bool SceneDocument::HasPath() const {
+	// 編集中のシーンに保存先が設定されているか確認する。
+	if (!path_.empty()) {
+		return true;
+	}
+
+	return false;
+}
+
 std::string SceneDocument::GetName() const {
+	// 未保存ならUntitled、保存先があれば拡張子を除いた名前を返す。
 	if (path_.empty()) {
 		return "Untitled";
 	}
@@ -44,6 +66,7 @@ std::string SceneDocument::GetName() const {
 // 新規・読込・保存
 
 bool SceneDocument::New(IEditableWorld& world, std::string& error) {
+	// 空の配置への置換に成功してから、以前の保存先を外す。
 	if (!world.ReplaceObjects({}, error)) {
 		return false;
 	}
@@ -56,24 +79,28 @@ bool SceneDocument::New(IEditableWorld& world, std::string& error) {
 }
 
 bool SceneDocument::Open(IEditableWorld& world, const std::filesystem::path& path, std::string& error) {
+	// パスと保存内容を検証し、成功時だけ編集中のファイルを切り替える。
 	std::filesystem::path resolved;
 
 	if (!ResolvePath(path, true, resolved, error)) {
 		return false;
 	}
 
+	// 全件の読込と検証が済むまで、現在の保存先を変えない。
 	if (!SceneFile::Load(world, resolved, error, true)) {
 		return false;
 	}
 
 	path_ = resolved;
 
+	// 前の配置の速度やプレビューを初期化する。
 	world.OnSceneContentsChanged();
 
 	return true;
 }
 
 bool SceneDocument::Save(IEditableWorld& world, std::string& error) {
+	// 保存先が決まっていることを確認し、現在のファイルへ保存する。
 	if (!HasPath()) {
 		error = "Choose a scene filename before saving.";
 
@@ -83,20 +110,23 @@ bool SceneDocument::Save(IEditableWorld& world, std::string& error) {
 	return SaveAs(world, path_, true, error);
 }
 
-bool SceneDocument::SaveAs(IEditableWorld& world, const std::filesystem::path& path, bool overwriteConfirmed, std::string& error) {
+bool SceneDocument::SaveAs(IEditableWorld& world, const std::filesystem::path& path, bool isOverwriteConfirmed, std::string& error) {
+	// 保存先と上書き可否を確認し、書込成功後に現在のパスを更新する。
 	std::filesystem::path resolved;
 
+	// resources内のSceneファイルか検証する。
 	if (!ResolvePath(path, false, resolved, error)) {
 		return false;
 	}
 
 	std::error_code fileError;
 
+	// 別の既存ファイルを上書きする場合は確認を要求する。
 	if (std::filesystem::exists(resolved, fileError)) {
-		const bool currentFile = AssetPathChange::Contains(path_, resolved) && AssetPathChange::Contains(resolved, path_);
+		const bool isCurrentFile = AssetPathChange::DoesContain(path_, resolved) && AssetPathChange::DoesContain(resolved, path_);
 
-		if (!currentFile) {
-			if (!overwriteConfirmed) {
+		if (!isCurrentFile) {
+			if (!isOverwriteConfirmed) {
 				error = "This scene already exists. Confirm overwrite before saving.";
 
 				return false;
@@ -114,6 +144,7 @@ bool SceneDocument::SaveAs(IEditableWorld& world, const std::filesystem::path& p
 
 	temporary += L".tmp";
 
+	// 復旧に使える既存の一時ファイルを保護する。
 	if (GetFileAttributesW(temporary.c_str()) != INVALID_FILE_ATTRIBUTES) {
 		error = "A temporary scene file already exists. Recover or move it before saving.";
 
@@ -124,6 +155,7 @@ bool SceneDocument::SaveAs(IEditableWorld& world, const std::filesystem::path& p
 		return false;
 	}
 
+	// 保存成功後にだけ、今後の保存先を切り替える。
 	path_ = resolved;
 
 	return true;
@@ -162,7 +194,7 @@ bool SceneDocument::ResolvePath(const std::filesystem::path& requested, bool mus
 
 	candidate = candidate.lexically_normal();
 
-	if (!AssetPathChange::Contains(root_, candidate) || candidate == root_) {
+	if (!AssetPathChange::DoesContain(root_, candidate) || candidate == root_) {
 		error = "Scene files must stay inside resources.";
 
 		return false;
@@ -199,7 +231,7 @@ bool SceneDocument::ResolvePath(const std::filesystem::path& requested, bool mus
 			return false;
 		}
 
-		if (AssetPathChange::Contains(".editor-trash", part) || name.find_first_of(L"<>:\"|?*") != std::wstring::npos) {
+		if (AssetPathChange::DoesContain(".editor-trash", part) || name.find_first_of(L"<>:\"|?*") != std::wstring::npos) {
 			error = "Reserved or invalid scene path.";
 
 			return false;
@@ -274,6 +306,7 @@ bool SceneDocument::ResolvePath(const std::filesystem::path& requested, bool mus
 }
 
 void SceneDocument::RemapAssetPaths(const AssetPathChange& change) {
+	// キャッシュや保存基準のパスも含め、Asset移動の結果を反映する。
 	if (HasPath()) {
 		path_ = AssetPathChange::Path(change.RemapResource(AssetPathChange::Text(path_)));
 	}

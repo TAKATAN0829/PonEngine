@@ -10,12 +10,12 @@ struct RigidBodySettings {
 	//=============================================================================================//
 	// 存在・動作方式
 
-	bool present = false; // 有効な親RigidbodyもないColliderは固定物として扱う。
-	bool enabled = true;
+	bool isPresent = false; // 有効な親RigidbodyもないColliderは固定物として扱う。
+	bool isEnabled = true;
 
 	BodyMode mode = BodyMode::Dynamic;
 
-	bool useGravity = true;
+	bool isGravityEnabled = true;
 
 	//=============================================================================================//
 	// 質量・接触特性・初速
@@ -29,44 +29,6 @@ struct RigidBodySettings {
 	Vector3 initialVelocity{}; // ワールド単位/秒。Play開始時だけ適用する。
 };
 
-inline bool ValidateBodySettings(const RigidBodySettings& settings) {
-	if (settings.mode != BodyMode::Static && settings.mode != BodyMode::Dynamic && settings.mode != BodyMode::Kinematic) {
-		return false;
-	}
+bool AreBodySettingsValid(const RigidBodySettings& settings);
 
-	if (!std::isfinite(settings.mass) || settings.mass < 0.001f || settings.mass > 100000) {
-		return false;
-	}
-
-	if (!std::isfinite(settings.gravityScale) || settings.gravityScale < 0 || settings.gravityScale > 10) {
-		return false;
-	}
-
-	const float coefficients[] = {settings.restitution, settings.friction};
-	
-	for (float coefficient : coefficients) {
-		if (!std::isfinite(coefficient) || coefficient < 0 || coefficient > 1) {
-			return false;
-		}
-	}
-
-	if (!std::isfinite(settings.linearDamping) || settings.linearDamping < 0 || settings.linearDamping > 100) {
-		return false;
-	}
-
-	const float velocities[] = {settings.initialVelocity.x, settings.initialVelocity.y, settings.initialVelocity.z};
-	
-	for (float velocity : velocities) {
-		if (!std::isfinite(velocity) || std::abs(velocity) > 1000) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-inline bool EqualBodySettings(const RigidBodySettings& first, const RigidBodySettings& second) {
-	return first.present == second.present && first.enabled == second.enabled && first.mode == second.mode && first.useGravity == second.useGravity &&
-		first.mass == second.mass && first.gravityScale == second.gravityScale && first.restitution == second.restitution && first.friction == second.friction && first.linearDamping == second.linearDamping &&
-		first.initialVelocity.x == second.initialVelocity.x && first.initialVelocity.y == second.initialVelocity.y && first.initialVelocity.z == second.initialVelocity.z;
-}
+bool AreBodySettingsEqual(const RigidBodySettings& first, const RigidBodySettings& second);

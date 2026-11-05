@@ -14,6 +14,7 @@
 
 namespace {
 	uint32_t ReadUint32(const std::string& bytes, size_t offset) {
+		// 4バイトを順に合成し、32bitの符号なし整数を読み取る。
 		uint32_t value = 0;
 
 		for (size_t byteIndex = 0; byteIndex < 4; ++byteIndex) {
@@ -24,12 +25,14 @@ namespace {
 	}
 
 	void WriteUint32(std::string& bytes, uint32_t value) {
+		// 32bitの値を、下位のバイトから順に書き出す。
 		for (size_t byteIndex = 0; byteIndex < 4; ++byteIndex) {
 			bytes.push_back(static_cast<char>((value >> (8 * byteIndex)) & 255));
 		}
 	}
 
 	int HexValue(char character) {
+		// 16進数の文字を、対応する数値へ変換する。
 		if (character >= '0' && character <= '9') {
 			return character - '0';
 		}
@@ -46,6 +49,7 @@ namespace {
 	}
 
 	std::string EncodeUri(const std::string& text) {
+		// URIの参照先として使えるよう、必要なバイトを符号化する。
 		static constexpr char hexadecimal[] = "0123456789ABCDEF";
 
 		std::string result;
@@ -66,6 +70,7 @@ namespace {
 	}
 
 	bool IsNumber(const std::string& token) {
+		// 文字列全体を数値として読み取れるか確認する。
 		char* end = nullptr;
 
 		std::strtof(token.c_str(), &end);
@@ -74,6 +79,7 @@ namespace {
 	}
 
 	bool SkipTextureOptions(std::istringstream& input, std::string& error) {
+		// MTLのテクスチャ指定オプションを解析し、ファイル名の開始位置を求める。
 		while (input.peek() == '-') {
 			std::string option;
 
@@ -138,6 +144,7 @@ namespace {
 	}
 
 	bool ReadUnicode(const std::string& text, size_t& position, uint32_t& codepoint) {
+		// 16進数で表されたUnicodeの文字コードを読み取る。
 		codepoint = 0;
 
 		for (size_t digitIndex = 0; digitIndex < 4; ++digitIndex) {
@@ -158,6 +165,7 @@ namespace {
 	}
 
 	void AppendUnicode(std::string& result, uint32_t codepoint) {
+		// Unicodeの文字コードをUTF-8のバイト列として追加する。
 		if (codepoint <= 0x7f) {
 			result.push_back(static_cast<char>(codepoint));
 		} else if (codepoint <= 0x7ff) {
@@ -182,6 +190,7 @@ namespace {
 	}
 
 	bool ReadJsonString(const std::string& text, size_t& position, std::string& decoded, std::string& error) {
+		// エスケープとUnicodeを解釈し、JSONの文字列を読み取る。
 		decoded.clear();
 
 		++position;
@@ -380,6 +389,7 @@ bool AssetDocument::Load(const std::filesystem::path& root, const std::filesyste
 }
 
 bool AssetDocument::WriteUpdated(const std::filesystem::path& stagingPath, const AssetPathChange& change, std::string& error) const {
+	// 元の内容を保ちながら、移動対象の参照だけを書き換えて出力する。
 	if (extension_ == ".ponscene" || extension_ == ".ponprefab") {
 		std::vector<WorldObjectData> updated = objects_;
 
@@ -428,6 +438,7 @@ bool AssetDocument::WriteUpdated(const std::filesystem::path& stagingPath, const
 		updated = container + updated + binarySuffix_;
 	}
 
+	// 元ファイルへ直接書かず、指定された準備先へ更新結果を書く。
 	std::ofstream output(stagingPath, std::ios::binary | std::ios::trunc);
 
 	output.write(updated.data(), static_cast<std::streamsize>(updated.size()));
@@ -446,7 +457,32 @@ bool AssetDocument::WriteUpdated(const std::filesystem::path& stagingPath, const
 //=============================================================================================//
 // Getter / 原本・参照
 
+const std::filesystem::path& AssetDocument::GetPath() const {
+	// 編集中のファイルのパスを取得する。
+	return path_;
+}
+
+const std::string& AssetDocument::GetOriginal() const {
+	// 更新前のファイル内容を取得する。
+	return original_;
+}
+
+const std::vector<AssetReference>& AssetDocument::GetReferences() const {
+	// ファイルから収集したAsset参照を取得する。
+	return references_;
+}
+
+bool AssetDocument::IsOpaque() const {
+	// FBXの内部参照を安全に解析できないことを呼出側へ伝える。
+	if (extension_ == ".fbx") {
+		return true;
+	}
+
+	return false;
+}
+
 bool AssetDocument::HasChanges(const AssetPathChange& change) const {
+	// パスを置き換えた場合に、参照先が変わる項目があるか調べる。
 	for (const AssetReference& reference : references_) {
 		if (change.RemapRelative(reference.path) != reference.path) {
 			return true;
@@ -466,6 +502,7 @@ bool AssetDocument::HasChanges(const AssetPathChange& change) const {
 // モデル内の参照
 
 bool AssetDocument::ReadJsonLinks(std::string& error) {
+	// JSON内のパス項目を探し、書換え可能な参照として登録する。
 	size_t position = 0;
 
 	while (position < text_.size()) {
@@ -531,13 +568,13 @@ bool AssetDocument::ReadWavefrontLinks(std::string& error) {
 
 		input >> command;
 
-		bool dependency = command == "mtllib";
+		bool hasDependency = command == "mtllib";
 
 		if (extension_ == ".mtl") {
-			dependency = command.starts_with("map_") || command == "bump" || command == "disp" || command == "decal" || command == "norm";
+			hasDependency = command.starts_with("map_") || command == "bump" || command == "disp" || command == "decal" || command == "norm";
 		}
 
-		if (dependency) {
+		if (hasDependency) {
 			input >> std::ws;
 
 			if (extension_ == ".mtl") {
@@ -560,9 +597,9 @@ bool AssetDocument::ReadWavefrontLinks(std::string& error) {
 				if (!value.empty()) {
 					std::error_code pathError;
 
-					const bool wholeFilenameExists = std::filesystem::exists(root_ / path_.parent_path() / AssetPathChange::Path(value), pathError);
+					const bool doesWholeFilenameExist = std::filesystem::exists(root_ / path_.parent_path() / AssetPathChange::Path(value), pathError);
 
-					if (command == "mtllib" && !wholeFilenameExists) {
+					if (command == "mtllib" && !doesWholeFilenameExist) {
 						// 複数のMTLは各トークンの位置を保持する。引用された空白入りの名前も一つとして扱う。
 						std::istringstream entries(value);
 
@@ -607,7 +644,7 @@ bool AssetDocument::ReadWavefrontLinks(std::string& error) {
 							if (!quoted.eof()) {
 								value.resize(static_cast<size_t>(quoted.tellg()));
 							}
-						} else if (!wholeFilenameExists) {
+						} else if (!doesWholeFilenameExist) {
 							const size_t comment = (std::min)(value.find(" #"), value.find("\t#"));
 
 							if (comment != std::string::npos) {
@@ -635,7 +672,7 @@ bool AssetDocument::ReadWavefrontLinks(std::string& error) {
 	return true;
 }
 
-bool AssetDocument::AddLink(size_t begin, size_t length, const std::string& value, bool uri, std::string& error) {
+bool AssetDocument::AddLink(size_t begin, size_t length, const std::string& value, bool isUri, std::string& error) {
 	std::string scheme = value.substr(0, 5);
 
 	for (char& character : scheme) {
@@ -654,7 +691,7 @@ bool AssetDocument::AddLink(size_t begin, size_t length, const std::string& valu
 
 	std::string decoded = value;
 
-	if (uri) {
+	if (isUri) {
 		decoded.clear();
 
 		for (size_t position = 0; position < value.size(); ++position) {
@@ -699,7 +736,7 @@ bool AssetDocument::AddLink(size_t begin, size_t length, const std::string& valu
 		return false;
 	}
 
-	links_.push_back({begin, length, dependency, uri});
+	links_.push_back({begin, length, dependency, isUri});
 
 	references_.push_back({AssetPathChange::Text(dependency), AssetPathChange::Text(path_) + " / imported dependency"});
 
@@ -722,7 +759,7 @@ std::string AssetDocument::GetUpdatedLink(const Link& link, const AssetPathChang
 
 	const std::string relative = AssetPathChange::Text(target.lexically_relative(parent));
 
-	if (link.uri) {
+	if (link.isUri) {
 		return "\"" + EncodeUri(relative) + "\"";
 	}
 

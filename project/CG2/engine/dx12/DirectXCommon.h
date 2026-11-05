@@ -73,14 +73,14 @@ public:
 	//=============================================================================================//
 	// Getter
 
-	ID3D12Device* GetDevice() { return device_.Get(); }
+	ID3D12Device* GetDevice();
 
-	ID3D12GraphicsCommandList* GetCommandList() { return commandList_.Get(); }
+	ID3D12GraphicsCommandList* GetCommandList();
 
-	ID3D12CommandQueue* GetCommandQueue() { return commandQueue_.Get(); }
+	ID3D12CommandQueue* GetCommandQueue();
 
 	// PostDraw完了後・次のPreDraw前だけ参照可能。所有権は移さない。
-	ID3D12Resource* GetPresentedBuffer() const { return swapChainResources_[backBufferIndex_].Get(); }
+	ID3D12Resource* GetPresentedBuffer() const;
 
 private:
 
@@ -101,7 +101,7 @@ private:
 
 	D3D12_GPU_DESCRIPTOR_HANDLE activeDepthTexture_{};
 
-	bool depthReading_ = false;
+	bool isDepthReading_ = false;
 
 	//=============================================================================================//
 	// GPU実行時間

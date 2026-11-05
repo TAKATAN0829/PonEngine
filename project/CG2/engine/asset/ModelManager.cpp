@@ -11,6 +11,7 @@
 
 
 ModelManager* ModelManager::GetInstance() {
+	// 全体で共有する一つのインスタンスを返す。
 
 	static ModelManager instance;
 
@@ -22,6 +23,7 @@ ModelManager* ModelManager::GetInstance() {
 
 
 void ModelManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
+	// モデル読込で使う共通描画機能の参照を保持する。
 
 	modelCommon_ = new ModelCommon();
 
@@ -33,6 +35,7 @@ void ModelManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 
 
 void ModelManager::Finalize() {
+	// 登録したモデルを終了し、キャッシュを空にする。
 
 	models_.clear();
 
@@ -48,6 +51,7 @@ void ModelManager::Finalize() {
 
 
 void ModelManager::LoadModel(const std::string& filePath) {
+	// 読込済みモデルの重複を避け、指定ファイルを登録する。
 
 	if (models_.contains(filePath)) {
 
@@ -65,6 +69,7 @@ void ModelManager::LoadModel(const std::string& filePath) {
 
 // 壊れたアセットはキャッシュに登録せず、UIへ理由を返す。
 bool ModelManager::TryLoadModel(const std::string& filePath, std::string& error) {
+	// モデルの読込を試し、例外や失敗を通知へ変換する。
 	error.clear();
 
 	try {
@@ -83,6 +88,7 @@ bool ModelManager::TryLoadModel(const std::string& filePath, std::string& error)
 // Asset参照の更新
 
 void ModelManager::RemapAssetPaths(const AssetPathChange& change) {
+	// キャッシュや保存基準のパスも含め、Asset移動の結果を反映する。
 	std::vector<std::string> changedKeys;
 
 	for (const std::pair<const std::string, std::unique_ptr<Model>>& entry : models_) {
@@ -115,6 +121,7 @@ void ModelManager::RemapAssetPaths(const AssetPathChange& change) {
 
 
 Model* ModelManager::FindModel(const std::string& filePath) {
+	// 読込済みのモデルをパスで検索する。
 
 	if (models_.contains(filePath)) {
 

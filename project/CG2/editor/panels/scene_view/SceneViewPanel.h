@@ -24,18 +24,18 @@ public:
 	//=============================================================================================//
 	// Getter / 操作状態・画像サイズ
 
-	bool IsManipulating() const { return dragging_; }
+	bool IsManipulating() const;
 
-	uint32_t GetWidth() const { return width_; }
+	uint32_t GetWidth() const;
 
-	uint32_t GetHeight() const { return height_; }
+	uint32_t GetHeight() const;
 
 	//=============================================================================================//
 	// Setter / 表示画像・タブ
 
-	void SetTexture(uint64_t textureHandle) { textureHandle_ = textureHandle; }
+	void SetTexture(uint64_t textureHandle);
 
-	void ShowScene() { forceScene_ = true; }
+	void ShowScene();
 
 	//=============================================================================================//
 	// 操作の解除
@@ -109,7 +109,7 @@ private:
 		const Vector3& axisDirection, float axisLength, size_t axisIndex);
 
 	bool DrawGizmo(IEditableWorld& scene, EditorSelection& selection, const EditorViewInfo& viewInfo,
-		const ImVec2& viewportOrigin, const Vector2& mousePosition, bool imageHovered);
+		const ImVec2& viewportOrigin, const Vector2& mousePosition, bool isImageHovered);
 
 	//=============================================================================================//
 	// 選択・配置
@@ -143,8 +143,8 @@ private:
 
 	float dragAxisLength_ = 1;
 
-	bool dragging_ = false;
-	bool groupDrag_ = false; // 親子を選んでルートが一つになってもグループ操作として扱う。
+	bool isDragging_ = false;
+	bool isGroupDrag_ = false; // 親子を選んでルートが一つになってもグループ操作として扱う。
 
 	WorldObjectId draggedObject_ = kInvalidWorldObjectId;
 
@@ -160,9 +160,9 @@ private:
 	float snapAngle_ = 15; // 回転は度数で指定し、適用時だけラジアンへ変換する。
 	float snapScale_ = 0.1f; // 拡縮は開始値に対する倍率の刻み。
 
-	bool snapEnabled_ = false; // 常時有効、またはCtrlを押している間にスナップする。
-	bool showGrid_ = true;
-	bool showGuides_ = true; // 選択中カメラ・ライトの補助線。
+	bool isSnapEnabled_ = false; // 常時有効、またはCtrlを押している間にスナップする。
+	bool shouldShowGrid_ = true;
+	bool shouldShowGuides_ = true; // 選択中カメラ・ライトの補助線。
 
 	//=============================================================================================//
 	// 表示画像
@@ -175,6 +175,6 @@ private:
 	//=============================================================================================//
 	// 表示タブ
 
-	bool gameView_ = false; // trueならゲーム用カメラの画像を表示する。
-	bool forceScene_ = false; // 次の描画でSceneタブへ切り替える。
+	bool isGameView_ = false; // trueならゲーム用カメラの画像を表示する。
+	bool shouldShowScene_ = false; // 次の描画でSceneタブへ切り替える。
 };

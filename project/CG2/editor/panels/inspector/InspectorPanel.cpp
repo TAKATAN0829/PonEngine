@@ -22,13 +22,14 @@
 namespace {
 	// 必須のTransformを編集する。リセット時は位置・回転をゼロ、拡縮を一に戻す。
 	void DrawTransformComponent(TransformData* transform, WorldObjectType type) {
-		const bool positionOnly = type == WorldObjectType::PointLight || type == WorldObjectType::Particle;
+		// 親に対する位置・回転・拡縮を編集する。
+		const bool isPositionOnly = type == WorldObjectType::PointLight || type == WorldObjectType::Particle;
 
 		if (transform == nullptr) {
 			return;
 		}
 
-		const bool expanded = EditorProperties::Header("Transform","位置・回転・拡縮は親に対するローカル値です。見出しを右クリックするとリセットできます。");
+		const bool isExpanded = EditorProperties::Header("Transform","位置・回転・拡縮は親に対するローカル値です。見出しを右クリックするとリセットできます。");
 
 		if (ImGui::BeginPopupContextItem("TransformActions")) {
 			if (ImGui::MenuItem("リセット")) {
@@ -38,7 +39,7 @@ namespace {
 			ImGui::EndPopup();
 		}
 
-		if (!expanded) {
+		if (!isExpanded) {
 			return;
 		}
 
@@ -48,7 +49,7 @@ namespace {
 
 		EditorProperties::Vector("Position",&transform->translate,0.01f);
 
-		ImGui::BeginDisabled(positionOnly);
+		ImGui::BeginDisabled(isPositionOnly);
 
 		Vector3 degrees = MathUtility::Multiply(57.2957795f,transform->rotate);
 
@@ -58,7 +59,7 @@ namespace {
 
 		ImGui::EndDisabled();
 
-		ImGui::BeginDisabled(positionOnly || type == WorldObjectType::Camera || type == WorldObjectType::SpotLight || type == WorldObjectType::DirectionalLight);
+		ImGui::BeginDisabled(isPositionOnly || type == WorldObjectType::Camera || type == WorldObjectType::SpotLight || type == WorldObjectType::DirectionalLight);
 
 		EditorProperties::Vector("Scale",&transform->scale,0.01f);
 
@@ -69,6 +70,7 @@ namespace {
 
 	// メイン指定はシーンを通し、複数カメラが同時にメインにならないようにする。
 	void DrawCameraComponent(const EditableObjectView& object, IEditableWorld* scene) {
+		// メインカメラ指定と投影範囲を編集する。
 		if (object.camera == nullptr) {
 			return;
 		}
@@ -81,11 +83,11 @@ namespace {
 			return;
 		}
 
-		bool mainCamera = object.mainCamera;
+		bool isMainCamera = object.isMainCamera;
 
-		if (EditorProperties::Toggle("Main Camera", &mainCamera)) {
+		if (EditorProperties::Toggle("Main Camera", &isMainCamera)) {
 			if (scene != nullptr) {
-				if (mainCamera) {
+				if (isMainCamera) {
 					scene->SetMainCamera(object.id);
 				}
 				else {
@@ -115,7 +117,7 @@ namespace {
 			}
 		}
 
-		const bool expanded = EditorProperties::Header("Mesh Renderer","モデルと見た目の共通設定です。右クリックでComponentを削除できます。");
+		const bool isExpanded = EditorProperties::Header("Mesh Renderer","モデルと見た目の共通設定です。右クリックでComponentを削除できます。");
 
 		if (ImGui::BeginPopupContextItem("MeshRendererActions")) {
 			if (object.hasMeshRenderer != nullptr) {
@@ -133,7 +135,7 @@ namespace {
 			}
 		}
 
-		if (!expanded) {
+		if (!isExpanded) {
 			return;
 		}
 
@@ -166,16 +168,16 @@ namespace {
 			}
 		}
 
-		if (object.useRootNodeMatrix != nullptr) {
-			EditorProperties::Toggle("Root Matrix", object.useRootNodeMatrix);
+		if (object.isRootNodeMatrixUsed != nullptr) {
+			EditorProperties::Toggle("Root Matrix", object.isRootNodeMatrixUsed);
 		}
 
 		if (object.color != nullptr) {
 			EditorProperties::Color("Color", object.color);
 		}
 
-		if (object.enableLighting != nullptr) {
-			EditorProperties::Toggle("Lighting", object.enableLighting);
+		if (object.isLightingEnabled != nullptr) {
+			EditorProperties::Toggle("Lighting", object.isLightingEnabled);
 		}
 
 		if (object.shininess != nullptr) {
@@ -191,11 +193,12 @@ namespace {
 #ifdef USE_IMGUI
 namespace {
 	void DrawRotation(MotionSettings& settings) {
+		// 回転Componentの有効状態と軸ごとの速度を編集する。
 		if (!settings.hasRotation) {
 			return;
 		}
 
-		const bool expanded = EditorProperties::Header("Rotation","各ローカルEuler角を度/秒で更新します。親の回転も引き継ぎます。");
+		const bool isExpanded = EditorProperties::Header("Rotation","各ローカルEuler角を度/秒で更新します。親の回転も引き継ぎます。");
 
 		if (ImGui::BeginPopupContextItem("RotationComponentMenu")) {
 			if (ImGui::MenuItem("Componentを削除")) {
@@ -209,7 +212,7 @@ namespace {
 			return;
 		}
 
-		if (!expanded) {
+		if (!isExpanded) {
 			return;
 		}
 
@@ -217,7 +220,7 @@ namespace {
 			return;
 		}
 
-		EditorProperties::Toggle("Enabled", &settings.rotationEnabled);
+		EditorProperties::Toggle("Enabled", &settings.isRotationEnabled);
 
 		EditorProperties::Vector("Speed (deg/s)",&settings.rotationDegreesPerSecond,1,-3600,3600);
 
@@ -225,11 +228,12 @@ namespace {
 	}
 
 	void DrawMovement(MotionSettings& settings) {
+		// 往復移動の有効状態・移動量・周期を編集する。
 		if (!settings.hasMovement) {
 			return;
 		}
 
-		const bool expanded = EditorProperties::Header("Ping Pong","最初に動き始めた位置から終点へ進み、戻ります。変位は親の座標系、一往復の時間は秒で指定します。");
+		const bool isExpanded = EditorProperties::Header("Ping Pong","最初に動き始めた位置から終点へ進み、戻ります。変位は親の座標系、一往復の時間は秒で指定します。");
 
 		if (ImGui::BeginPopupContextItem("MovementComponentMenu")) {
 			if (ImGui::MenuItem("Componentを削除")) {
@@ -243,7 +247,7 @@ namespace {
 			return;
 		}
 
-		if (!expanded) {
+		if (!isExpanded) {
 			return;
 		}
 
@@ -251,7 +255,7 @@ namespace {
 			return;
 		}
 
-		EditorProperties::Toggle("Enabled", &settings.movementEnabled);
+		EditorProperties::Toggle("Enabled", &settings.isMovementEnabled);
 
 		EditorProperties::Vector("Offset",&settings.movementOffset,0.05f,-100000,100000);
 
@@ -268,6 +272,7 @@ namespace {
 
 
 void InspectorPanel::Initialize() {
+	// 前の選択に属する失敗通知を消す。
 	status_.clear();
 }
 
@@ -276,7 +281,8 @@ void InspectorPanel::Initialize() {
 
 
 // 選択対象の名前・有効状態・各Componentを編集し、未選択時は案内を表示する。
-void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditorOpen, IEditableWorld* scene) {
+void InspectorPanel::Draw(const EditableObjectView& object, bool* isParticleEditorOpen, IEditableWorld* scene) {
+	// 対象の種類とComponentに応じた編集欄を表示する。
 #ifdef USE_IMGUI
 	if (ImGui::Begin("Inspector")) {
 		if (object.id == kInvalidWorldObjectId) {
@@ -286,8 +292,8 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditor
 
 			ImGui::TextWrapped("HierarchyまたはSceneViewで対象を選択すると、Componentを編集できます。");
 		} else {
-			if (object.active != nullptr) {
-				ImGui::Checkbox("##ObjectActive",object.active);
+			if (object.isActive != nullptr) {
+				ImGui::Checkbox("##ObjectActive",object.isActive);
 
 				if (ImGui::IsItemHovered()) {
 					ImGui::SetTooltip("オブジェクト全体の有効・無効");
@@ -347,9 +353,9 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditor
 			if (object.type == WorldObjectType::Particle) {
 				ImGui::TextDisabled("Particle Emitter");
 
-				if (particleEditorOpen != nullptr) {
+				if (isParticleEditorOpen != nullptr) {
 					if (ImGui::Button("Particle Editorを開く")) {
-						*particleEditorOpen = true;
+						*isParticleEditorOpen = true;
 					}
 				}
 			}
@@ -361,14 +367,15 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* particleEditor
 #else
 	(void)object;
 
-	(void)particleEditorOpen;
+	(void)isParticleEditorOpen;
 
 	(void)scene;
 
 #endif
 }
 
-void InspectorPanel::DrawSelection(IEditableWorld& scene, EditorSelection& selection, bool* particleEditorOpen) {
+void InspectorPanel::DrawSelection(IEditableWorld& scene, EditorSelection& selection, bool* isParticleEditorOpen) {
+	// 主選択のオブジェクトを探し、対応するInspectorを表示する。
 	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Inspector);
 
 	selection.Prune(scene);
@@ -386,8 +393,8 @@ void InspectorPanel::DrawSelection(IEditableWorld& scene, EditorSelection& selec
 			continue;
 		}
 
-		if (object.id == selection.Get()) {
-			InspectorPanel::Draw(object, particleEditorOpen, &scene);
+		if (object.id == selection.GetPrimarySelectedObjectId()) {
+			InspectorPanel::Draw(object, isParticleEditorOpen, &scene);
 
 			return;
 		}
@@ -404,6 +411,7 @@ void InspectorPanel::DrawSelection(IEditableWorld& scene, EditorSelection& selec
 
 // 複数選択では共通項目を表示し、Transformは主選択との差分で編集する。
 void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSelection& selection) {
+	// 複数選択の共通項目を表示し、変更した値を対象へ反映する。
 #ifdef USE_IMGUI
 	if (!ImGui::Begin("Inspector")) {
 		ImGui::End();
@@ -422,7 +430,7 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 	EditableObjectView primary;
 
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
-		if (scene.GetEditableObject(objectIndex).id == selection.Get()) {
+		if (scene.GetEditableObject(objectIndex).id == selection.GetPrimarySelectedObjectId()) {
 			primary = scene.GetEditableObject(objectIndex);
 
 			break;
@@ -435,7 +443,7 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 		return;
 	}
 
-	if (primary.active == nullptr || primary.color == nullptr) {
+	if (primary.isActive == nullptr || primary.color == nullptr) {
 		ImGui::End();
 
 		return;
@@ -445,35 +453,35 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 
 	TransformData edited = original;
 
-	bool transformChanged = false;
-	bool active = *primary.active;
+	bool hasTransformChanged = false;
+	bool isActive = *primary.isActive;
 
 	Vector4 color = *primary.color;
 
-	bool activeChanged = false;
-	bool colorChanged = false;
+	bool hasActiveStateChanged = false;
+	bool hasColorChanged = false;
 
 	if (EditorProperties::Begin("MultipleFields")) {
-		transformChanged = EditorProperties::Vector("Position",&edited.translate,0.05f);
+		hasTransformChanged = EditorProperties::Vector("Position",&edited.translate,0.05f);
 
 		Vector3 degrees = MathUtility::Multiply(57.2957795f,edited.rotate);
 
 		if (EditorProperties::Vector("Rotation",&degrees,0.5f)) {
 			edited.rotate = MathUtility::Multiply(0.0174532925f,degrees);
 
-			transformChanged = true;
+			hasTransformChanged = true;
 		}
 
-		transformChanged |= EditorProperties::Vector("Scale",&edited.scale,0.01f);
+		hasTransformChanged |= EditorProperties::Vector("Scale",&edited.scale,0.01f);
 
-		activeChanged = EditorProperties::Toggle("Active",&active);
+		hasActiveStateChanged = EditorProperties::Toggle("Active",&isActive);
 
-		colorChanged = EditorProperties::Color("Color",&color);
+		hasColorChanged = EditorProperties::Color("Color",&color);
 
 		EditorProperties::End();
 	}
 
-	if (transformChanged || activeChanged || colorChanged) {
+	if (hasTransformChanged || hasActiveStateChanged || hasColorChanged) {
 		std::unordered_set<WorldObjectId> roots;
 
 		for (WorldObjectId identifier : selection.GetRoots(scene)) {
@@ -483,11 +491,11 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 		for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 			const EditableObjectView object = scene.GetEditableObject(objectIndex);
 
-			if (!selection.Contains(object.id)) {
+			if (!selection.DoesContain(object.id)) {
 				continue;
 			}
 
-			if (transformChanged) {
+			if (hasTransformChanged) {
 				if (roots.contains(object.id)) {
 					object.transform->translate = MathUtility::Add(object.transform->translate, MathUtility::Subtract(edited.translate, original.translate));
 
@@ -497,11 +505,11 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 				}
 			}
 
-			if (activeChanged) {
-				*object.active = active;
+			if (hasActiveStateChanged) {
+				*object.isActive = isActive;
 			}
 
-			if (colorChanged) {
+			if (hasColorChanged) {
 				*object.color = color;
 			}
 		}
@@ -523,6 +531,7 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 
 // モデル既定値は変更せず、編集されたスロットだけをシーンへ保存する。
 void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWorld& scene) {
+	// Materialスロットごとに色・光沢・画像を編集する。
 #ifdef USE_IMGUI
 	if (object.materials == nullptr || object.model == nullptr) {
 		return;
@@ -561,17 +570,17 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 			}
 		}
 
-		bool changed = false;
+		bool hasChanged = false;
 
 		if (EditorProperties::Begin("MaterialFields")) {
-			changed = EditorProperties::Color("Color",&settings.color);
+			hasChanged = EditorProperties::Color("Color",&settings.color);
 
 			if (EditorProperties::Float("Shininess",&settings.shininess,0.1f,1,500,"%.1f")) {
-				changed = true;
+				hasChanged = true;
 			}
 
-			if (EditorProperties::Toggle("Lighting",&settings.lighting)) {
-				changed = true;
+			if (EditorProperties::Toggle("Lighting",&settings.isLightingEnabled)) {
+				hasChanged = true;
 			}
 
 			EditorProperties::End();
@@ -609,7 +618,7 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 					if (scene.PrepareTexture(texture, status_)) {
 						settings.texture = texture;
 
-						changed = true;
+						hasChanged = true;
 					}
 				}
 			}
@@ -617,29 +626,29 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 			ImGui::EndDragDropTarget();
 		}
 
-		bool reset = false;
+		bool shouldReset = false;
 
 		if (ImGui::BeginPopupContextItem("MaterialActions")) {
 			if (ImGui::MenuItem("モデル既定値へ戻す")) {
-				reset = true;
+				shouldReset = true;
 			}
 
 			if (ImGui::MenuItem("テクスチャを白にする")) {
 				settings.texture = "white1x1.png";
 
 				if (scene.PrepareTexture(settings.texture, status_)) {
-					changed = true;
+					hasChanged = true;
 				}
 			}
 
 			ImGui::EndPopup();
 		}
 
-		if (reset) {
+		if (shouldReset) {
 			if (overrideIndex < object.materials->size()) {
 				object.materials->erase(object.materials->begin() + overrideIndex);
 			}
-		} else if (changed) {
+		} else if (hasChanged) {
 			if (overrideIndex < object.materials->size()) {
 				object.materials->at(overrideIndex) = std::move(settings);
 			} else {
@@ -666,6 +675,7 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 
 // 保存する設定と一時プレビューの時計を分け、再生経過がUndoを増やさないようにする。
 void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableWorld& scene) {
+	// 利用できるクリップを確認し、再生・ループ・シークを編集する。
 #ifdef USE_IMGUI
 	if (object.animation == nullptr || object.model == nullptr) {
 		return;
@@ -713,16 +723,16 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableWo
 		ImGui::EndCombo();
 	}
 
-	EditorProperties::Toggle("Auto Play",&settings.autoplay);
+	EditorProperties::Toggle("Auto Play",&settings.shouldAutoplay);
 
-	EditorProperties::Toggle("Loop",&settings.loop);
+	EditorProperties::Toggle("Loop",&settings.shouldLoop);
 
 	EditorProperties::Float("Speed",&settings.speed,0.05f,0,10);
 
-	bool previewPlaying = scene.IsAnimationPreviewPlaying(object.id);
+	bool isPreviewPlaying = scene.IsAnimationPreviewPlaying(object.id);
 
-	if (EditorProperties::Toggle("Preview",&previewPlaying)) {
-		scene.SetAnimationPreview(object.id, previewPlaying, false);
+	if (EditorProperties::Toggle("Preview",&isPreviewPlaying)) {
+		scene.SetAnimationPreview(object.id, isPreviewPlaying, false);
 	}
 
 	if (ImGui::BeginPopupContextItem("AnimationActions")) {
@@ -766,30 +776,31 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableWo
 
 
 void InspectorPanel::DrawBodyComponent(const EditableObjectView& object) {
+	// Rigidbodyの有効状態と質量・重力・接触特性を編集する。
 #ifdef USE_IMGUI
 	if (object.body == nullptr) {
 		return;
 	}
 
-	if (!object.body->present) {
+	if (!object.body->isPresent) {
 		return;
 	}
 
-	const bool expanded = EditorProperties::Header("Rigidbody","Dynamicは重力と接触で移動します。動く床はKinematic、床・壁はStaticまたはRigidbodyなし。Dynamicは動かない親の下に置きます。角速度と連続衝突判定は未対応です。");
+	const bool isExpanded = EditorProperties::Header("Rigidbody","Dynamicは重力と接触で移動します。動く床はKinematic、床・壁はStaticまたはRigidbodyなし。Dynamicは動かない親の下に置きます。角速度と連続衝突判定は未対応です。");
 
 	if (ImGui::BeginPopupContextItem("RigidbodyMenu")) {
 		if (ImGui::MenuItem("Componentを削除")) {
-			object.body->present = false;
+			object.body->isPresent = false;
 		}
 
 		ImGui::EndPopup();
 	}
 
-	if (!object.body->present) {
+	if (!object.body->isPresent) {
 		return;
 	}
 
-	if (!expanded) {
+	if (!isExpanded) {
 		return;
 	}
 
@@ -797,7 +808,7 @@ void InspectorPanel::DrawBodyComponent(const EditableObjectView& object) {
 		return;
 	}
 
-	EditorProperties::Toggle("Enabled",&object.body->enabled);
+	EditorProperties::Toggle("Enabled",&object.body->isEnabled);
 
 	int mode = static_cast<int>(object.body->mode);
 
@@ -807,7 +818,7 @@ void InspectorPanel::DrawBodyComponent(const EditableObjectView& object) {
 
 	ImGui::BeginDisabled(object.body->mode != BodyMode::Dynamic);
 
-	EditorProperties::Toggle("Use Gravity",&object.body->useGravity);
+	EditorProperties::Toggle("Use Gravity",&object.body->isGravityEnabled);
 
 	EditorProperties::Float("Mass",&object.body->mass,0.1f,0.001f,100000,"%.3f");
 
@@ -837,30 +848,31 @@ void InspectorPanel::DrawBodyComponent(const EditableObjectView& object) {
 
 // BoxとSphereは一つのColliderの形状として切り替える。
 void InspectorPanel::DrawColliderComponent(const EditableObjectView& object) {
+	// Colliderの種類・中心・寸法・Triggerを編集する。
 #ifdef USE_IMGUI
 	if (object.collider == nullptr) {
 		return;
 	}
 
-	if (!object.collider->present) {
+	if (!object.collider->isPresent) {
 		return;
 	}
 
-	const bool expanded = EditorProperties::Header("Collider","Center・Size・RadiusはTransformに対するローカル値です。Sphereは非均等拡縮・せん断では外接球を使います。Triggerは通知のみ。Colliderは最大256個です。");
+	const bool isExpanded = EditorProperties::Header("Collider","Center・Size・RadiusはTransformに対するローカル値です。Sphereは非均等拡縮・せん断では外接球を使います。Triggerは通知のみ。Colliderは最大256個です。");
 
 	if (ImGui::BeginPopupContextItem("ColliderMenu")) {
 		if (ImGui::MenuItem("Componentを削除")) {
-			object.collider->present = false;
+			object.collider->isPresent = false;
 		}
 
 		ImGui::EndPopup();
 	}
 
-	if (!object.collider->present) {
+	if (!object.collider->isPresent) {
 		return;
 	}
 
-	if (!expanded) {
+	if (!isExpanded) {
 		return;
 	}
 
@@ -868,9 +880,9 @@ void InspectorPanel::DrawColliderComponent(const EditableObjectView& object) {
 		return;
 	}
 
-	EditorProperties::Toggle("Enabled",&object.collider->enabled);
+	EditorProperties::Toggle("Enabled",&object.collider->isEnabled);
 
-	EditorProperties::Toggle("Is Trigger",&object.collider->trigger);
+	EditorProperties::Toggle("Is Trigger",&object.collider->isTrigger);
 
 	int shape = static_cast<int>(object.collider->shape);
 
@@ -900,6 +912,7 @@ void InspectorPanel::DrawColliderComponent(const EditableObjectView& object) {
 
 // Light共通項目とSpot固有の角度を分ける。向きはTransformの回転で編集する。
 void InspectorPanel::DrawLightComponent(const EditableObjectView& object) {
+	// ライトの種類に対応する色・強度・範囲を編集する。
 #ifdef USE_IMGUI
 	if (!LightTypes::IsLight(object.type)) {
 		return;
@@ -949,6 +962,7 @@ void InspectorPanel::DrawLightComponent(const EditableObjectView& object) {
 
 // 常設ボタンを増やさず、Inspectorの空白を右クリックして追加する。
 void InspectorPanel::DrawMotionComponents(const EditableObjectView& object, IEditableWorld* scene) {
+	// 回転と往復移動のComponentを追加・削除・編集する。
 #ifdef USE_IMGUI
 	if (object.motion == nullptr) {
 		return;
@@ -971,7 +985,7 @@ void InspectorPanel::DrawMotionComponents(const EditableObjectView& object, IEdi
 					const WorldObjectData* data = scene->GetObjectData(objectIndex);
 
 					if (data != nullptr) {
-						if (data->collider.present) {
+						if (data->collider.isPresent) {
 							++colliderCount;
 						}
 					}
@@ -979,16 +993,16 @@ void InspectorPanel::DrawMotionComponents(const EditableObjectView& object, IEdi
 			}
 
 			if (object.collider != nullptr) {
-				ImGui::BeginDisabled(object.collider->present || colliderCount >= WorldCollision::kMaxColliders);
+				ImGui::BeginDisabled(object.collider->isPresent || colliderCount >= WorldCollision::kMaxColliders);
 
 				if (ImGui::MenuItem("Box Collider")) {
-					object.collider->present = true;
+					object.collider->isPresent = true;
 
 					object.collider->shape = ColliderShape::Box;
 				}
 
 				if (ImGui::MenuItem("Sphere Collider")) {
-					object.collider->present = true;
+					object.collider->isPresent = true;
 
 					object.collider->shape = ColliderShape::Sphere;
 				}
@@ -1005,8 +1019,8 @@ void InspectorPanel::DrawMotionComponents(const EditableObjectView& object, IEdi
 			}
 
 			if (object.body != nullptr) {
-				if (ImGui::MenuItem("Rigidbody / 重力・押し戻し",nullptr,false,!object.body->present)) {
-					object.body->present = true;
+				if (ImGui::MenuItem("Rigidbody / 重力・押し戻し",nullptr,false,!object.body->isPresent)) {
+					object.body->isPresent = true;
 				}
 			}
 

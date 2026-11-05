@@ -48,15 +48,15 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR commandLine, 
 	}
 
 	// 試験でも本番と同じGameSceneの生成・初期化を通し、古いオブジェクトの混在を検出する。
-	const bool startupTest = arguments.find("--smoke-test") != std::string_view::npos;
+	const bool isStartupTest = arguments.find("--smoke-test") != std::string_view::npos;
 
-	if (startupTest) {
+	if (isStartupTest) {
 		engine.Run(90);
 	} else {
 		engine.Run();
 	}
 
-	const bool graphicsErrors = engine.HasGraphicsErrors();
+	const bool hasGraphicsErrors = engine.HasGraphicsErrors();
 
 	engine.Finalize ();
 
@@ -70,7 +70,7 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR commandLine, 
 
 	CoUninitialize ();
 
-	if (graphicsErrors) {
+	if (hasGraphicsErrors) {
 		return 1;
 	}
 

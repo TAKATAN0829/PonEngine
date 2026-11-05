@@ -10,8 +10,8 @@
 #include <sstream>
 
 namespace {
-    void RequireFileOperation(bool condition, const char* message) {
-        if (!condition) {
+    void RequireFileOperation(bool isConditionSatisfied, const char* message) {
+        if (!isConditionSatisfied) {
             throw std::runtime_error(message);
         }
     }
@@ -194,11 +194,11 @@ void RunAssetFileOperationTests(const std::filesystem::path& directory) {
 
     RequireFileOperation(lockedScene != INVALID_HANDLE_VALUE, "Cannot lock isolated scene fixture.");
 
-    const bool movedWhileLocked = operations.Move("images/source.png", "images/renamed.png", world, {}, error);
+    const bool wasMovedWhileLocked = operations.Move("images/source.png", "images/renamed.png", world, {}, error);
 
     CloseHandle(lockedScene);
 
-    RequireFileOperation(!movedWhileLocked, "Move succeeded despite a locked reference file.");
+    RequireFileOperation(!wasMovedWhileLocked, "Move succeeded despite a locked reference file.");
 
     RequireFileOperation(std::filesystem::exists(root / "images/source.png") && !std::filesystem::exists(root / "images/renamed.png"), "Failed move did not restore original asset path.");
 
@@ -206,9 +206,9 @@ void RunAssetFileOperationTests(const std::filesystem::path& directory) {
 
     RequireFileOperation(world.GetObjectData(0)->materials.front().texture == "images/source.png", "Failed move changed live references.");
 
-    const bool textureRenamed = operations.Move("images/source.png", "images/renamed.png", world, LiveReferences(world, history), error);
+    const bool wasTextureRenamed = operations.Move("images/source.png", "images/renamed.png", world, LiveReferences(world, history), error);
 
-    if (!textureRenamed) {
+    if (!wasTextureRenamed) {
         throw std::runtime_error("Referenced texture rename failed: " + error);
     }
 
@@ -246,9 +246,9 @@ void RunAssetFileOperationTests(const std::filesystem::path& directory) {
 
     RequireFileOperation(!history.IsDirty(world), "Asset rename changed the saved-state comparison.");
 
-    const bool modelFolderMoved = operations.Move("models", "destination/models", world, LiveReferences(world, history), error);
+    const bool wasModelFolderMoved = operations.Move("models", "destination/models", world, LiveReferences(world, history), error);
 
-    if (!modelFolderMoved) {
+    if (!wasModelFolderMoved) {
         throw std::runtime_error("Model folder move failed: " + error);
     }
 

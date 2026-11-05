@@ -6,8 +6,8 @@
 //=============================================================================================//
 // 初期化処理
 
-
 void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight) {
+	// 初期視点と表示サイズを設定し、カメラの行列を準備する。
 
 	clientWidth_ = clientWidth;
 
@@ -27,11 +27,10 @@ void DebugCamera::Initialize(int32_t clientWidth, int32_t clientHeight) {
 //=============================================================================================//
 // 更新処理
 
-
 // UIやギズモが入力を使っている間は、カメラへマウス操作を渡さない。
 void DebugCamera::Update() {
 #ifdef USE_IMGUI
-	if (!editorInputEnabled_) {
+	if (!isEditorInputEnabled_) {
 		return;
 	}
 
@@ -41,7 +40,7 @@ void DebugCamera::Update() {
 		return;
 	}
 
-	bool changed = false;
+	bool hasChanged = false;
 
 	if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
 		if (inputState.MouseDelta.x != 0 || inputState.MouseDelta.y != 0) {
@@ -51,7 +50,7 @@ void DebugCamera::Update() {
 
 			transform_.rotate.y += inputState.MouseDelta.x * rotateSpeed_;
 
-			changed = true;
+			hasChanged = true;
 		}
 	}
 
@@ -64,11 +63,11 @@ void DebugCamera::Update() {
 	if (panDelta.x != 0 || panDelta.y != 0 || inputState.MouseWheel != 0) {
 		PanAndZoom(panDelta, inputState.MouseWheel);
 
-		changed = true;
+		hasChanged = true;
 	}
 
 	// マウスが動かなければ逆行列も計算し直さない。
-	if (changed) {
+	if (hasChanged) {
 		UpdateMatrix();
 	}
 
@@ -78,16 +77,16 @@ void DebugCamera::Update() {
 //=============================================================================================//
 // 描画処理
 
-
-void DebugCamera::Draw(bool* open) {
+void DebugCamera::Draw(bool* isOpen) {
+	// カメラの編集欄を表示し、値が変わった場合だけ行列を更新する。
 #ifdef USE_IMGUI
 	ImGui::SetNextWindowSize({350, 250}, ImGuiCond_FirstUseEver);
 
-	if (ImGui::Begin("Camera", open)) {
-		bool edited = ImGui::DragFloat3("Translate", &transform_.translate.x, 0.1f);
+	if (ImGui::Begin("Camera", isOpen)) {
+		bool wasEdited = ImGui::DragFloat3("Translate", &transform_.translate.x, 0.1f);
 
 		if (ImGui::DragFloat3("Rotate", &transform_.rotate.x, 0.01f)) {
-			edited = true;
+			wasEdited = true;
 		}
 
 		ImGui::DragFloat("Pan Speed", &panSpeed_, 0.001f, 0.001f, 1, "%.3f", ImGuiSliderFlags_AlwaysClamp);
@@ -96,7 +95,7 @@ void DebugCamera::Draw(bool* open) {
 
 		ImGui::DragFloat("Rotate Speed", &rotateSpeed_, 0.001f, 0.001f, 0.1f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 
-		if (edited) {
+		if (wasEdited) {
 			UpdateMatrix();
 		}
 	}
@@ -104,17 +103,35 @@ void DebugCamera::Draw(bool* open) {
 	ImGui::End();
 
 #else
-	(void)open;
+	(void)isOpen;
 
 #endif
 }
 
 //=============================================================================================//
-// Setter / 表示サイズ・入力
+// Getter / カメラ・Transform
 
+const Matrix4x4& DebugCamera::GetViewProjectionMatrix() const {
+	// ビューと投影を合成した行列を取得する。
+	return viewProjectionMatrix_;
+}
+
+const Matrix4x4& DebugCamera::GetCameraMatrix() const {
+	// カメラのワールド行列を取得する。
+	return cameraMatrix_;
+}
+
+const TransformData& DebugCamera::GetTransform() const {
+	// 現在のTransformを取得する。
+	return transform_;
+}
+
+//=============================================================================================//
+// Setter / 表示サイズ・入力
 
 // パネルのアスペクト比に合わせ、投影とクリック判定の行列を同時に更新する。
 void DebugCamera::SetViewportSize(int32_t width, int32_t height) {
+	// 表示サイズを保存し、必要な投影や描画基準へ反映する。
 	if (width <= 0 || height <= 0) {
 		return;
 	}
@@ -132,12 +149,17 @@ void DebugCamera::SetViewportSize(int32_t width, int32_t height) {
 	UpdateMatrix();
 }
 
+void DebugCamera::SetEditorInputEnabled(bool isEnabled) {
+	// Editorカメラへマウス操作を渡すか切り替える。
+	isEditorInputEnabled_ = isEnabled;
+}
+
 //=============================================================================================//
 // 注視
 
-
 // 注視後すぐに行列を更新し、同じフレームの選択枠も新しいカメラに合わせる。
 void DebugCamera::Focus(const Vector3& targetPosition) {
+	// 現在の向きを保ち、注視位置に合わせてカメラを移動する。
 	const Vector3 forwardDirection = {cameraMatrix_.m[2][0], cameraMatrix_.m[2][1], cameraMatrix_.m[2][2]};
 
 	transform_.translate = MathUtility::Subtract(targetPosition, MathUtility::Multiply(10.0f, forwardDirection));
@@ -148,8 +170,8 @@ void DebugCamera::Focus(const Vector3& targetPosition) {
 //=============================================================================================//
 // 行列更新
 
-
 void DebugCamera::UpdateMatrix() {
+	// カメラの姿勢からビュー行列を作り、投影行列と合成する。
 
 	cameraMatrix_ = MathUtility::MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
 
@@ -161,11 +183,13 @@ void DebugCamera::UpdateMatrix() {
 
 // 表示サイズが変わらない間は投影行列を再利用する。
 void DebugCamera::UpdateProjectionMatrix() {
+	// 現在の表示サイズと画角から、投影行列を作り直す。
 	projectionMatrix_ = MathUtility::MakePerspectiveFovMatrix(0.45f, static_cast<float>(clientWidth_) / static_cast<float>(clientHeight_), 0.1f, 1000.0f);
 }
 
 // 画面をつかんで動かす中ドラッグと、視線方向へのホイール移動を合成する。
 void DebugCamera::PanAndZoom(const Vector2& mouseDelta, float wheel) {
+	// カメラの向きに合わせ、マウスの移動とホイールを位置へ反映する。
 	const Matrix4x4 rotation = MathUtility::MakeAffineMatrix({1, 1, 1}, transform_.rotate, {});
 
 	const Vector3 movement = {-mouseDelta.x * panSpeed_, mouseDelta.y * panSpeed_, wheel * zoomSpeed_};

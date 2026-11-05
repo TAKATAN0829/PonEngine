@@ -15,11 +15,11 @@ public:
 	//=============================================================================================//
 	// Getter / 編集中のファイル
 
-	const std::filesystem::path& GetRoot() const { return root_; }
+	const std::filesystem::path& GetRoot() const;
 
-	const std::filesystem::path& GetPath() const { return path_; }
+	const std::filesystem::path& GetPath() const;
 
-	bool HasPath() const { return !path_.empty(); }
+	bool HasPath() const;
 
 	std::string GetName() const;
 
@@ -34,7 +34,7 @@ public:
 	bool Save(IEditableWorld& world, std::string& error);
 
 	// 別ファイルの上書きは確認済みの場合だけ許可する。
-	bool SaveAs(IEditableWorld& world, const std::filesystem::path& path, bool overwriteConfirmed, std::string& error);
+	bool SaveAs(IEditableWorld& world, const std::filesystem::path& path, bool isOverwriteConfirmed, std::string& error);
 
 	//=============================================================================================//
 	// パスの検証・更新

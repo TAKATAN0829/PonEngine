@@ -5,6 +5,7 @@
 
 void WorldAssetReferences::Collect(const std::vector<WorldObjectData>& objects, const std::string& owner,
 	std::vector<AssetReference>& references) {
+	// 各オブジェクトのモデル・Material・Particleの参照先を列挙する。
 	for (const WorldObjectData& object : objects) {
 		const std::string location = owner + " / " + object.name;
 
@@ -30,6 +31,7 @@ void WorldAssetReferences::Collect(const std::vector<WorldObjectData>& objects, 
 // 参照の更新
 
 void WorldAssetReferences::Remap(std::vector<WorldObjectData>& objects, const AssetPathChange& change) {
+	// モデル・Material・Particleに保存したAssetパスを置き換える。
 	for (WorldObjectData& object : objects) {
 		object.model = change.RemapRelative(object.model);
 

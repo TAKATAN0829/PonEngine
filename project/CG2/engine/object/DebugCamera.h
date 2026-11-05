@@ -22,23 +22,23 @@ public:
 	// 描画処理
 
 	// Cameraパネルの値が変わった場合だけ行列へ再反映する。
-	void Draw(bool* open = nullptr);
+	void Draw(bool* isOpen = nullptr);
 
 	//=============================================================================================//
 	// Getter / カメラ・Transform
 
-	const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
+	const Matrix4x4& GetViewProjectionMatrix() const;
 
-	const Matrix4x4& GetCameraMatrix() const { return cameraMatrix_; }
+	const Matrix4x4& GetCameraMatrix() const;
 
-	const TransformData& GetTransform() const { return transform_; }
+	const TransformData& GetTransform() const;
 
 	//=============================================================================================//
 	// Setter / 表示サイズ・入力
 
 	void SetViewportSize(int32_t width, int32_t height);
 
-	void SetEditorInputEnabled(bool enabled) { editorInputEnabled_ = enabled; }
+	void SetEditorInputEnabled(bool isEnabled);
 
 	//=============================================================================================//
 	// 注視
@@ -82,5 +82,5 @@ private:
 	float zoomSpeed_ = 2.0f; // ホイール1段あたりの前後移動量。
 	float rotateSpeed_ = 0.005f; // 右ドラッグ1ピクセルあたりの回転量。
 
-	bool editorInputEnabled_ = true; // Scene画像の上にいる間だけ操作を許可する。
+	bool isEditorInputEnabled_ = true; // Scene画像の上にいる間だけ操作を許可する。
 };

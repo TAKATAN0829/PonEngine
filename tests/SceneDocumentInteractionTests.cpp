@@ -8,8 +8,8 @@
 #include <stdexcept>
 
 namespace {
-	void RequireSceneUi(bool condition, const char* message) {
-		if (!condition) {
+	void RequireSceneUi(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -86,14 +86,14 @@ namespace {
 			ImGui::EndFrame();
 		}
 
-		void Shortcut(ImGuiKey key, bool shift = false) {
+		void Shortcut(ImGuiKey key, bool isShiftPressed = false) {
 			Draw();
 
 			Draw();
 
 			ImGui::GetIO().AddKeyEvent(ImGuiMod_Ctrl, true);
 
-			ImGui::GetIO().AddKeyEvent(ImGuiMod_Shift, shift);
+			ImGui::GetIO().AddKeyEvent(ImGuiMod_Shift, isShiftPressed);
 
 			ImGui::GetIO().AddKeyEvent(key, true);
 

@@ -65,6 +65,7 @@ void Input::Update() {
 
 
 void Input::Finalize() {
+	// キーボードの取得を終了し、DirectInputの参照を解放する。
 
 	if (keyboard_ != nullptr) {
 
@@ -82,22 +83,26 @@ void Input::Finalize() {
 
 
 bool Input::IsPressKey(BYTE keyNumber) const {
+	// 指定キーが現在押されているか確認する。
 
 	return key_[keyNumber] != 0;
 }
 
 bool Input::IsReleaseKey(BYTE keyNumber) const {
+	// 指定キーが現在離されているか確認する。
 
 	return key_[keyNumber] == 0;
 }
 
 bool Input::IsTriggerKey(BYTE keyNumber) const {
+	// 前のフレームでは離され、今回押されたキーを検出する。
 
 	return preKey_[keyNumber] == 0 &&
 		key_[keyNumber] != 0;
 }
 
 bool Input::IsReleaseTriggerKey(BYTE keyNumber) const {
+	// 前のフレームでは押され、今回は離されたキーを検出する。
 
 	return preKey_[keyNumber] != 0 &&
 		key_[keyNumber] == 0;

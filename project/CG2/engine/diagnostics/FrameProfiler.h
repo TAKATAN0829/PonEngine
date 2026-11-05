@@ -2,10 +2,9 @@
 
 #include <array>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
-#include <fstream>
 #include <string>
-#include <cmath>
 
 // CPU時間と描画負荷の固定長履歴。記録中に文字列・配列の動的確保を行わない。
 class FrameProfiler {
@@ -14,7 +13,31 @@ public:
 	//=============================================================================================//
 	// 型 / 計測区間・一フレームの記録
 
-	enum class Section { Editor, History, Project, Hierarchy, Inspector, SceneView, ModelLoad, TextureLoad, SceneUpdate, Motion, Physics, Collision, Models, Animation, Particles, Previews, Render, ImGui, Submit, Present, GpuWait, FrameLimit, Count };
+	enum class Section { 
+		Editor, 
+		History, 
+		Project, 
+		Hierarchy, 
+		Inspector,
+		SceneView,
+		ModelLoad, 
+		TextureLoad,
+		SceneUpdate, 
+		Motion,
+		Physics, 
+		Collision, 
+		Models, 
+		Animation,
+		Particles,
+		Previews,
+		Render, 
+		ImGui,
+		Submit, 
+		Present, 
+		GpuWait, 
+		FrameLimit, 
+		Count 
+	};
 
 	struct Sample {
 		uint64_t number = 0;
@@ -22,7 +45,7 @@ public:
 		float frameMilliseconds = 0;
 		float gpuMilliseconds = 0; // 同じフレームのGPUタイムスタンプ差分。Present待機は含めない。
 
-		bool gpuTimingValid = false; // 未対応・取得失敗と0msを区別する。
+		bool isGpuTimingValid = false; // 未対応・取得失敗と0msを区別する。
 
 		std::array<float, static_cast<size_t>(Section::Count)> milliseconds{};
 
@@ -35,11 +58,9 @@ public:
 	// スコープの終了時に積算する。入れ子の区間は親の時間にも含まれる。
 	class Scope {
 	public:
-		explicit Scope(Section section) : section_(section), started_(Clock::now()) {}
+		explicit Scope(Section section);
 
-		~Scope() {
-			current_.milliseconds[static_cast<size_t>(section_)] += std::chrono::duration<float, std::milli>(Clock::now() - started_).count();
-		}
+		~Scope();
 
 		Scope(const Scope&) = delete;
 
@@ -56,145 +77,45 @@ public:
 	//=============================================================================================//
 	// 初期化・更新処理 / フレーム境界
 
-	static void Initialize() {
-		current_ = {};
+	static void Initialize();
 
-		latest_ = {};
+	static void BeginFrame();
 
-		peak_ = {};
-
-		history_ = {};
-
-		count_ = 0;
-
-		cursor_ = 0;
-
-		number_ = 0;
-
-		paused_ = false;
-	}
-
-	static void BeginFrame() {
-		current_ = {};
-
-		current_.number = ++number_;
-
-		started_ = Clock::now();
-	}
-
-	static void EndFrame() {
-		current_.frameMilliseconds = std::chrono::duration<float, std::milli>(Clock::now() - started_).count();
-
-		if (paused_) {
-			return;
-		}
-
-		latest_ = current_;
-
-		if (latest_.frameMilliseconds > peak_.frameMilliseconds) {
-			peak_ = latest_;
-		}
-
-		history_[cursor_] = latest_;
-
-		cursor_ = (cursor_ + 1) % kHistorySize;
-
-		if (count_ < kHistorySize) {
-			++count_;
-		}
-	}
+	static void EndFrame();
 
 	//=============================================================================================//
 	// Getter / 履歴・区間名
 
 	static constexpr size_t kHistorySize = 600;
 
-	static const Sample& GetLatest() { return latest_; }
+	static const Sample& GetLatest();
 
-	static const Sample& GetPeak() { return peak_; }
+	static const Sample& GetPeak();
 
-	static size_t GetCount() { return count_; }
+	static size_t GetCount();
 
-	static const Sample& GetSample(size_t index) {
-		const size_t first = (cursor_ + kHistorySize - count_) % kHistorySize;
+	static const Sample& GetSample(size_t index);
 
-		return history_[(first + index) % kHistorySize];
-	}
+	static bool IsPaused();
 
-	static bool IsPaused() { return paused_; }
-
-	static const char* GetSectionName(Section section) {
-		static constexpr const char* names[] = {"Editor UI / history (total)", "  History / shortcuts", "  Project / Console", "  Hierarchy", "  Inspector", "  SceneView UI / picking", "Model load (incl. textures)", "  Texture load", "Scene update (total)", "  Motion components", "  Physics / gravity / response", "  Collision detection", "  Models (incl. animation)", "    CPU animation", "  Particles", "  Asset previews", "Scene draw recording", "ImGui draw recording", "Submit / reset (total)", "  Present / VSync", "  GPU fence wait", "  FPS limiter"};
-
-		return names[static_cast<size_t>(section)];
-	}
+	static const char* GetSectionName(Section section);
 
 	//=============================================================================================//
 	// Setter / 描画カウンター・記録制御
 
-	static void SetPaused(bool paused) { paused_ = paused; }
+	static void SetPaused(bool isPaused);
 
-	static void ResetPeak() { peak_ = {}; }
+	static void ResetPeak();
 
-	static void RecordDraw(uint32_t indices, uint32_t instances) {
-		++current_.drawCalls;
+	static void RecordDraw(uint32_t indices, uint32_t instances);
 
-		current_.triangles += static_cast<uint64_t>(indices / 3) * instances;
-
-		current_.instances += instances;
-	}
-
-	static void RecordUiDraw() { ++current_.uiDrawCalls; }
+	static void RecordUiDraw();
 
 	// フェンス完了後だけ呼ぶ。異常値は履歴へ混ぜず、未取得として表示する。
-	static void SetGpuMilliseconds(float milliseconds) {
-		current_.gpuTimingValid = false;
-
-		current_.gpuMilliseconds = 0;
-
-		if (!std::isfinite(milliseconds) || milliseconds < 0) {
-			return;
-		}
-
-		current_.gpuMilliseconds = milliseconds;
-
-		current_.gpuTimingValid = true;
-	}
+	static void SetGpuMilliseconds(float milliseconds);
 
 	// 選択フレームの内訳も同じCSVへ保存し、後から原因を比較できるようにする。
-	static bool ExportCsv(const std::string& path) {
-		std::ofstream output(path, std::ios::trunc);
-
-		output << "frame,frame_ms,draw_calls,ui_draw_calls,triangles,instances,gpu_valid,gpu_ms";
-
-		for (size_t sectionIndex = 0; sectionIndex < static_cast<size_t>(Section::Count); ++sectionIndex) {
-			output << ',' << GetSectionName(static_cast<Section>(sectionIndex));
-		}
-
-		output << '\n';
-
-		for (size_t sampleIndex = 0; sampleIndex < count_; ++sampleIndex) {
-			const Sample& sample = GetSample(sampleIndex);
-
-			output << sample.number << ',' << sample.frameMilliseconds << ',' << sample.drawCalls << ',' << sample.uiDrawCalls << ',' << sample.triangles << ',' << sample.instances;
-
-			output << ',' << sample.gpuTimingValid << ',';
-
-			if (sample.gpuTimingValid) {
-				output << sample.gpuMilliseconds;
-			}
-
-			for (float duration : sample.milliseconds) {
-				output << ',' << duration;
-			}
-
-			output << '\n';
-		}
-
-		output.close();
-
-		return static_cast<bool>(output);
-	}
+	static bool ExportCsv(const std::string& path);
 
 private:
 
@@ -209,16 +130,17 @@ private:
 
 	static std::array<Sample, kHistorySize> history_;
 
-	inline static size_t count_ = 0;
-	inline static size_t cursor_ = 0;
+	static size_t count_;
+	static size_t cursor_;
 
-	inline static uint64_t number_ = 0;
+	static uint64_t number_;
 
-	inline static bool paused_ = false; // 計測表示だけを停止し、ゲームは止めない。
+	static bool isPaused_; // 計測表示だけを停止し、ゲームは止めない。
 
-	inline static Clock::time_point started_{};
+	static Clock::time_point started_;
 };
 
+// Sampleを含む型定義が揃った後で、共有データを一度だけ初期化する。
 inline FrameProfiler::Sample FrameProfiler::current_{};
 
 inline FrameProfiler::Sample FrameProfiler::latest_{};
@@ -226,3 +148,12 @@ inline FrameProfiler::Sample FrameProfiler::latest_{};
 inline FrameProfiler::Sample FrameProfiler::peak_{};
 
 inline std::array<FrameProfiler::Sample, FrameProfiler::kHistorySize> FrameProfiler::history_{};
+
+inline size_t FrameProfiler::count_ = 0;
+inline size_t FrameProfiler::cursor_ = 0;
+
+inline uint64_t FrameProfiler::number_ = 0;
+
+inline bool FrameProfiler::isPaused_ = false;
+
+inline FrameProfiler::Clock::time_point FrameProfiler::started_{};

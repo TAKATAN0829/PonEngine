@@ -7,8 +7,8 @@
 #include <utility>
 
 namespace {
-	void RequireHierarchy(bool condition, const char* message) {
-		if (!condition) {
+	void RequireHierarchy(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -52,9 +52,9 @@ void RunHierarchyTests(const std::filesystem::path& directory) {
 	RequireHierarchy(scene.SetObjectParent(lightId, parentId, error), "Cannot parent light");
 	scene.GetEditableObject(0).transform->translate.x += 5;
 	RequireHierarchy(std::abs(scene.GetObjectWorldPosition(childId).x-12) < 0.001f, "Child did not follow parent");
-	*scene.GetEditableObject(0).active = false;
+	*scene.GetEditableObject(0).isActive = false;
 	RequireHierarchy(!scene.IsObjectActive(childId) && !scene.IsObjectActive(lightId), "Inactive parent did not hide descendants");
-	*scene.GetEditableObject(0).active = true;
+	*scene.GetEditableObject(0).isActive = true;
 	RequireHierarchy(scene.IsObjectActive(childId), "Active child did not recover");
 
 	const WorldObjectId copiedId = scene.DuplicateObject(parentId);

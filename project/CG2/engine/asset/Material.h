@@ -31,7 +31,7 @@ public:
 	//=============================================================================================//
 	// 色
 
-	const Vector4& GetColor() const { return materialData_->color; }
+	const Vector4& GetColor() const;
 
 	void SetColor(const Vector4& color);
 
@@ -40,16 +40,16 @@ public:
 
 	void SetTextureIndex(uint32_t textureIndex);
 
-	uint32_t GetTextureIndex() const { return textureIndex_; }
+	uint32_t GetTextureIndex() const;
 
-	bool GetEnableLighting() const { return materialData_->enableLighting != 0; }
+	bool IsLightingEnabled() const;
 
-	float GetShininess() const { return materialData_->shininess; }
+	float GetShininess() const;
 
 	//=============================================================================================//
 	// Lighting有効設定
 
-	void SetEnableLighting(bool enableLighting);
+	void SetEnableLighting(bool isLightingEnabled);
 
 	//=============================================================================================//
 	// UVTransform設定
@@ -59,7 +59,7 @@ public:
 	//=============================================================================================//
 	// 光沢度設定
 
-	void SetShininess(float shininess) { materialData_->shininess = shininess; }
+	void SetShininess(float shininess);
 
 private:
 

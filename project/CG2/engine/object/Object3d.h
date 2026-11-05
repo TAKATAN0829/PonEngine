@@ -40,11 +40,11 @@ public:
 	void Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& objectWorldMatrix);
 
 	// 共有モデルを書き換えず、このオブジェクト専用の頂点と再生時計を更新する。
-	void UpdateAnimation(const AnimationSettings& settings, float deltaSeconds, bool playing);
+	void UpdateAnimation(const AnimationSettings& settings, float deltaSeconds, bool isPlaying);
 
 	void ResetAnimation();
 
-	float GetAnimationTime() const { return animationTime_; }
+	float GetAnimationTime() const;
 
 	const AABB& GetLocalBounds() const;
 
@@ -91,7 +91,7 @@ public:
 	//=============================================================================================//
 	// Lighting設定
 
-	void SetEnableLighting (bool enableLighting);
+	void SetEnableLighting (bool isLightingEnabled);
 
 	//=============================================================================================//
 	// UVTransform設定
@@ -101,12 +101,12 @@ public:
 	//=============================================================================================//
 	// 光沢度設定
 
-	void SetShininess (float shininess) { material_->SetShininess (shininess); }
+	void SetShininess (float shininess);
 
 	//=============================================================================================//
 	// RootNode行列の適用設定
 
-	void SetUseRootNodeMatrix (bool useRootNodeMatrix) { useRootNodeMatrix_ = useRootNodeMatrix; }
+	void SetUseRootNodeMatrix (bool isRootNodeMatrixUsed);
 
 	//=============================================================================================//
 	// DirectionalLight設定
@@ -116,30 +116,18 @@ public:
 	//=============================================================================================//
 	// PointLight設定
 
-	void SetPointLight (const PointLight& pointLight) { pointLightData_->count = 1; pointLightData_->lights[0] = pointLight; }
+	void SetPointLight (const PointLight& pointLight);
 
 	// 最大数は呼出元と保存時にも検証するが、GPU転送時にも配列境界を守る。
-	void SetPointLights(const std::vector<PointLight>& lights) {
-		pointLightData_->count = static_cast<uint32_t>((std::min)(lights.size(), static_cast<size_t>(kMaxPointLights)));
-
-		for (uint32_t lightIndex = 0; lightIndex < pointLightData_->count; ++lightIndex) {
-			pointLightData_->lights[lightIndex] = lights[lightIndex];
-		}
-	}
+	void SetPointLights(const std::vector<PointLight>& lights);
 
 	//=============================================================================================//
 	// SpotLight設定
 
-	void SetSpotLight (const SpotLight& spotLight) { spotLightData_->count = 1; spotLightData_->lights[0] = spotLight; }
+	void SetSpotLight (const SpotLight& spotLight);
 
 	// Sceneが一度だけ収集した固定長配列を反映する。隠れた既定光源を追加しない。
-	void SetSceneLights(const WorldLightCollection& lights) {
-		*directionalLightData_ = lights.directional;
-
-		*pointLightData_ = lights.points;
-
-		*spotLightData_ = lights.spots;
-	}
+	void SetSceneLights(const WorldLightCollection& lights);
 
 	//=============================================================================================//
 	// Texture設定
@@ -194,7 +182,7 @@ private:
 
 	std::vector<std::unique_ptr<Material>> slotMaterials_;
 
-	bool textureOverride_ = false; // SetTextureによる既存APIの全体上書き。
+	bool hasTextureOverride_ = false; // SetTextureによる既存APIの全体上書き。
 
 	//=============================================================================================//
 	// アニメーションのインスタンス状態
@@ -207,7 +195,7 @@ private:
 
 	float animationTime_ = 0;
 
-	bool animationInitialized_ = false;
+	bool isAnimationInitialized_ = false;
 
 	AABB animatedBounds_{}; // 変形した頂点から求めた選択範囲。
 
@@ -255,5 +243,5 @@ private:
 	//=============================================================================================//
 	// RootNode行列の適用
 
-	bool useRootNodeMatrix_ = true;
+	bool isRootNodeMatrixUsed_ = true;
 };

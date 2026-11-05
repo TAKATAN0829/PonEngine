@@ -17,15 +17,15 @@ bool PrefabFile::Save(IWorldObjects& scene, WorldObjectId rootId, const std::fil
 	std::unordered_set<WorldObjectId> included = {rootId};
 
 	// 一覧の並び順に依存せず、選択したルートの子孫だけを抽出する。
-	bool changed = true;
+	bool hasChanged = true;
 
-	while (changed) {
-		changed = false;
+	while (hasChanged) {
+		hasChanged = false;
 
 		for (const WorldObjectData& object : source) {
 			if (included.contains(object.parentId)) {
 				if (included.insert(object.id).second) {
-					changed = true;
+					hasChanged = true;
 				}
 			}
 		}
@@ -33,7 +33,7 @@ bool PrefabFile::Save(IWorldObjects& scene, WorldObjectId rootId, const std::fil
 
 	std::vector<WorldObjectData> subtree;
 
-	bool foundRoot = false;
+	bool wasRootFound = false;
 
 	for (WorldObjectData& object : source) {
 		if (!included.contains(object.id)) {
@@ -43,7 +43,7 @@ bool PrefabFile::Save(IWorldObjects& scene, WorldObjectId rootId, const std::fil
 		if (object.id == rootId) {
 			object.parentId = 0;
 
-			foundRoot = true;
+			wasRootFound = true;
 		}
 
 		// 保存先のPrefabに別のAssetへのリンクを埋め込まない。
@@ -52,7 +52,7 @@ bool PrefabFile::Save(IWorldObjects& scene, WorldObjectId rootId, const std::fil
 		subtree.push_back(std::move(object));
 	}
 
-	if (!foundRoot) {
+	if (!wasRootFound) {
 		error = "Prefab root does not exist.";
 
 		return false;
@@ -174,7 +174,7 @@ WorldObjectId PrefabFile::Instantiate(IWorldObjects& scene, const std::filesyste
 		}
 
 		if (scene.GetMainCameraId() != 0) {
-			object.mainCamera = false;
+			object.isMainCamera = false;
 		}
 
 		candidate.push_back(std::move(object));
@@ -209,6 +209,7 @@ WorldObjectId PrefabFile::Instantiate(IWorldObjects& scene, const std::filesyste
 
 
 bool PrefabFile::Apply(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
+	// Prefabの現在の階層を保存し、元Assetへ反映する。
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const WorldObjectData* object = scene.GetObjectData(objectIndex);
 
@@ -242,19 +243,19 @@ bool PrefabFile::Revert(IWorldObjects& scene, WorldObjectId rootId, std::string&
 
 	WorldObjectData original;
 
-	bool found = false;
+	bool wasFound = false;
 
 	for (const WorldObjectData& object : candidate.GetObjects()) {
 		if (object.id == rootId) {
 			original = object;
 
-			found = true;
+			wasFound = true;
 
 			break;
 		}
 	}
 
-	if (!found) {
+	if (!wasFound) {
 		error = "Prefab root does not exist.";
 
 		return false;
@@ -291,10 +292,10 @@ bool PrefabFile::Revert(IWorldObjects& scene, WorldObjectId rootId, std::string&
 			object.prefabSource = original.prefabSource;
 
 			// インスタンスのメイン指定は他のカメラと競合させない。
-			object.mainCamera = original.mainCamera;
+			object.isMainCamera = original.isMainCamera;
 
 			if (object.type != WorldObjectType::Camera) {
-				object.mainCamera = false;
+				object.isMainCamera = false;
 			}
 		}
 	}
@@ -303,6 +304,7 @@ bool PrefabFile::Revert(IWorldObjects& scene, WorldObjectId rootId, std::string&
 }
 
 std::filesystem::path PrefabFile::ResolveSource(const std::string& source, std::string& error) {
+	// Prefabのリンク先を確認し、階層のルートと保存先を求める。
 	error.clear();
 
 	if (source.find('\0') != std::string::npos) {

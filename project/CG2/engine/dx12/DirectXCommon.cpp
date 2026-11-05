@@ -131,6 +131,7 @@ void DirectXCommon::PreDraw() {
 
 // Scene用描画先から戻るときに、バックバッファの表示領域も復元する。
 void DirectXCommon::BindBackBuffer() {
+	// 現在のバックバッファと深度を描画先へ設定する。
 	D3D12_GPU_DESCRIPTOR_HANDLE texture{};
 
 	if (depthDescriptors_ != nullptr) {
@@ -151,6 +152,7 @@ void DirectXCommon::BindBackBuffer() {
 
 
 void DirectXCommon::InitializeDepthSampling(SrvManager* descriptors, uint32_t descriptorIndex) {
+	// 深度参照で使うSRV管理と割当済みの記述子番号を保持する。
 	depthDescriptors_ = descriptors;
 
 	depthDescriptorIndex_ = descriptorIndex;
@@ -159,6 +161,7 @@ void DirectXCommon::InitializeDepthSampling(SrvManager* descriptors, uint32_t de
 }
 
 void DirectXCommon::FinalizeDepthSampling() {
+	// 深度参照に使っていた借用参照を外す。
 	depthDescriptors_ = nullptr;
 
 	activeDepth_ = nullptr;
@@ -166,7 +169,8 @@ void DirectXCommon::FinalizeDepthSampling() {
 
 void DirectXCommon::SetDepthTarget(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE renderView,
 	D3D12_CPU_DESCRIPTOR_HANDLE writeView, D3D12_CPU_DESCRIPTOR_HANDLE readView, D3D12_GPU_DESCRIPTOR_HANDLE texture) {
-	assert(!depthReading_);
+	// 今回の描画で使う深度リソースと記述子を保持する。
+	assert(!isDepthReading_);
 
 	activeDepth_ = resource;
 
@@ -180,9 +184,10 @@ void DirectXCommon::SetDepthTarget(ID3D12Resource* resource, D3D12_CPU_DESCRIPTO
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::BeginDepthRead() {
+	// 深度を描画先から読み取り用へ切り替える。
 	assert(activeDepth_ != nullptr);
 
-	assert(!depthReading_);
+	assert(!isDepthReading_);
 
 	D3D12_RESOURCE_BARRIER barrier{};
 
@@ -200,13 +205,14 @@ D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::BeginDepthRead() {
 
 	commandList_->OMSetRenderTargets(1,&activeRenderView_,false,&activeDepthReadView_);
 
-	depthReading_ = true;
+	isDepthReading_ = true;
 
 	return activeDepthTexture_;
 }
 
 void DirectXCommon::EndDepthRead() {
-	assert(depthReading_);
+	// 深度画像を読み取り用から元の描画用の状態へ戻す。
+	assert(isDepthReading_);
 
 	D3D12_RESOURCE_BARRIER barrier{};
 
@@ -224,16 +230,18 @@ void DirectXCommon::EndDepthRead() {
 
 	commandList_->ResourceBarrier(1,&barrier);
 
-	depthReading_ = false;
+	isDepthReading_ = false;
 }
 
 uint32_t DirectXCommon::GetDepthWidth() const {
+	// 現在使用している深度画像の幅を取得する。
 	assert(activeDepth_ != nullptr);
 
 	return static_cast<uint32_t>(activeDepth_->GetDesc().Width);
 }
 
 uint32_t DirectXCommon::GetDepthHeight() const {
+	// 現在使用している深度画像の高さを取得する。
 	assert(activeDepth_ != nullptr);
 
 	return activeDepth_->GetDesc().Height;
@@ -241,6 +249,7 @@ uint32_t DirectXCommon::GetDepthHeight() const {
 
 // 起動試験で実デバイスの検証結果を調べ、描画エラーをビルド成功だけで見逃さない。
 bool DirectXCommon::HasValidationErrors() const {
+	// GPU検証のメッセージを確認し、問題のあるものを検出する。
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> information;
 
 	if (FAILED(device_.As(&information))) {
@@ -272,7 +281,7 @@ bool DirectXCommon::HasValidationErrors() const {
 
 
 void DirectXCommon::PostDraw() {
-	assert(!depthReading_);
+	assert(!isDepthReading_);
 
 	activeDepth_ = nullptr;
 
@@ -374,11 +383,36 @@ void DirectXCommon::Finalize() {
 }
 
 //=============================================================================================//
+// Getter
+
+ID3D12Device* DirectXCommon::GetDevice() {
+	// GPUリソースを生成するデバイスを取得する。
+	return device_.Get();
+}
+
+ID3D12GraphicsCommandList* DirectXCommon::GetCommandList() {
+	// 描画命令の記録先を取得する。
+	return commandList_.Get();
+}
+
+ID3D12CommandQueue* DirectXCommon::GetCommandQueue() {
+	// GPUへ命令を送るキューを取得する。
+	return commandQueue_.Get();
+}
+
+// PostDraw完了後・次のPreDraw前だけ参照可能。所有権は移さない。
+ID3D12Resource* DirectXCommon::GetPresentedBuffer() const {
+	// 直前に描画したバックバッファを取得する。
+	return swapChainResources_[backBufferIndex_].Get();
+}
+
+//=============================================================================================//
 // GPU実行時間
 
 
 // 同じ直接実行キューの2タイムスタンプを使い、CPU待機とGPU処理を分ける。
 void DirectXCommon::InitializeGpuTiming() {
+	// GPU時間を記録するクエリと読出し先を準備する。
 	timestampFrequency_ = 0;
 
 	uint64_t frequency = 0;
@@ -469,6 +503,7 @@ void DirectXCommon::ReadGpuTiming() {
 
 // 前フレームはPostDrawで待機済みなので、現在の命令を記録する前に安全に作り直せる。
 void DirectXCommon::ResizeIfNeeded() {
+	// ウィンドウの寸法を確認し、変更があれば描画先を更新する。
     RECT clientArea{};
 
     GetClientRect(winApp_->GetHwnd(), &clientArea);
@@ -830,6 +865,7 @@ void DirectXCommon::InitializeDepthStencilView() {
 
 
 void DirectXCommon::InitializeViewport() {
+	// 現在の表示サイズに合わせてViewportを設定する。
 
 	viewport_.Width = static_cast<float>(renderWidth_);
 
@@ -849,6 +885,7 @@ void DirectXCommon::InitializeViewport() {
 
 
 void DirectXCommon::InitializeScissorRect() {
+	// 現在の表示サイズに合わせて描画可能な範囲を設定する。
 
 	scissorRect_.left = 0;
 

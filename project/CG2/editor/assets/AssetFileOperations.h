@@ -17,7 +17,7 @@ public:
 	// ファイル操作時だけ走査する。毎フレームのProject描画では呼ばない。
 	bool Review(const std::filesystem::path& source, const std::vector<AssetReference>& liveReferences, std::string& error);
 
-	const std::vector<AssetReference>& GetUsages() const { return usages_; }
+	const std::vector<AssetReference>& GetUsages() const;
 
 	//=============================================================================================//
 	// ファイル操作

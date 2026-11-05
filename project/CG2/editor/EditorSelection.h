@@ -11,102 +11,27 @@ public:
 	//=============================================================================================//
 	// Getter / 選択一覧・主選択
 
-	WorldObjectId Get() const {
-		if (selected_.empty()) {
-			return kInvalidWorldObjectId;
-		}
+	// 最後に選択した主対象のID。未選択なら無効IDを返す。
+	WorldObjectId GetPrimarySelectedObjectId() const;
 
-		return selected_.back();
-	}
+	const std::vector<WorldObjectId>& GetIds() const;
 
-	const std::vector<WorldObjectId>& GetIds() const { return selected_; }
-
-	bool Contains(WorldObjectId identifier) const {
-		return selectedIds_.contains(identifier);
-	}
+	bool DoesContain(WorldObjectId identifier) const;
 
 	// 親も選択されている子を除き、二重移動・二重複製を防ぐ。
-	std::vector<WorldObjectId> GetRoots(const IEditableWorld& scene) const {
-		std::vector<WorldObjectId> roots;
-
-		for (WorldObjectId identifier : selected_) {
-			const WorldObjectData* object = scene.GetObjectDataById(identifier);
-
-			if (object == nullptr) {
-				continue;
-			}
-
-			WorldObjectId ancestor = object->parentId;
-
-			while (ancestor != 0) {
-				if (Contains(ancestor)) {
-					break;
-				}
-
-				const WorldObjectData* parent = scene.GetObjectDataById(ancestor);
-
-				if (parent == nullptr) {
-					break;
-				}
-
-				ancestor = parent->parentId;
-			}
-
-			if (ancestor == 0) {
-				roots.push_back(identifier);
-			}
-		}
-
-		return roots;
-	}
+	std::vector<WorldObjectId> GetRoots(const IEditableWorld& scene) const;
 
 	//=============================================================================================//
 	// Setter / 単体選択・追加選択・解除
 
-	void Select(WorldObjectId identifier) {
-		Clear();
+	void Select(WorldObjectId identifier);
 
-		if (identifier != 0) {
-			selected_.push_back(identifier);
+	void Toggle(WorldObjectId identifier);
 
-			selectedIds_.insert(identifier);
-		}
-	}
-
-	void Toggle(WorldObjectId identifier) {
-		if (identifier == 0) {
-			return;
-		}
-
-		const std::vector<WorldObjectId>::iterator found = std::find(selected_.begin(), selected_.end(), identifier);
-
-		if (found == selected_.end()) {
-			selected_.push_back(identifier);
-
-			selectedIds_.insert(identifier);
-		} else {
-			selected_.erase(found);
-
-			selectedIds_.erase(identifier);
-		}
-	}
-
-	void Clear() {
-		selected_.clear();
-
-		selectedIds_.clear();
-	}
+	void Clear();
 
 	// Undo・削除後は、消えたIDだけを選択一覧から除く。
-	void Prune(const IEditableWorld& scene) {
-		for (size_t selectionIndex = selected_.size(); selectionIndex > 0; --selectionIndex) {
-			if (scene.GetObjectDataById(selected_[selectionIndex - 1]) == nullptr) {
-				selectedIds_.erase(selected_[selectionIndex - 1]);
-
-				selected_.erase(selected_.begin() + selectionIndex - 1);
-			}
-		}
-	}
+	void Prune(const IEditableWorld& scene);
 
 	//=============================================================================================//
 	// 一括複製・削除

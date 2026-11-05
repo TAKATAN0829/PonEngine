@@ -14,10 +14,10 @@ struct EditorViewInfo {
 
 // 補助画面は必要なときだけ開く。Editorが所有し、描画呼出中だけシーンへ貸し出す。
 struct EditorToolVisibility {
-	bool particleEditor = false;
-	bool worldSettings = false;
-	bool camera = false;
-	bool performance = false; // 表示メニューから必要なときだけ開く。
+	bool isParticleEditorVisible = false;
+	bool areWorldSettingsVisible = false;
+	bool isCameraVisible = false;
+	bool isPerformanceVisible = false; // 表示メニューから必要なときだけ開く。
 };
 
 
@@ -37,73 +37,73 @@ public:
 	// Getter / Sceneカメラ・選択範囲
 
 	// 対応するカメラや形状を持たないシーンではfalseを返す。
-	virtual bool GetEditorViewInfo(EditorViewInfo&) const { return false; }
+	virtual bool GetEditorViewInfo(EditorViewInfo&) const;
 
-	virtual bool GetEditableObjectBounds(size_t, AABB&) const { return false; }
+	virtual bool GetEditableObjectBounds(size_t, AABB&) const;
 
 	// 表面スナップはメッシュを持つ対象だけを調べる。距離はワールド単位。
-	virtual bool IntersectObjectSurface(size_t, const Vector3&, const Vector3&, float&) const { return false; }
+	virtual bool IntersectObjectSurface(size_t, const Vector3&, const Vector3&, float&) const;
 
 	//=============================================================================================//
 	// 描画処理 / 任意の補助画面
 
-	virtual void DrawEditorTools(EditorToolVisibility& visibility) { (void)visibility; }
+	virtual void DrawEditorTools(EditorToolVisibility& visibility);
 
 	//=============================================================================================//
 	// Setter / Scene表示・入力
 
-	virtual void SetEditorViewport(uint32_t width, uint32_t height) { (void)width; (void)height; }
+	virtual void SetEditorViewport(uint32_t width, uint32_t height);
 
-	virtual void SetEditorCameraInput(bool enabled) { (void)enabled; }
+	virtual void SetEditorCameraInput(bool isEnabled);
 
-	virtual void SetEditorGameView(bool enabled) { (void)enabled; }
+	virtual void SetEditorGameView(bool isEnabled);
 
-	virtual void FocusEditorCamera(const Vector3& position) { (void)position; }
+	virtual void FocusEditorCamera(const Vector3& position);
 
 	//=============================================================================================//
 	// Getter / Particle
 
-	virtual ParticleSettings* GetParticleSettings() { return nullptr; }
+	virtual ParticleSettings* GetParticleSettings();
 
-	virtual size_t GetParticleCount() const { return 0; }
+	virtual size_t GetParticleCount() const;
 
 	//=============================================================================================//
 	// Setter / Particleプレビュー
 
-	virtual void SetParticlePreview(const ParticlePreviewState& state) { (void)state; }
+	virtual void SetParticlePreview(const ParticlePreviewState& state);
 
-	virtual void ResetParticlePreview() {}
+	virtual void ResetParticlePreview();
 
-	virtual void BurstParticles() {}
+	virtual void BurstParticles();
 
 	//=============================================================================================//
 	// Asset参照の更新
 
 	// ディスク上の移動が成功した後に呼ぶ。GPUリソースの所有権は変更しない。
-	virtual void RemapAssetPaths(const AssetPathChange& change) { (void)change; }
+	virtual void RemapAssetPaths(const AssetPathChange& change);
 
 	// 新規作成・Sceneファイル読込後に、保存対象外の実行状態だけを初期化する。
-	virtual void OnSceneContentsChanged() {}
+	virtual void OnSceneContentsChanged();
 
 	//=============================================================================================//
 	// オブジェクト操作
 
 	// 3Dプレビュー用の画像ハンドルを返す。描画を持たないシーンは0を返す。
-	virtual uint64_t GetModelPreview(const std::string&, std::string&) { return 0; }
+	virtual uint64_t GetModelPreview(const std::string&, std::string&);
 
 	// 実行側でモデルを準備し、失敗理由を返す。CPUだけのシーンは準備を省略する。
-	virtual bool PrepareModel(const std::string&, std::string& error) { error.clear(); return true; }
+	virtual bool PrepareModel(const std::string&, std::string& error);
 
 	// Inspectorは描画実装に触れず、モデルの編集可能な情報だけを取得する。
-	virtual std::vector<ModelMaterialInfo> GetModelMaterials(const std::string&) const { return {}; }
+	virtual std::vector<ModelMaterialInfo> GetModelMaterials(const std::string&) const;
 
-	virtual std::vector<ModelAnimationInfo> GetModelAnimations(const std::string&) const { return {}; }
+	virtual std::vector<ModelAnimationInfo> GetModelAnimations(const std::string&) const;
 
-	virtual bool PrepareTexture(const std::string&, std::string& error) { error.clear(); return true; }
+	virtual bool PrepareTexture(const std::string&, std::string& error);
 
-	virtual void SetAnimationPreview(WorldObjectId, bool, bool) {}
+	virtual void SetAnimationPreview(WorldObjectId, bool, bool);
 
-	virtual float GetAnimationTime(WorldObjectId) const { return 0; }
+	virtual float GetAnimationTime(WorldObjectId) const;
 
-	virtual bool IsAnimationPreviewPlaying(WorldObjectId) const { return false; }
+	virtual bool IsAnimationPreviewPlaying(WorldObjectId) const;
 };

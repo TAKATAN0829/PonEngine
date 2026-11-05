@@ -26,7 +26,7 @@ struct ParticleSettings {
 	Vector3 velocityMaximum = {1,1,1};
 	Vector3 acceleration = {0,1,0};
 
-	bool accelerationEnabled = false;
+	bool isAccelerationEnabled = false;
 
 	float lifetimeMinimum = 1; // 最短寿命（秒）。
 	float lifetimeMaximum = 3; // 最長寿命（秒）。
@@ -38,8 +38,8 @@ struct ParticleSettings {
 
 	Vector4 color = {1,0.65f,0.2f,1};
 
-	bool randomColor = false; // 設定色を基準に粒子ごとの色を変える。
-	bool billboard = true; // 各粒子をカメラの方へ向ける。
+	bool isRandomColorEnabled = false; // 設定色を基準に粒子ごとの色を変える。
+	bool isBillboardEnabled = true; // 各粒子をカメラの方へ向ける。
 
 	BlendMode blendMode = kBlendModeAdd;
 
@@ -48,7 +48,7 @@ struct ParticleSettings {
 	//=============================================================================================//
 	// 寿命による見た目 / 既存データは無効で従来のAlpha減衰を維持する。
 
-	bool lifetimeAppearance = false;
+	bool isLifetimeAppearanceEnabled = false;
 
 	float startSize = 1; // particleScaleに掛ける発生時の倍率。
 	float endSize = 1; // 消滅時の倍率。0なら縮んで消える。
@@ -60,7 +60,7 @@ struct ParticleSettings {
 	//=============================================================================================//
 	// モデルとの交差 / ワールド単位で境界をぼかす。
 
-	bool softParticles = false;
+	bool areSoftParticlesEnabled = false;
 
 	float softDistance = 0.5f;
 };
@@ -95,22 +95,22 @@ struct ParticlePreviewState {
 
 	uint64_t targetObject = 0; // 0は共通プリセット、それ以外はシーン内EmitterのID。
 
-	bool enabled = false;
-	bool paused = false;
-	bool step = false; // 次の一回だけ時間を進める。
+	bool isEnabled = false;
+	bool isPaused = false;
+	bool isStepRequested = false; // 次の一回だけ時間を進める。
 
 	//=============================================================================================//
 	// 表示・発生モード
 
-	bool isolate = false; // モデルを隠してParticleだけを確認する。
-	bool automaticEmission = true; // falseならBurst操作だけで発生する。
+	bool shouldIsolateParticles = false; // モデルを隠してParticleだけを確認する。
+	bool isAutomaticEmissionEnabled = true; // falseならBurst操作だけで発生する。
 };
 
 //=============================================================================================//
 // 設定の検証・比較
 
 // 実行前・保存前・読込後に同じ規則で数値とアセット参照を検証する。
-bool ValidateParticleSettings(const ParticleSettings& settings);
+bool AreParticleSettingsValid(const ParticleSettings& settings);
 
 // 実行中の粒子は比較せず、保存される設定だけを比較する。
-bool EqualParticleSettings(const ParticleSettings& firstSettings, const ParticleSettings& secondSettings);
+bool AreParticleSettingsEqual(const ParticleSettings& firstSettings, const ParticleSettings& secondSettings);

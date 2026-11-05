@@ -13,6 +13,7 @@
 namespace {
 	// 狭いInspector幅でもラベルと数値が重ならないよう、ラベルの下へ値を並べる。
 	void EditParticleVector(const char* label, Vector3& value, float minimum, float maximum) {
+		// Particle用のベクトル設定を編集し、変更の有無を返す。
 		ImGui::PushID(label);
 
 		ImGui::TextUnformatted(label);
@@ -26,6 +27,7 @@ namespace {
 
 	// 発生条件と配置は同じカテゴリで編集する。
 	void DrawEmitterSettings(ParticleSettings& settings, TransformData* transform) {
+		// 発生数・間隔・位置など、Emitterの発生条件を編集する。
 		if (ImGui::CollapsingHeader("Emitter / 発生", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if (transform != nullptr) {
 				EditParticleVector("発生位置", transform->translate, -1000, 1000);
@@ -63,12 +65,13 @@ namespace {
 
 	// 速度と加速度の編集に使う値は、この関数内で完結させる。
 	void DrawMotionSettings(ParticleSettings& settings) {
+		// 粒子の速度と加速度の最小・最大値を編集する。
 		if (ImGui::CollapsingHeader("Motion / 動き", ImGuiTreeNodeFlags_DefaultOpen)) {
 			EditParticleVector("最小速度", settings.velocityMinimum, -100, 100);
 
 			EditParticleVector("最大速度", settings.velocityMaximum, -100, 100);
 
-			ImGui::Checkbox("加速度を使う", &settings.accelerationEnabled);
+			ImGui::Checkbox("加速度を使う", &settings.isAccelerationEnabled);
 
 			EditParticleVector("加速度", settings.acceleration, -100, 100);
 		}
@@ -81,9 +84,9 @@ namespace {
 
 			ImGui::ColorEdit4("色", &settings.color.x);
 
-			ImGui::Checkbox("ランダムな色", &settings.randomColor);
+			ImGui::Checkbox("ランダムな色", &settings.isRandomColorEnabled);
 
-			ImGui::Checkbox("カメラへ向ける", &settings.billboard);
+			ImGui::Checkbox("カメラへ向ける", &settings.isBillboardEnabled);
 
 			const char* textures[] = {"resources/circle.png", "resources/uvChecker.png", "resources/white1x1.png"};
 
@@ -112,9 +115,9 @@ namespace {
 				ImGui::SetTooltip("発光はAdd、煙や半透明の粒はNormal。Noneは半透明合成を行いません。");
 			}
 
-			ImGui::Checkbox("Soft Particles",&settings.softParticles);
+			ImGui::Checkbox("Soft Particles",&settings.areSoftParticlesEnabled);
 
-			ImGui::BeginDisabled(!settings.softParticles);
+			ImGui::BeginDisabled(!settings.areSoftParticlesEnabled);
 
 			ImGui::DragFloat("交差をぼかす距離",&settings.softDistance,0.01f,0.001f,100,"%.3f",ImGuiSliderFlags_AlwaysClamp);
 
@@ -128,13 +131,14 @@ namespace {
 
 	// 開始色はAppearance、終了色とサイズ倍率は寿命で補間する。
 	void DrawLifetimeSettings(ParticleSettings& settings) {
+		// 粒子の寿命に応じた変化と消え方を編集する。
 		if (!ImGui::CollapsingHeader("Lifetime / 寿命による変化",ImGuiTreeNodeFlags_DefaultOpen)) {
 			return;
 		}
 
-		ImGui::Checkbox("サイズ・色を変化させる",&settings.lifetimeAppearance);
+		ImGui::Checkbox("サイズ・色を変化させる",&settings.isLifetimeAppearanceEnabled);
 
-		ImGui::BeginDisabled(!settings.lifetimeAppearance);
+		ImGui::BeginDisabled(!settings.isLifetimeAppearanceEnabled);
 
 		ImGui::DragFloat("開始サイズ倍率",&settings.startSize,0.01f,0.001f,100,"%.2f",ImGuiSliderFlags_AlwaysClamp);
 
@@ -153,8 +157,8 @@ namespace {
 //=============================================================================================//
 // 初期化処理
 
-
 void ParticleEditorPanel::Initialize(IEditableWorld& scene) {
+	// 共通プリセットを保存基準とし、プレビューの状態を初期化する。
 	scene_ = &scene;
 
 	if (scene.GetParticleSettings() != nullptr) {
@@ -171,12 +175,13 @@ void ParticleEditorPanel::Initialize(IEditableWorld& scene) {
 
 	pendingAction_ = PresetAction::None;
 
-	openPrompt_ = false;
+	shouldOpenPrompt_ = false;
 
-	focusRequested_ = false;
+	isFocusRequested_ = false;
 }
 
 void ParticleEditorPanel::ResetScenePreview(IEditableWorld& scene) {
+	// 保存済み設定を保持したまま、対象選択とプレビュー要求を初期化する。
 	scene_ = &scene;
 
 	preview_ = {};
@@ -187,9 +192,9 @@ void ParticleEditorPanel::ResetScenePreview(IEditableWorld& scene) {
 
 	pendingAction_ = PresetAction::None;
 
-	openPrompt_ = false;
+	shouldOpenPrompt_ = false;
 
-	focusRequested_ = false;
+	isFocusRequested_ = false;
 
 	scene.SetParticlePreview(preview_);
 
@@ -199,8 +204,7 @@ void ParticleEditorPanel::ResetScenePreview(IEditableWorld& scene) {
 //=============================================================================================//
 // 更新処理
 
-
-void ParticleEditorPanel::Update(IEditableWorld& scene, bool gamePlaying, WorldObjectId selectedId) {
+void ParticleEditorPanel::Update(IEditableWorld& scene, bool isGamePlaying, WorldObjectId selectedId) {
 	if (scene_ != &scene) {
 		Initialize(scene);
 	}
@@ -224,7 +228,7 @@ void ParticleEditorPanel::Update(IEditableWorld& scene, bool gamePlaying, WorldO
 	}
 
 	// 再生中の選択変更でゲーム内の粒子を消さない。
-	if (!gamePlaying) {
+	if (!isGamePlaying) {
 		if (preview_.targetObject != targetId_) {
 			scene.ResetParticlePreview();
 		}
@@ -246,9 +250,9 @@ void ParticleEditorPanel::Update(IEditableWorld& scene, bool gamePlaying, WorldO
 //=============================================================================================//
 // 描画処理
 
-
-void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObjectId selectedId, bool* open) {
-	Update(scene, gamePlaying, selectedId);
+void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldObjectId selectedId, bool* isOpen) {
+	// 編集対象と再生状態を確認し、発生・動き・見た目の編集欄を表示する。
+	Update(scene, isGamePlaying, selectedId);
 
 #ifdef USE_IMGUI
 	ParticleSettings* settings = GetEditingSettings(scene);
@@ -257,7 +261,7 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObj
 
 	ImGui::SetNextWindowSize({420, 560}, ImGuiCond_FirstUseEver);
 
-	if (ImGui::Begin("Particle Editor", open)) {
+	if (ImGui::Begin("Particle Editor", isOpen)) {
 		if (settings == nullptr) {
 			ImGui::TextUnformatted("このシーンにはParticleがありません。");
 		} else {
@@ -279,23 +283,23 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObj
 
 			ImGui::TextWrapped("Scene内でプレビューします。ゲーム停止中にも調整できます。");
 
-			ImGui::BeginDisabled(gamePlaying);
+			ImGui::BeginDisabled(isGamePlaying);
 
-			if (!preview_.enabled) {
+			if (!preview_.isEnabled) {
 				if (ImGui::Button("プレビュー開始")) {
-					preview_.enabled = true;
+					preview_.isEnabled = true;
 
-					preview_.paused = false;
+					preview_.isPaused = false;
 
-					preview_.automaticEmission = true;
+					preview_.isAutomaticEmissionEnabled = true;
 
 					scene.ResetParticlePreview();
 
-					focusRequested_ = true;
+					isFocusRequested_ = true;
 				}
 			} else {
 				if (ImGui::Button("プレビュー停止")) {
-					preview_.enabled = false;
+					preview_.isEnabled = false;
 
 					scene.ResetParticlePreview();
 				}
@@ -304,19 +308,19 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObj
 			ImGui::SameLine();
 
 			if (ImGui::Button("一時停止 / 再開")) {
-				preview_.paused = !preview_.paused;
+				preview_.isPaused = !preview_.isPaused;
 			}
 
 			if (ImGui::Button("一度だけ発生")) {
-				preview_.enabled = true;
+				preview_.isEnabled = true;
 
-				preview_.paused = false;
+				preview_.isPaused = false;
 
-				preview_.automaticEmission = false;
+				preview_.isAutomaticEmissionEnabled = false;
 
 				scene.BurstParticles();
 
-				focusRequested_ = true;
+				isFocusRequested_ = true;
 			}
 
 			ImGui::SameLine();
@@ -325,18 +329,18 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObj
 				scene.ResetParticlePreview();
 			}
 
-			ImGui::BeginDisabled(!preview_.enabled || !preview_.paused);
+			ImGui::BeginDisabled(!preview_.isEnabled || !preview_.isPaused);
 
 			if (ImGui::Button("1フレーム進める")) {
-				preview_.step = true;
+				preview_.isStepRequested = true;
 			}
 
 			ImGui::EndDisabled();
 
-			ImGui::Checkbox("Particleだけを表示", &preview_.isolate);
+			ImGui::Checkbox("Particleだけを表示", &preview_.shouldIsolateParticles);
 
 			if (ImGui::Button("発生位置へカメラを移動")) {
-				focusRequested_ = true;
+				isFocusRequested_ = true;
 			}
 
 			ImGui::Text("粒子数: %zu / 100", scene.GetParticleCount());
@@ -381,13 +385,13 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObj
 				ImGui::EndPopup();
 			}
 
-			if (!openPrompt_) {
+			if (!shouldOpenPrompt_) {
 				if (pendingAction_ != PresetAction::None) {
 					if (targetId_ == kInvalidWorldObjectId) {
 						if (IsDirty(scene)) {
 							ImGui::OpenPopup("Particleの未保存変更");
 
-							openPrompt_ = true;
+							shouldOpenPrompt_ = true;
 						}
 						else {
 							ApplyPendingAction(scene);
@@ -405,7 +409,7 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObj
 					if (SaveEditingPreset(scene)) {
 						ApplyPendingAction(scene);
 
-						openPrompt_ = false;
+						shouldOpenPrompt_ = false;
 
 						ImGui::CloseCurrentPopup();
 					}
@@ -414,7 +418,7 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObj
 				if (ImGui::Button("破棄して続行")) {
 					ApplyPendingAction(scene);
 
-					openPrompt_ = false;
+					shouldOpenPrompt_ = false;
 
 					ImGui::CloseCurrentPopup();
 				}
@@ -422,7 +426,7 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObj
 				if (ImGui::Button("キャンセル")) {
 					pendingAction_ = PresetAction::None;
 
-					openPrompt_ = false;
+					shouldOpenPrompt_ = false;
 
 					ImGui::CloseCurrentPopup();
 				}
@@ -440,7 +444,7 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObj
 
 			ImGui::EndDisabled();
 
-			if (!ValidateParticleSettings(*settings)) {
+			if (!AreParticleSettingsValid(*settings)) {
 				ImGui::TextWrapped("最小値と最大値などを確認してください。不正な設定は実行・保存しません。");
 			}
 
@@ -453,25 +457,25 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool gamePlaying, WorldObj
 	ImGui::End();
 
 #else
-	(void)gamePlaying;
+	(void)isGamePlaying;
 
-	(void)open;
+	(void)isOpen;
 
 #endif
 	scene.SetParticlePreview(preview_);
 
-	preview_.step = false;
+	preview_.isStepRequested = false;
 }
 
 // 閉じた補助画面のプレビューが、見えないまま走り続けないようにする。
-void ParticleEditorPanel::StopPreview(IEditableWorld& scene, bool gamePlaying) {
-	if (preview_.enabled) {
-		preview_.enabled = false;
+void ParticleEditorPanel::StopPreview(IEditableWorld& scene, bool isGamePlaying) {
+	if (preview_.isEnabled) {
+		preview_.isEnabled = false;
 
-		preview_.step = false;
+		preview_.isStepRequested = false;
 
 		// 再生中のゲームにある粒子は、補助画面を閉じても消さない。
-		if (!gamePlaying) {
+		if (!isGamePlaying) {
 			scene.ResetParticlePreview();
 		}
 	}
@@ -482,27 +486,45 @@ void ParticleEditorPanel::StopPreview(IEditableWorld& scene, bool gamePlaying) {
 //=============================================================================================//
 // Getter / 設定・注視位置
 
-
 // 実行中の粒子数ではなく、保存対象の設定だけで未保存状態を判定する。
 bool ParticleEditorPanel::IsDirty(IEditableWorld& scene) const {
+	// 保存済みの設定と現在の設定を比較し、未保存の変更を調べる。
 	const ParticleSettings* settings = scene.GetParticleSettings();
 
-	return scene_ == &scene && settings != nullptr && !EqualParticleSettings(*settings, savedSettings_);
+	if (scene_ != &scene) {
+		return false;
+	}
+
+	if (settings == nullptr) {
+		return false;
+	}
+
+	if (!AreParticleSettingsEqual(*settings, savedSettings_)) {
+		return true;
+	}
+
+	return false;
+}
+
+Vector3 ParticleEditorPanel::GetFocusPosition() const {
+	// SceneViewで注視する位置を取得する。
+	return focusPosition_;
 }
 
 //=============================================================================================//
 // Asset参照
 
 void ParticleEditorPanel::RemapAssetPaths(const AssetPathChange& change) {
+	// キャッシュや保存基準のパスも含め、Asset移動の結果を反映する。
 	savedSettings_.texture = change.RemapResource(savedSettings_.texture);
 }
 
 //=============================================================================================//
 // 保存・注視要求
 
-
 // 保存成功時だけ比較基準を更新し、失敗した設定を保存済み扱いにしない。
 bool ParticleEditorPanel::Save(IEditableWorld& scene) {
+	// プリセットの保存に成功した場合だけ、未保存判定の基準を更新する。
 	const ParticleSettings* settings = scene.GetParticleSettings();
 
 	if (settings == nullptr) {
@@ -526,19 +548,20 @@ bool ParticleEditorPanel::Save(IEditableWorld& scene) {
 
 // 注視要求はSceneパネル側が一度だけ消費する。
 bool ParticleEditorPanel::ConsumeFocusRequest() {
-	const bool requested = focusRequested_;
+	// 注視要求を一度だけ取り出し、次のフレームへ持ち越さない。
+	const bool isRequested = isFocusRequested_;
 
-	focusRequested_ = false;
+	isFocusRequested_ = false;
 
-	return requested;
+	return isRequested;
 }
 
 //=============================================================================================//
 // Getter / 編集設定
 
-
 // 選択がParticleの場合はそのComponentを編集し、それ以外では共通プリセットを編集する。
 ParticleSettings* ParticleEditorPanel::GetEditingSettings(IEditableWorld& scene) const {
+	// 選択中のEmitterまたは共通プリセットの編集設定を取得する。
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const EditableObjectView object = scene.GetEditableObject(objectIndex);
 
@@ -554,6 +577,7 @@ ParticleSettings* ParticleEditorPanel::GetEditingSettings(IEditableWorld& scene)
 
 // 選択中のEmitterだけがTransformを発生位置として使う。
 TransformData* ParticleEditorPanel::GetEditingTransform(IEditableWorld& scene) const {
+	// 選択中のEmitterまたは共通プリセットのTransformを取得する。
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const EditableObjectView object = scene.GetEditableObject(objectIndex);
 
@@ -569,7 +593,6 @@ TransformData* ParticleEditorPanel::GetEditingTransform(IEditableWorld& scene) c
 
 //=============================================================================================//
 // プリセット反映
-
 
 // 設定変更の破棄が確認できた操作だけを実行する。
 void ParticleEditorPanel::ApplyPendingAction(IEditableWorld& scene) {
@@ -620,6 +643,7 @@ void ParticleEditorPanel::ApplyPendingAction(IEditableWorld& scene) {
 
 // 個別Emitterのプリセット書出しでは、共通設定の保存基準を更新しない。
 bool ParticleEditorPanel::SaveEditingPreset(IEditableWorld& scene) {
+	// 編集対象のParticle設定を共通プリセットへ書き出す。
 	if (targetId_ == kInvalidWorldObjectId) {
 		return Save(scene);
 	}
@@ -630,11 +654,11 @@ bool ParticleEditorPanel::SaveEditingPreset(IEditableWorld& scene) {
 		return false;
 	}
 
-	const bool saved = ParticlePresetFile::Save(*settings, ParticlePresetFile::kDefaultPath, status_);
+	const bool wasSaved = ParticlePresetFile::Save(*settings, ParticlePresetFile::kDefaultPath, status_);
 
-	if (saved) {
+	if (wasSaved) {
 		status_ = "選択Emitterをプリセットへ書き出しました。配置はシーン保存で保存できます。";
 	}
 
-	return saved;
+	return wasSaved;
 }

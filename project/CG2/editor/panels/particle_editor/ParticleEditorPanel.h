@@ -19,22 +19,22 @@ public:
 	// 更新処理
 
 	// 選択IDから編集対象と注視位置を取得する。借用参照は持ち越さない。
-	void Update(IEditableWorld& scene, bool gamePlaying, WorldObjectId selectedId);
+	void Update(IEditableWorld& scene, bool isGamePlaying, WorldObjectId selectedId);
 
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw(IEditableWorld& scene, bool gamePlaying, WorldObjectId selectedId, bool* open = nullptr);
+	void Draw(IEditableWorld& scene, bool isGamePlaying, WorldObjectId selectedId, bool* isOpen = nullptr);
 
 	// パネルを閉じたときは編集プレビューだけを終了する。
-	void StopPreview(IEditableWorld& scene, bool gamePlaying);
+	void StopPreview(IEditableWorld& scene, bool isGamePlaying);
 
 	//=============================================================================================//
 	// Getter / 設定・注視位置
 
 	bool IsDirty(IEditableWorld& scene) const;
 
-	Vector3 GetFocusPosition() const { return focusPosition_; }
+	Vector3 GetFocusPosition() const;
 
 	//=============================================================================================//
 	// Asset参照
@@ -96,6 +96,6 @@ private:
 
 	PresetAction pendingAction_ = PresetAction::None;
 
-	bool openPrompt_ = false; // 変更破棄の確認が開いているか。
-	bool focusRequested_ = false; // Scene側が消費する注視要求。
+	bool shouldOpenPrompt_ = false; // 変更破棄の確認が開いているか。
+	bool isFocusRequested_ = false; // Scene側が消費する注視要求。
 };

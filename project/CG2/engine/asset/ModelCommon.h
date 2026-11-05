@@ -14,9 +14,9 @@ public:
 	//=============================================================================================//
 	// Getter
 
-	DirectXCommon* GetDxCommon () const { return dxCommon_; }
+	DirectXCommon* GetDxCommon () const;
 
-	SrvManager* GetSrvManager () const { return srvManager_; }
+	SrvManager* GetSrvManager () const;
 
 private:
 

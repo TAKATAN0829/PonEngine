@@ -7,8 +7,8 @@
 #include <stdexcept>
 
 namespace {
-	void RequireAsset(bool condition, const char* message) {
-		if (!condition) {
+	void RequireAsset(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -28,8 +28,8 @@ void RunAssetWorkflowTests(const std::filesystem::path& directory) {
 	RequireAsset(SceneFile::Save(source, scenePath, error), "Asset settings save failed");
 	WorldObjects restored;
 	RequireAsset(SceneFile::Load(restored, scenePath, error), "Asset settings load failed");
-	RequireAsset(EqualMaterialSettings(restored.GetObjectData(1)->materials.front(), source.GetObjectData(1)->materials.front()), "Material settings not restored");
-	RequireAsset(EqualAnimationSettings(restored.GetObjectData(1)->animation, source.GetObjectData(1)->animation), "Animation settings not restored");
+	RequireAsset(AreMaterialSettingsEqual(restored.GetObjectData(1)->materials.front(), source.GetObjectData(1)->materials.front()), "Material settings not restored");
+	RequireAsset(AreAnimationSettingsEqual(restored.GetObjectData(1)->animation, source.GetObjectData(1)->animation), "Animation settings not restored");
 
 	EditorSession session;
 	session.Initialize(restored);

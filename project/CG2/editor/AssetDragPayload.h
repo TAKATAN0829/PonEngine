@@ -12,25 +12,5 @@ struct ModelAssetPayload {
 
 	char model[256]{};
 
-	static bool Read(const void* data, size_t size, std::string& result) {
-		if (data == nullptr) {
-			return false;
-		}
-
-		if (size != sizeof(ModelAssetPayload)) {
-			return false;
-		}
-
-		ModelAssetPayload payload;
-
-		std::memcpy(&payload, data, sizeof(payload));
-
-		if (std::memchr(payload.model, '\0', sizeof(payload.model)) == nullptr) {
-			return false;
-		}
-
-		result = payload.model;
-
-		return !result.empty();
-	}
+	static bool Read(const void* data, size_t size, std::string& result);
 };

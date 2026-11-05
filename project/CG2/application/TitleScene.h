@@ -20,7 +20,7 @@ public:
 	//=============================================================================================//
 	// Getter / 場面情報
 
-	const char* GetName() const override { return "TitleScene"; }
+	const char* GetName() const override;
 
 	// Draw/Finalizeは共通実装を継承し、不要な空実装は追加しない。
 };

@@ -16,6 +16,7 @@
 
 
 void HierarchyPanel::Initialize() {
+	// 前のシーンに属する通知と操作対象を初期化する。
 	status_.clear();
 
 	contextTarget_ = kInvalidWorldObjectId;
@@ -43,7 +44,7 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 		return;
 	}
 
-	if (!scene->SupportsObjectCollection()) {
+	if (!scene->HasObjectCollectionSupport()) {
 		ImGui::TextUnformatted("Object editing is unavailable");
 
 		ImGui::End();
@@ -87,7 +88,7 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 	if (ImGui::IsWindowHovered()) {
 		if (!ImGui::IsAnyItemHovered()) {
 			if (ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
-				request.contextRequested = true;
+				request.isContextRequested = true;
 
 				request.contextObjectId = kInvalidWorldObjectId;
 			}
@@ -98,7 +99,7 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 		}
 	}
 
-	if (request.requested) {
+	if (request.isRequested) {
 		if (scene->SetObjectParent(request.childId, request.parentId, status_)) {
 			selection.Select(request.childId);
 		}
@@ -113,7 +114,7 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 
 		WorldObjectId placedId = 0;
 
-		if (request.prefab) {
+		if (request.isPrefab) {
 			placedId = scene->PlacePrefab(request.model, request.parentId, position, status_);
 		} else {
 			placedId = scene->PlaceModel(request.model, request.parentId, position, status_);
@@ -125,12 +126,12 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 	}
 
 	// PopupのIDは各オブジェクトのPushIDの外側で統一する。
-	if (request.contextRequested) {
+	if (request.isContextRequested) {
 		contextTarget_ = request.contextObjectId;
 
 		std::snprintf(prefabName_, sizeof(prefabName_), "Prefab_%llu", static_cast<unsigned long long>(contextTarget_));
 
-		if (!selection.Contains(contextTarget_)) {
+		if (!selection.DoesContain(contextTarget_)) {
 		selection.Select(contextTarget_);
 		}
 
@@ -155,6 +156,7 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 
 // 種類別の上限を確認し、新規作成サブメニューを描く。
 void HierarchyPanel::DrawCreateMenu(IEditableWorld& scene, EditorSelection& selection) {
+	// 作成できるオブジェクトの種類をメニューへ並べる。
 #ifdef USE_IMGUI
 	if (!ImGui::BeginMenu("新規作成")) {
 		return;
@@ -271,6 +273,7 @@ void HierarchyPanel::DrawCreateMenu(IEditableWorld& scene, EditorSelection& sele
 
 // ツリーの描画後に操作するため、削除・追加で描画中の参照を無効化しない。
 void HierarchyPanel::DrawContextMenu(IEditableWorld& scene, EditorSelection& selection) {
+	// 右クリックした対象に応じて操作メニューを組み立てる。
 #ifdef USE_IMGUI
 	if (!ImGui::BeginPopup("HierarchyContext")) {
 		return;
@@ -370,6 +373,7 @@ void HierarchyPanel::DrawContextMenu(IEditableWorld& scene, EditorSelection& sel
 
 // 子孫をまとめて保存する。入力にディレクトリを許さず、resources/prefabs内へ置く。
 void HierarchyPanel::DrawPrefabSaveMenu(IEditableWorld& scene) {
+	// 保存名を受け取り、対象の階層をPrefabへ書き出す。
 #ifdef USE_IMGUI
 	if (!ImGui::BeginMenu("Prefabとして保存")) {
 		return;
@@ -433,7 +437,7 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
 
-		if (selection.Contains(object.id)) {
+		if (selection.DoesContain(object.id)) {
 			flags |= ImGuiTreeNodeFlags_Selected;
 		}
 
@@ -445,7 +449,7 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 			ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
 		}
 
-		const bool expanded = ImGui::TreeNodeEx(object.name, flags);
+		const bool isExpanded = ImGui::TreeNodeEx(object.name, flags);
 
 		if (!scene.IsObjectActive(object.id)) {
 			ImGui::PopStyleColor();
@@ -464,7 +468,7 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 		// Windowsのメニューと同じく、右ボタンを離したときに開く。
 		if (ImGui::IsItemHovered()) {
 			if (ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
-				request.contextRequested = true;
+				request.isContextRequested = true;
 
 				request.contextObjectId = object.id;
 			}
@@ -480,7 +484,7 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 
 		AcceptParentDrop(object.id, request);
 
-		if (expanded) {
+		if (isExpanded) {
 			if (children.contains(object.id)) {
 				DrawBranch(scene, selection, children, object.id, request);
 
@@ -507,6 +511,7 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 
 // ドロップでvectorが置き換わるのはツリー描画がすべて終わってから。
 void HierarchyPanel::AcceptParentDrop(WorldObjectId parentId, HierarchyRequest& request) {
+	// 親子変更に使うドロップ先と対象IDを記録する。
 #ifdef USE_IMGUI
 	if (ImGui::BeginDragDropTarget()) {
 		const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PON_SCENE_OBJECT");
@@ -517,7 +522,7 @@ void HierarchyPanel::AcceptParentDrop(WorldObjectId parentId, HierarchyRequest& 
 
 				request.parentId = parentId;
 
-				request.requested = true;
+				request.isRequested = true;
 			}
 		}
 
@@ -527,7 +532,7 @@ void HierarchyPanel::AcceptParentDrop(WorldObjectId parentId, HierarchyRequest& 
 			modelPayload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kPrefabType);
 
 			if (modelPayload != nullptr) {
-				request.prefab = true;
+				request.isPrefab = true;
 			}
 		}
 

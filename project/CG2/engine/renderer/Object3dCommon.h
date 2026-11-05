@@ -35,14 +35,14 @@ public:
 	//=============================================================================================//
 	// カメラ位置設定
 
-	void SetCameraPosition(const Vector3& position) { cameraData_->worldPosition = position; }
+	void SetCameraPosition(const Vector3& position);
 
 	//=============================================================================================//
 	// Getter
 
-	DirectXCommon* GetDxCommon() const { return dxCommon_; }
+	DirectXCommon* GetDxCommon() const;
 
-	SrvManager* GetSrvManager() const { return srvManager_; }
+	SrvManager* GetSrvManager() const;
 
 private:
 

@@ -14,7 +14,7 @@ struct AssetPathChange {
 	// パスの比較・変換
 
 	// 同名の接頭辞ではなく、フォルダの境界で比較する。
-	static bool Contains(const std::filesystem::path& parent, const std::filesystem::path& child);
+	static bool DoesContain(const std::filesystem::path& parent, const std::filesystem::path& child);
 
 	static std::string Text(const std::filesystem::path& path);
 

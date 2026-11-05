@@ -173,7 +173,13 @@ EditorとDebugCameraはInitialize/Update/Drawへ役割を分け、EditorSession�
 
 三項演算子、ラムダ式、auto、一文字の変数・関数名は使用しない。ifの本体は必ず改行する。修飾キーとキー押下、対象の種類と設定値、ポインタの有無と参照先の値など、役割が違う条件は別の段階へ分ける。同じ数値の範囲など、同じカテゴリの条件はまとめて判定できる。
 
+GetterはGet○○、SetterはSet○○とし、取得・設定する対象を名前から判断できるようにする。bool型のメンバー・ローカル変数・引数はisPlaying_・hasChanged・canContinue・shouldSimulate・wasSavedなどの疑問文の形に揃える。状態確認の関数もIsPlaying・CanUndo・HasPath・AreMaterialSettingsEqualのように、trueが何を意味するか読める名前にする。Save・Initializeなど処理を実行して成否を返す関数は、動詞の処理名を維持する。条件式の結果をそのままreturnせず、ifとreturn true／return falseで明示する。
+
+.hには型・定数・宣言・メンバーの初期値を置き、関数の処理は同名の.cppへ書く。Getter／Setterやインターフェースの既定処理も例外にしない。共有するstatic変数の定義・初期化は.hのinline変数へ揃える。入れ子の型は、型定義が揃った後でinline定義してよい。乱数エンジンの種など、変数の初期値を決める式もヘッダーへ置ける。
+
 ローカル変数は再利用する計算値や操作中の借用参照など、必要な範囲だけに置く。一度しか使用しない別名を減らし、長い処理を役割別の関数へ分ける。フレーム内の一時値を不用意にメンバ変数へ移して寿命を延ばさない。
+
+関数の説明だけでなく、関数内にも短い日本語コメントを書く。判定の理由、計算の目的、状態を更新する意味を、対象の処理の直前で説明する。処理のまとまりごとを基本とし、追いにくい箇所は一つずつ説明してよい。
 
 ## Sceneカメラ操作時の入力・更新負荷
 
@@ -282,9 +288,9 @@ PhysicsTestsはBox/Sphereの着地、壁、質量比、反発、摩擦、Trigger
 
 ## Editorパネルの責務と実装ファイル
 
-`editor/panels`はタブ単位のフォルダへ分類し、各クラスの宣言は同名の.h、実装は同名の.cppへまとめる。複数cppへ同じクラスを分散せず、機能ごとの区切りコメントで分類する。型やinline関数だけの.hは許可し、空のcppや形式だけのヘッダーは増やさない。起動入口のmain.cppは同名ヘッダーを必要としない。
+`editor/panels`はタブ単位のフォルダへ分類し、各クラスの宣言は同名の.h、実装は同名の.cppへまとめる。複数cppへ同じクラスを分散せず、機能ごとの区切りコメントで分類する。型・定数・宣言だけの.hは許可し、関数の処理は置かない。空のcppや形式だけのヘッダーは増やさない。起動入口のmain.cppは同名ヘッダーを必要としない。
 
-GameScene・Editor・Asset・描画・入力・物理など、対応するcppがある自作コード全体で、cppの分類名と関数の並びをhの宣言に合わせる。関数区分は「メンバ関数 / Motion」ではなく「Motion」のように内容だけを書く。コンストラクタとデストラクタは生成・破棄として分類する。補助関数・内部データの定義はcpp内の実装用の枠へ分ける。h内で完結するGetter／Setterやメンバー変数には、cppへ対応する空の見出しを作らない。namespaceや通常の関数も、宣言側の分類と並びに合わせる。
+GameScene・Editor・Asset・描画・入力・物理など、自作コード全体でcppの分類名と関数の並びをhの宣言に合わせる。関数区分は「メンバ関数 / Motion」ではなく「Motion」のように内容だけを書く。コンストラクタとデストラクタは生成・破棄として分類する。補助関数・内部データの定義はcpp内の実装用の枠へ分ける。Getter／Setterもcppに実装し、型・変数の宣言だけのカテゴリにはcppへ空の見出しを作らない。namespaceや通常の関数も、宣言側の分類と並びに合わせる。
 
 | タブ | フォルダ | .h / .cppの名前 | 担当 |
 | --- | --- | --- | --- |
@@ -299,7 +305,7 @@ GameScene・Editor・Asset・描画・入力・物理など、対応するcppが
 
 Editorは選択と履歴を所有し、InspectorPanel::DrawSelectionへ選択を借用させる。InspectorPanelが単体と複数選択の表示を切り替え、Editorのメンバー関数を別名cppへ実装する形は使わない。
 
-SceneViewPanelは選択・ドラッグ・スナップ・共通タブの状態を所有し、その全実装をSceneViewPanel.cppへまとめる。GameViewPanelは状態を重複所有しない関数群として、共通の画像ハンドルと寸法を借用する。SceneViewDrawing.hは画面位置への変換と線分描画のinline関数だけを持つ、ヘッダーのみの補助として残す。
+SceneViewPanelは選択・ドラッグ・スナップ・共通タブの状態を所有し、その全実装をSceneViewPanel.cppへまとめる。GameViewPanelは状態を重複所有しない関数群として、共通の画像ハンドルと寸法を借用する。SceneViewDrawing.hは画面位置への変換と線分描画の宣言を持ち、その実装は同名のSceneViewDrawing.cppへ置く。
 
 ProjectPanelはディレクトリ・選択・プレビューの状態を所有し、画面構成とAsset操作もProjectPanel.cppへ置く。Consoleはログを描画中だけ借用し、Projectのキャッシュや更新処理には依存しない。PerformancePanelは履歴の選択とCSV出力結果を自身のメンバーで保持する。
 

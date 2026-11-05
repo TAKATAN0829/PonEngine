@@ -6,9 +6,9 @@
 //=============================================================================================//
 // 初期化処理
 
-
 // 専用のRTV/DSVを用意し、ImGuiへ渡すSRV番号はリサイズしても変えない。
 void SceneRenderTarget::Initialize(DirectXCommon* graphics, SrvManager* descriptors) {
+	// Scene専用の描画先と、UIへ渡すSRVを準備する。
 	graphics_ = graphics;
 
 	descriptors_ = descriptors;
@@ -35,7 +35,7 @@ void SceneRenderTarget::Initialize(DirectXCommon* graphics, SrvManager* descript
 
 	depthDescriptorIndex_ = descriptors_->Allocate();
 
-	initialized_ = true;
+	isInitialized_ = true;
 
 	Resize(800, 500);
 }
@@ -43,9 +43,9 @@ void SceneRenderTarget::Initialize(DirectXCommon* graphics, SrvManager* descript
 //=============================================================================================//
 // 描画先の切替
 
-
 // サンプリング用の状態から描画用へ切り替え、パネルと同じ寸法で描画する。
 void SceneRenderTarget::Begin() {
+	// Scene画像を描画可能な状態にし、描画先と寸法を設定する。
 	ID3D12GraphicsCommandList* commands = graphics_->GetCommandList();
 
 	D3D12_RESOURCE_BARRIER barrier{};
@@ -90,6 +90,7 @@ void SceneRenderTarget::Begin() {
 
 // ImGuiが同じフレームで読み取れるよう、描画結果をサンプリング用へ戻す。
 void SceneRenderTarget::End() {
+	// 描画したScene画像を、UIから読み取れる状態へ戻す。
 	D3D12_RESOURCE_BARRIER barrier{};
 
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -110,9 +111,9 @@ void SceneRenderTarget::End() {
 //=============================================================================================//
 // リサイズ
 
-
 // 新しいリソースの作成に成功するまでは、現在の描画先を保持する。
 void SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
+	// 現在の寸法と比較し、必要な場合だけ描画先を作り直す。
 	if (width == 0 || height == 0 || (width == width_ && height == height_)) {
 		return;
 	}
@@ -215,20 +216,20 @@ void SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 //=============================================================================================//
 // 終了処理
 
-
 // 共有SRV管理より先に解放し、再起動や終了時に記述子を残さない。
 void SceneRenderTarget::Finalize() {
+	// Scene専用の描画先と記述子を解放する。
 	color_.Reset();
 
 	depth_.Reset();
 
-	if (initialized_) {
+	if (isInitialized_) {
 		descriptors_->Free(descriptorIndex_);
 
 		descriptors_->Free(depthDescriptorIndex_);
 	}
 
-	initialized_ = false;
+	isInitialized_ = false;
 
 	width_ = 0;
 
@@ -242,8 +243,14 @@ void SceneRenderTarget::Finalize() {
 //=============================================================================================//
 // Getter / Scene画像
 
-
 // 描画リソース自体ではなく、ImGuiが利用する共有ヒープ内のハンドルを返す。
 uint64_t SceneRenderTarget::GetTextureHandle() const {
+	// Scene画像をUIへ表示するためのハンドルを取得する。
 	return descriptors_->GetGPUDescriptorHandle(descriptorIndex_).ptr;
+}
+
+// GPU完了後の画像読出し用。End後の状態はPIXEL_SHADER_RESOURCE、所有権は移さない。
+ID3D12Resource* SceneRenderTarget::GetColorResource() const {
+	// Scene画像のGPUリソースを取得する。
+	return color_.Get();
 }

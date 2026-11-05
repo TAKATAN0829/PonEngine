@@ -5,6 +5,7 @@
 
 
 void Camera::Initialize (int32_t clientWidth, int32_t clientHeight) {
+	// 初期Transformと表示サイズから、カメラの行列を準備する。
 
 	clientWidth_ = clientWidth;
 
@@ -30,6 +31,7 @@ void Camera::Initialize (int32_t clientWidth, int32_t clientHeight) {
 
 
 void Camera::Update () {
+	// 現在のTransformと親子関係から、カメラの行列を更新する。
 
 
 	transform_.UpdateMatrix ();
@@ -49,6 +51,7 @@ void Camera::Update () {
 
 // Gameビューも描画先の寸法に合わせ、縦横比による引き伸ばしを防ぐ。
 void Camera::SetViewportSize(int32_t width, int32_t height) {
+	// 表示サイズを保存し、必要な投影や描画基準へ反映する。
 	if (width <= 0 || height <= 0) {
 		return;
 	}
@@ -65,11 +68,13 @@ void Camera::SetViewportSize(int32_t width, int32_t height) {
 
 
 void Camera::SetTransform (const TransformData& transform) {
+	// 現在のTransformを更新する。
 
 	transform_.local_ = transform;
 }
 
 void Camera::SetParent (Transform* parent) {
+	// 親Transformの参照を更新する。
 
 	transform_.SetParent (parent);
 }
@@ -79,6 +84,7 @@ void Camera::SetParent (Transform* parent) {
 
 
 TransformData Camera::GetTransform () const {
+	// 現在のTransformを取得する。
 
 	return transform_.local_;
 }
@@ -88,16 +94,19 @@ TransformData Camera::GetTransform () const {
 
 
 const Matrix4x4& Camera::GetViewProjectionMatrix () const {
+	// ビューと投影を合成した行列を取得する。
 
 	return viewProjectionMatrix_;
 }
 
 const Matrix4x4& Camera::GetViewMatrix () const {
+	// カメラのビュー行列を取得する。
 
 	return viewMatrix_;
 }
 
 const Matrix4x4& Camera::GetProjectionMatrix () const {
+	// カメラの投影行列を取得する。
 
 	return projectionMatrix_;
 }

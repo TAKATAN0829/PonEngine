@@ -9,7 +9,7 @@
 WorldObjectId WorldPrimitives::Create(IWorldObjects& scene, PrimitiveType type, std::string& error) {
 	error.clear();
 
-	if (!scene.SupportsObjectCollection()) {
+	if (!scene.HasObjectCollectionSupport()) {
 		error = "This scene does not support primitive creation.";
 
 		return kInvalidWorldObjectId;
@@ -35,7 +35,7 @@ WorldObjectId WorldPrimitives::Create(IWorldObjects& scene, PrimitiveType type, 
 
 	primitive.model = kCubeModel;
 
-	primitive.collider.present = true;
+	primitive.collider.isPresent = true;
 
 	if (type == PrimitiveType::Sphere) {
 		primitive.name = "Sphere #"+std::to_string(primitive.id);

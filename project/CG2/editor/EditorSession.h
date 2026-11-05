@@ -17,7 +17,7 @@ public:
 	// 更新処理
 
 	// ドラッグ・文字入力が終わった時点で履歴を一件記録する。
-	void Update(IEditableWorld& scene, bool interactionActive);
+	void Update(IEditableWorld& scene, bool isInteractionActive);
 
 	//=============================================================================================//
 	// Getter / 履歴・保存状態
@@ -31,9 +31,9 @@ public:
 	//=============================================================================================//
 	// Getter / 再生状態
 
-	bool IsPlaying() const { return playing_; }
+	bool IsPlaying() const;
 
-	bool IsPaused() const { return paused_; }
+	bool IsPaused() const;
 
 	bool ShouldSimulate(); // 一回分のStep要求はここで消費する。
 
@@ -75,7 +75,7 @@ private:
 	// 設定比較
 
 	// 読取専用参照で比較し、変更がある場合にだけ履歴用のコピーを作る。
-	static bool MatchesSnapshot(const IEditableWorld& scene, const std::vector<WorldObjectData>& snapshot);
+	static bool DoesMatchSnapshot(const IEditableWorld& scene, const std::vector<WorldObjectData>& snapshot);
 
 	static bool AreObjectsEqual(const WorldObjectData& firstObject, const WorldObjectData& secondObject);
 
@@ -102,7 +102,7 @@ private:
 
 	std::vector<WorldObjectData> playSnapshot_; // 停止時に戻す編集状態。
 
-	bool playing_ = false;
-	bool paused_ = false;
-	bool stepRequested_ = false; // 次の更新で一度だけ消費する。
+	bool isPlaying_ = false;
+	bool isPaused_ = false;
+	bool isStepRequested_ = false; // 次の更新で一度だけ消費する。
 };

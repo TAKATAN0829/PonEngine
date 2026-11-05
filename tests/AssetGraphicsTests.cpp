@@ -122,19 +122,19 @@ void RunAssetGraphicsTests(GameScene& scene) {
         throw std::runtime_error("Moved OBJ has no mesh after reimport.");
     }
 
-    bool importedTextureExists = false;
+    bool doesImportedTextureExist = false;
 
     for (uint32_t materialIndex = 0; materialIndex < imported->mNumMaterials; ++materialIndex) {
         aiString texture;
 
         if (imported->mMaterials[materialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &texture) == AI_SUCCESS) {
             if (std::filesystem::exists(resources / destination / AssetPathChange::Path(texture.C_Str()))) {
-                importedTextureExists = true;
+                doesImportedTextureExist = true;
             }
         }
     }
 
-    if (!importedTextureExists) {
+    if (!doesImportedTextureExist) {
         throw std::runtime_error("Moved OBJ/MTL texture reference could not be resolved by Assimp.");
     }
 
@@ -148,30 +148,30 @@ void RunAssetGraphicsTests(GameScene& scene) {
 
     const std::vector<ModelMaterialInfo> reimportedMaterials = scene.GetModelMaterials(reimportedModel);
 
-    bool foundReimportedTexture = false;
+    bool wasReimportedTextureFound = false;
 
     for (const ModelMaterialInfo& material : reimportedMaterials) {
         if (material.texture == finalTexture) {
-            foundReimportedTexture = true;
+            wasReimportedTextureFound = true;
         }
     }
 
-    if (!foundReimportedTexture) {
+    if (!wasReimportedTextureFound) {
         throw std::runtime_error("Unicode texture metadata changed during model reimport.");
     }
 
     // GPUキャッシュがInspectorへ公開する情報も、新しいパスと一致する。
     const std::vector<ModelMaterialInfo> materials = scene.GetModelMaterials(movedModel);
 
-    bool foundMovedTexture = false;
+    bool wasMovedTextureFound = false;
 
     for (const ModelMaterialInfo& material : materials) {
         if (material.texture == finalTexture) {
-            foundMovedTexture = true;
+            wasMovedTextureFound = true;
         }
     }
 
-    if (!foundMovedTexture) {
+    if (!wasMovedTextureFound) {
         throw std::runtime_error("Imported material metadata retained its old texture path.");
     }
 }

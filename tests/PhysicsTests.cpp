@@ -8,8 +8,8 @@
 #include <stdexcept>
 
 namespace {
-	void RequirePhysics(bool condition, const char* message) {
-		if (!condition) {
+	void RequirePhysics(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -17,7 +17,7 @@ namespace {
 		WorldObjectData floor;
 		floor.id = 1;
 		floor.name = "Floor";
-		floor.collider.present = true;
+		floor.collider.isPresent = true;
 		floor.collider.size = {40,1,40};
 		floor.transform.translate.y = -0.5f;
 		return floor;
@@ -25,9 +25,9 @@ namespace {
 	WorldObjectData Falling(ColliderShape shape) {
 		WorldObjectData object;
 		object.id = 2;
-		object.collider.present = true;
+		object.collider.isPresent = true;
 		object.collider.shape = shape;
-		object.body.present = true;
+		object.body.isPresent = true;
 		object.transform.translate.y = 3;
 		return object;
 	}
@@ -56,7 +56,7 @@ namespace {
 		WorldObjectData first = Falling(ColliderShape::Sphere);
 		first.id = 1;
 		first.transform.translate = {-0.25f,0,0};
-		first.body.useGravity = false;
+		first.body.isGravityEnabled = false;
 		first.body.friction = 0;
 		WorldObjectData second = first;
 		second.id = 2;
@@ -85,7 +85,7 @@ namespace {
 		wall.transform.translate = {0,0,0};
 		WorldObjectData mover = Falling(ColliderShape::Box);
 		mover.transform.translate = {-3,0,0};
-		mover.body.useGravity = false;
+		mover.body.isGravityEnabled = false;
 		mover.body.initialVelocity = {4,0,0};
 		RequirePhysics(scene.ReplaceObjects({wall,mover},error), "Wall setup failed");
 		physics.Initialize(scene);
@@ -100,14 +100,14 @@ namespace {
 		RequirePhysics(scene.ReplaceObjects({Floor(),ball},error), "Bounce setup failed");
 		WorldPhysics physics;
 		physics.Initialize(scene);
-		bool bounced = false;
+		bool hasBounced = false;
 		for (size_t frame = 0; frame < 100; ++frame) {
 			physics.Update(scene,1.0f/60);
 			if (physics.GetVelocity(2).y > 2) {
-				bounced = true;
+				hasBounced = true;
 			}
 		}
-		RequirePhysics(bounced, "Restitution did not produce bounce");
+		RequirePhysics(hasBounced, "Restitution did not produce bounce");
 		WorldObjectData sliding = Falling(ColliderShape::Box);
 		sliding.transform.translate.y = 0.5f;
 		sliding.body.initialVelocity.x = 4;
@@ -117,7 +117,7 @@ namespace {
 		Advance(physics,scene,120);
 		RequirePhysics(std::abs(physics.GetVelocity(2).x) < 0.1f, "Contact friction did not slow sliding");
 		WorldObjectData trigger = Floor();
-		trigger.collider.trigger = true;
+		trigger.collider.isTrigger = true;
 		RequirePhysics(scene.ReplaceObjects({trigger,Falling(ColliderShape::Sphere)},error), "Trigger setup failed");
 		physics.Initialize(scene);
 		Advance(physics,scene,120);
@@ -139,11 +139,11 @@ namespace {
 		Advance(physics,scene,240);
 		RequirePhysics(std::abs(scene.GetObjectWorldPosition(2).y-1) < 0.002f, "Physics did not convert world position through parent");
 		WorldObjectData root = Falling(ColliderShape::Box);
-		root.collider.present = false;
+		root.collider.isPresent = false;
 		WorldObjectData firstCollider;
 		firstCollider.id = 3;
 		firstCollider.parentId = 2;
-		firstCollider.collider.present = true;
+		firstCollider.collider.isPresent = true;
 		WorldObjectData secondCollider = firstCollider;
 		secondCollider.id = 4;
 		RequirePhysics(scene.ReplaceObjects({Floor(),root,firstCollider,secondCollider},error), "Compound setup failed");
@@ -154,14 +154,14 @@ namespace {
 		contacts.Update(scene);
 		RequirePhysics(contacts.GetContactCount() == 2, "Colliders of the same Rigidbody collided with each other");
 		std::vector<WorldObjectData> invalid = scene.CaptureObjects();
-		invalid[2].body.present = true;
+		invalid[2].body.isPresent = true;
 		RequirePhysics(!scene.ReplaceObjects(invalid,error), "Nested Dynamic bodies were accepted");
 		// Inspectorで再生中に値が書き換わっても、無効な親子を解決して暴走させない。
-		scene.GetEditableObject(2).body->present = true;
+		scene.GetEditableObject(2).body->isPresent = true;
 		const Vector3 beforeInvalid = scene.GetObjectWorldPosition(2);
 		physics.Update(scene,1.0f/60);
 		RequirePhysics(!physics.GetError().empty() && scene.GetObjectWorldPosition(2).y == beforeInvalid.y, "Runtime invalid hierarchy was not stopped safely");
-		scene.GetEditableObject(2).body->present = false;
+		scene.GetEditableObject(2).body->isPresent = false;
 		physics.Update(scene,1.0f/60);
 		RequirePhysics(physics.GetError().empty(), "Physics did not resume after hierarchy fix");
 	}
@@ -173,16 +173,16 @@ namespace {
 		session.Initialize(scene);
 		scene.GetEditableObject(1).body->mass = 3;
 		scene.GetEditableObject(1).body->initialVelocity.x = 0.25f;
-		scene.GetEditableObject(0).collider->trigger = true;
+		scene.GetEditableObject(0).collider->isTrigger = true;
 		session.Update(scene,false);
-		RequirePhysics(session.Undo(scene,error) && scene.GetObjectData(1)->body.mass == 1 && !scene.GetObjectData(0)->collider.trigger, "Rigidbody edit missing from undo");
-		RequirePhysics(session.Redo(scene,error) && scene.GetObjectData(1)->body.mass == 3 && scene.GetObjectData(0)->collider.trigger, "Rigidbody edit missing from redo");
+		RequirePhysics(session.Undo(scene,error) && scene.GetObjectData(1)->body.mass == 1 && !scene.GetObjectData(0)->collider.isTrigger, "Rigidbody edit missing from undo");
+		RequirePhysics(session.Redo(scene,error) && scene.GetObjectData(1)->body.mass == 3 && scene.GetObjectData(0)->collider.isTrigger, "Rigidbody edit missing from redo");
 		const RigidBodySettings expected = scene.GetObjectData(1)->body;
 		RequirePhysics(SceneFile::Save(scene,directory/"physics.ponscene",error), "Physics save failed");
 		WorldObjects restored;
-		RequirePhysics(SceneFile::Load(restored,directory/"physics.ponscene",error) && EqualBodySettings(restored.GetObjectData(1)->body,expected) && restored.GetObjectData(0)->collider.trigger, "Physics settings roundtrip failed");
+		RequirePhysics(SceneFile::Load(restored,directory/"physics.ponscene",error) && AreBodySettingsEqual(restored.GetObjectData(1)->body,expected) && restored.GetObjectData(0)->collider.isTrigger, "Physics settings roundtrip failed");
 		RequirePhysics(PrefabFile::Save(scene,2,directory/"physics.ponprefab",error), "Physics prefab save failed");
-		RequirePhysics(PrefabFile::Instantiate(restored,directory/"physics.ponprefab",0,{},error) != 0 && EqualBodySettings(restored.GetObjectData(2)->body,expected), "Prefab lost Rigidbody settings");
+		RequirePhysics(PrefabFile::Instantiate(restored,directory/"physics.ponprefab",0,{},error) != 0 && AreBodySettingsEqual(restored.GetObjectData(2)->body,expected), "Prefab lost Rigidbody settings");
 		RequirePhysics(session.BeginPlay(scene,error), "Physics Play failed");
 		WorldPhysics physics;
 		physics.Initialize(scene);
@@ -211,14 +211,14 @@ namespace {
 			legacy << line.substr(0,end) << '\n';
 		}
 		legacy.close();
-		RequirePhysics(SceneFile::Load(restored,directory/"physics-v10.ponscene",error) && !restored.GetObjectData(1)->body.present, "Format 10 compatibility failed");
+		RequirePhysics(SceneFile::Load(restored,directory/"physics-v10.ponscene",error) && !restored.GetObjectData(1)->body.isPresent, "Format 10 compatibility failed");
 		std::vector<WorldObjectData> invalid = scene.CaptureObjects();
 		invalid[1].body.mass = 0;
 		RequirePhysics(!restored.ReplaceObjects(invalid,error), "Zero mass accepted");
 	}
 	void VerifyKinematicAndModes() {
 		WorldObjectData platform = Floor();
-		platform.body.present = true;
+		platform.body.isPresent = true;
 		platform.body.mode = BodyMode::Kinematic;
 		WorldObjectData rider = Falling(ColliderShape::Box);
 		rider.transform.translate.y = 0.5f;
@@ -232,17 +232,17 @@ namespace {
 			physics.Update(scene,1.0f/60);
 		}
 		RequirePhysics(std::abs(scene.GetObjectWorldPosition(2).y-1.1f) < 0.005f, "Kinematic platform did not lift Dynamic body");
-		scene.GetEditableObject(1).body->useGravity = false;
+		scene.GetEditableObject(1).body->isGravityEnabled = false;
 		scene.GetEditableObject(1).body->initialVelocity = {1,0,0};
 		physics.Initialize(scene);
 		const float height = scene.GetObjectWorldPosition(2).y;
 		Advance(physics,scene,60);
 		RequirePhysics(std::abs(scene.GetObjectWorldPosition(2).x-1) < 0.001f && std::abs(scene.GetObjectWorldPosition(2).y-height) < 0.001f, "Gravity toggle or initial world velocity incorrect");
-		*scene.GetEditableObject(1).active = false;
+		*scene.GetEditableObject(1).isActive = false;
 		const Vector3 stopped = scene.GetObjectWorldPosition(2);
 		Advance(physics,scene,30);
 		RequirePhysics(scene.GetObjectWorldPosition(2).x == stopped.x, "Inactive body kept moving");
-		*scene.GetEditableObject(1).active = true;
+		*scene.GetEditableObject(1).isActive = true;
 		scene.GetEditableObject(1).body->mode = BodyMode::Static;
 		Advance(physics,scene,30);
 		RequirePhysics(scene.GetObjectWorldPosition(2).x == stopped.x, "Static body moved");
@@ -250,7 +250,7 @@ namespace {
 	void VerifySlope() {
 		WorldObjectData ramp = Floor();
 		ramp.transform.rotate.z = 0.2f;
-		ramp.body.present = true;
+		ramp.body.isPresent = true;
 		ramp.body.mode = BodyMode::Static;
 		ramp.body.friction = 0;
 		WorldObjectData ball = Falling(ColliderShape::Sphere);

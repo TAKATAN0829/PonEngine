@@ -16,13 +16,13 @@ public:
 	//=============================================================================================//
 	// Getter / 原本・参照
 
-	const std::filesystem::path& GetPath() const { return path_; }
+	const std::filesystem::path& GetPath() const;
 
-	const std::string& GetOriginal() const { return original_; }
+	const std::string& GetOriginal() const;
 
-	const std::vector<AssetReference>& GetReferences() const { return references_; }
+	const std::vector<AssetReference>& GetReferences() const;
 
-	bool IsOpaque() const { return extension_ == ".fbx"; }
+	bool IsOpaque() const;
 
 	bool HasChanges(const AssetPathChange& change) const;
 
@@ -36,7 +36,7 @@ private:
 
 		std::filesystem::path target;
 
-		bool uri = false;
+		bool isUri = false;
 	};
 
 	//=============================================================================================//
@@ -46,7 +46,7 @@ private:
 
 	bool ReadWavefrontLinks(std::string& error);
 
-	bool AddLink(size_t begin, size_t length, const std::string& value, bool uri, std::string& error);
+	bool AddLink(size_t begin, size_t length, const std::string& value, bool isUri, std::string& error);
 
 	std::string GetUpdatedLink(const Link& link, const AssetPathChange& change) const;
 

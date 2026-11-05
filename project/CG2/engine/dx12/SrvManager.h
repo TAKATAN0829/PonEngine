@@ -43,7 +43,7 @@ public:
 	//=============================================================================================//
 	// 上限チェック
 
-	bool IsFull () const { return freeIndices_.empty () && useIndex_ >= kMaxSRVCount; }
+	bool IsFull () const;
 
 	//=============================================================================================//
 	// SRV生成(Texture2D)
@@ -83,7 +83,7 @@ public:
 	//=============================================================================================//
 	// DescriptorHeap取得
 
-	ID3D12DescriptorHeap* GetDescriptorHeap () const { return descriptorHeap_.Get (); }
+	ID3D12DescriptorHeap* GetDescriptorHeap () const;
 
 private:
 

@@ -16,7 +16,7 @@ public:
 	//=============================================================================================//
 	// 更新処理
 
-	void Update(Input* input, bool simulate = true);
+	void Update(Input* input, bool shouldSimulate = true);
 
 	// PostDrawのGPU完了後に呼ぶ。場面が変わった場合だけtrueを返す。
 	bool ApplyPendingScene();
@@ -44,7 +44,7 @@ public:
 	// Setter / 再生状態
 
 	// 再生中に遷移した場合、停止後のフレーム境界で元の編集シーンへ戻す。
-	void SetPlayState(bool playing);
+	void SetPlayState(bool isPlaying);
 
 private:
 
@@ -62,6 +62,6 @@ private:
 	std::unique_ptr<IScene> pendingScene_; // まだInitializeしていない遷移先。
 	std::unique_ptr<IScene> editScene_; // 最初の遷移時だけ、元の編集シーンを生存させて退避する。
 
-	bool playing_ = false;
-	bool restoreEditScene_ = false;
+	bool isPlaying_ = false;
+	bool shouldRestoreEditScene_ = false;
 };

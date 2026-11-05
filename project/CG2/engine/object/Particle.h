@@ -35,7 +35,7 @@ public:
 	//=============================================================================================//
 	// 更新処理
 
-	void Update (const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool simulate = true, bool emit = true);
+	void Update (const Matrix4x4& viewProjectionMatrix, const Matrix4x4& cameraMatrix, bool shouldSimulate = true, bool shouldEmit = true);
 
 	//=============================================================================================//
 	// 描画処理
@@ -59,17 +59,17 @@ public:
 	//=============================================================================================//
 	// Getter / 現在の粒子数
 
-	size_t GetLiveCount() const { return particles_.size(); }
+	size_t GetLiveCount() const;
 
 	//=============================================================================================//
 	// Particle追加
 
-	void AddParticles() { particles_.splice(particles_.end(), Emit()); }
+	void AddParticles();
 
 	//=============================================================================================//
 	// EmitterのTransform
 
-	TransformData& GetEmitterTransform() { return emitter_.transform; }
+	TransformData& GetEmitterTransform();
 
 	// 親子変換で求めたワールド位置。プリセットのローカル設定とは分けて適用する。
 	void SetEmitterPosition(const Vector3& position);
@@ -87,10 +87,10 @@ public:
 	void SetBlendMode (BlendMode blendMode);
 
 	// ビルボード
-	void SetUseBillboard(bool useBillboard) { useBillboard_ = useBillboard; }
+	void SetUseBillboard(bool isBillboardEnabled);
 
 	// 加速度Field
-	void SetUseAccelerationField(bool useAccelerationField) { useAccelerationField_ = useAccelerationField; }
+	void SetUseAccelerationField(bool isAccelerationFieldEnabled);
 
 private:
 
@@ -205,7 +205,7 @@ private:
 		{ { -1.0f,-1.0f,-1.0f },{ 1.0f,1.0f,1.0f } }
 	};
 
-	bool useAccelerationField_ = false;
+	bool isAccelerationFieldEnabled_ = false;
 
 	//=============================================================================================//
 	// 描画するインスタンス数
@@ -220,15 +220,15 @@ private:
 	//=============================================================================================//
 	// ビルボード
 
-	bool useBillboard_ = true;
+	bool isBillboardEnabled_ = true;
 
 	ParticleSettings settings_;
 
-	bool descriptorAllocated_ = false;
+	bool isDescriptorAllocated_ = false;
 
 	std::string appliedTexture_;
 
-	bool useBrightnessAlpha_ = false; // Alphaのない画像は黒背景を透明にする。画像変更時だけ判定。
+	bool isBrightnessAlphaEnabled_ = false; // Alphaのない画像は黒背景を透明にする。画像変更時だけ判定。
 
 	Matrix4x4 inverseViewProjection_{}; // 深度から交差距離を復元する。Updateで描画カメラに合わせる。
 };

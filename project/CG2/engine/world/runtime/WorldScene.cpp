@@ -18,7 +18,6 @@
 //=============================================================================================//
 // 初期化処理
 
-
 void WorldScene::Initialize(const SceneContext& context) {
 	motion_.Initialize();
 
@@ -27,7 +26,7 @@ void WorldScene::Initialize(const SceneContext& context) {
 	physics_.Finalize();
 
 #ifndef USE_IMGUI
-	gameView_ = true; // Releaseも保存したメインカメラを使う。
+	isGameView_ = true; // Releaseも保存したメインカメラを使う。
 
 #endif
 
@@ -67,7 +66,6 @@ void WorldScene::Initialize(const SceneContext& context) {
 //=============================================================================================//
 // 更新処理
 
-
 void WorldScene::Update(Input*) {
 	// ゲーム更新からだけ呼び、Pause・編集時のカメラ操作では時計を進めない。
 	{
@@ -100,10 +98,11 @@ void WorldScene::Update(Input*) {
 }
 
 // 編集・一時停止中もカメラと描画は更新し、ゲーム固有の更新だけを止める。
-void WorldScene::UpdateEditorFrame(Input* input, bool simulate) {
-	simulationEnabled_ = simulate;
+void WorldScene::UpdateEditorFrame(Input* input, bool shouldSimulate) {
+	// 編集・一時停止中の表示更新と、再生中のゲーム更新を分ける。
+	isSimulationEnabled_ = shouldSimulate;
 
-	if (simulate) {
+	if (shouldSimulate) {
 		Update(input);
 	} else {
 		UpdateCamera();
@@ -115,15 +114,14 @@ void WorldScene::UpdateEditorFrame(Input* input, bool simulate) {
 //=============================================================================================//
 // 描画処理
 
-
 void WorldScene::Draw() {
 
 	//=============================================================================================//
 	// モデル描画
 
-	const bool isolateParticles = particlePreview_.enabled && particlePreview_.isolate && !playing_;
+	const bool shouldIsolateParticles = particlePreview_.isEnabled && particlePreview_.shouldIsolateParticles && !isPlaying_;
 
-	if (!isolateParticles) {
+	if (!shouldIsolateParticles) {
 		object3dCommon_->DrawSettingCommon();
 
 		for (const WorldObjectData& object : GetObjects()) {
@@ -154,14 +152,14 @@ void WorldScene::Draw() {
 
 // 表示状態はEditorが所有し、閉じるボタンの結果もこの呼出中に返す。
 void WorldScene::DrawEditorTools(EditorToolVisibility& visibility) {
-	if (visibility.camera) {
-		debugCamera_->Draw(&visibility.camera);
+	// 開くよう指定された補助画面だけを共通の描画機能へ渡す。
+	if (visibility.isCameraVisible) {
+		debugCamera_->Draw(&visibility.isCameraVisible);
 	}
 }
 
 //=============================================================================================//
 // 終了処理
-
 
 void WorldScene::Finalize() {
 	motion_.Finalize();
@@ -211,8 +209,18 @@ void WorldScene::Finalize() {
 //=============================================================================================//
 // Getter / Editor・Scene表示
 
+// 接触色は保存対象外の最新ゲーム更新結果から取得する。
+bool WorldScene::IsColliderTouching(WorldObjectId identifier) const {
+	// 指定したオブジェクトが他のColliderと接触しているか確認する。
+	if (collision_.IsTouching(identifier)) {
+		return true;
+	}
+
+	return false;
+}
 
 uint64_t WorldScene::GetModelPreview(const std::string& model, std::string& error) {
+	// キャッシュを確認し、必要な場合だけモデルと描画先を準備する。
 	if (modelPreviews_.contains(model)) {
 		return modelPreviews_.at(model)->target.GetTextureHandle();
 	}
@@ -264,6 +272,7 @@ uint64_t WorldScene::GetModelPreview(const std::string& model, std::string& erro
 }
 
 bool WorldScene::PrepareModel(const std::string& model, std::string& error) {
+	// 必要なモデルを読込済みにし、失敗した理由を返す。
 	if (!WorldObjects::IsSupportedModel(model)) {
 		error = "Unsupported model path.";
 
@@ -274,6 +283,7 @@ bool WorldScene::PrepareModel(const std::string& model, std::string& error) {
 }
 
 std::vector<ModelMaterialInfo> WorldScene::GetModelMaterials(const std::string& model) const {
+	// 指定モデルのMaterial情報を取得する。
 	const Model* loaded = ModelManager::GetInstance()->FindModel(model);
 
 	if (loaded == nullptr) {
@@ -284,6 +294,7 @@ std::vector<ModelMaterialInfo> WorldScene::GetModelMaterials(const std::string& 
 }
 
 std::vector<ModelAnimationInfo> WorldScene::GetModelAnimations(const std::string& model) const {
+	// 指定モデルのアニメーション情報を取得する。
 	const Model* loaded = ModelManager::GetInstance()->FindModel(model);
 
 	if (loaded == nullptr) {
@@ -359,6 +370,7 @@ bool WorldScene::PrepareTexture(const std::string& texture, std::string& error) 
 }
 
 float WorldScene::GetAnimationTime(WorldObjectId objectId) const {
+	// 現在のアニメーション時刻を取得する。
 	if (!runtimeObjects_.contains(objectId)) {
 		return 0;
 	}
@@ -367,23 +379,25 @@ float WorldScene::GetAnimationTime(WorldObjectId objectId) const {
 }
 
 bool WorldScene::IsAnimationPreviewPlaying(WorldObjectId objectId) const {
+	// 対象IDのアニメーションプレビューが再生中か確認する。
 	if (!runtimeObjects_.contains(objectId)) {
 		return false;
 	}
 
-	return runtimeObjects_.at(objectId).animationPreview;
+	return runtimeObjects_.at(objectId).isAnimationPreviewEnabled;
 }
 
-void WorldScene::SetAnimationPreview(WorldObjectId objectId, bool playing, bool reset) {
+void WorldScene::SetAnimationPreview(WorldObjectId objectId, bool isPlaying, bool shouldReset) {
+	// 対象モデルのプレビュー状態と再生位置を更新する。
 	if (!runtimeObjects_.contains(objectId)) {
 		return;
 	}
 
 	RuntimeObject& runtime = runtimeObjects_.at(objectId);
 
-	runtime.animationPreview = playing;
+	runtime.isAnimationPreviewEnabled = isPlaying;
 
-	if (reset) {
+	if (shouldReset) {
 		runtime.drawable->ResetAnimation();
 	}
 }
@@ -427,8 +441,14 @@ bool WorldScene::ReplaceObjects(std::vector<WorldObjectData> objects, std::strin
 	return WorldObjects::ReplaceObjects(std::move(objects),error);
 }
 
+IEditableWorld* WorldScene::GetEditableWorld() {
+	// このシーン自身を編集用の窓口として公開する。
+	return this;
+}
+
 // Sceneパネル内のカメラと描画サイズを公開し、画像とクリック位置を一致させる。
 bool WorldScene::GetEditorViewInfo(EditorViewInfo& viewInfo) const {
+	// SceneViewのカメラと表示サイズを取得する。
 	if (debugCamera_ == nullptr) {
 		return false;
 	}
@@ -483,7 +503,7 @@ bool WorldScene::GetEditableObjectBounds(size_t objectIndex, AABB& worldBounds) 
 		return false;
 	}
 
-	if (object.useRootNodeMatrix) {
+	if (object.isRootNodeMatrixUsed) {
 		worldMatrix = MathUtility::Multiply(model->GetRootNode().localMatrix, worldMatrix);
 	}
 
@@ -500,6 +520,7 @@ bool WorldScene::GetEditableObjectBounds(size_t objectIndex, AABB& worldBounds) 
 
 // AABBで絞った候補だけを、描画と同じ頂点・ワールド行列で判定する。
 bool WorldScene::IntersectObjectSurface(size_t objectIndex, const Vector3& origin, const Vector3& direction, float& distance) const {
+	// メッシュの三角形を調べ、レイが最初に当たる表面を求める。
 	if (objectIndex >= GetObjects().size()) {
 		return false;
 	}
@@ -526,7 +547,7 @@ bool WorldScene::IntersectObjectSurface(size_t objectIndex, const Vector3& origi
 		return false;
 	}
 
-	if (data.useRootNodeMatrix) {
+	if (data.isRootNodeMatrixUsed) {
 		world = MathUtility::Multiply(model->GetRootNode().localMatrix, world);
 	}
 
@@ -536,7 +557,7 @@ bool WorldScene::IntersectObjectSurface(size_t objectIndex, const Vector3& origi
 		vertices = &runtimeObjects_.at(data.id).drawable->GetSurfaceVertices();
 	}
 
-	bool hit = false;
+	bool hasHit = false;
 
 	float nearest = (std::numeric_limits<float>::max)();
 
@@ -554,22 +575,23 @@ bool WorldScene::IntersectObjectSurface(size_t objectIndex, const Vector3& origi
 			if (candidate < nearest) {
 				nearest = candidate;
 
-				hit = true;
+				hasHit = true;
 			}
 		}
 	}
 
-	if (hit) {
+	if (hasHit) {
 		distance = nearest;
 	}
 
-	return hit;
+	return hasHit;
 }
 
 //=============================================================================================//
 // Asset参照の更新
 
 void WorldScene::RemapAssetPaths(const AssetPathChange& change) {
+	// キャッシュや保存基準のパスも含め、Asset移動の結果を反映する。
 	TextureManager::GetInstance()->RemapAssetPaths(change);
 
 	ModelManager::GetInstance()->RemapAssetPaths(change);
@@ -609,14 +631,16 @@ void WorldScene::RemapAssetPaths(const AssetPathChange& change) {
 
 // 新しい配置へ前の速度・接触・プレビュー・カメラ操作を持ち越さない。
 void WorldScene::OnSceneContentsChanged() {
+	// 新しい配置へ実行時の一時状態を持ち越さない。
 	OnPlayStateChanged(false);
 
 	particlePreview_ = {};
 
-	particleBurstRequested_ = false;
+	isParticleBurstRequested_ = false;
 
-	gameView_ = false;
+	isGameView_ = false;
 
+	// 前の操作位置を持ち越さず、Editorカメラを初期化する。
 	debugCamera_->Initialize(static_cast<int32_t>(viewportWidth_), static_cast<int32_t>(viewportHeight_));
 
 	debugCamera_->SetEditorInputEnabled(false);
@@ -624,7 +648,6 @@ void WorldScene::OnSceneContentsChanged() {
 
 //=============================================================================================//
 // Setter / Scene表示・カメラ
-
 
 // 表示領域の大きさを投影行列と2D描画へ同時に渡す。
 void WorldScene::SetEditorViewport(uint32_t width, uint32_t height) {
@@ -647,12 +670,19 @@ void WorldScene::SetEditorViewport(uint32_t width, uint32_t height) {
 }
 
 // Scene画像の上にいるときだけEditorカメラの入力を受け付ける。
-void WorldScene::SetEditorCameraInput(bool enabled) {
-	debugCamera_->SetEditorInputEnabled(enabled);
+void WorldScene::SetEditorCameraInput(bool isEnabled) {
+	// SceneView上でのカメラ操作を受け付けるか切り替える。
+	debugCamera_->SetEditorInputEnabled(isEnabled);
+}
+
+void WorldScene::SetEditorGameView(bool isEnabled) {
+	// ゲーム用のカメラと表示を使うか切り替える。
+	isGameView_ = isEnabled;
 }
 
 // Editorの注視要求を、シーンが所有するカメラへ渡す。
 void WorldScene::FocusEditorCamera(const Vector3& position) {
+	// Editor用カメラへ注視する位置を渡す。
 	if (debugCamera_ != nullptr) {
 		debugCamera_->Focus(position);
 	}
@@ -661,9 +691,14 @@ void WorldScene::FocusEditorCamera(const Vector3& position) {
 //=============================================================================================//
 // Getter / Particle
 
+ParticleSettings* WorldScene::GetParticleSettings() {
+	// 共通Particleプリセットの設定を取得する。
+	return &particleSettings_;
+}
 
 // 表示上限だけではなく、実際に管理している粒子数をEditorへ通知する。
 size_t WorldScene::GetParticleCount() const {
+	// 現在生存しているParticleの合計数を取得する。
 	if (particlePreview_.targetObject != kInvalidWorldObjectId) {
 		const std::unordered_map<WorldObjectId, std::unique_ptr<Particle>>::const_iterator emitter = runtimeParticles_.find(particlePreview_.targetObject);
 
@@ -680,9 +715,14 @@ size_t WorldScene::GetParticleCount() const {
 //=============================================================================================//
 // Setter / Particle操作
 
+void WorldScene::SetParticlePreview(const ParticlePreviewState& state) {
+	// 次の更新で使用するParticleのプレビュー条件を保持する。
+	particlePreview_ = state;
+}
 
 // プレビューの再開や設定読込時は、古い粒子を残さず作り直す。
 void WorldScene::ResetParticlePreview() {
+	// 生存中の粒子と発生タイマーを初期状態へ戻す。
 	particle_->ResetSimulation();
 
 	for (std::pair<const WorldObjectId, std::unique_ptr<Particle>>& entry : runtimeParticles_) {
@@ -690,9 +730,15 @@ void WorldScene::ResetParticlePreview() {
 	}
 }
 
+void WorldScene::BurstParticles() {
+	// 次回の更新で一度だけ粒子を発生させる要求を立てる。
+	isParticleBurstRequested_ = true;
+}
+
 // 再生開始・停止時に粒子と発生タイマーを消し、毎回同じ状態から確認できるようにする。
-void WorldScene::OnPlayStateChanged(bool playing) {
-	playing_ = playing;
+void WorldScene::OnPlayStateChanged(bool isPlaying) {
+	// 物理・動作・接触・アニメーション・粒子を再生開始前の状態へ戻す。
+	isPlaying_ = isPlaying;
 
 	physicsStatusLogged_.clear();
 
@@ -700,18 +746,21 @@ void WorldScene::OnPlayStateChanged(bool playing) {
 
 	collision_.Initialize();
 
+	// 前の再生で保持した速度を消す。
 	physics_.Finalize();
 
-	if (playing) {
+	// 再生開始時の配置と初速を物理処理へ渡す。
+	if (isPlaying) {
 		physics_.Initialize(*this);
 	}
 
 	for (std::pair<const WorldObjectId, RuntimeObject>& entry : runtimeObjects_) {
-		entry.second.animationPreview = false;
+		entry.second.isAnimationPreviewEnabled = false;
 
 		entry.second.drawable->ResetAnimation();
 	}
 
+	// 実行中の粒子と発生タイマーも消す。
 	ResetParticlePreview();
 }
 
@@ -719,13 +768,14 @@ void WorldScene::OnPlayStateChanged(bool playing) {
 // Getter / 表示条件
 
 bool WorldScene::ShouldDrawGameOverlay() const {
-	if (!gameView_) {
+	// 表示モードとParticleの分離表示から、ゲーム用HUDを描くか判定する。
+	if (!isGameView_) {
 		return false;
 	}
 
-	if (!playing_) {
-		if (particlePreview_.enabled) {
-			if (particlePreview_.isolate) {
+	if (!isPlaying_) {
+		if (particlePreview_.isEnabled) {
+			if (particlePreview_.shouldIsolateParticles) {
 				return false;
 			}
 		}
@@ -735,8 +785,9 @@ bool WorldScene::ShouldDrawGameOverlay() const {
 }
 
 bool WorldScene::CanHandleGameInput() const {
+	// GameViewの表示とUIの入力状態から、ゲームへ入力を渡すか判定する。
 #ifdef USE_IMGUI
-	if (!gameView_) {
+	if (!isGameView_) {
 		return false;
 	}
 
@@ -756,19 +807,38 @@ bool WorldScene::CanHandleGameInput() const {
 	return true;
 }
 
+bool WorldScene::IsPlaying() const {
+	// 編集モードとゲームの再生状態を区別する。
+	if (isPlaying_) {
+		return true;
+	}
+
+	return false;
+}
+
+//=============================================================================================//
+// Setter / 共通Particle
+
+// 個別Emitterとは別のサンプル発生。必要な場面だけが明示的に有効にする。
+void WorldScene::SetCommonParticleEmission(bool isEnabled) {
+	// 共通Emitterの連続発生の可否を切り替える。
+	isCommonParticleEmissionEnabled_ = isEnabled;
+}
+
 //=============================================================================================//
 // 実行状態の初期化
 
 void WorldScene::InitializeSimulation() {
+	// 再生開始時の配置を、物理更新の基準として記録する。
 	physics_.Initialize(*this);
 }
 
 //=============================================================================================//
 // 更新
 
-
 // 接触は動作更新後に検出する。Stayを出さず、大量の同時変化もログを間引く。
 void WorldScene::UpdateCollisions() {
+	// 現在の配置から衝突判定を更新し、実行用の接触状態へ反映する。
 	FrameProfiler::Scope collisionTime(FrameProfiler::Section::Collision);
 
 	collision_.Update(*this);
@@ -780,7 +850,7 @@ void WorldScene::UpdateCollisions() {
 
 		std::string message = "[Collision Exit] ";
 
-		if (event.entering) {
+		if (event.isEntering) {
 			message = "[Collision Enter] ";
 		}
 
@@ -809,6 +879,7 @@ void WorldScene::UpdateCollisions() {
 }
 
 void WorldScene::UpdateCamera() {
+	// Scene／Gameの表示に合わせ、使用するカメラの行列を更新する。
 
 	camera_->SetTransform(cameraTransform_);
 
@@ -819,10 +890,11 @@ void WorldScene::UpdateCamera() {
 
 // カメラ情報だけをここで用意し、モデル・Emitterの更新へ渡す。
 void WorldScene::UpdateObject() {
+	// 保存対象の設定を、モデルの行列・Material・アニメーションへ反映する。
 	Matrix4x4 cameraMatrix = debugCamera_->GetCameraMatrix();
 	Matrix4x4 viewProjection = debugCamera_->GetViewProjectionMatrix();
 
-	if (gameView_) {
+	if (isGameView_) {
 		cameraMatrix = MathUtility::Inverse(camera_->GetViewMatrix());
 
 		viewProjection = camera_->GetViewProjectionMatrix();
@@ -898,27 +970,27 @@ void WorldScene::UpdateModels(const Matrix4x4& viewProjection) {
 
 		object.SetColor(data.color);
 
-		object.SetEnableLighting(data.enableLighting);
+		object.SetEnableLighting(data.isLightingEnabled);
 
 		object.SetShininess(data.shininess);
 
-		object.SetUseRootNodeMatrix(data.useRootNodeMatrix);
+		object.SetUseRootNodeMatrix(data.isRootNodeMatrixUsed);
 
 		object.SetSceneLights(lights);
 
 		object.SetMaterials(data.materials);
 
-		bool animate = runtime.animationPreview;
+		bool shouldAnimate = runtime.isAnimationPreviewEnabled;
 
-		if (playing_) {
-			animate = simulationEnabled_ && data.animation.autoplay;
+		if (isPlaying_) {
+			shouldAnimate = isSimulationEnabled_ && data.animation.shouldAutoplay;
 		}
 
 #ifndef USE_IMGUI
-		animate = simulationEnabled_ && data.animation.autoplay;
+		shouldAnimate = isSimulationEnabled_ && data.animation.shouldAutoplay;
 
 #endif
-		object.UpdateAnimation(data.animation, 1.0f / 60.0f, animate);
+		object.UpdateAnimation(data.animation, 1.0f / 60.0f, shouldAnimate);
 
 		Matrix4x4 world{};
 
@@ -971,28 +1043,29 @@ void WorldScene::UpdateParticles(const Matrix4x4& viewProjection, const Matrix4x
 	// 個別Emitterがあるゲームでは共通プリセットの自動発生を止め、二重発生を防ぐ。
 	particle_->ApplySettings(particleSettings_);
 
-	if (particleBurstRequested_) {
+	if (isParticleBurstRequested_) {
 		if (particlePreview_.targetObject == kInvalidWorldObjectId) {
 			particle_->AddParticles();
 		}
 	}
 
-	particleBurstRequested_ = false;
+	isParticleBurstRequested_ = false;
 
-	if (playing_) {
+	if (isPlaying_) {
 		if (!runtimeParticles_.empty()) {
 			particle_->ResetSimulation();
 		}
 	}
 
 	particle_->Update(viewProjection, cameraMatrix,
-		ShouldSimulateEmitter(kInvalidWorldObjectId, commonParticleEmission_ && runtimeParticles_.empty()),
-		ShouldEmitEmitter(kInvalidWorldObjectId, commonParticleEmission_ && runtimeParticles_.empty()));
+		ShouldSimulateEmitter(kInvalidWorldObjectId, isCommonParticleEmissionEnabled_ && runtimeParticles_.empty()),
+		ShouldEmitEmitter(kInvalidWorldObjectId, isCommonParticleEmissionEnabled_ && runtimeParticles_.empty()));
 
-	particlePreview_.step = false;
+	particlePreview_.isStepRequested = false;
 }
 
 void WorldScene::UpdateEmitter(const WorldObjectData& data, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix) {
+	// 共通Particleと個別Emitterの発生条件を、実行中の粒子へ反映する。
 	std::unique_ptr<Particle>& emitter = runtimeParticles_[data.id];
 
 	if (!emitter) {
@@ -1005,7 +1078,7 @@ void WorldScene::UpdateEmitter(const WorldObjectData& data, const Matrix4x4& vie
 
 	emitter->SetEmitterPosition(GetObjectWorldPosition(data.id));
 
-	if (particleBurstRequested_) {
+	if (isParticleBurstRequested_) {
 		if (particlePreview_.targetObject == data.id) {
 			emitter->AddParticles();
 		}
@@ -1015,10 +1088,11 @@ void WorldScene::UpdateEmitter(const WorldObjectData& data, const Matrix4x4& vie
 }
 
 void WorldScene::DrawModelPreviews() {
+	// 要求されたモデルをプレビュー用の描画先へ描く。
 	for (std::pair<const std::string,std::unique_ptr<ModelPreview>>& entry : modelPreviews_) {
 		ModelPreview& preview = *entry.second;
 
-		if (preview.rendered) {
+		if (preview.wasRendered) {
 			continue;
 		}
 
@@ -1035,51 +1109,52 @@ void WorldScene::DrawModelPreviews() {
 
 		preview.target.End();
 
-		preview.rendered = true;
+		preview.wasRendered = true;
 	}
 }
 
 //=============================================================================================//
 // Getter / Particle更新条件
 
-
 bool WorldScene::IsParticlePreviewTarget(WorldObjectId objectId) const {
-	if (playing_) {
+	// 現在のプレビューが指定したEmitterを対象にしているか確認する。
+	if (isPlaying_) {
 		return false;
 	}
 
-	if (!particlePreview_.enabled) {
+	if (!particlePreview_.isEnabled) {
 		return false;
 	}
 
 	return particlePreview_.targetObject == objectId;
 }
 
-bool WorldScene::ShouldSimulateEmitter(WorldObjectId objectId, bool gameEmissionEnabled) const {
-	if (simulationEnabled_) {
-		if (gameEmissionEnabled) {
+bool WorldScene::ShouldSimulateEmitter(WorldObjectId objectId, bool isGameEmissionEnabled) const {
+	// 再生とプレビューの条件から、粒子の時間を進めるか判定する。
+	if (isSimulationEnabled_) {
+		if (isGameEmissionEnabled) {
 			return true;
 		}
 	}
 
 	if (IsParticlePreviewTarget(objectId)) {
-		return !particlePreview_.paused || particlePreview_.step;
+		return !particlePreview_.isPaused || particlePreview_.isStepRequested;
 	}
 
 	return false;
 }
 
-bool WorldScene::ShouldEmitEmitter(WorldObjectId objectId, bool gameEmissionEnabled) const {
-	if (simulationEnabled_) {
-		if (gameEmissionEnabled) {
+bool WorldScene::ShouldEmitEmitter(WorldObjectId objectId, bool isGameEmissionEnabled) const {
+	// 再生とプレビューの条件から、粒子を新たに発生させるか判定する。
+	if (isSimulationEnabled_) {
+		if (isGameEmissionEnabled) {
 			return true;
 		}
 	}
 
 	if (IsParticlePreviewTarget(objectId)) {
-		return particlePreview_.automaticEmission;
+		return particlePreview_.isAutomaticEmissionEnabled;
 	}
 
 	return false;
 }
-

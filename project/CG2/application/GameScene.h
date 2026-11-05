@@ -33,9 +33,9 @@ public:
 	//=============================================================================================//
 	// Getter / 場面情報
 
-	const char* GetName() const override { return "GameScene"; }
+	const char* GetName() const override;
 
-	std::string GetInitialAssetPath() const override { return initialAssetPath_; }
+	std::string GetInitialAssetPath() const override;
 
 	//=============================================================================================//
 	// Setter / HUD表示サイズ
@@ -48,7 +48,7 @@ private:
 	// 設定パネル描画
 
 	// サンプルHUDの設定は、このHUDを持つゲームシーンだけで扱う。
-	void DrawWorldSettings(bool* open);
+	void DrawWorldSettings(bool* isOpen);
 
 	//=============================================================================================//
 	// 起動時の配置ファイル

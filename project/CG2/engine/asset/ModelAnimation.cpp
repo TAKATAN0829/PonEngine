@@ -13,6 +13,7 @@
 namespace {
 	// ゼロ拡縮で逆行列が作れないフレームでも、GPUへNaNの法線を渡さない。
 	aiMatrix3x3 MakeNormalMatrix(const aiMatrix4x4& matrix) {
+		// 拡縮後も法線が面に垂直になるよう、逆転置行列を求める。
 		aiMatrix3x3 normal(matrix);
 
 		if (std::abs(normal.Determinant()) < 0.00000001f) {
@@ -25,6 +26,7 @@ namespace {
 	// キー時刻を二分探索し、端の時刻でも範囲外のキーを参照しない。
 	template<class KeyType>
 	size_t FindKey(const KeyType* keys, size_t count, double time) {
+		// 指定時刻を挟むキーフレームの位置を探す。
 		size_t lower = 0;
 		size_t upper = count - 1;
 
@@ -42,6 +44,7 @@ namespace {
 	}
 
 	aiVector3D SampleVector(const aiVectorKey* keys, size_t count, double time, const aiVector3D& fallback) {
+		// 前後のキーと補間率から、指定時刻のベクトルを求める。
 		if (count == 0) {
 			return fallback;
 		}
@@ -68,6 +71,7 @@ namespace {
 	}
 
 	aiQuaternion SampleRotation(const aiQuatKey* keys, size_t count, double time, const aiQuaternion& fallback) {
+		// 前後のキーと補間率から、指定時刻の回転を求める。
 		if (count == 0) {
 			return fallback;
 		}
@@ -145,6 +149,7 @@ struct ModelAnimation::AnimationData {
 	std::vector<size_t> meshNodes;
 
 	void AddNode(const aiNode* node, int parent) {
+		// ノードの親子関係と名前を、アニメーション用の一覧へ登録する。
 		const size_t index = nodes.size();
 
 		nodes.push_back({node, parent});
@@ -161,6 +166,7 @@ struct ModelAnimation::AnimationData {
 	}
 
 	void ReadMesh(size_t meshIndex) {
+		// 頂点とスキニング情報を読み込み、アニメーション用のメッシュを作る。
 		const aiMesh& mesh = *scene->mMeshes[meshIndex];
 
 		std::vector<std::vector<Weight>> weights(mesh.mNumVertices);
@@ -230,6 +236,7 @@ ModelAnimation::~ModelAnimation() = default;
 
 
 void ModelAnimation::Initialize(const std::string& path) {
+	// ノード・クリップ・スキニング情報を読込み、再生用のデータを作る。
 	data_ = std::make_unique<AnimationData>();
 
 	data_->scene = data_->importer.ReadFile(path,
@@ -278,11 +285,13 @@ void ModelAnimation::Initialize(const std::string& path) {
 	}
 }
 
-void ModelAnimation::Update(int clipIndex, float seconds, bool loop, std::vector<Mesh::VertexData>& vertices) const {
+void ModelAnimation::Update(int clipIndex, float seconds, bool shouldLoop, std::vector<Mesh::VertexData>& vertices) const {
+	// 指定時刻の姿勢を補間し、ボーンの影響を頂点へ反映する。
 	bool hasClip = false;
 
 	double ticks = 0;
 
+	// 指定されたクリップ番号が利用できるか確認する。
 	if (clipIndex >= 0) {
 		hasClip = static_cast<size_t>(clipIndex) < data_->clips.size();
 	}
@@ -296,15 +305,18 @@ void ModelAnimation::Update(int clipIndex, float seconds, bool loop, std::vector
 			rate = 25;
 		}
 
+		// 秒をアニメーション側の時間単位へ変換する。
 		ticks = (std::max)(0.0, static_cast<double>(seconds) * rate);
 
-		if (loop && clip.mDuration > 0) {
+		// ループ時は末尾を越えた時間を先頭へ戻す。
+		if (shouldLoop && clip.mDuration > 0) {
 			ticks = std::fmod(ticks, clip.mDuration);
 		} else {
 			ticks = (std::min)(ticks, clip.mDuration);
 		}
 	}
 
+	// 親から順に合成した各ノードの姿勢を作る。
 	std::vector<aiMatrix4x4> global(data_->nodes.size());
 
 	for (size_t nodeIndex = 0; nodeIndex < data_->nodes.size(); ++nodeIndex) {
@@ -340,6 +352,7 @@ void ModelAnimation::Update(int clipIndex, float seconds, bool loop, std::vector
 		}
 	}
 
+	// ボーンの現在姿勢と、頂点を戻すオフセットを合成する。
 	std::vector<aiMatrix4x4> palette(data_->bones.size());
 
 	std::vector<aiMatrix3x3> normals(data_->bones.size());
@@ -354,6 +367,7 @@ void ModelAnimation::Update(int clipIndex, float seconds, bool loop, std::vector
 
 	vertices.resize(data_->vertices.size());
 
+	// 各ボーンの重みで、頂点位置と法線を混ぜ合わせる。
 	for (size_t vertexIndex = 0; vertexIndex < data_->vertices.size(); ++vertexIndex) {
 		const AnimationData::Vertex& source = data_->vertices[vertexIndex];
 
@@ -380,6 +394,7 @@ void ModelAnimation::Update(int clipIndex, float seconds, bool loop, std::vector
 			normal = MakeNormalMatrix(global[source.node]) * source.normal;
 		}
 
+		// 補間後の法線を単位長さへ戻す。
 		if (normal.SquareLength() > 0.00000001f) {
 			normal.Normalize();
 		}
@@ -393,5 +408,6 @@ void ModelAnimation::Update(int clipIndex, float seconds, bool loop, std::vector
 
 
 const std::vector<ModelAnimationInfo>& ModelAnimation::GetClips() const {
+	// モデルから読み込んだアニメーションクリップ一覧を取得する。
 	return data_->clips;
 }

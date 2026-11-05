@@ -16,11 +16,11 @@ class Mesh;
 
 class SpriteCommon {
 public:
-	void SetViewportSize(float width, float height) { viewportWidth_ = width; viewportHeight_ = height; }
+	void SetViewportSize(float width, float height);
 
-	float GetViewportWidth() const { return viewportWidth_; }
+	float GetViewportWidth() const;
 
-	float GetViewportHeight() const { return viewportHeight_; }
+	float GetViewportHeight() const;
 
 	//=============================================================================================//
 	// 初期化処理
@@ -40,11 +40,11 @@ public:
 	//=============================================================================================//
 	// Getter
 
-	DirectXCommon* GetDxCommon() const { return dxCommon_; }
+	DirectXCommon* GetDxCommon() const;
 
-	SrvManager* GetSrvManager() const { return srvManager_; }
+	SrvManager* GetSrvManager() const;
 
-	Mesh* GetMesh() const { return mesh_; }
+	Mesh* GetMesh() const;
 
 private:
 	float viewportWidth_ = 1600;

@@ -18,8 +18,8 @@ namespace {
 	};
 
 	// 条件を満たさない場合は例外を投げ、テスト全体を失敗として終了させる。
-	void RequireSessionCondition(bool condition, const char* message) {
-		if (!condition) {
+	void RequireSessionCondition(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -72,10 +72,10 @@ void RunEditorSessionTests() {
 		scene.GetEditableObject(1).id == duplicateId, "Duplicate redo lost the stable ID");
 
 	*scene.GetEditableObject(0).editableName = "Player";
-	*scene.GetEditableObject(0).active = false;
+	*scene.GetEditableObject(0).isActive = false;
 	*scene.GetEditableObject(0).hasMeshRenderer = false;
 	session.Update(scene, false);
-	RequireSessionCondition(session.Undo(scene, error) && *scene.GetEditableObject(0).active &&
+	RequireSessionCondition(session.Undo(scene, error) && *scene.GetEditableObject(0).isActive &&
 		*scene.GetEditableObject(0).hasMeshRenderer, "Component undo failed");
 	RequireSessionCondition(session.Redo(scene, error) && *scene.GetEditableObject(0).editableName == "Player" &&
 		!*scene.GetEditableObject(0).hasMeshRenderer, "Component redo failed");
@@ -99,7 +99,7 @@ void RunEditorSessionTests() {
 	RequireSessionCondition(!session.ShouldSimulate(), "Stopped scene is simulating");
 	const std::vector<WorldObjectData> afterPlay = scene.CaptureObjects();
 	RequireSessionCondition(afterPlay.size() == beforePlay.size() && afterPlay[0].id == originalId &&
-		afterPlay[0].name == "Player" && !afterPlay[0].active && !afterPlay[0].hasMeshRenderer,
+		afterPlay[0].name == "Player" && !afterPlay[0].isActive && !afterPlay[0].hasMeshRenderer,
 		"Stop did not restore component data");
 	RequireSessionCondition(session.Undo(scene, error) && *scene.GetEditableObject(0).hasMeshRenderer,
 		"Play mode damaged edit-mode history");

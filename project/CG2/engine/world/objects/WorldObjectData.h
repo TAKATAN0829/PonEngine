@@ -42,12 +42,12 @@ struct WorldObjectData {
 
 	Vector4 color = {1, 1, 1, 1};
 
-	bool enableLighting = true;
+	bool isLightingEnabled = true;
 
 	float shininess = 40;
 
-	bool useRootNodeMatrix = true;
-	bool active = true; // 無効でも設定は残し、描画対象からだけ外す。
+	bool isRootNodeMatrixUsed = true;
+	bool isActive = true; // 無効でも設定は残し、描画対象からだけ外す。
 	bool hasMeshRenderer = true; // Componentを外してもモデルや色の設定は保持する。
 
 	//=============================================================================================//
@@ -61,7 +61,7 @@ struct WorldObjectData {
 
 	CameraSettings camera;
 
-	bool mainCamera = false; // メイン指定はSetMainCamera経由で一つだけにする。
+	bool isMainCamera = false; // メイン指定はSetMainCamera経由で一つだけにする。
 
 	ParticleSettings particle; // 発生位置はTransformを使用し、それ以外の設定を個別に保持する。
 
@@ -92,17 +92,17 @@ struct EditableObjectView {
 
 	Vector4* color = nullptr;
 
-	bool* enableLighting = nullptr;
+	bool* isLightingEnabled = nullptr;
 
 	float* shininess = nullptr;
 
 	std::string* model = nullptr;
 
-	bool* useRootNodeMatrix = nullptr;
+	bool* isRootNodeMatrixUsed = nullptr;
 
 	std::string* editableName = nullptr;
 
-	bool* active = nullptr;
+	bool* isActive = nullptr;
 	bool* hasMeshRenderer = nullptr;
 
 	WorldObjectType type = WorldObjectType::Model;
@@ -117,7 +117,7 @@ struct EditableObjectView {
 
 	CameraSettings* camera = nullptr;
 
-	bool mainCamera = false;
+	bool isMainCamera = false;
 
 	std::vector<MaterialSettings>* materials = nullptr;
 

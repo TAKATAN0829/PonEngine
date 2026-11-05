@@ -482,4 +482,19 @@
     <ClInclude Include="editor\scene\SceneAssetDialog.h"><Filter>editor\scene</Filter></ClInclude>
     <ClCompile Include="editor\scene\SceneAssetDialog.cpp"><Filter>editor\scene</Filter></ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\diagnostics\FrameProfiler.cpp"><Filter>engine\diagnostics</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="editor\AssetDragPayload.cpp"><Filter>editor</Filter></ClCompile>
+    <ClCompile Include="editor\panels\scene_view\SceneViewDrawing.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
+    <ClCompile Include="engine\math\MathUtility.cpp"><Filter>engine\math</Filter></ClCompile>
+    <ClCompile Include="engine\world\IEditableWorld.cpp"><Filter>engine\world</Filter></ClCompile>
+    <ClCompile Include="engine\world\IScene.cpp"><Filter>engine\world</Filter></ClCompile>
+    <ClCompile Include="engine\world\IWorldObjects.cpp"><Filter>engine\world</Filter></ClCompile>
+    <ClCompile Include="engine\world\settings\AssetSettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
+    <ClCompile Include="engine\world\settings\ColliderSettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
+    <ClCompile Include="engine\world\settings\MotionSettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
+    <ClCompile Include="engine\world\settings\RigidBodySettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
+  </ItemGroup>
 </Project>

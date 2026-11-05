@@ -15,7 +15,7 @@ public:
 
 	// シーン操作メニュー、作業用DockSpace、結果通知を描く。
 	// メニューを開き、呼出元が同じ親領域へ再生操作を描けるようにする。
-	EditorMenuAction Begin(bool sceneAvailable, bool playing, bool dirty, EditorToolVisibility& visibility);
+	EditorMenuAction Begin(bool isSceneAvailable, bool isPlaying, bool hasUnsavedChanges, EditorToolVisibility& visibility);
 
 	// DockSpaceと通知欄を描き、Beginで開いた親領域を閉じる。
 	void Draw(const std::string& status);
@@ -25,5 +25,5 @@ private:
 	//=============================================================================================//
 	// レイアウト再構築
 
-	bool resetRequested_ = false; // Viewメニューから初期配置への復帰を要求する。
+	bool isResetRequested_ = false; // Viewメニューから初期配置への復帰を要求する。
 };

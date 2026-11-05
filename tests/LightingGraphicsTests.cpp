@@ -57,7 +57,7 @@ void LightingGraphicsTests::Initialize(const SceneContext& context) {
 				*sample.scene.GetEditableObject(0).color = {1,0,0,1};
 				AddLight(sample,WorldObjectType::SpotLight,{0,0,1,1});
 			} else if (sampleIndex == 6) {
-				*sample.scene.GetEditableObject(0).active = false;
+				*sample.scene.GetEditableObject(0).isActive = false;
 			} else if (sampleIndex == 7) {
 				sample.scene.GetEditableObject(0).light->innerAngle = 45;
 				sample.scene.GetEditableObject(0).light->outerAngle = 45;
@@ -85,19 +85,19 @@ void LightingGraphicsTests::Verify(DirectXCommon& graphics) const {
 		}
 		const DirectX::Image& image = *captured.GetImage(0,0,0);
 		const uint8_t* pixel = image.pixels+64*image.rowPitch+64*4;
-		bool valid = false;
+		bool isValid = false;
 		if (sampleIndex == 0 || sampleIndex == 3 || sampleIndex == 6) {
-			valid = pixel[0] <= 2 && pixel[1] <= 2 && pixel[2] <= 2;
+			isValid = pixel[0] <= 2 && pixel[1] <= 2 && pixel[2] <= 2;
 		} else if (sampleIndex == 1) {
-			valid = pixel[0] > 80 && pixel[1] <= 2 && pixel[2] <= 2;
+			isValid = pixel[0] > 80 && pixel[1] <= 2 && pixel[2] <= 2;
 		} else if (sampleIndex == 4) {
-			valid = pixel[0] > 80 && pixel[1] <= 2 && pixel[2] > 80;
+			isValid = pixel[0] > 80 && pixel[1] <= 2 && pixel[2] > 80;
 		} else if (sampleIndex == 5) {
-			valid = pixel[0] > 80 && pixel[1] > 80 && pixel[2] <= 2;
+			isValid = pixel[0] > 80 && pixel[1] > 80 && pixel[2] <= 2;
 		} else {
-			valid = pixel[0] <= 2 && pixel[1] > 80 && pixel[2] > 80;
+			isValid = pixel[0] <= 2 && pixel[1] > 80 && pixel[2] > 80;
 		}
-		if (!valid) {
+		if (!isValid) {
 			throw std::runtime_error("Light shader pixel mismatch: sample "+std::to_string(sampleIndex));
 		}
 	}

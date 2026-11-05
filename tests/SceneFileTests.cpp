@@ -27,8 +27,8 @@ void RunPrimitiveTests(const std::filesystem::path& directory);
 
 namespace {
 	// 検証条件を満たさなければ、失敗理由をテスト実行元へ通知する。
-	void Require(bool condition, const char* message) {
-		if (!condition) {
+	void Require(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -41,11 +41,11 @@ namespace {
 			{{2, 3, 4}, {0.4f, 0.5f, 0.6f}, {7, 8, 9}}
 		};
 		Vector4 colors[2] = {{0.1f, 0.2f, 0.3f, 1}, {0.4f, 0.5f, 0.6f, 1}};
-		bool lighting[2] = {true, false};
+		bool isLightingEnabled[2] = {true, false};
 		float shininess[2] = {40, 80};
 		size_t GetEditableObjectCount() const override { return 2; }
 		EditableObjectView GetEditableObject(size_t objectIndex) override {
-			return {static_cast<WorldObjectId>(objectIndex + 1), "Test", &transforms[objectIndex], &colors[objectIndex], &lighting[objectIndex], &shininess[objectIndex]};
+			return {static_cast<WorldObjectId>(objectIndex + 1), "Test", &transforms[objectIndex], &colors[objectIndex], &isLightingEnabled[objectIndex], &shininess[objectIndex]};
 		}
 	};
 
@@ -78,7 +78,7 @@ namespace {
 		Require(plane != 0 && axis > plane, "add failed");
 		*scene.GetEditableObject(0).color = {0.2f, 0.3f, 0.4f, 1};
 		scene.GetEditableObject(0).transform->translate = {3, 4, 5};
-		*scene.GetEditableObject(0).useRootNodeMatrix = false;
+		*scene.GetEditableObject(0).isRootNodeMatrixUsed = false;
 		const WorldObjectId duplicate = scene.DuplicateObject(plane);
 		Require(duplicate > axis, "duplicate ID reused");
 		Require(scene.GetEditableObject(2).transform->translate.x == 3, "duplicate lost transform");
@@ -89,7 +89,7 @@ namespace {
 		Require(scene.AddObject("missing.obj") == 0 && scene.DuplicateObject(axis) == 0,
 			"invalid operation accepted");
 		*scene.GetEditableObject(1).model = "axis.obj";
-		*scene.GetEditableObject(0).active = false;
+		*scene.GetEditableObject(0).isActive = false;
 		*scene.GetEditableObject(1).hasMeshRenderer = false;
 		const std::filesystem::path path = directory / "collection.ponscene";
 		Require(SceneFile::Save(scene, path, error), "collection save failed");
@@ -100,9 +100,9 @@ namespace {
 		Require(restored.GetEditableObjectCount() == 2, "object count not restored");
 		std::vector<WorldObjectData> snapshot = restored.CaptureObjects();
 		Require(snapshot[0].id == plane && snapshot[1].id == duplicate && snapshot[0].model == "plane.gltf" &&
-			snapshot[1].model == "axis.obj" && !snapshot[0].useRootNodeMatrix && snapshot[1].color.x == 0.9f,
+			snapshot[1].model == "axis.obj" && !snapshot[0].isRootNodeMatrixUsed && snapshot[1].color.x == 0.9f,
 			"object metadata not restored");
-		Require(!snapshot[0].active && !snapshot[1].hasMeshRenderer, "component state not restored");
+		Require(!snapshot[0].isActive && !snapshot[1].hasMeshRenderer, "component state not restored");
 		const WorldObjectId freshId = restored.AddObject("axis.obj");
 		Require(freshId > duplicate, "loaded ID reused");
 		Require(SceneFile::Load(restored, path, error), "collection reload failed");
@@ -182,7 +182,7 @@ namespace {
 		versionTwoFile.close();
 		WorldObjects versionTwoScene;
 		Require(SceneFile::Load(versionTwoScene, versionTwoPath, error), "version 2 migration failed");
-		Require(*versionTwoScene.GetEditableObject(0).active && *versionTwoScene.GetEditableObject(1).hasMeshRenderer,
+		Require(*versionTwoScene.GetEditableObject(0).isActive && *versionTwoScene.GetEditableObject(1).hasMeshRenderer,
 			"version 2 component defaults incorrect");
 
 		const std::filesystem::path versionThreePath = directory / "version-three.ponscene";
@@ -191,7 +191,7 @@ namespace {
 		versionThreeFile.close();
 		WorldObjects versionThreeScene;
 		Require(SceneFile::Load(versionThreeScene, versionThreePath, error), "version 3 migration failed");
-		Require(!*versionThreeScene.GetEditableObject(0).active && !*versionThreeScene.GetEditableObject(1).hasMeshRenderer,
+		Require(!*versionThreeScene.GetEditableObject(0).isActive && !*versionThreeScene.GetEditableObject(1).hasMeshRenderer,
 			"version 3 flags lost");
 		RequireRejectedSceneLoad(restored, broken, "PON_SCENE 3\n2\n" + firstWithoutFlags + " 1 1\n" + secondWithoutFlags + " 1 2", 777);
 
@@ -225,12 +225,12 @@ int main() {
 		scene.transforms[0].translate.x = 123;
 		scene.transforms[1].rotate.y = 456;
 		scene.colors[0].x = 0;
-		scene.lighting[0] = false;
+		scene.isLightingEnabled[0] = false;
 		scene.shininess[1] = 1;
 		Require(SceneFile::Load(scene, path, error), "load failed");
 		Require(scene.transforms[0].translate.x == 4 && scene.transforms[1].rotate.y == 0.5f,
 			"transform roundtrip failed");
-		Require(scene.colors[0].x == 0.1f && scene.lighting[0] && scene.shininess[1] == 80,
+		Require(scene.colors[0].x == 0.1f && scene.isLightingEnabled[0] && scene.shininess[1] == 80,
 			"appearance roundtrip failed");
 
 		// 後半のレコードだけを壊し、前半まで含めて現在のシーンが変更されないことを検証する。

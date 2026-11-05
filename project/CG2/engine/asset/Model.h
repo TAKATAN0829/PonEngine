@@ -53,7 +53,7 @@ public:
 
 		std::vector<DrawRange> ranges;
 
-		bool animated = false;
+		bool isAnimated = false;
 	};
 
 public:
@@ -71,21 +71,21 @@ public:
 	//=============================================================================================//
 	// Getter
 
-	Material* GetMaterial () const { return material_.get (); }
+	Material* GetMaterial () const;
 
-	const Node& GetRootNode () const { return modelData_.rootNode; }
+	const Node& GetRootNode () const;
 
 	// 読込時に求めたメッシュの範囲。画面上の選択判定に使用する。
-	const AABB& GetLocalBounds() const { return localBounds_; }
+	const AABB& GetLocalBounds() const;
 
 	// 元データは共有し、編集値と変形用メッシュはObject3dが個別に所有する。
-	const std::vector<ModelMaterialInfo>& GetMaterials() const { return modelData_.materials; }
+	const std::vector<ModelMaterialInfo>& GetMaterials() const;
 
-	uint32_t GetTextureIndex(size_t slot) const { return modelData_.textureIndices.at(slot); }
+	uint32_t GetTextureIndex(size_t slot) const;
 
-	const std::vector<Mesh::VertexData>& GetVertices() const { return modelData_.vertices; }
+	const std::vector<Mesh::VertexData>& GetVertices() const;
 
-	const ModelAnimation* GetAnimation() const { return animation_.get(); }
+	const ModelAnimation* GetAnimation() const;
 
 	//=============================================================================================//
 	// Asset参照の更新

@@ -5,7 +5,8 @@
 // 設定の検証・比較
 
 // 設定単体の検証・比較。シーンの一覧やライト収集処理は参照しない。
-bool ValidateLightSettings(const LightSettings& settings) {
+bool AreLightSettingsValid(const LightSettings& settings) {
+	// ライトの種類と数値が、対応する範囲に収まるか確認する。
 	if (!std::isfinite(settings.outerAngle) || !std::isfinite(settings.innerAngle)) {
 		return false;
 	}
@@ -13,7 +14,8 @@ bool ValidateLightSettings(const LightSettings& settings) {
 	return settings.outerAngle >= 1 && settings.outerAngle <= 179 && settings.innerAngle >= 0 && settings.innerAngle <= settings.outerAngle;
 }
 
-bool EqualLightSettings(const LightSettings& first, const LightSettings& second) {
+bool AreLightSettingsEqual(const LightSettings& first, const LightSettings& second) {
+	// ライトの保存対象の値を比較する。
 	return first.outerAngle == second.outerAngle && first.innerAngle == second.innerAngle;
 }
 
@@ -22,10 +24,12 @@ bool EqualLightSettings(const LightSettings& first, const LightSettings& second)
 
 // UI・一覧管理・保存検証で共有するライト種別の規則。
 bool LightTypes::IsLight(WorldObjectType type) {
+	// オブジェクトの種類がライトに該当するか確認する。
 	return type == WorldObjectType::PointLight || type == WorldObjectType::SpotLight || type == WorldObjectType::DirectionalLight;
 }
 
 uint32_t LightTypes::GetLimit(WorldObjectType type) {
+	// オブジェクトの種類に対応する作成上限を返す。
 	if (type == WorldObjectType::PointLight) {
 		return kMaxPointLights;
 	}
@@ -42,6 +46,7 @@ uint32_t LightTypes::GetLimit(WorldObjectType type) {
 }
 
 const char* LightTypes::GetName(WorldObjectType type) {
+	// 種類や場面を表す表示名を取得する。
 	if (type == WorldObjectType::SpotLight) {
 		return "Spot Light";
 	}

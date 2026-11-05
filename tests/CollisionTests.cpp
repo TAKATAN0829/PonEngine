@@ -9,8 +9,8 @@
 #include <stdexcept>
 
 namespace {
-	void RequireCollision(bool condition, const char* message) {
-		if (!condition) {
+	void RequireCollision(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -23,27 +23,27 @@ namespace {
 	}
 	void VerifyGeometry() {
 		const WorldCollider box = MakeCollider(ColliderShape::Box,{});
-		RequireCollision(WorldCollision::Intersects(box,MakeCollider(ColliderShape::Box,{1,0,0})), "Touching boxes should overlap");
-		RequireCollision(!WorldCollision::Intersects(box,MakeCollider(ColliderShape::Box,{1.1f,0,0})), "Separated boxes overlap");
-		RequireCollision(WorldCollision::Intersects(box,MakeCollider(ColliderShape::Sphere,{1,0,0})), "Box sphere tangent missing");
-		RequireCollision(!WorldCollision::Intersects(box,MakeCollider(ColliderShape::Sphere,{1.01f,0,0})), "Separated box sphere overlap");
-		RequireCollision(!WorldCollision::Intersects(box,MakeCollider(ColliderShape::Sphere,{0.5009f,0.5009f,0},{},{0.002f,0.002f,0.002f})), "Small sphere corner tolerance is too large");
-		RequireCollision(WorldCollision::Intersects(box,MakeCollider(ColliderShape::Sphere,{})), "Sphere inside box missing");
+		RequireCollision(WorldCollision::DoShapesIntersect(box,MakeCollider(ColliderShape::Box,{1,0,0})), "Touching boxes should overlap");
+		RequireCollision(!WorldCollision::DoShapesIntersect(box,MakeCollider(ColliderShape::Box,{1.1f,0,0})), "Separated boxes overlap");
+		RequireCollision(WorldCollision::DoShapesIntersect(box,MakeCollider(ColliderShape::Sphere,{1,0,0})), "Box sphere tangent missing");
+		RequireCollision(!WorldCollision::DoShapesIntersect(box,MakeCollider(ColliderShape::Sphere,{1.01f,0,0})), "Separated box sphere overlap");
+		RequireCollision(!WorldCollision::DoShapesIntersect(box,MakeCollider(ColliderShape::Sphere,{0.5009f,0.5009f,0},{},{0.002f,0.002f,0.002f})), "Small sphere corner tolerance is too large");
+		RequireCollision(WorldCollision::DoShapesIntersect(box,MakeCollider(ColliderShape::Sphere,{})), "Sphere inside box missing");
 		const WorldCollider sphere = MakeCollider(ColliderShape::Sphere,{});
-		RequireCollision(WorldCollision::Intersects(sphere,MakeCollider(ColliderShape::Sphere,{1,0,0})), "Sphere tangent missing");
-		RequireCollision(!WorldCollision::Intersects(sphere,MakeCollider(ColliderShape::Sphere,{1.1f,0,0})), "Separated spheres overlap");
+		RequireCollision(WorldCollision::DoShapesIntersect(sphere,MakeCollider(ColliderShape::Sphere,{1,0,0})), "Sphere tangent missing");
+		RequireCollision(!WorldCollision::DoShapesIntersect(sphere,MakeCollider(ColliderShape::Sphere,{1.1f,0,0})), "Separated spheres overlap");
 		const WorldCollider rotated = MakeCollider(ColliderShape::Box,{}, {0,0,std::numbers::pi_v<float>/4});
-		RequireCollision(!WorldCollision::Intersects(rotated,MakeCollider(ColliderShape::Sphere,{0.64f,0.64f,0},{},{0.1f,0.1f,0.1f})), "AABB empty corner must not count as rotated box hit");
-		RequireCollision(!WorldCollision::Intersects(rotated,MakeCollider(ColliderShape::Box,{0.64f,0.64f,0},{},{0.05f,0.05f,0.05f})), "Rotated box SAT returned AABB false positive");
-		RequireCollision(WorldCollision::Intersects(rotated,MakeCollider(ColliderShape::Sphere,{0.3f,0.3f,0})), "Rotated box sphere overlap missing");
+		RequireCollision(!WorldCollision::DoShapesIntersect(rotated,MakeCollider(ColliderShape::Sphere,{0.64f,0.64f,0},{},{0.1f,0.1f,0.1f})), "AABB empty corner must not count as rotated box hit");
+		RequireCollision(!WorldCollision::DoShapesIntersect(rotated,MakeCollider(ColliderShape::Box,{0.64f,0.64f,0},{},{0.05f,0.05f,0.05f})), "Rotated box SAT returned AABB false positive");
+		RequireCollision(WorldCollision::DoShapesIntersect(rotated,MakeCollider(ColliderShape::Sphere,{0.3f,0.3f,0})), "Rotated box sphere overlap missing");
 		const WorldCollider negative = MakeCollider(ColliderShape::Box,{}, {}, {-2,1,1});
-		RequireCollision(WorldCollision::Intersects(negative,MakeCollider(ColliderShape::Sphere,{1.4f,0,0})), "Negative scale box collision failed");
+		RequireCollision(WorldCollision::DoShapesIntersect(negative,MakeCollider(ColliderShape::Sphere,{1.4f,0,0})), "Negative scale box collision failed");
 		WorldCollider sheared;
 		Matrix4x4 shear = MathUtility::MakeIdentity4x4();
 		shear.m[1][0] = 1;
 		RequireCollision(WorldCollision::BuildWorld({},shear,sheared), "Sheared box build failed");
-		RequireCollision(WorldCollision::Intersects(sheared,MakeCollider(ColliderShape::Sphere,{0,0,0})), "Sheared box containment failed");
-		RequireCollision(!WorldCollision::Intersects(sheared,MakeCollider(ColliderShape::Sphere,{0.9f,-0.4f,0},{},{0.1f,0.1f,0.1f})), "Sheared box closest point incorrect");
+		RequireCollision(WorldCollision::DoShapesIntersect(sheared,MakeCollider(ColliderShape::Sphere,{0,0,0})), "Sheared box containment failed");
+		RequireCollision(!WorldCollision::DoShapesIntersect(sheared,MakeCollider(ColliderShape::Sphere,{0.9f,-0.4f,0},{},{0.1f,0.1f,0.1f})), "Sheared box closest point incorrect");
 		WorldCollider invalid;
 		RequireCollision(!WorldCollision::BuildWorld({},MathUtility::MakeScaleMatrix({0,1,1}),invalid), "Degenerate box accepted");
 		const WorldCollider stretchedSphere = MakeCollider(ColliderShape::Sphere,{}, {}, {2,3,1});
@@ -56,29 +56,29 @@ namespace {
 		const WorldObjectId second = scene.CreateObject(WorldObjectType::Empty);
 		std::string error;
 		RequireCollision(scene.SetObjectParent(first,parent,error), "Collider parenting failed");
-		scene.GetEditableObject(1).collider->present = true;
-		scene.GetEditableObject(2).collider->present = true;
+		scene.GetEditableObject(1).collider->isPresent = true;
+		scene.GetEditableObject(2).collider->isPresent = true;
 		scene.GetEditableObject(2).collider->shape = ColliderShape::Sphere;
 		WorldCollision collision;
 		collision.Initialize();
 		collision.Update(scene);
-		RequireCollision(collision.GetEvents().size() == 1 && collision.GetEvents()[0].entering && collision.IsTouching(first), "Collision Enter missing");
+		RequireCollision(collision.GetEvents().size() == 1 && collision.GetEvents()[0].isEntering && collision.IsTouching(first), "Collision Enter missing");
 		collision.Update(scene);
 		RequireCollision(collision.GetEvents().empty() && collision.GetContactCount() == 1, "Stay spammed events");
-		*scene.GetEditableObject(0).active = false;
+		*scene.GetEditableObject(0).isActive = false;
 		collision.Update(scene);
-		RequireCollision(collision.GetEvents().size() == 1 && !collision.GetEvents()[0].entering && !collision.IsTouching(first), "Inactive hierarchy did not exit");
-		*scene.GetEditableObject(0).active = true;
+		RequireCollision(collision.GetEvents().size() == 1 && !collision.GetEvents()[0].isEntering && !collision.IsTouching(first), "Inactive hierarchy did not exit");
+		*scene.GetEditableObject(0).isActive = true;
 		collision.Update(scene);
-		RequireCollision(collision.GetEvents().size() == 1 && collision.GetEvents()[0].entering, "Reenabled collision did not enter");
-		scene.GetEditableObject(2).collider->enabled = false;
+		RequireCollision(collision.GetEvents().size() == 1 && collision.GetEvents()[0].isEntering, "Reenabled collision did not enter");
+		scene.GetEditableObject(2).collider->isEnabled = false;
 		collision.Update(scene);
 		RequireCollision(collision.GetContactCount() == 0 && collision.GetEvents().size() == 1, "Disabled collider retained contacts");
-		scene.GetEditableObject(2).collider->enabled = true;
+		scene.GetEditableObject(2).collider->isEnabled = true;
 		collision.Update(scene);
 		RequireCollision(scene.RemoveObject(second), "Collider deletion failed");
 		collision.Update(scene);
-		RequireCollision(collision.GetEvents().size() == 1 && !collision.GetEvents()[0].entering, "Deleted collider did not exit");
+		RequireCollision(collision.GetEvents().size() == 1 && !collision.GetEvents()[0].isEntering, "Deleted collider did not exit");
 		collision.Initialize();
 		RequireCollision(collision.GetEvents().empty() && collision.GetContactCount() == 0, "Play reset retained old contacts");
 	}
@@ -87,22 +87,22 @@ namespace {
 		const WorldObjectId identifier = scene.AddObject("plane.gltf");
 		EditorSession history;
 		history.Initialize(scene);
-		scene.GetEditableObject(0).collider->present = true;
+		scene.GetEditableObject(0).collider->isPresent = true;
 		scene.GetEditableObject(0).collider->center = {1,2,3};
 		scene.GetEditableObject(0).collider->size = {4,5,6};
 		scene.GetEditableObject(0).collider->radius = 7;
 		const ColliderSettings expected = *scene.GetEditableObject(0).collider;
 		history.Update(scene,false);
 		std::string error;
-		RequireCollision(history.Undo(scene,error) && !scene.GetObjectData(0)->collider.present, "Collider add missing from undo");
-		RequireCollision(history.Redo(scene,error) && EqualColliderSettings(scene.GetObjectData(0)->collider,expected), "Collider settings missing from redo");
+		RequireCollision(history.Undo(scene,error) && !scene.GetObjectData(0)->collider.isPresent, "Collider add missing from undo");
+		RequireCollision(history.Redo(scene,error) && AreColliderSettingsEqual(scene.GetObjectData(0)->collider,expected), "Collider settings missing from redo");
 		const std::filesystem::path file = directory / "collider.ponscene";
 		RequireCollision(SceneFile::Save(scene,file,error), "Collider save failed");
 		WorldObjects restored;
-		RequireCollision(SceneFile::Load(restored,file,error) && EqualColliderSettings(restored.GetObjectData(0)->collider,expected), "Collider roundtrip failed");
+		RequireCollision(SceneFile::Load(restored,file,error) && AreColliderSettingsEqual(restored.GetObjectData(0)->collider,expected), "Collider roundtrip failed");
 		RequireCollision(PrefabFile::Save(scene,identifier,directory/"collider.ponprefab",error), "Collider prefab save failed");
 		RequireCollision(PrefabFile::Instantiate(restored,directory/"collider.ponprefab",0,{},error) != 0, "Collider prefab placement failed");
-		RequireCollision(EqualColliderSettings(restored.GetObjectData(1)->collider,expected), "Prefab lost collider settings");
+		RequireCollision(AreColliderSettingsEqual(restored.GetObjectData(1)->collider,expected), "Prefab lost collider settings");
 		std::vector<WorldObjectData> invalid = scene.CaptureObjects();
 		invalid[0].collider.radius = 0;
 		RequireCollision(!restored.ReplaceObjects(invalid,error), "Zero radius accepted");
@@ -124,17 +124,17 @@ namespace {
 		}
 		legacy << line.substr(0,end) << '\n';
 		legacy.close();
-		RequireCollision(SceneFile::Load(restored,directory/"collider-v9.ponscene",error) && !restored.GetObjectData(0)->collider.present, "Format 9 compatibility failed");
+		RequireCollision(SceneFile::Load(restored,directory/"collider-v9.ponscene",error) && !restored.GetObjectData(0)->collider.isPresent, "Format 9 compatibility failed");
 		std::ofstream broken(directory/"collider-invalid.ponscene");
 		broken << "PON_SCENE 10\n1\n" << line.substr(0,end) << " 1 1 99 0 0 0 1 1 1 0.5\n";
 		broken.close();
 		RequireCollision(!SceneFile::Load(restored,directory/"collider-invalid.ponscene",error), "Invalid serialized collider type accepted");
-		RequireCollision(restored.GetEditableObjectCount() == 1 && !restored.GetObjectData(0)->collider.present, "Failed collider load partially changed scene");
+		RequireCollision(restored.GetEditableObjectCount() == 1 && !restored.GetObjectData(0)->collider.isPresent, "Failed collider load partially changed scene");
 		std::vector<WorldObjectData> tooMany;
 		for (size_t colliderIndex = 0; colliderIndex <= WorldCollision::kMaxColliders; ++colliderIndex) {
 			WorldObjectData object;
 			object.id = colliderIndex+1;
-			object.collider.present = true;
+			object.collider.isPresent = true;
 			tooMany.push_back(object);
 		}
 		RequireCollision(!restored.ReplaceObjects(tooMany,error), "Collider limit not enforced");

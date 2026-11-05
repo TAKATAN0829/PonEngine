@@ -6,8 +6,8 @@
 #include <stdexcept>
 
 namespace {
-	void RequireCamera(bool condition, const char* message) {
-		if (!condition) {
+	void RequireCamera(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}
@@ -33,7 +33,7 @@ void RunCameraTests(const std::filesystem::path& directory) {
 	RequireCamera(!scene.SetMainCamera(parentId) && scene.GetMainCameraId() == firstId, "Invalid camera changed main selection");
 	EditorSession session;
 	session.Initialize(scene);
-	RequireCamera(scene.SetMainCamera(secondId) && !scene.GetEditableObject(0).mainCamera, "Main camera not exclusive");
+	RequireCamera(scene.SetMainCamera(secondId) && !scene.GetEditableObject(0).isMainCamera, "Main camera not exclusive");
 	session.Update(scene,false);
 	std::string error;
 	RequireCamera(session.Undo(scene,error) && scene.GetMainCameraId() == firstId, "Main camera undo failed");
@@ -53,9 +53,9 @@ void RunCameraTests(const std::filesystem::path& directory) {
 				"Guide differs from game camera projection");
 		}
 	}
-	*scene.GetEditableObject(2).active = false;
+	*scene.GetEditableObject(2).isActive = false;
 	RequireCamera(!scene.GetGameCameraView(1,view), "Disabled parent camera remained active");
-	*scene.GetEditableObject(2).active = true;
+	*scene.GetEditableObject(2).isActive = true;
 	RequireCamera(scene.DuplicateObject(secondId) != 0 && scene.GetMainCameraId() == secondId, "Duplicated camera changed main selection");
 	scene.GetEditableObject(1).camera->fieldOfView = 1.0f;
 	scene.GetEditableObject(1).camera->nearClip = 0.25f;
@@ -69,7 +69,7 @@ void RunCameraTests(const std::filesystem::path& directory) {
 	RequireCamera(session.BeginPlay(scene,error) && scene.SetMainCamera(0) && session.Stop(scene,error) && scene.GetMainCameraId() == secondId,
 		"Play stop lost main camera");
 	std::vector<WorldObjectData> invalid = loaded.CaptureObjects();
-	invalid[0].mainCamera = true;
+	invalid[0].isMainCamera = true;
 	RequireCamera(!loaded.ReplaceObjects(invalid,error), "Multiple main cameras accepted");
 	invalid = loaded.CaptureObjects();
 	invalid[1].camera.nearClip = invalid[1].camera.farClip;

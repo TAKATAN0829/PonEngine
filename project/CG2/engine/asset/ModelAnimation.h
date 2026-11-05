@@ -23,7 +23,7 @@ public:
 
 	void Initialize(const std::string& path);
 
-	void Update(int clipIndex, float seconds, bool loop, std::vector<Mesh::VertexData>& vertices) const;
+	void Update(int clipIndex, float seconds, bool shouldLoop, std::vector<Mesh::VertexData>& vertices) const;
 
 	//=============================================================================================//
 	// Getter / クリップ一覧

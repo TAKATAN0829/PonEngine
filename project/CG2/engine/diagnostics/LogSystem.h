@@ -32,7 +32,7 @@ public:
 
 	static std::ofstream& GetLogStream();
 
-	static const std::deque<std::string>& GetRecentMessages() { return recentMessages_; }
+	static const std::deque<std::string>& GetRecentMessages();
 
 private:
 
@@ -46,7 +46,9 @@ private:
 	//=============================================================================================//
 	// LogFile
 
-	static std::ofstream logStream_;
+	// 全体で共有するログの書込先。
+	inline static std::ofstream logStream_{};
 
-	static std::deque<std::string> recentMessages_;
+	// Consoleへ渡す最近のログを保持する。
+	inline static std::deque<std::string> recentMessages_{};
 };

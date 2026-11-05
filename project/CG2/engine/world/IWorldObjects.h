@@ -23,136 +23,72 @@ public:
 
 	// 履歴比較用の読み取り専用参照。一覧変更後には取得し直す。
 	// 公開できないシーンはnullptrを返し、CaptureObjectsでの比較へ切り替える。
-	virtual const WorldObjectData* GetObjectData(size_t index) const { (void)index; return nullptr; }
+	virtual const WorldObjectData* GetObjectData(size_t index) const;
 
 	// ID検索を公開し、選択の検証で毎フレーム一覧のコピーを作らない。
-	virtual const WorldObjectData* GetObjectDataById(WorldObjectId identifier) const {
-		for (size_t objectIndex = 0; objectIndex < GetEditableObjectCount(); ++objectIndex) {
-			const WorldObjectData* object = GetObjectData(objectIndex);
-
-			if (object != nullptr) {
-				if (object->id == identifier) {
-					return object;
-				}
-			}
-		}
-
-		return nullptr;
-	}
+	virtual const WorldObjectData* GetObjectDataById(WorldObjectId identifier) const;
 
 	// 子Colliderを最も近い有効な親Rigidbodyへ結び付ける。0は固定Collider。
-	WorldObjectId GetBodyOwner(WorldObjectId identifier) const {
-		for (size_t depth = 0; depth < 64; ++depth) {
-			const WorldObjectData* object = GetObjectDataById(identifier);
-
-			if (object == nullptr) {
-				return 0;
-			}
-
-			if (object->body.present) {
-				if (object->body.enabled) {
-					return object->id;
-				}
-			}
-
-			identifier = object->parentId;
-		}
-
-		return 0;
-	}
+	WorldObjectId GetBodyOwner(WorldObjectId identifier) const;
 
 	// 採番済みIDはUndoや削除の後にも再利用しない。未対応実装は最大IDから求める。
-	virtual WorldObjectId GetNextObjectId() const {
-		WorldObjectId nextIdentifier = 1;
-
-		for (size_t objectIndex = 0; objectIndex < GetEditableObjectCount(); ++objectIndex) {
-			const WorldObjectData* object = GetObjectData(objectIndex);
-
-			if (object != nullptr) {
-				if (object->id >= nextIdentifier) {
-					nextIdentifier = object->id + 1;
-				}
-			}
-		}
-
-		return nextIdentifier;
-	}
+	virtual WorldObjectId GetNextObjectId() const;
 
 	// 親子変換は保存データと共通の行列で扱う。GPU側の参照は公開しない。
-	virtual bool GetObjectWorldMatrix(WorldObjectId, Matrix4x4&) const { return false; }
+	virtual bool GetObjectWorldMatrix(WorldObjectId, Matrix4x4&) const;
 
-	Vector3 GetObjectWorldPosition(WorldObjectId id) const {
-		Matrix4x4 world{};
-
-		if (!GetObjectWorldMatrix(id, world)) {
-			return {};
-		}
-
-		return {world.m[3][0], world.m[3][1], world.m[3][2]};
-	}
+	Vector3 GetObjectWorldPosition(WorldObjectId identifier) const;
 
 	//=============================================================================================//
 	// Getter・Setter / Transform・親子関係
 
-	virtual bool SetObjectWorldTransform(WorldObjectId, const Matrix4x4&) { return false; }
+	virtual bool SetObjectWorldTransform(WorldObjectId, const Matrix4x4&);
 
-	virtual bool SetObjectWorldPosition(WorldObjectId, const Vector3&) { return false; }
+	virtual bool SetObjectWorldPosition(WorldObjectId, const Vector3&);
 
-	virtual bool IsObjectActive(WorldObjectId) const { return false; }
+	virtual bool IsObjectActive(WorldObjectId) const;
 
-	virtual bool IsColliderTouching(WorldObjectId) const { return false; }
+	virtual bool IsColliderTouching(WorldObjectId) const;
 
-	virtual bool SetObjectParent(WorldObjectId, WorldObjectId, std::string& error) {
-		error = "This scene does not support parenting.";
-
-		return false;
-	}
+	virtual bool SetObjectParent(WorldObjectId, WorldObjectId, std::string& error);
 
 	//=============================================================================================//
 	// Getter・Setter / ゲームカメラ
 
 	// メイン指定と投影をCPU側で解決し、GameViewと実行時で共有する。
-	virtual bool SetMainCamera(WorldObjectId) { return false; }
+	virtual bool SetMainCamera(WorldObjectId);
 
-	virtual WorldObjectId GetMainCameraId() const { return kInvalidWorldObjectId; }
+	virtual WorldObjectId GetMainCameraId() const;
 
 	// メイン指定に関係なく、指定Cameraの実描画と同じ視野を取得する。
-	virtual bool GetCameraView(WorldObjectId, float, CameraView&) const { return false; }
+	virtual bool GetCameraView(WorldObjectId, float, CameraView&) const;
 
-	virtual bool GetGameCameraView(float, CameraView&) const { return false; }
+	virtual bool GetGameCameraView(float, CameraView&) const;
 
 	//=============================================================================================//
 	// Getter / 一覧の保存・復元
 
-	virtual bool SupportsObjectCollection() const { return false; }
+	virtual bool HasObjectCollectionSupport() const;
 
-	virtual std::vector<WorldObjectData> CaptureObjects() const { return {}; }
+	virtual std::vector<WorldObjectData> CaptureObjects() const;
 
 	//=============================================================================================//
 	// 作成・配置・置換
 
 	// Prefabを新しいIDの独立した階層として追加する。
-	virtual WorldObjectId PlacePrefab(const std::string&, WorldObjectId, const Vector3&, std::string&) { return 0; }
+	virtual WorldObjectId PlacePrefab(const std::string&, WorldObjectId, const Vector3&, std::string&);
 
 	// 配置に必要な変換・親・モデルを先に検証し、失敗時は一覧を変更しない。
-	virtual WorldObjectId PlaceModel(const std::string&, WorldObjectId, const Vector3&, std::string& error) {
-		error = "This scene does not support model placement.";
+	virtual WorldObjectId PlaceModel(const std::string&, WorldObjectId, const Vector3&, std::string& error);
 
-		return kInvalidWorldObjectId;
-	}
+	virtual WorldObjectId AddObject(const std::string&);
 
-	virtual WorldObjectId AddObject(const std::string&) { return kInvalidWorldObjectId; }
+	virtual WorldObjectId CreateObject(WorldObjectType);
 
-	virtual WorldObjectId CreateObject(WorldObjectType) { return kInvalidWorldObjectId; }
+	virtual WorldObjectId DuplicateObject(WorldObjectId);
 
-	virtual WorldObjectId DuplicateObject(WorldObjectId) { return kInvalidWorldObjectId; }
-
-	virtual bool RemoveObject(WorldObjectId) { return false; }
+	virtual bool RemoveObject(WorldObjectId);
 
 	// 実装側は全件を検証してから置換し、失敗時は現在の一覧を維持する。
-	virtual bool ReplaceObjects(std::vector<WorldObjectData>, std::string& error) {
-		error = "This scene does not support object replacement.";
-
-		return false;
-	}
+	virtual bool ReplaceObjects(std::vector<WorldObjectData>, std::string& error);
 };

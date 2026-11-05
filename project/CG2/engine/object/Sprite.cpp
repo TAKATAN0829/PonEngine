@@ -104,8 +104,131 @@ void Sprite::Draw () {
 
 
 void Sprite::Finalize () {
+	// Sprite専用のMaterialを解放する。
 
 	delete material_;
+}
+
+//=============================================================================================//
+// Position
+
+const Vector2& Sprite::GetPosition() const {
+	// Spriteの表示位置を取得する。
+	return position_;
+}
+
+void Sprite::SetPosition(const Vector2& position) {
+	// Spriteの表示位置を更新する。
+	position_ = position;
+}
+
+//=============================================================================================//
+// Rotation
+
+float Sprite::GetRotation() const {
+	// Spriteの回転角を取得する。
+	return rotation_;
+}
+
+void Sprite::SetRotation(float rotation) {
+	// Spriteの回転角を更新する。
+	rotation_ = rotation;
+}
+
+//=============================================================================================//
+// Size
+
+const Vector2& Sprite::GetSize() const {
+	// Spriteの表示サイズを取得する。
+	return size_;
+}
+
+void Sprite::SetSize(const Vector2& size) {
+	// Spriteの表示サイズを更新する。
+	size_ = size;
+}
+
+//=============================================================================================//
+// AnchorPoint
+
+const Vector2& Sprite::GetAnchorPoint() const {
+	// 描画の基準位置を取得する。
+	return anchorPoint_;
+}
+
+void Sprite::SetAnchorPoint(const Vector2& anchorPoint) {
+	// 描画の基準位置を更新する。
+	anchorPoint_ = anchorPoint;
+}
+
+//=============================================================================================//
+// Flip
+
+bool Sprite::IsFlippedHorizontally() const {
+	// 画像の左右反転の状態を取得する。
+	if (isFlipX_) {
+		return true;
+	}
+
+	return false;
+}
+
+void Sprite::SetIsFlipX(bool isFlipX) {
+	// 画像の左右反転の状態を更新する。
+	isFlipX_ = isFlipX;
+}
+
+bool Sprite::IsFlippedVertically() const {
+	// 画像の上下反転の状態を取得する。
+	if (isFlipY_) {
+		return true;
+	}
+
+	return false;
+}
+
+void Sprite::SetIsFlipY(bool isFlipY) {
+	// 画像の上下反転の状態を更新する。
+	isFlipY_ = isFlipY;
+}
+
+//=============================================================================================//
+// TextureLeftTop
+
+const Vector2& Sprite::GetTextureLeftTop() const {
+	// 画像の切出し開始位置を取得する。
+	return textureLeftTop_;
+}
+
+void Sprite::SetTextureLeftTop(const Vector2& textureLeftTop) {
+	// 画像の切出し開始位置を更新する。
+	textureLeftTop_ = textureLeftTop;
+}
+
+//=============================================================================================//
+// TextureSize
+
+const Vector2& Sprite::GetTextureSize() const {
+	// 画像の切出し範囲を取得する。
+	return textureSize_;
+}
+
+void Sprite::SetTextureSize(const Vector2& textureSize) {
+	// 画像の切出し範囲を更新する。
+	textureSize_ = textureSize;
+}
+
+//=============================================================================================//
+// Color
+
+const Vector4& Sprite::GetColor() const {
+	// 描画に使う色を取得する。
+	return material_->GetColor();
+}
+
+void Sprite::SetColor(const Vector4& color) {
+	// 描画に使う色を更新する。
+	material_->SetColor(color);
 }
 
 //=============================================================================================//
@@ -113,6 +236,7 @@ void Sprite::Finalize () {
 
 
 void Sprite::SetTexture (const std::string& filePath) {
+	// 画像のSRVを設定し、必要なら表示サイズを画像へ合わせる。
 
 	textureFilePath_ = filePath;
 
@@ -126,6 +250,7 @@ void Sprite::SetTexture (const std::string& filePath) {
 
 
 void Sprite::CreateTransformationMatrixData () {
+	// 変換行列のGPUバッファを確保し、CPUからの書込先を取得する。
 
 	transformationMatrixResource_ = ResourceManager::CreateBufferResource (spriteCommon_->GetDxCommon ()->GetDevice (), sizeof (TransformationMatrix), "spriteTransformationMatrixResource");
 
@@ -141,6 +266,7 @@ void Sprite::CreateTransformationMatrixData () {
 
 
 void Sprite::AdjustTextureSize () {
+	// 読み込んだ画像の寸法を、Spriteの切出し範囲へ合わせる。
 
 	const DirectX::TexMetadata& metadata = TextureManager::GetInstance ()->GetMetaData (textureFilePath_);
 
@@ -160,6 +286,7 @@ void Sprite::AdjustTextureSize () {
 
 
 Matrix4x4 Sprite::MakeWorldMatrix () const {
+	// Spriteの基準位置と寸法を反映したワールド行列を作る。
 
 	Matrix4x4 anchorMatrix = MathUtility::MakeTranslateMatrix ({ -anchorPoint_.x,-anchorPoint_.y,0.f });
 
@@ -176,6 +303,7 @@ Matrix4x4 Sprite::MakeWorldMatrix () const {
 
 
 Matrix4x4 Sprite::MakeUVTransform () const {
+	// 画像の切出し・反転・UV変換を一つの行列へまとめる。
 
 	Vector3 scale = {
 		textureSize_.x / textureImageSize_.x,

@@ -15,6 +15,7 @@
 
 
 void Mesh::Initialize(DirectXCommon* dxCommon, MeshType meshType) {
+	// メッシュの頂点とインデックスをGPUへ渡すバッファを準備する。
 
 	assert(dxCommon);
 
@@ -52,6 +53,7 @@ void Mesh::Initialize(DirectXCommon* dxCommon, MeshType meshType) {
 
 
 void Mesh::Initialize(DirectXCommon* dxCommon, const std::vector<VertexData>& vertices) {
+	// メッシュの頂点とインデックスをGPUへ渡すバッファを準備する。
 
 	assert(dxCommon);
 
@@ -78,6 +80,7 @@ void Mesh::Initialize(DirectXCommon* dxCommon, const std::vector<VertexData>& ve
 
 
 void Mesh::Update(const std::vector<VertexData>& vertices) {
+	// 更新後の頂点データを、確保済みの転送先へ反映する。
 	assert(vertices.size() == vertexCount_);
 
 	std::memcpy(vertexData_, vertices.data(), sizeof(VertexData) * vertexCount_);
@@ -115,6 +118,7 @@ void Mesh::Draw(uint32_t instanceCount) {
 }
 
 void Mesh::DrawRange(uint32_t firstIndex, uint32_t indexCount) {
+	// 指定したインデックス範囲を描画命令として記録する。
 	assert(firstIndex <= indexCount_);
 
 	assert(indexCount <= indexCount_ - firstIndex);

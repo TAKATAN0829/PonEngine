@@ -15,7 +15,7 @@ public:
 	//=============================================================================================//
 	// Getter / オブジェクト一覧
 
-	size_t GetEditableObjectCount() const override { return objects_.size(); }
+	size_t GetEditableObjectCount() const override;
 
 	EditableObjectView GetEditableObject(size_t index) override;
 
@@ -24,13 +24,13 @@ public:
 	// 既存のID検索表を使い、複数選択・親参照の確認を一定時間で行う。
 	const WorldObjectData* GetObjectDataById(WorldObjectId identifier) const override;
 
-	WorldObjectId GetNextObjectId() const override { return nextId_; }
+	WorldObjectId GetNextObjectId() const override;
 
-	const std::vector<WorldObjectData>& GetObjects() const { return objects_; }
+	const std::vector<WorldObjectData>& GetObjects() const;
 
-	std::vector<WorldObjectData> CaptureObjects() const override { return objects_; }
+	std::vector<WorldObjectData> CaptureObjects() const override;
 
-	bool SupportsObjectCollection() const override { return true; }
+	bool HasObjectCollectionSupport() const override;
 
 	//=============================================================================================//
 	// Getter・Setter / 親子変換
@@ -88,7 +88,7 @@ public:
 	bool ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error) override;
 
 	// Asset移動の準備では、移動先の存在確認だけを後回しにしてデータを検証する。
-	bool ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error, bool requireModelFiles);
+	bool ReplaceObjects(std::vector<WorldObjectData> objects, std::string& error, bool areModelFilesRequired);
 
 	//=============================================================================================//
 	// 保存データ検証
@@ -97,7 +97,7 @@ public:
 
 	static bool IsSupportedModel(const std::string& model);
 
-	static bool Validate(const WorldObjectData& object, bool requireModelFiles = true);
+	static bool IsObjectValid(const WorldObjectData& object, bool areModelFilesRequired = true);
 
 private:
 

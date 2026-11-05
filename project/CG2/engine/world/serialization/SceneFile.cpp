@@ -20,6 +20,7 @@
 namespace {
 	// 形式7のアセット設定。件数と0/1フラグを読込時点で制限する。
 	bool ReadAssetSettings(std::istream& input, WorldObjectData& object) {
+		// Materialとアニメーションの設定を読み込み、形式と値を確認する。
 		size_t materialCount = 0;
 
 		input >> materialCount;
@@ -39,7 +40,7 @@ namespace {
 				return false;
 			}
 
-			material.lighting = lighting != 0;
+			material.isLightingEnabled = lighting != 0;
 		}
 
 		int autoplay = 0;
@@ -55,25 +56,27 @@ namespace {
 			return false;
 		}
 
-		object.animation.autoplay = autoplay != 0;
+		object.animation.shouldAutoplay = autoplay != 0;
 
-		object.animation.loop = loop != 0;
+		object.animation.shouldLoop = loop != 0;
 
 		return static_cast<bool>(input);
 	}
 
 	void WriteAssetSettings(std::ostream& output, const WorldObjectData& object) {
+		// Materialとアニメーションの設定を、決めた順番に書き出す。
 		output << ' ' << object.materials.size();
 
 		for (const MaterialSettings& material : object.materials) {
-			output << ' ' << material.slot << ' ' << std::quoted(material.texture) << ' ' << material.color.x << ' ' << material.color.y << ' ' << material.color.z << ' ' << material.color.w << ' ' << material.shininess << ' ' << material.lighting;
+			output << ' ' << material.slot << ' ' << std::quoted(material.texture) << ' ' << material.color.x << ' ' << material.color.y << ' ' << material.color.z << ' ' << material.color.w << ' ' << material.shininess << ' ' << material.isLightingEnabled;
 		}
 
-		output << ' ' << object.animation.clip << ' ' << object.animation.autoplay << ' ' << object.animation.loop << ' ' << object.animation.speed << ' ' << object.animation.time;
+		output << ' ' << object.animation.clip << ' ' << object.animation.shouldAutoplay << ' ' << object.animation.shouldLoop << ' ' << object.animation.speed << ' ' << object.animation.time;
 	}
 
 	// 形式9の動作Component。存在と有効のフラグは0/1以外を拒否する。
 	bool ReadMotionSettings(std::istream& input, MotionSettings& settings) {
+		// 回転と往復移動の値を読み込み、保存形式と数値の範囲を確認する。
 		int flags[4]{};
 
 		input >> flags[0] >> flags[1] >> settings.rotationDegreesPerSecond.x >> settings.rotationDegreesPerSecond.y >> settings.rotationDegreesPerSecond.z;
@@ -92,22 +95,24 @@ namespace {
 
 		settings.hasRotation = flags[0] != 0;
 
-		settings.rotationEnabled = flags[1] != 0;
+		settings.isRotationEnabled = flags[1] != 0;
 
 		settings.hasMovement = flags[2] != 0;
 
-		settings.movementEnabled = flags[3] != 0;
+		settings.isMovementEnabled = flags[3] != 0;
 
-		return ValidateMotionSettings(settings);
+		return AreMotionSettingsValid(settings);
 	}
 
 	void WriteMotionSettings(std::ostream& output, const MotionSettings& settings) {
-		output << ' ' << settings.hasRotation << ' ' << settings.rotationEnabled << ' ' << settings.rotationDegreesPerSecond.x << ' ' << settings.rotationDegreesPerSecond.y << ' ' << settings.rotationDegreesPerSecond.z;
+		// 回転と往復移動の設定値を、保存形式で決めた順番に書き出す。
+		output << ' ' << settings.hasRotation << ' ' << settings.isRotationEnabled << ' ' << settings.rotationDegreesPerSecond.x << ' ' << settings.rotationDegreesPerSecond.y << ' ' << settings.rotationDegreesPerSecond.z;
 
-		output << ' ' << settings.hasMovement << ' ' << settings.movementEnabled << ' ' << settings.movementOffset.x << ' ' << settings.movementOffset.y << ' ' << settings.movementOffset.z << ' ' << settings.movementPeriod;
+		output << ' ' << settings.hasMovement << ' ' << settings.isMovementEnabled << ' ' << settings.movementOffset.x << ' ' << settings.movementOffset.y << ' ' << settings.movementOffset.z << ' ' << settings.movementPeriod;
 	}
 
 	bool ReadColliderSettings(std::istream& input, ColliderSettings& settings) {
+		// Colliderの値を読み込み、保存形式と数値の範囲を確認する。
 		int present = 0;
 		int enabled = 0;
 		int shape = 0;
@@ -124,23 +129,25 @@ namespace {
 			return false;
 		}
 
-		settings.present = present != 0;
+		settings.isPresent = present != 0;
 
-		settings.enabled = enabled != 0;
+		settings.isEnabled = enabled != 0;
 
 		settings.shape = static_cast<ColliderShape>(shape);
 
-		return ValidateColliderSettings(settings);
+		return AreColliderSettingsValid(settings);
 	}
 
 	void WriteColliderSettings(std::ostream& output, const ColliderSettings& settings) {
-		output << ' ' << settings.present << ' ' << settings.enabled << ' ' << static_cast<int>(settings.shape) << ' ' << settings.center.x << ' ' << settings.center.y << ' ' << settings.center.z;
+		// Colliderの設定値を、保存形式で決めた順番に書き出す。
+		output << ' ' << settings.isPresent << ' ' << settings.isEnabled << ' ' << static_cast<int>(settings.shape) << ' ' << settings.center.x << ' ' << settings.center.y << ' ' << settings.center.z;
 
 		output << ' ' << settings.size.x << ' ' << settings.size.y << ' ' << settings.size.z << ' ' << settings.radius;
 	}
 
 	// 形式11。TriggerとRigidbodyは旧Collider設定の後ろへ追加する。
 	bool ReadBodySettings(std::istream& input, WorldObjectData& object) {
+		// Rigidbodyの値を読み込み、保存形式と数値の範囲を確認する。
 		int trigger = 0;
 		int present = 0;
 		int enabled = 0;
@@ -165,21 +172,22 @@ namespace {
 			}
 		}
 
-		object.collider.trigger = trigger != 0;
+		object.collider.isTrigger = trigger != 0;
 
-		object.body.present = present != 0;
+		object.body.isPresent = present != 0;
 
-		object.body.enabled = enabled != 0;
+		object.body.isEnabled = enabled != 0;
 
 		object.body.mode = static_cast<BodyMode>(mode);
 
-		object.body.useGravity = gravity != 0;
+		object.body.isGravityEnabled = gravity != 0;
 
-		return ValidateBodySettings(object.body);
+		return AreBodySettingsValid(object.body);
 	}
 
 	void WriteBodySettings(std::ostream& output, const WorldObjectData& object) {
-		output << ' ' << object.collider.trigger << ' ' << object.body.present << ' ' << object.body.enabled << ' ' << static_cast<int>(object.body.mode) << ' ' << object.body.useGravity;
+		// Rigidbodyの設定値を、保存形式で決めた順番に書き出す。
+		output << ' ' << object.collider.isTrigger << ' ' << object.body.isPresent << ' ' << object.body.isEnabled << ' ' << static_cast<int>(object.body.mode) << ' ' << object.body.isGravityEnabled;
 
 		output << ' ' << object.body.mass << ' ' << object.body.gravityScale << ' ' << object.body.restitution << ' ' << object.body.friction << ' ' << object.body.linearDamping;
 
@@ -207,6 +215,7 @@ namespace {
 
 	// 公開されているプロパティの有無をビットへ変換し、保存形式に記録する。
 	unsigned GetPropertyMask(const EditableObjectView& view) {
+		// 保存するComponentの有無をビット列へまとめる。
 		unsigned propertyMask = 0;
 
 		if (view.transform != nullptr) {
@@ -217,7 +226,7 @@ namespace {
 			propertyMask |= 2u;
 		}
 
-		if (view.enableLighting != nullptr) {
+		if (view.isLightingEnabled != nullptr) {
 			propertyMask |= 4u;
 		}
 
@@ -230,6 +239,7 @@ namespace {
 
 	// 読み込んだ数値とフラグを検証し、扱えないレコードを拒否する。
 	bool IsValidRecord(const Record& record) {
+		// 読込途中の値が保存形式の規則に収まるか確認する。
 		for (float value : record.values) {
 			if (!std::isfinite(value)) {
 				return false;
@@ -250,7 +260,7 @@ namespace {
 
 		object.color = {values[9], values[10], values[11], values[12]};
 
-		object.enableLighting = record.lighting != 0;
+		object.isLightingEnabled = record.lighting != 0;
 
 		object.shininess = values[13];
 	}
@@ -261,7 +271,7 @@ namespace {
 
 
 // 設定を検証して一時ファイルへ書き込み、完了したものだけを保存先へ反映する。
-bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, std::string& error, bool requireModelFiles) {
+bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, std::string& error, bool areModelFilesRequired) {
 	error.clear();
 
 	if (scene.GetEditableObjectCount() > 100000) {
@@ -270,7 +280,7 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 		return false;
 	}
 
-	if (scene.SupportsObjectCollection()) {
+	if (scene.HasObjectCollectionSupport()) {
 		if (scene.GetEditableObjectCount() > WorldObjects::kMaxObjects) {
 			error = "Scene exceeds the supported object count.";
 
@@ -280,15 +290,15 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 
 	std::vector<Record> records;
 
-	const bool collection = scene.SupportsObjectCollection();
+	const bool hasObjectCollectionSupport = scene.HasObjectCollectionSupport();
 
 	std::vector<WorldObjectData> objects;
 
-	if (collection) {
+	if (hasObjectCollectionSupport) {
 		objects = scene.CaptureObjects();
 	}
 
-	if (collection) {
+	if (hasObjectCollectionSupport) {
 		if (objects.size() != scene.GetEditableObjectCount()) {
 			error = "Scene object snapshot mismatch.";
 
@@ -297,10 +307,10 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 	}
 
 	// 個々の値に加え、種類別の個数上限もファイル作成前に検証する。
-	if (collection) {
+	if (hasObjectCollectionSupport) {
 		WorldObjects validator;
 
-		if (!validator.ReplaceObjects(objects, error, requireModelFiles)) {
+		if (!validator.ReplaceObjects(objects, error, areModelFilesRequired)) {
 			return false;
 		}
 	}
@@ -333,8 +343,8 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 			record.values[12] = view.color->w;
 		}
 
-		if (view.enableLighting != nullptr) {
-			if (*view.enableLighting) {
+		if (view.isLightingEnabled != nullptr) {
+			if (*view.isLightingEnabled) {
 				record.lighting = 1;
 			} else {
 				record.lighting = 0;
@@ -345,8 +355,8 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 			record.values[13] = *view.shininess;
 		}
 
-		if (collection) {
-			if (!WorldObjects::Validate(objects[objectIndex], requireModelFiles)) {
+		if (hasObjectCollectionSupport) {
+			if (!WorldObjects::IsObjectValid(objects[objectIndex], areModelFilesRequired)) {
 				error = "Invalid scene object data.";
 
 				return false;
@@ -370,7 +380,7 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 
 			record.model = objects[objectIndex].model;
 
-			if (!objects[objectIndex].active) {
+			if (!objects[objectIndex].isActive) {
 				record.active = 0;
 			}
 
@@ -378,7 +388,7 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 				record.meshRenderer = 0;
 			}
 
-			if (objects[objectIndex].useRootNodeMatrix) {
+			if (objects[objectIndex].isRootNodeMatrixUsed) {
 				record.rootMatrix = 1;
 			} else {
 				record.rootMatrix = 0;
@@ -424,7 +434,7 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 
 	unsigned formatVersion = 1;
 
-	if (collection) {
+	if (hasObjectCollectionSupport) {
 		formatVersion = 13;
 	}
 
@@ -439,7 +449,7 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 
 		outputFile << ' ' << record.lighting;
 
-		if (collection) {
+		if (hasObjectCollectionSupport) {
 			outputFile << ' ' << std::quoted(record.name) << ' ' << std::quoted(record.model) << ' ' << record.rootMatrix
 			<< ' ' << record.active << ' ' << record.meshRenderer;
 
@@ -447,7 +457,7 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 			<< ' ' << record.components.lightRadius << ' ' << record.components.lightDecay << ' ' << record.components.parentId << ' ';
 
 				outputFile << record.components.camera.fieldOfView << ' ' << record.components.camera.nearClip << ' '
-			<< record.components.camera.farClip << ' ' << record.components.mainCamera << ' ';
+			<< record.components.camera.farClip << ' ' << record.components.isMainCamera << ' ';
 
 				if (record.components.type == WorldObjectType::Particle) {
 				ParticlePresetFile::WriteSettings(outputFile, record.components.particle);
@@ -496,7 +506,7 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 
 
 // 対応する保存形式を読み込み、全件の整合性を確認してからシーンへ反映する。
-bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, std::string& error, bool migrateLegacyLights) {
+bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, std::string& error, bool shouldMigrateLegacyLights) {
 	error.clear();
 
 	std::ifstream inputFile(path);
@@ -515,7 +525,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 
 	size_t count{};
 
-	const bool collection = scene.SupportsObjectCollection();
+	const bool hasObjectCollectionSupport = scene.HasObjectCollectionSupport();
 
 	if (!(inputFile >> magic >> version >> count)) {
 		error = "Incomplete scene header.";
@@ -535,7 +545,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 		return false;
 	}
 
-	if (collection) {
+	if (hasObjectCollectionSupport) {
 		if (count > WorldObjects::kMaxObjects) {
 			error = "Scene exceeds the supported object count.";
 
@@ -555,7 +565,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 		}
 	}
 
-	if (collection) {
+	if (hasObjectCollectionSupport) {
 		// 形式2以降はシーン全体を復元する。形式1は既定モデルの同じIDへ設定を適用する。
 		std::vector<WorldObjectData> objects;
 
@@ -622,7 +632,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 						return false;
 					}
 
-					record.components.mainCamera = mainCamera != 0;
+					record.components.isMainCamera = mainCamera != 0;
 				}
 
 				record.components.type = static_cast<WorldObjectType>(objectType);
@@ -736,9 +746,9 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 
 				object.model = record.model;
 
-				object.useRootNodeMatrix = record.rootMatrix != 0;
+				object.isRootNodeMatrixUsed = record.rootMatrix != 0;
 
-				object.active = record.active != 0;
+				object.isActive = record.active != 0;
 
 				object.hasMeshRenderer = record.meshRenderer != 0;
 
@@ -768,7 +778,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			return false;
 		}
 
-		if (migrateLegacyLights) {
+		if (shouldMigrateLegacyLights) {
 			if (version < 13) {
 				if (version == 1) {
 					// 形式1は既存IDへ適用するため、ファイルにない現在のライトを持ち越さない。
@@ -892,8 +902,8 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			*view.color = {values[9], values[10], values[11], values[12]};
 		}
 
-		if (view.enableLighting) {
-			*view.enableLighting = record.lighting != 0;
+		if (view.isLightingEnabled) {
+			*view.isLightingEnabled = record.lighting != 0;
 		}
 
 		if (view.shininess) {

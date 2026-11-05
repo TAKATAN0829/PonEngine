@@ -26,6 +26,7 @@ namespace {
 // ImGuiのテクスチャもエンジンと同じSRVヒープから確保する。
 void AllocateGuiDescriptor(ImGui_ImplDX12_InitInfo* information, D3D12_CPU_DESCRIPTOR_HANDLE* cpuHandle,
     D3D12_GPU_DESCRIPTOR_HANDLE* gpuHandle) {
+	// ImGui用の記述子を、共有SRV管理から確保する。
     SrvManager* manager = static_cast<SrvManager*>(information->UserData);
 
     const uint32_t descriptorIndex = manager->Allocate();
@@ -38,6 +39,7 @@ void AllocateGuiDescriptor(ImGui_ImplDX12_InitInfo* information, D3D12_CPU_DESCR
 // フォント再生成などで不要になった記述子は共有管理へ戻す。
 void FreeGuiDescriptor(ImGui_ImplDX12_InitInfo* information, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle,
     D3D12_GPU_DESCRIPTOR_HANDLE) {
+	// ImGuiが使い終えた記述子を共有SRV管理へ返す。
     SrvManager* manager = static_cast<SrvManager*>(information->UserData);
 
     manager->Free(manager->GetIndex(cpuHandle));

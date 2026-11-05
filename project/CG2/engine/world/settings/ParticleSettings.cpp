@@ -7,12 +7,14 @@
 
 namespace {
 	// 位置・速度などの三成分を、同じ規則で比較する。
-	bool EqualVector(const Vector3& firstVector, const Vector3& secondVector) {
+	bool AreVectorsEqual(const Vector3& firstVector, const Vector3& secondVector) {
+		// 三つの成分がすべて一致するか確認する。
 		return firstVector.x == secondVector.x && firstVector.y == secondVector.y && firstVector.z == secondVector.z;
 	}
 
 	// 極端な値をファイルから入力されても、乱数生成や行列計算を破綻させない。
-	bool WithinRange(const Vector3& value, float minimum, float maximum) {
+	bool IsWithinRange(const Vector3& value, float minimum, float maximum) {
+		// 有限値で、指定した最小値と最大値の間にあるか確認する。
 		return value.x >= minimum && value.x <= maximum && value.y >= minimum && value.y <= maximum &&
 			value.z >= minimum && value.z <= maximum;
 	}
@@ -22,13 +24,14 @@ namespace {
 // 表示の評価
 
 ParticleAppearance EvaluateParticleAppearance(const ParticleSettings& settings, const Vector4& initialColor, float normalizedAge) {
+	// 寿命の進み具合から、現在の色と大きさを求める。
 	const float age = (std::clamp)(normalizedAge,0.0f,1.0f);
 
 	ParticleAppearance appearance;
 
 	appearance.color = initialColor;
 
-	if (!settings.lifetimeAppearance) {
+	if (!settings.isLifetimeAppearanceEnabled) {
 		appearance.color.w *= 1-age;
 
 		return appearance;
@@ -50,11 +53,12 @@ ParticleAppearance EvaluateParticleAppearance(const ParticleSettings& settings, 
 // プリセットの作成
 
 ParticleSettings MakeParticlePreset(ParticlePresetKind kind) {
+	// 種類に応じたParticleの初期設定を組み立てる。
 	ParticleSettings settings;
 
-	settings.lifetimeAppearance = true;
+	settings.isLifetimeAppearanceEnabled = true;
 
-	settings.softParticles = true;
+	settings.areSoftParticlesEnabled = true;
 
 	settings.spread = {0.2f,0.05f,0.2f};
 
@@ -107,7 +111,7 @@ ParticleSettings MakeParticlePreset(ParticlePresetKind kind) {
 
 		settings.particleScale = {0.06f,0.06f,0.06f};
 
-		settings.accelerationEnabled = true;
+		settings.isAccelerationEnabled = true;
 
 		settings.acceleration = {0,-5,0};
 
@@ -131,7 +135,7 @@ ParticleSettings MakeParticlePreset(ParticlePresetKind kind) {
 // 設定の検証・比較
 
 // 各軸の最小値・最大値と有限値を確認し、発生数や寿命には実行可能な上限を設ける。
-bool ValidateParticleSettings(const ParticleSettings& settings) {
+bool AreParticleSettingsValid(const ParticleSettings& settings) {
 	const std::array<float, 25> values = {
 		settings.emitterPosition.x, settings.emitterPosition.y, settings.emitterPosition.z,
 		settings.spread.x, settings.spread.y, settings.spread.z,
@@ -157,11 +161,11 @@ bool ValidateParticleSettings(const ParticleSettings& settings) {
 		return false;
 	}
 
-	if (!WithinRange(settings.emitterPosition, -1000, 1000)) {
+	if (!IsWithinRange(settings.emitterPosition, -1000, 1000)) {
 		return false;
 	}
 
-	if (!WithinRange(settings.spread, 0, 100)) {
+	if (!IsWithinRange(settings.spread, 0, 100)) {
 		return false;
 	}
 
@@ -170,7 +174,7 @@ bool ValidateParticleSettings(const ParticleSettings& settings) {
 		return false;
 	}
 
-	if (!WithinRange(settings.velocityMinimum, -100, 100) || !WithinRange(settings.velocityMaximum, -100, 100)) {
+	if (!IsWithinRange(settings.velocityMinimum, -100, 100) || !IsWithinRange(settings.velocityMaximum, -100, 100)) {
 		return false;
 	}
 
@@ -178,7 +182,7 @@ bool ValidateParticleSettings(const ParticleSettings& settings) {
 		return false;
 	}
 
-	if (!WithinRange(settings.acceleration, -100, 100)) {
+	if (!IsWithinRange(settings.acceleration, -100, 100)) {
 		return false;
 	}
 
@@ -203,7 +207,7 @@ bool ValidateParticleSettings(const ParticleSettings& settings) {
 		}
 	}
 
-	if (!WithinRange(settings.particleScale, 0.001f, 100)) {
+	if (!IsWithinRange(settings.particleScale, 0.001f, 100)) {
 		return false;
 	}
 
@@ -241,8 +245,9 @@ bool ValidateParticleSettings(const ParticleSettings& settings) {
 }
 
 // 保存対象の設定だけを比較し、プレビュー中の粒子の変化では未保存表示を出さない。
-bool EqualParticleSettings(const ParticleSettings& firstSettings, const ParticleSettings& secondSettings) {
-	if (firstSettings.lifetimeAppearance != secondSettings.lifetimeAppearance || firstSettings.softParticles != secondSettings.softParticles) {
+bool AreParticleSettingsEqual(const ParticleSettings& firstSettings, const ParticleSettings& secondSettings) {
+	// Particleの保存対象の値を比較する。
+	if (firstSettings.isLifetimeAppearanceEnabled != secondSettings.isLifetimeAppearanceEnabled || firstSettings.areSoftParticlesEnabled != secondSettings.areSoftParticlesEnabled) {
 		return false;
 	}
 
@@ -254,17 +259,17 @@ bool EqualParticleSettings(const ParticleSettings& firstSettings, const Particle
 		return false;
 	}
 
-	return EqualVector(firstSettings.emitterPosition, secondSettings.emitterPosition) &&
-		EqualVector(firstSettings.spread, secondSettings.spread) &&
-		EqualVector(firstSettings.velocityMinimum, secondSettings.velocityMinimum) &&
-		EqualVector(firstSettings.velocityMaximum, secondSettings.velocityMaximum) &&
-		EqualVector(firstSettings.particleScale, secondSettings.particleScale) &&
-		EqualVector(firstSettings.acceleration, secondSettings.acceleration) &&
+	return AreVectorsEqual(firstSettings.emitterPosition, secondSettings.emitterPosition) &&
+		AreVectorsEqual(firstSettings.spread, secondSettings.spread) &&
+		AreVectorsEqual(firstSettings.velocityMinimum, secondSettings.velocityMinimum) &&
+		AreVectorsEqual(firstSettings.velocityMaximum, secondSettings.velocityMaximum) &&
+		AreVectorsEqual(firstSettings.particleScale, secondSettings.particleScale) &&
+		AreVectorsEqual(firstSettings.acceleration, secondSettings.acceleration) &&
 		firstSettings.color.x == secondSettings.color.x && firstSettings.color.y == secondSettings.color.y &&
 		firstSettings.color.z == secondSettings.color.z && firstSettings.color.w == secondSettings.color.w &&
 		firstSettings.spawnCount == secondSettings.spawnCount && firstSettings.interval == secondSettings.interval &&
 		firstSettings.lifetimeMinimum == secondSettings.lifetimeMinimum && firstSettings.lifetimeMaximum == secondSettings.lifetimeMaximum &&
-		firstSettings.randomColor == secondSettings.randomColor && firstSettings.billboard == secondSettings.billboard &&
-		firstSettings.accelerationEnabled == secondSettings.accelerationEnabled &&
+		firstSettings.isRandomColorEnabled == secondSettings.isRandomColorEnabled && firstSettings.isBillboardEnabled == secondSettings.isBillboardEnabled &&
+		firstSettings.isAccelerationEnabled == secondSettings.isAccelerationEnabled &&
 		firstSettings.blendMode == secondSettings.blendMode && firstSettings.texture == secondSettings.texture;
 }

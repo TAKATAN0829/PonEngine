@@ -17,10 +17,10 @@ public:
 	//=============================================================================================//
 	// 描画処理
 
-	static void Draw(const EditableObjectView& object, bool* particleEditorOpen = nullptr, IEditableWorld* scene = nullptr);
+	static void Draw(const EditableObjectView& object, bool* isParticleEditorOpen = nullptr, IEditableWorld* scene = nullptr);
 
 	// 選択はEditorから借用し、単体と複数選択の表示を同じクラスで切り替える。
-	static void DrawSelection(IEditableWorld& scene, EditorSelection& selection, bool* particleEditorOpen = nullptr);
+	static void DrawSelection(IEditableWorld& scene, EditorSelection& selection, bool* isParticleEditorOpen = nullptr);
 
 private:
 

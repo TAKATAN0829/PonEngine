@@ -100,18 +100,18 @@ public:
 	// 補助画面は初期状態で閉じ、必要なときだけ開閉できることを確認する。
 	void DrawEditorTools(EditorToolVisibility& visibility) override {
 		if (frameNumber_ == 8) {
-			visibility.particleEditor = true;
-			visibility.worldSettings = true;
-			visibility.camera = true;
-			visibility.performance = true;
+			visibility.isParticleEditorVisible = true;
+			visibility.areWorldSettingsVisible = true;
+			visibility.isCameraVisible = true;
+			visibility.isPerformanceVisible = true;
 		}
 		if (frameNumber_ == 18) {
 			visibility = {};
 		}
 		GameScene::DrawEditorTools(visibility);
 	}
-	void UpdateEditorFrame(Input* input, bool simulate) override {
-		(void)simulate;
+	void UpdateEditorFrame(Input* input, bool shouldSimulate) override {
+		(void)shouldSimulate;
 		++frameNumber_;
 
 		if (frameNumber_ == 4) {
@@ -155,19 +155,19 @@ public:
 		settings->lifetimeMinimum = 0.04f;
 		settings->lifetimeMaximum = 0.05f;
 		ParticlePreviewState preview;
-		preview.enabled = true;
+		preview.isEnabled = true;
 		if (frameNumber_ >= 65) {
 			preview.targetObject = emitterId_;
 		}
-		preview.isolate = true;
+		preview.shouldIsolateParticles = true;
 		if (frameNumber_ >= 30 && frameNumber_ < 50) {
-			preview.paused = true;
+			preview.isPaused = true;
 		}
 		if (frameNumber_ == 45) {
 			ResetParticlePreview();
 		}
 		if (frameNumber_ >= 50) {
-			preview.automaticEmission = false;
+			preview.isAutomaticEmissionEnabled = false;
 		}
 		if (frameNumber_ == 50 || frameNumber_ == 65) {
 			BurstParticles();
@@ -177,7 +177,7 @@ public:
 			for (size_t objectIndex = 0; objectIndex < GetEditableObjectCount(); ++objectIndex) {
 				const EditableObjectView object = GetEditableObject(objectIndex);
 				if (object.id == hierarchyParentId_) {
-					*object.active = frameNumber_ == 80;
+					*object.isActive = frameNumber_ == 80;
 				}
 			}
 		}
@@ -209,7 +209,7 @@ public:
 			if (sample.number == 0 || sample.drawCalls == 0 || sample.uiDrawCalls == 0 || sample.frameMilliseconds <= 0) {
 				FailTest(__LINE__);
 			}
-			if (!sample.gpuTimingValid) {
+			if (!sample.isGpuTimingValid) {
 				throw std::runtime_error("GPU timestamps were not collected after fence completion.");
 			}
 			if (!std::isfinite(sample.gpuMilliseconds) || sample.gpuMilliseconds < 0) {
@@ -243,7 +243,7 @@ public:
 			FailTest(__LINE__);
 		}
 		if (frameNumber_ > 5 && liveCount > 0) {
-			sawParticles_ = true;
+			hasSeenParticles_ = true;
 		}
 		if (frameNumber_ == 32) {
 			pausedCount_ = liveCount;
@@ -302,10 +302,10 @@ public:
 	}
 	bool Passed() const {
 		// 途中終了と粒子未生成も識別し、一般的な失敗メッセージだけで原因を失わない。
-		if (!valid_) {
+		if (!isValid_) {
 			return false;
 		}
-		if (!sawParticles_) {
+		if (!hasSeenParticles_) {
 			std::cerr << "GPU test did not observe particles; frames=" << frameNumber_ << '\n';
 			return false;
 		}
@@ -317,10 +317,10 @@ public:
 	}
 private:
 	void FailTest(int sourceLine) {
-		if (valid_) {
+		if (isValid_) {
 			std::cerr << "Editor test failure at line " << sourceLine << " frame " << frameNumber_ << std::endl;
 		}
-		valid_ = false;
+		isValid_ = false;
 	}
 	// RGB画像でも黒背景が残らず、半透明のScene画像を作らないことを実GPUで確認する。
 	struct BlendSample {
@@ -359,16 +359,16 @@ private:
 			settings.particleScale = {0.8f,0.8f,0.8f};
 			settings.color = {0.8f,0.3f,0.03f,1};
 			settings.blendMode = kBlendModeNormal;
-			settings.softParticles = sampleIndex%2 == 1;
+			settings.areSoftParticlesEnabled = sampleIndex%2 == 1;
 			if (sampleIndex >= 4) {
-				settings.lifetimeAppearance = true;
+				settings.isLifetimeAppearanceEnabled = true;
 				settings.startSize = 1;
 				settings.endSize = 2;
 				settings.color = {1,0,0,1};
 				settings.endColor = {0,0,1,1};
 				settings.lifetimeMinimum = 1;
 				settings.lifetimeMaximum = 1;
-				settings.softParticles = false;
+				settings.areSoftParticlesEnabled = false;
 			}
 			if (!sample.particle.ApplySettings(settings)) {
 				throw std::runtime_error("Soft particle settings rejected.");
@@ -595,11 +595,11 @@ private:
 		if (floorId == 0 || ballId == 0) {
 			throw std::runtime_error("Production asset placement failed: "+error);
 		}
-		GetEditableObject(0).collider->present = true;
+		GetEditableObject(0).collider->isPresent = true;
 		GetEditableObject(0).collider->size = {20,1,20};
-		GetEditableObject(1).collider->present = true;
+		GetEditableObject(1).collider->isPresent = true;
 		GetEditableObject(1).collider->shape = ColliderShape::Sphere;
-		GetEditableObject(1).body->present = true;
+		GetEditableObject(1).body->isPresent = true;
 		session.Update(*this,false);
 		if (!session.Undo(*this,error) || GetEditableObjectCount() != 0) {
 			throw std::runtime_error("Placed asset/component undo failed.");
@@ -657,7 +657,7 @@ private:
 		const std::vector<WorldObjectData> original = CaptureObjects();
 		WorldObjectData first;
 		first.id = 900001;
-		first.collider.present = true;
+		first.collider.isPresent = true;
 		WorldObjectData second = first;
 		second.id = 900002;
 		second.collider.shape = ColliderShape::Sphere;
@@ -679,7 +679,7 @@ private:
 		if (CountCollisionMessages("[Collision Enter] 900001") != enterMessages) {
 			throw std::runtime_error("Collision Stay repeated Enter logs.");
 		}
-		GetEditableObject(1).collider->enabled = false;
+		GetEditableObject(1).collider->isEnabled = false;
 		GameScene::UpdateEditorFrame(nullptr,false);
 		if (!IsColliderTouching(first.id)) {
 			throw std::runtime_error("Paused collision changed contacts.");
@@ -712,9 +712,9 @@ private:
 		moving.id = 999999;
 		moving.motion.hasRotation = true;
 		moving.motion.hasMovement = true;
-		moving.collider.present = true;
+		moving.collider.isPresent = true;
 		moving.collider.shape = ColliderShape::Sphere;
-		moving.body.present = true;
+		moving.body.isPresent = true;
 		moving.body.mode = BodyMode::Kinematic;
 		std::string error;
 		if (!ReplaceObjects({moving}, error)) {
@@ -760,7 +760,7 @@ private:
 		WorldObjectData triangle;
 		triangle.id = 98765;
 		triangle.model = "fixtures/animated-skin.gltf";
-		triangle.useRootNodeMatrix = false;
+		triangle.isRootNodeMatrixUsed = false;
 		triangle.transform.translate = {0,0,5};
 		if (!ReplaceObjects({triangle}, error)) {
 			throw std::runtime_error(error);
@@ -782,9 +782,9 @@ private:
 		ImGuiIO& inputState = ImGui::GetIO();
 		const ImVec2 savedDelta = inputState.MouseDelta;
 		const float savedWheel = inputState.MouseWheel;
-		const bool savedRight = inputState.MouseDown[ImGuiMouseButton_Right];
-		const bool savedMiddle = inputState.MouseDown[ImGuiMouseButton_Middle];
-		const bool savedTextInput = inputState.WantTextInput;
+		const bool wasRightButtonDown = inputState.MouseDown[ImGuiMouseButton_Right];
+		const bool wasMiddleButtonDown = inputState.MouseDown[ImGuiMouseButton_Middle];
+		const bool wasTextInputRequested = inputState.WantTextInput;
 		DebugCamera camera;
 		camera.Initialize(800, 600);
 		inputState.WantTextInput = false;
@@ -824,9 +824,9 @@ private:
 		}
 		inputState.MouseDelta = savedDelta;
 		inputState.MouseWheel = savedWheel;
-		inputState.MouseDown[ImGuiMouseButton_Right] = savedRight;
-		inputState.MouseDown[ImGuiMouseButton_Middle] = savedMiddle;
-		inputState.WantTextInput = savedTextInput;
+		inputState.MouseDown[ImGuiMouseButton_Right] = wasRightButtonDown;
+		inputState.MouseDown[ImGuiMouseButton_Middle] = wasMiddleButtonDown;
+		inputState.WantTextInput = wasTextInputRequested;
 	}
 
 	// 自作の最小glTFで、ボーン変形・補間・ループ・端のクランプを確認する。
@@ -963,7 +963,8 @@ private:
 		if (ImGui::GetStyle().Colors[ImGuiCol_TabSelectedOverline].w != 0) {
 			FailTest(__LINE__);
 		}
-		if (ImGui::GetStyle().Colors[ImGuiCol_TabSelected].x != ImGui::GetStyle().Colors[ImGuiCol_Tab].x) {
+		// 配色はテーマで変えられる。非フォーカス時も選択タブの上線を表示しない。
+		if (ImGui::GetStyle().Colors[ImGuiCol_TabDimmedSelectedOverline].w != 0) {
 			FailTest(__LINE__);
 		}
 		if (std::abs(ImGui::GetStyle().FontScaleMain - 0.85f) > 0.001f) {
@@ -1009,8 +1010,8 @@ private:
 	float pausedAnimationTime_ = 0;
 	uint32_t frameNumber_ = 0;
 	size_t pausedCount_ = 0;
-	bool sawParticles_ = false;
-	bool valid_ = true;
+	bool hasSeenParticles_ = false;
+	bool isValid_ = true;
 	SceneRenderTarget resizeTarget_;
 	uint64_t originalHandle_ = 0;
 };
@@ -1039,16 +1040,16 @@ int main(int argumentCount, char** arguments) {
 		engine.Initialize(scene);
 		engine.Run(90);
 		scene->CapturePreview();
-		bool passed = scene->Passed();
+		bool hasPassed = scene->Passed();
 		if (engine.HasGraphicsErrors()) {
 			std::cerr << "GPU validation reported an error.\n";
 			scene->PrintGraphicsErrors();
-			passed = false;
+			hasPassed = false;
 		}
 		engine.Finalize();
 		LogSystem::Finalize();
 		CoUninitialize();
-		if (!passed) {
+		if (!hasPassed) {
 			std::cerr << "GPU/editor preview smoke test failed\n";
 			return 1;
 		}

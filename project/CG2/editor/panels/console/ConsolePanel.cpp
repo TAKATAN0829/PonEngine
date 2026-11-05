@@ -12,6 +12,7 @@
 
 // ログはLogSystemから借用し、このパネルは表示用の検索条件だけを所有する。
 void ConsolePanel::Draw() {
+	// ログの検索条件を受け取り、一致したメッセージを表示する。
 #ifdef USE_IMGUI
 	if (ImGui::Begin("Console")) {
 		ImGui::SetNextItemWidth((std::min)(250.0f,ImGui::GetContentRegionAvail().x*0.6f));

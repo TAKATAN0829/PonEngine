@@ -19,8 +19,8 @@
 //=============================================================================================//
 // 初期化処理
 
-
 void ProjectPanel::Initialize() {
+	// resourcesを起点に、フォルダとAssetの初回走査を準備する。
 	std::error_code error;
 
 	root_ = std::filesystem::weakly_canonical("resources", error);
@@ -29,9 +29,9 @@ void ProjectPanel::Initialize() {
 
 	fileActions_.Initialize(root_);
 
-	initialized_ = true;
+	isInitialized_ = true;
 
-	refreshRequested_ = true;
+	isRefreshRequested_ = true;
 
 	Update();
 }
@@ -39,13 +39,13 @@ void ProjectPanel::Initialize() {
 //=============================================================================================//
 // 更新処理 / 一覧のキャッシュ
 
-
 void ProjectPanel::Update() {
-	if (!refreshRequested_) {
+	// 更新要求がある場合だけ、現在のフォルダ内容を読み直す。
+	if (!isRefreshRequested_) {
 		return;
 	}
 
-	refreshRequested_ = false;
+	isRefreshRequested_ = false;
 
 	entries_.clear();
 
@@ -59,6 +59,7 @@ void ProjectPanel::Update() {
 	while (!error && iterator != end) {
 		const std::filesystem::directory_entry entry = *iterator;
 
+		// 復旧用のゴミ箱は通常の一覧に表示しない。
 		if (entry.path().filename() == ".editor-trash") {
 			iterator.increment(error);
 
@@ -78,7 +79,7 @@ void ProjectPanel::Update() {
 				character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
 			}
 
-			asset.directory = entry.is_directory(error);
+			asset.isDirectory = entry.is_directory(error);
 
 			entries_.push_back(std::move(asset));
 		}
@@ -90,36 +91,40 @@ void ProjectPanel::Update() {
 		status_ = error.message();
 	}
 
-	std::sort(entries_.begin(), entries_.end(), CompareEntries);
+	// フォルダを先にし、名前の順で表示する。
+	std::sort(entries_.begin(), entries_.end(), ShouldSortEntryBefore);
 
 	folders_.clear();
 
+	// 左側のフォルダツリーも作り直す。
 	CacheFolders(root_,0);
 }
 
 //=============================================================================================//
 // 描画処理
 
-
 // Projectの描画単位で更新とプレビューの読込上限を管理する。
 void ProjectPanel::Draw(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
 	EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
+	// 一覧の更新と読込上限を管理し、ファイル操作の結果を受け取る。
 	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Project);
 
-	if (!initialized_) {
+	if (!isInitialized_) {
 		Initialize();
 	}
 
 	Update();
 
-	previewLoadedThisFrame_ = false;
+	// モデルのプレビュー読込回数をフレーム単位で制限する。
+	wasPreviewLoadedThisFrame_ = false;
 
-	fileOperationsAllowed_ = !history.IsPlaying();
+	areFileOperationsAllowed_ = !history.IsPlaying();
 
 	DrawContents(scene, selection, visibility, history, particles, activeScenePath);
 
 	AssetPathChange change;
 
+	// Asset移動後も、現在のフォルダと選択先を追従させる。
 	if (fileActions_.ConsumePathChange(change)) {
 		changedAssetPath_ = change;
 		directory_ = root_ / AssetPathChange::Path(change.RemapRelative(PathText(directory_.lexically_relative(root_))));
@@ -136,7 +141,7 @@ void ProjectPanel::Draw(IEditableWorld& scene, const EditorSelection& selection,
 
 		previews_.clear();
 
-		refreshRequested_ = true;
+		isRefreshRequested_ = true;
 
 		std::error_code pathError;
 
@@ -150,6 +155,7 @@ void ProjectPanel::Draw(IEditableWorld& scene, const EditorSelection& selection,
 // 操作要求
 
 bool ProjectPanel::ConsumeOpenScene(std::filesystem::path& path) {
+	// 開くSceneの要求を取り出し、保留中のパスを消す。
 	if (requestedScene_.empty()) {
 		return false;
 	}
@@ -162,6 +168,7 @@ bool ProjectPanel::ConsumeOpenScene(std::filesystem::path& path) {
 }
 
 bool ProjectPanel::ConsumeAssetPathChange(AssetPathChange& change) {
+	// 未処理のAsset移動通知を取り出し、二重通知を防ぐ。
 	if (!changedAssetPath_.has_value()) {
 		return false;
 	}
@@ -173,8 +180,14 @@ bool ProjectPanel::ConsumeAssetPathChange(AssetPathChange& change) {
 	return true;
 }
 
+void ProjectPanel::RequestRefresh() {
+	// 次のProject更新で一覧を読み直すよう要求する。
+	isRefreshRequested_ = true;
+}
+
 void ProjectPanel::RevealAsset(const std::filesystem::path& path) {
-	if (!initialized_) {
+	// Assetのあるフォルダへ移動し、一覧の選択を合わせる。
+	if (!isInitialized_) {
 		Initialize();
 	}
 
@@ -182,16 +195,16 @@ void ProjectPanel::RevealAsset(const std::filesystem::path& path) {
 
 	selected_ = path;
 
-	refreshRequested_ = true;
+	isRefreshRequested_ = true;
 }
 
 //=============================================================================================//
 // ディレクトリ管理
 
-
-bool ProjectPanel::CompareEntries(const AssetEntry& first, const AssetEntry& second) {
-	if (first.directory != second.directory) {
-		return first.directory;
+bool ProjectPanel::ShouldSortEntryBefore(const AssetEntry& first, const AssetEntry& second) {
+	// フォルダを優先し、同じ種類は名前の順に並べる。
+	if (first.isDirectory != second.isDirectory) {
+		return first.isDirectory;
 	}
 
 	return first.name < second.name;
@@ -199,12 +212,14 @@ bool ProjectPanel::CompareEntries(const AssetEntry& first, const AssetEntry& sec
 
 // ディレクトリ一覧の所有・更新を担当する。走査は更新要求があるときだけ行う。
 std::string ProjectPanel::PathText(const std::filesystem::path& path) {
+	// ファイルパスをUIへ表示するUTF-8の文字列へ変換する。
 	const std::u8string text = path.generic_u8string();
 
 	return std::string(text.begin(), text.end());
 }
 
 void ProjectPanel::OpenDirectory(const std::filesystem::path& path) {
+	// 選択先がresources内のフォルダか確認し、一覧の更新を要求する。
 	std::error_code error;
 
 	const std::filesystem::path canonical = std::filesystem::weakly_canonical(path, error);
@@ -227,16 +242,17 @@ void ProjectPanel::OpenDirectory(const std::filesystem::path& path) {
 
 	directory_ = canonical;
 
-	revealFolder_ = true;
+	shouldRevealFolder_ = true;
 
 	selected_.clear();
 
 	search_[0] = '\0';
 
-	refreshRequested_ = true;
+	isRefreshRequested_ = true;
 }
 
 void ProjectPanel::CacheFolders(const std::filesystem::path& directory, size_t depth) {
+	// 深さと走査件数を制限しながら、フォルダ構成を収集する。
 	if (folders_.size() >= 512 || depth > 12) {
 		return;
 	}
@@ -271,7 +287,7 @@ void ProjectPanel::CacheFolders(const std::filesystem::path& directory, size_t d
 
 	std::sort(children.begin(),children.end());
 
-	folders_[folderIndex].children = !children.empty() && depth < 12;
+	folders_[folderIndex].hasChildren = !children.empty() && depth < 12;
 
 	for (const std::filesystem::path& child : children) {
 		CacheFolders(child,depth+1);
@@ -285,10 +301,10 @@ void ProjectPanel::CacheFolders(const std::filesystem::path& directory, size_t d
 //=============================================================================================//
 // 画面構成
 
-
 // Projectのパンくず・検索・フォルダツリー・Asset一覧の配置を担当する。
 void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
 	EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
+	// Projectの検索・フォルダツリー・Asset一覧を配置する。
 #ifdef USE_IMGUI
 	if (ImGui::Begin("Project",nullptr,ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
 		const ImVec2 headerOrigin = ImGui::GetCursorScreenPos();
@@ -412,6 +428,7 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 }
 
 void ProjectPanel::DrawFolders() {
+	// フォルダツリーを描き、移動・選択・右クリックを処理する。
 #ifdef USE_IMGUI
 	std::filesystem::path requested;
 
@@ -435,7 +452,7 @@ void ProjectPanel::DrawFolders() {
 			flags |= ImGuiTreeNodeFlags_DefaultOpen;
 		}
 
-		if (!folder.children) {
+		if (!folder.hasChildren) {
 			flags |= ImGuiTreeNodeFlags_Leaf;
 		}
 
@@ -443,7 +460,7 @@ void ProjectPanel::DrawFolders() {
 			flags |= ImGuiTreeNodeFlags_Selected;
 		}
 
-		if (revealFolder_) {
+		if (shouldRevealFolder_) {
 			const std::filesystem::path relative = directory_.lexically_relative(folder.path);
 
 			if (!relative.empty()) {
@@ -459,7 +476,7 @@ void ProjectPanel::DrawFolders() {
 			ImGui::Indent(indent);
 		}
 
-		const bool open = ImGui::TreeNodeEx(name.c_str(),flags);
+		const bool isOpen = ImGui::TreeNodeEx(name.c_str(),flags);
 
 		if (ImGui::IsItemClicked()) {
 			if (!ImGui::IsItemToggledOpen()) {
@@ -486,10 +503,10 @@ void ProjectPanel::DrawFolders() {
 			}
 		}
 
-		fileActions_.AcceptMoveDrop(folder.path, fileOperationsAllowed_);
+		fileActions_.AcceptMoveDrop(folder.path, areFileOperationsAllowed_);
 
 		if (ImGui::BeginPopupContextItem("FolderActions")) {
-			fileActions_.DrawMenu(folder.path, true, fileOperationsAllowed_);
+			fileActions_.DrawMenu(folder.path, true, areFileOperationsAllowed_);
 
 			ImGui::EndPopup();
 		}
@@ -499,14 +516,14 @@ void ProjectPanel::DrawFolders() {
 			ImGui::Unindent(indent);
 		}
 
-		if (!open) {
+		if (!isOpen) {
 			collapsedDepth = folder.depth;
 		}
 
 		ImGui::PopID();
 	}
 
-	revealFolder_ = false;
+	shouldRevealFolder_ = false;
 
 	if (!requested.empty()) {
 		OpenDirectory(requested);
@@ -517,8 +534,9 @@ void ProjectPanel::DrawFolders() {
 
 // 呼出元のPopup内に同じディレクトリ操作を並べ、配置による処理の差を作らない。
 void ProjectPanel::DrawDirectoryActions() {
+	// フォルダ上の右クリックから作成・移動などを要求する。
 #ifdef USE_IMGUI
-	fileActions_.DrawCreateMenu(directory_, fileOperationsAllowed_);
+	fileActions_.DrawCreateMenu(directory_, areFileOperationsAllowed_);
 
 	if (ImGui::MenuItem("resourcesへ戻る")) {
 		OpenDirectory(root_);
@@ -529,7 +547,7 @@ void ProjectPanel::DrawDirectoryActions() {
 	}
 
 	if (ImGui::MenuItem("更新")) {
-		refreshRequested_ = true;
+		isRefreshRequested_ = true;
 	}
 
 #endif
@@ -538,8 +556,8 @@ void ProjectPanel::DrawDirectoryActions() {
 //=============================================================================================//
 // Asset操作・プレビュー
 
-
 void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility) {
+	// Assetのプレビューと名前を描き、選択やドロップを処理する。
 #ifdef USE_IMGUI
 	ImGui::PushID(entry.name.c_str());
 
@@ -552,7 +570,7 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 	if (ImGui::IsItemClicked()) {
 		selected_ = entry.path;
 
-		if (fileOperationsAllowed_) {
+		if (areFileOperationsAllowed_) {
 			if (entry.extension == ".ponscene") {
 				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 					requestedScene_ = entry.path;
@@ -561,8 +579,8 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 		}
 	}
 
-	if (entry.directory) {
-		fileActions_.AcceptMoveDrop(entry.path, fileOperationsAllowed_);
+	if (entry.isDirectory) {
+		fileActions_.AcceptMoveDrop(entry.path, areFileOperationsAllowed_);
 	}
 
 	{
@@ -596,7 +614,7 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("%s", entry.name.c_str());
 
-		if (entry.directory) {
+		if (entry.isDirectory) {
 			if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 				OpenDirectory(entry.path);
 			}
@@ -630,7 +648,7 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 		const ImVec2 minimum = {origin.x + 46 - size.x * 0.5f, origin.y + 34 - size.y * 0.5f};
 
 		drawList->AddImage(ImTextureRef(static_cast<ImTextureID>(preview.handle)), minimum, {minimum.x + size.x, minimum.y + size.y});
-	} else if (entry.directory) {
+	} else if (entry.isDirectory) {
 		drawList->AddRectFilled({origin.x+16,origin.y+17},{origin.x+40,origin.y+25},IM_COL32(210,173,87,255),3);
 
 		drawList->AddRectFilled({origin.x+14,origin.y+23},{origin.x+78,origin.y+61},IM_COL32(224,187,101,255),4);
@@ -685,10 +703,11 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 }
 
 void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility) {
+	// Assetの種類に応じた配置・適用・読込のメニューを表示する。
 #ifdef USE_IMGUI
-	fileActions_.DrawMenu(entry.path, entry.directory, fileOperationsAllowed_);
+	fileActions_.DrawMenu(entry.path, entry.isDirectory, areFileOperationsAllowed_);
 
-	if (entry.directory) {
+	if (entry.isDirectory) {
 		if (ImGui::MenuItem("開く")) {
 			OpenDirectory(entry.path);
 		}
@@ -699,7 +718,7 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 	const std::string relative = PathText(entry.path.lexically_relative(root_));
 
 	if (entry.extension == ".ponscene") {
-		if (ImGui::MenuItem("Sceneを開く", nullptr, false, fileOperationsAllowed_)) {
+		if (ImGui::MenuItem("Sceneを開く", nullptr, false, areFileOperationsAllowed_)) {
 			requestedScene_ = entry.path;
 		}
 
@@ -725,7 +744,7 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 			for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 				const EditableObjectView object = scene.GetEditableObject(objectIndex);
 
-				if (object.id == selection.Get()) {
+				if (object.id == selection.GetPrimarySelectedObjectId()) {
 					if (object.type == WorldObjectType::Model || object.type == WorldObjectType::Empty) {
 						if (scene.PrepareModel(relative, status_)) {
 							*object.model = relative;
@@ -748,7 +767,7 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 		}
 	} else if (entry.extension == ".ponparticle") {
 		if (ImGui::MenuItem("Particle Editorを開く")) {
-			visibility.particleEditor = true;
+			visibility.isParticleEditorVisible = true;
 		}
 	} else {
 		ImGui::TextDisabled("プレビュー・ファイル情報の表示");
@@ -768,6 +787,7 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 
 // Assetタイル・サムネイル・右クリック・ドラッグ＆ドロップを担当する。
 ProjectPanel::Preview ProjectPanel::GetPreview(const AssetEntry& entry, IEditableWorld& scene) {
+	// Assetの種類に応じた画像を、キャッシュと読込上限を使って取得する。
 #ifdef USE_IMGUI
 	const std::string key = PathText(entry.path);
 
@@ -775,18 +795,19 @@ ProjectPanel::Preview ProjectPanel::GetPreview(const AssetEntry& entry, IEditabl
 		return previews_.at(key);
 	}
 
-	if (entry.directory) {
+	// フォルダは画像プレビューの対象にしない。
+	if (entry.isDirectory) {
 		return {};
 	}
 
 	const std::string model = PathText(entry.path.lexically_relative(root_));
 
 	if (WorldObjects::IsSupportedModel(model)) {
-		if (previewLoadedThisFrame_) {
+		if (wasPreviewLoadedThisFrame_) {
 			return {};
 		}
 
-		previewLoadedThisFrame_ = true;
+		wasPreviewLoadedThisFrame_ = true;
 
 		Preview modelPreview;
 
@@ -805,7 +826,7 @@ ProjectPanel::Preview ProjectPanel::GetPreview(const AssetEntry& entry, IEditabl
 		return {};
 	}
 
-	if (previewLoadedThisFrame_) {
+	if (wasPreviewLoadedThisFrame_) {
 		return {};
 	}
 
@@ -813,7 +834,7 @@ ProjectPanel::Preview ProjectPanel::GetPreview(const AssetEntry& entry, IEditabl
 		return {};
 	}
 
-	previewLoadedThisFrame_ = true;
+	wasPreviewLoadedThisFrame_ = true;
 
 	Preview preview;
 

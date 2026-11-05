@@ -16,8 +16,8 @@ namespace {
 	}
 
 	// 成否そのものが重要な境界条件は、数値の比較と分けて確認する。
-	void RequireViewCondition(bool condition, const char* message) {
-		if (!condition) {
+	void RequireViewCondition(bool isConditionSatisfied, const char* message) {
+		if (!isConditionSatisfied) {
 			throw std::runtime_error(message);
 		}
 	}

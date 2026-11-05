@@ -15,14 +15,14 @@ struct MaterialSettings {
 
 	float shininess = 40;
 
-	bool lighting = true;
+	bool isLightingEnabled = true;
 };
 
 struct AnimationSettings {
 	int clip = 0; // モデルに含まれるクリップの番号。
 
-	bool autoplay = true; // ゲーム再生開始時に再生する。
-	bool loop = true;
+	bool shouldAutoplay = true; // ゲーム再生開始時に再生する。
+	bool shouldLoop = true;
 
 	float speed = 1;
 	float time = 0; // 開始位置と、Inspectorで指定したシーク位置（秒）。
@@ -42,13 +42,6 @@ struct ModelAnimationInfo {
 };
 
 // 設定の比較はUIと履歴で共通にし、見た目の変更をUndoから漏らさない。
-inline bool EqualMaterialSettings(const MaterialSettings& first, const MaterialSettings& second) {
-	return first.slot == second.slot && first.texture == second.texture && first.color.x == second.color.x &&
-		first.color.y == second.color.y && first.color.z == second.color.z && first.color.w == second.color.w &&
-		first.shininess == second.shininess && first.lighting == second.lighting;
-}
+bool AreMaterialSettingsEqual(const MaterialSettings& first, const MaterialSettings& second);
 
-inline bool EqualAnimationSettings(const AnimationSettings& first, const AnimationSettings& second) {
-	return first.clip == second.clip && first.autoplay == second.autoplay && first.loop == second.loop &&
-		first.speed == second.speed && first.time == second.time;
-}
+bool AreAnimationSettingsEqual(const AnimationSettings& first, const AnimationSettings& second);
