@@ -41,7 +41,7 @@ void RunPlacementTests() {
 	CheckPlacement(SceneViewMath::GetPlacementPosition({0,5,0},{0,-1,0},100,2).y == 3);
 	CheckPlacement(SceneViewMath::GetPlacementPosition({0,0,0},{0,0,1},100,101).z == 10);
 	CheckPlacement(SceneViewMath::GetPlacementPosition({0,0,0},{0,0,1},5,6).z == 5);
-	ModelAssetPayload payload;
+	ModelAssetPayload payload{};
 	std::memcpy(payload.model,"plane.gltf",11);
 	std::string model;
 	CheckPlacement(ModelAssetPayload::Read(&payload,sizeof(payload),model) && model == "plane.gltf");

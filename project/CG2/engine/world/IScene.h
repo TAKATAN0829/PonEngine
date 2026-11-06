@@ -16,11 +16,11 @@ class ParticleRenderer;
 
 struct SceneContext {
 
-	Object3dCommon* object3dCommon = nullptr;
+	Object3dCommon* object3dCommon;
 
-	SpriteCommon* spriteCommon = nullptr;
+	SpriteCommon* spriteCommon;
 
-	ParticleRenderer* particleRenderer = nullptr;
+	ParticleRenderer* particleRenderer;
 };
 
 //=================================================================================================//

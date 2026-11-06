@@ -32,24 +32,24 @@ private:
 	// 型 / 保存対象外の運動状態・接触候補
 
 	struct BodyState {
-		Vector3 velocity{}; // ワールド単位/秒。
-		Vector3 previousPosition{};
-		Vector3 frameStart{}; // Kinematicの移動をサブステップへ分配する。
-		Vector3 frameTarget{};
+		Vector3 velocity; // ワールド単位/秒。
+		Vector3 previousPosition;
+		Vector3 frameStart; // Kinematicの移動をサブステップへ分配する。
+		Vector3 frameTarget;
 
-		BodyMode mode = BodyMode::Static;
+		BodyMode mode;
 
-		float inverseMass = 0;
+		float inverseMass;
 
-		bool isActive = false;
+		bool isActive;
 	};
 
 	struct ShapeEntry {
 		WorldCollider shape;
 
-		WorldObjectId owner = 0; // 親Rigidbodyの子Colliderも同じ質量として扱う。
+		WorldObjectId owner; // 親Rigidbodyの子Colliderも同じ質量として扱う。
 
-		bool isTrigger = false;
+		bool isTrigger;
 	};
 
 	//=============================================================================================//

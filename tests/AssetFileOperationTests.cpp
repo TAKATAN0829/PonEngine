@@ -108,7 +108,9 @@ void RunAssetFileOperationTests(const std::filesystem::path& directory) {
 
     model.prefabSource = "prefabs/item.ponprefab";
 
-    model.materials.push_back({0, "images/source.png"});
+    MaterialSettings material;
+    material.texture = "images/source.png";
+    model.materials.push_back(material);
 
     WorldObjectData particle;
 

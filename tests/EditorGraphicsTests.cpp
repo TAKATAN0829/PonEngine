@@ -879,7 +879,13 @@ private:
 		for (size_t objectIndex = 0; objectIndex < GetEditableObjectCount(); ++objectIndex) {
 			EditableObjectView object = GetEditableObject(objectIndex);
 			if (object.id == animatedFirstId_) {
-				object.materials->push_back({0, "white1x1.png", {0.2f, 0.5f, 1, 1}, 60, true});
+				// 先頭スロットだけを上書きし、モデル既定のスロットと区別する。
+				MaterialSettings material;
+				material.texture = "white1x1.png";
+				material.color = {0.2f, 0.5f, 1, 1};
+				material.shininess = 60;
+
+				object.materials->push_back(material);
 			}
 			if (object.id == animatedSecondId_) {
 				object.animation->speed = 2;

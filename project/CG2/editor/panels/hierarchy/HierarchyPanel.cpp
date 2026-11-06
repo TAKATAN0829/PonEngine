@@ -60,7 +60,7 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 
 	ImGui::Separator();
 
-	HierarchyRequest request;
+	HierarchyRequest request{};
 
 	ChildIndices children;
 

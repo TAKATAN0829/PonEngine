@@ -18,11 +18,11 @@ struct DirectionalLight {
 };
 
 struct DirectionalLightBuffer {
-	uint32_t count = 0;
+	uint32_t count;
 
-	float padding[3]{};
+	float padding[3];
 
-	DirectionalLight lights[kMaxDirectionalLights]{};
+	DirectionalLight lights[kMaxDirectionalLights];
 };
 
 static_assert(sizeof(DirectionalLight) == 32);
@@ -45,11 +45,11 @@ struct PointLight {
 
 // CPUとHLSLで16バイト境界と配列の要素サイズを揃える。
 struct PointLightBuffer {
-    uint32_t count = 0;
+    uint32_t count;
 
-    float padding[3]{};
+    float padding[3];
 
-    PointLight lights[kMaxPointLights]{};
+    PointLight lights[kMaxPointLights];
 };
 
 static_assert(sizeof(PointLight) == 48);
@@ -76,11 +76,11 @@ struct SpotLight {
 };
 
 struct SpotLightBuffer {
-	uint32_t count = 0;
+	uint32_t count;
 
-	float padding[3]{};
+	float padding[3];
 
-	SpotLight lights[kMaxSpotLights]{};
+	SpotLight lights[kMaxSpotLights];
 };
 
 static_assert(sizeof(SpotLight) == 64);

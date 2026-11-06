@@ -75,17 +75,12 @@ private:
 	// テクスチャ1枚分のデータ
 
 	struct TextureData {
-		bool hasTransparency = false; // 少なくとも一画素のAlphaが1未満。
-
+		bool hasTransparency; // 少なくとも一画素のAlphaが1未満。
 		DirectX::TexMetadata metadata;
-
 		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 		Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource;
-
 		uint32_t srvIndex;
-
 		D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU;
-
 		D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU;
 	};
 

@@ -67,7 +67,7 @@ void ProjectPanel::Update() {
 		}
 
 		if (!entry.is_symlink(error)) {
-			AssetEntry asset;
+			AssetEntry asset{};
 
 			asset.path = entry.path();
 
@@ -495,7 +495,7 @@ void ProjectPanel::DrawFolders() {
 				const std::string relative = PathText(folder.path.lexically_relative(root_));
 
 				if (relative.size() < sizeof(ModelAssetPayload::model)) {
-					ModelAssetPayload payload;
+					ModelAssetPayload payload{};
 
 					std::memcpy(payload.model, relative.c_str(), relative.size() + 1);
 
@@ -603,7 +603,7 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 
 		if (model.size() < sizeof(ModelAssetPayload::model)) {
 			if (ImGui::BeginDragDropSource()) {
-				ModelAssetPayload payload;
+				ModelAssetPayload payload{};
 
 				std::memcpy(payload.model, model.c_str(), model.size() + 1);
 

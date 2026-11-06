@@ -394,7 +394,7 @@ std::vector<WorldPhysics::ShapeEntry> WorldPhysics::CollectShapes(IWorldObjects&
 
 		Matrix4x4 world{};
 
-		ShapeEntry entry;
+		ShapeEntry entry{};
 
 		if (!scene.GetObjectWorldMatrix(object->id,world)) {
 			continue;
@@ -470,7 +470,7 @@ bool WorldPhysics::ResolvePair(IWorldObjects& scene, const ShapeEntry& first, co
 		return false;
 	}
 
-	CollisionContact contact;
+	CollisionContact contact{};
 
 	if (!WorldCollision::GetContact(firstShape,secondShape,contact)) {
 		return false;

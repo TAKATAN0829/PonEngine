@@ -28,17 +28,17 @@ private:
 	using ChildIndices = std::unordered_map<WorldObjectId, std::vector<size_t>>;
 
 	struct HierarchyRequest {
-		WorldObjectId childId = kInvalidWorldObjectId;
-		WorldObjectId parentId = kInvalidWorldObjectId;
+		WorldObjectId childId;
+		WorldObjectId parentId;
 
-		bool isRequested = false;
+		bool isRequested;
 
 		std::string model; // Projectからのモデル配置要求。
 
-		bool isPrefab = false; // 同じ固定長パスをPrefab配置にも使う。
-		bool isContextRequested = false; // 行のIDスコープを抜けてからメニューを開く。
+		bool isPrefab; // 同じ固定長パスをPrefab配置にも使う。
+		bool isContextRequested; // 行のIDスコープを抜けてからメニューを開く。
 
-		WorldObjectId contextObjectId = kInvalidWorldObjectId;
+		WorldObjectId contextObjectId;
 	};
 
 	//=============================================================================================//

@@ -10,7 +10,7 @@ struct ModelAssetPayload {
 	inline static constexpr const char* kPrefabType = "PON_PREFAB_ASSET";
 	inline static constexpr const char* kProjectType = "PON_PROJECT_ASSET";
 
-	char model[256]{};
+	char model[256];
 
 	static bool Read(const void* data, size_t size, std::string& result);
 };

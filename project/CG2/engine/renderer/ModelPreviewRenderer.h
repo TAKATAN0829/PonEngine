@@ -56,9 +56,9 @@ private:
 
 		std::unique_ptr<Object3d> object;
 
-		Matrix4x4 world{};
+		Matrix4x4 world;
 
-		bool wasRendered = false;
+		bool wasRendered;
 	};
 
 	static constexpr std::size_t kMaxPreviews = 24;

@@ -27,11 +27,11 @@ private:
 	// 型 / オブジェクトごとの往復移動状態
 
 	struct MovementState {
-		Vector3 origin{}; // 最初に動き始めたフレームのローカル位置。
+		Vector3 origin; // 最初に動き始めたフレームのローカル位置。
 
-		double elapsed = 0; // 大きな累積誤差を避けるためdoubleで保持する。
+		double elapsed; // 大きな累積誤差を避けるためdoubleで保持する。
 
-		bool isInitialized = false;
+		bool isInitialized;
 	};
 
 	//=============================================================================================//

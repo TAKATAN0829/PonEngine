@@ -37,7 +37,14 @@ private:
 	//=============================================================================================//
 	// 型 / 操作内容
 
-	enum class Action { None, Rename, Move, References, Delete, CreateFolder };
+	enum class Action { 
+		None,
+		Rename,
+		Move, 
+		References,
+		Delete, 
+		CreateFolder 
+	};
 
 	//=============================================================================================//
 	// 操作の準備・確定

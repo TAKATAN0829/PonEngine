@@ -25,25 +25,17 @@ void GameScene::Initialize(const SceneContext& context) {
 	// モデル初期化
 
 	ModelManager::GetInstance()->LoadModel("plane.gltf");
-
 	ModelManager::GetInstance()->LoadModel("axis.obj");
 
 	WorldObjectData mainModel;
-
 	mainModel.id = 1;
-
 	mainModel.name = "Plane #1";
-
 	mainModel.transform.scale = {5, 5, 5};
 
 	WorldObjectData axis;
-
 	axis.id = 2;
-
 	axis.name = "Axis #2";
-
 	axis.model = "axis.obj";
-
 	axis.transform.translate = {3, 0, 0};
 
 	std::string sceneError;
@@ -100,9 +92,7 @@ void GameScene::Initialize(const SceneContext& context) {
 	// Sprite初期化
 
 	spriteCommon_ = context.spriteCommon;
-
 	sprite_ = std::make_unique<Sprite>();
-
 	sprite_->Initialize(spriteCommon_, "resources/uvChecker.png");
 
 	// Releaseでも最初のKinematic移動より前に初期位置を取得する。
@@ -135,11 +125,8 @@ void GameScene::Draw() {
 	if (ShouldDrawGameOverlay()) {
 		// 編集中もHUDの設定変更を反映する。3D描画の共通処理へは持ち込まない。
 		sprite_->SetPosition(spritePosition_);
-
 		sprite_->SetRotation(spriteRotation_);
-
 		sprite_->SetSize(spriteSize_);
-
 		sprite_->Update();
 
 		spriteCommon_->DrawSettingCommon();
@@ -218,11 +205,8 @@ void GameScene::DrawWorldSettings(bool* isOpen) {
 	if (ImGui::CollapsingHeader("Sprite")) {
 
 		ImGui::BeginDisabled(IsPlaying());
-
 		ImGui::SliderFloat2("Position", &spritePosition_.x, 0.f, static_cast<float>(WinApp::kClientWidth));
-
 		ImGui::SliderAngle("Rotation", &spriteRotation_);
-
 		ImGui::SliderFloat2("Size", &spriteSize_.x, 0.f, 512.f);
 
 		ImGui::EndDisabled();

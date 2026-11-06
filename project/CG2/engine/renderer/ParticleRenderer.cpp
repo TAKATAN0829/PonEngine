@@ -223,20 +223,20 @@ void ParticleRenderer::PreDraw(BlendMode blendMode, bool isBrightnessAlphaEnable
 
 	// HLSLのParticleSurfaceと同じ配置。行列は行優先、全設定をDrawごとに渡す。
 	struct SurfaceSettings {
-		uint32_t brightnessAlpha = 0;
-		uint32_t blend = 0;
-		uint32_t soft = 0;
+		uint32_t brightnessAlpha;
+		uint32_t blend;
+		uint32_t soft;
 
-		float distance = 0;
+		float distance;
 
-		Matrix4x4 inverse{};
+		Matrix4x4 inverse;
 
-		float width = 1;
-		float height = 1;
-		float padding[2]{};
+		float width;
+		float height;
+		float padding[2];
 	};
 
-	SurfaceSettings surfaceSettings;
+	SurfaceSettings surfaceSettings{};
 
 	surfaceSettings.blend = static_cast<uint32_t>(blendMode);
 

@@ -5,6 +5,46 @@
 #include <filesystem>
 #include <cctype>
 
+//=============================================================================================//
+// 初期化処理
+
+ParticleSettings::ParticleSettings()
+	: emitterPosition{},
+	spread{1,1,1},
+	spawnCount(3),
+	interval(0.1f),
+	velocityMinimum{-1,-1,-1},
+	velocityMaximum{1,1,1},
+	acceleration{0,1,0},
+	isAccelerationEnabled(false),
+	lifetimeMinimum(1),
+	lifetimeMaximum(3),
+	particleScale{1,1,1},
+	color{1,0.65f,0.2f,1},
+	isRandomColorEnabled(false),
+	isBillboardEnabled(true),
+	blendMode(kBlendModeAdd),
+	texture("resources/circle.png"),
+	isLifetimeAppearanceEnabled(false),
+	startSize(1),
+	endSize(1),
+	endColor{1,0.65f,0.2f,0},
+	fadeIn(0),
+	areSoftParticlesEnabled(false),
+	softDistance(0.5f) {
+	// 新しいEmitterとプリセットが共通で使う、発生・速度・外観の既定値を設定する。
+}
+
+ParticlePreviewState::ParticlePreviewState()
+	: targetObject(0),
+	isEnabled(false),
+	isPaused(false),
+	isStepRequested(false),
+	shouldIsolateParticles(false),
+	isAutomaticEmissionEnabled(true) {
+	// プレビューを停止した状態から始め、開始後は自動発生を許可する。
+}
+
 namespace {
 	// 位置・速度などの三成分を、同じ規則で比較する。
 	bool AreVectorsEqual(const Vector3& firstVector, const Vector3& secondVector) {
@@ -27,9 +67,8 @@ ParticleAppearance EvaluateParticleAppearance(const ParticleSettings& settings, 
 	// 寿命の進み具合から、現在の色と大きさを求める。
 	const float age = (std::clamp)(normalizedAge,0.0f,1.0f);
 
-	ParticleAppearance appearance;
-
-	appearance.color = initialColor;
+	// 寿命による拡縮を使わない場合の大きさと色を、生成時に指定する。
+	ParticleAppearance appearance{1, initialColor};
 
 	if (!settings.isLifetimeAppearanceEnabled) {
 		appearance.color.w *= 1-age;

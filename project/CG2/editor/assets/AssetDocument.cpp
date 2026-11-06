@@ -168,24 +168,22 @@ namespace {
 		// Unicodeの文字コードをUTF-8のバイト列として追加する。
 		if (codepoint <= 0x7f) {
 			result.push_back(static_cast<char>(codepoint));
+
 		} else if (codepoint <= 0x7ff) {
 			result.push_back(static_cast<char>(0xc0 | (codepoint >> 6)));
-
 			result.push_back(static_cast<char>(0x80 | (codepoint & 63)));
+
 		} else if (codepoint <= 0xffff) {
 			result.push_back(static_cast<char>(0xe0 | (codepoint >> 12)));
-
 			result.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 63)));
-
 			result.push_back(static_cast<char>(0x80 | (codepoint & 63)));
+
 		} else {
 			result.push_back(static_cast<char>(0xf0 | (codepoint >> 18)));
-
 			result.push_back(static_cast<char>(0x80 | ((codepoint >> 12) & 63)));
-
 			result.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 63)));
-
 			result.push_back(static_cast<char>(0x80 | (codepoint & 63)));
+
 		}
 	}
 
@@ -279,7 +277,6 @@ namespace {
 
 bool AssetDocument::Load(const std::filesystem::path& root, const std::filesystem::path& relative, std::string& error) {
 	root_ = root;
-
 	path_ = relative;
 
 	extension_ = AssetPathChange::Text(relative.extension());
@@ -431,13 +428,9 @@ bool AssetDocument::WriteUpdated(const std::filesystem::path& stagingPath, const
 
 		// GLBヘッダーとJSONチャンクの長さを再計算し、元のバイナリ部分を末尾につなぐ。
 		WriteUint32(container, 0x46546c67);
-
 		WriteUint32(container, 2);
-
 		WriteUint32(container, static_cast<uint32_t>(20 + updated.size() + binarySuffix_.size()));
-
 		WriteUint32(container, static_cast<uint32_t>(updated.size()));
-
 		WriteUint32(container, 0x4e4f534a);
 
 		updated = container + updated + binarySuffix_;

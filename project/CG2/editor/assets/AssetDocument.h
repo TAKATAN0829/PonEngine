@@ -31,12 +31,10 @@ private:
 	// 型 / 外部ファイルへのリンク
 
 	struct Link {
-		size_t begin = 0;
-		size_t length = 0;
-
+		size_t begin;
+		size_t length;
 		std::filesystem::path target;
-
-		bool isUri = false;
+		bool isUri;
 	};
 
 	//=============================================================================================//

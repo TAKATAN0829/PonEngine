@@ -1,6 +1,20 @@
 #include "MotionSettings.h"
 
 //=============================================================================================//
+// 初期化処理
+
+MotionSettings::MotionSettings()
+	: hasRotation(false),
+	isRotationEnabled(true),
+	rotationDegreesPerSecond{0, 45, 0},
+	hasMovement(false),
+	isMovementEnabled(true),
+	movementOffset{0, 2, 0},
+	movementPeriod(2) {
+	// 追加前の動作に、Y軸回転と上下の往復移動の設定を用意する。
+}
+
+//=============================================================================================//
 // 往復移動Component
 
 // 無効・取り外し中の設定も検証し、後から有効化した時の異常値を防ぐ。

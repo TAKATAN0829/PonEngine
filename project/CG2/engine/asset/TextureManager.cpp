@@ -30,13 +30,10 @@ TextureManager* TextureManager::GetInstance() {
 
 void TextureManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 	// 画像のSRV作成に使う描画機能と記述子管理を保持する。
-
 	assert(dxCommon);
-
 	assert(srvManager);
 
 	dxCommon_ = dxCommon;
-
 	srvManager_ = srvManager;
 }
 
@@ -48,11 +45,9 @@ void TextureManager::Finalize() {
 	// 読込済みの画像と記述子を解放し、キャッシュを消す。
 
 	textureDatas_.clear();
-
 	retiredTextures_.clear();
 
 	srvManager_ = nullptr;
-
 	dxCommon_ = nullptr;
 }
 
@@ -66,7 +61,6 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 	// 読み込み済みテクスチャを検索
 
 	if (textureDatas_.contains(filePath)) {
-
 		return textureDatas_.at(filePath).srvIndex;
 	}
 
@@ -81,13 +75,10 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 	FrameProfiler::Scope loadTime(FrameProfiler::Section::TextureLoad);
 
 	TextureData textureData{};
-
 	DirectX::ScratchImage mipImages = LoadTexture(filePath);
 
 	textureData.metadata = mipImages.GetMetadata();
-
 	textureData.hasTransparency = !mipImages.IsAlphaAllOpaque();
-
 	textureData.resource = ResourceManager::CreateTextureResource(dxCommon_->GetDevice(), textureData.metadata);
 
 	// GPU検証エラーから元の画像ファイルを特定できるよう、リソースへ名前を付ける。
@@ -103,9 +94,7 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 	// SRV確保
 
 	textureData.srvIndex = srvManager_->Allocate();
-
 	textureData.srvHandleCPU = srvManager_->GetCPUDescriptorHandle(textureData.srvIndex);
-
 	textureData.srvHandleGPU = srvManager_->GetGPUDescriptorHandle(textureData.srvIndex);
 
 	//=============================================================================================//
@@ -198,7 +187,6 @@ bool TextureManager::HasTransparency(const std::string& filePath) const {
 
 uint32_t TextureManager::GetSrvIndex(const std::string& filePath) {
 	// 画像に割り当てたSRV番号を取得する。
-
 	assert(textureDatas_.contains(filePath));
 
 	return textureDatas_.at(filePath).srvIndex;
@@ -210,7 +198,6 @@ uint32_t TextureManager::GetSrvIndex(const std::string& filePath) {
 
 D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string& filePath) {
 	// 画像を参照するGPU用SRVハンドルを取得する。
-
 	assert(textureDatas_.contains(filePath));
 
 	return textureDatas_.at(filePath).srvHandleGPU;

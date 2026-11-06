@@ -56,9 +56,7 @@ void AssetActionDialog::DrawMenu(const std::filesystem::path& source, bool isDir
 	}
 #else
 	(void)source;
-
 	(void)isDirectory;
-
 	(void)areChangesAllowed;
 #endif
 }
@@ -71,7 +69,6 @@ void AssetActionDialog::DrawCreateMenu(const std::filesystem::path& directory, b
 	}
 #else
 	(void)directory;
-
 	(void)areChangesAllowed;
 #endif
 }
@@ -111,7 +108,6 @@ void AssetActionDialog::AcceptMoveDrop(const std::filesystem::path& directory, b
 	ImGui::EndDragDropTarget();
 #else
 	(void)directory;
-
 	(void)areChangesAllowed;
 #endif
 }
@@ -217,9 +213,7 @@ void AssetActionDialog::Draw(IEditableWorld& scene, EditorSession& history, Part
 	ImGui::EndPopup();
 #else
 	(void)scene;
-
 	(void)history;
-
 	(void)particles;
 #endif
 }
@@ -260,7 +254,6 @@ bool AssetActionDialog::ConsumePathChange(AssetPathChange& change) {
 void AssetActionDialog::Request(Action action, const std::filesystem::path& source) {
 	// 対象と操作種別を保持し、実行前の確認を準備する。
 	action_ = action;
-
 	source_ = source;
 
 	std::string initial = AssetPathChange::Text(source.filename());
@@ -342,7 +335,6 @@ bool AssetActionDialog::Execute(IEditableWorld& scene, EditorSession& history, P
 			pathChange_ = {root_, source_.lexically_relative(root_), destination.lexically_normal().lexically_relative(root_)};
 
 			history.RemapAssetPaths(pathChange_);
-
 			particles.RemapAssetPaths(pathChange_);
 
 			hasPathChanged_ = true;

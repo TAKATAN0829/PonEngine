@@ -23,6 +23,8 @@ public:
 
 	void Initialize(const std::string& path);
 
+	bool TryInitialize(const std::string& path, std::string& error);
+
 	void Update(int clipIndex, float seconds, bool shouldLoop, std::vector<Mesh::VertexData>& vertices) const;
 
 	//=============================================================================================//

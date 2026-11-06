@@ -25,7 +25,9 @@ public:
 	// ノード
 
 	struct Node {
-		Matrix4x4 localMatrix = MathUtility::MakeIdentity4x4();
+		Node();
+
+		Matrix4x4 localMatrix;
 
 		std::string name;
 
@@ -47,14 +49,14 @@ public:
 		std::vector<uint32_t> textureIndices;
 
 		struct DrawRange {
-			uint32_t firstIndex = 0;
-			uint32_t indexCount = 0;
-			uint32_t materialIndex = 0;
+			uint32_t firstIndex;
+			uint32_t indexCount;
+			uint32_t materialIndex;
 		};
 
 		std::vector<DrawRange> ranges;
 
-		bool isAnimated = false;
+		bool isAnimated;
 	};
 
 public:
@@ -62,7 +64,7 @@ public:
 	//=============================================================================================//
 	// 初期化処理
 
-	void Initialize (ModelCommon* modelCommon, const std::string& directoryPath, const std::string& filename);
+	bool TryInitialize(ModelCommon* modelCommon, const std::string& directoryPath, const std::string& filename, std::string& error);
 
 	//=============================================================================================//
 	// 描画処理
@@ -99,7 +101,7 @@ private:
 	//=============================================================================================//
 	// モデルファイル読み込み
 
-	static ModelData LoadModelFile (const std::string& directoryPath, const std::string& filename);
+	static bool LoadModelFile(const std::string& directoryPath, const std::string& filename, ModelData& modelData, std::string& error);
 
 	//=============================================================================================//
 	// Node読み込み
@@ -116,7 +118,7 @@ private:
 	//=============================================================================================//
 	// モデルデータ
 
-	ModelData modelData_;
+	ModelData modelData_{};
 
 	AABB localBounds_{};
 

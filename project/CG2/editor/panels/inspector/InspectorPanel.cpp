@@ -427,7 +427,7 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 		ImGui::SetTooltip("Transformはローカル差分を選択ルートへ、色とActiveは選択全体へ適用します。");
 	}
 
-	EditableObjectView primary;
+	EditableObjectView primary{kInvalidWorldObjectId, ""};
 
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		if (scene.GetEditableObject(objectIndex).id == selection.GetPrimarySelectedObjectId()) {

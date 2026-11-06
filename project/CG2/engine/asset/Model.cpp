@@ -1,5 +1,4 @@
 #include <filesystem>
-#include <stdexcept>
 #include "Model.h"
 #include <utility>
 
@@ -18,8 +17,16 @@
 //=============================================================================================//
 // 初期化処理
 
+Model::Node::Node()
+	: localMatrix(MathUtility::MakeIdentity4x4()) {
+	// モデルを読み込む前のノードは、頂点に変換を加えない。
+}
 
-void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPath, const std::string& filename) {
+//=============================================================================================//
+// 初期化処理
+
+
+bool Model::TryInitialize(ModelCommon* modelCommon, const std::string& directoryPath, const std::string& filename, std::string& error) {
 
 	assert(modelCommon);
 
@@ -28,17 +35,22 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 	//=============================================================================================//
 	// モデル読み込み
 
-	modelData_ = LoadModelFile(directoryPath, filename);
+	if (!LoadModelFile(directoryPath, filename, modelData_, error)) {
+		return false;
+	}
 
 	// 描画できる三角形がないモデルは、GPU用のバッファを作る前に拒否する。
 	if (modelData_.vertices.empty()) {
-		throw std::runtime_error("Model has no triangle vertices.");
+		error = "Model has no triangle vertices.";
+		return false;
 	}
 
 	if (modelData_.isAnimated) {
 		animation_ = std::make_unique<ModelAnimation>();
 
-		animation_->Initialize(directoryPath + "/" + filename);
+		if (!animation_->TryInitialize(directoryPath + "/" + filename, error)) {
+			return false;
+		}
 
 		animation_->Update(-1, 0, false, modelData_.vertices);
 
@@ -121,6 +133,8 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 	}
 
 	material_->SetTextureIndex(modelData_.textureIndices.front());
+
+	return true;
 }
 
 //=============================================================================================//
@@ -205,9 +219,7 @@ void Model::RemapAssetPaths(const AssetPathChange& change) {
 // モデルファイル読み込み
 
 
-Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const std::string& filename) {
-
-	ModelData modelData;
+bool Model::LoadModelFile(const std::string& directoryPath, const std::string& filename, ModelData& modelData, std::string& error) {
 
 	Assimp::Importer importer;
 
@@ -217,15 +229,18 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 		aiProcess_FlipWindingOrder | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenSmoothNormals);
 
 	if (scene == nullptr) {
-		throw std::runtime_error(importer.GetErrorString());
+		error = importer.GetErrorString();
+		return false;
 	}
 
 	if (!scene->HasMeshes()) {
-		throw std::runtime_error("Model has no mesh.");
+		error = "Model has no mesh.";
+		return false;
 	}
 
 	if (scene->mRootNode == nullptr) {
-		throw std::runtime_error("Model has no root node.");
+		error = "Model has no root node.";
+		return false;
 	}
 
 	modelData.isAnimated = scene->HasAnimations();
@@ -242,13 +257,15 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 			scene = importer.ApplyPostProcessing(aiProcess_PreTransformVertices);
 
 			if (scene == nullptr) {
-				throw std::runtime_error(importer.GetErrorString());
+				error = importer.GetErrorString();
+				return false;
 			}
 		}
 	}
 
 	if (scene->mNumMaterials == 0 || scene->mNumMaterials > 256) {
-		throw std::runtime_error("Model supports between 1 and 256 material slots.");
+		error = "Model supports between 1 and 256 material slots.";
+		return false;
 	}
 
 	//=============================================================================================//
@@ -258,14 +275,15 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 
 		aiMesh* mesh = scene->mMeshes[meshIndex];
 
-		ModelData::DrawRange range;
+		ModelData::DrawRange range{};
 
 		range.firstIndex = static_cast<uint32_t>(modelData.vertices.size());
 
 		range.materialIndex = mesh->mMaterialIndex;
 
 		if (!mesh->HasNormals()) {
-			throw std::runtime_error("Cannot generate model normals.");
+			error = "Cannot generate model normals.";
+			return false;
 		}
 
 		for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
@@ -273,7 +291,8 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 			aiFace& face = mesh->mFaces[faceIndex];
 
 			if (face.mNumIndices != 3) {
-				throw std::runtime_error("Cannot triangulate model.");
+				error = "Cannot triangulate model.";
+				return false;
 			}
 
 			for (uint32_t element = 0; element < face.mNumIndices; ++element) {
@@ -349,7 +368,7 @@ Model::ModelData Model::LoadModelFile(const std::string& directoryPath, const st
 
 	modelData.rootNode = ReadNode(scene->mRootNode);
 
-	return modelData;
+	return true;
 }
 
 //=============================================================================================//

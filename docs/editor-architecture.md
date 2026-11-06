@@ -176,7 +176,7 @@ EditorとDebugCameraはInitialize/Update/Drawへ役割を分け、EditorSession�
 
 GetterはGet○○、SetterはSet○○とし、取得・設定する対象を名前から判断できるようにする。bool型のメンバー・ローカル変数・引数はisPlaying_・hasChanged・canContinue・shouldSimulate・wasSavedなどの疑問文の形に揃える。状態確認の関数もIsPlaying・CanUndo・HasPath・AreMaterialSettingsEqualのように、trueが何を意味するか読める名前にする。Save・Initializeなど処理を実行して成否を返す関数は、動詞の処理名を維持する。条件式の結果をそのままreturnせず、ifとreturn true／return falseで明示する。
 
-.hには型・定数・宣言・メンバーの初期値を置き、関数の処理は同名の.cppへ書く。Getter／Setterやインターフェースの既定処理も例外にしない。共有するstatic変数の定義・初期化は.hのinline変数へ揃える。入れ子の型は、型定義が揃った後でinline定義してよい。乱数エンジンの種など、変数の初期値を決める式もヘッダーへ置ける。
+.hには型・定数・宣言・クラスのメンバーの初期値を置き、Getter／Setterやインターフェースの既定処理を含む関数の処理は同名の.cppへ書く。構造体のデータメンバーは宣言だけとし、生成時に値を指定するか、.cppに定義したコンストラクターで初期化する。共有するstatic変数は.hのinline変数として、型定義が揃った場所で定義・初期化する。
 
 ローカル変数は再利用する計算値や操作中の借用参照など、必要な範囲だけに置く。一度しか使用しない別名を減らし、長い処理を役割別の関数へ分ける。フレーム内の一時値を不用意にメンバ変数へ移して寿命を延ばさない。
 

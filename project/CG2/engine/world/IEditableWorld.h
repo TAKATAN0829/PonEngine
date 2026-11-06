@@ -5,20 +5,20 @@
 
 // 描画中のカメラと表示領域。Editorは描画クラスを直接参照せず、この情報で画面操作を行う。
 struct EditorViewInfo {
-	Matrix4x4 viewProjection{}; // Sceneカメラのビュー射影行列。
+	Matrix4x4 viewProjection; // Sceneカメラのビュー射影行列。
 
-	Vector3 cameraPosition{}; // ワールド座標でのカメラ位置。
+	Vector3 cameraPosition; // ワールド座標でのカメラ位置。
 
-	float viewportWidth = 0; // 画像上の投影とレイ判定に共通で使う幅。
-	float viewportHeight = 0; // 同じ表示領域の高さ。
+	float viewportWidth; // 画像上の投影とレイ判定に共通で使う幅。
+	float viewportHeight; // 同じ表示領域の高さ。
 };
 
 // 補助画面は必要なときだけ開く。Editorが所有し、描画呼出中だけシーンへ貸し出す。
 struct EditorToolVisibility {
-	bool isParticleEditorVisible = false;
-	bool areWorldSettingsVisible = false;
-	bool isCameraVisible = false;
-	bool isPerformanceVisible = false; // 表示メニューから必要なときだけ開く。
+	bool isParticleEditorVisible;
+	bool areWorldSettingsVisible;
+	bool isCameraVisible;
+	bool isPerformanceVisible; // 表示メニューから必要なときだけ開く。
 };
 
 

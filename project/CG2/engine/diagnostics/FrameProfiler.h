@@ -40,19 +40,19 @@ public:
 	};
 
 	struct Sample {
-		uint64_t number = 0;
+		uint64_t number;
 
-		float frameMilliseconds = 0;
-		float gpuMilliseconds = 0; // 同じフレームのGPUタイムスタンプ差分。Present待機は含めない。
+		float frameMilliseconds;
+		float gpuMilliseconds; // 同じフレームのGPUタイムスタンプ差分。Present待機は含めない。
 
-		bool isGpuTimingValid = false; // 未対応・取得失敗と0msを区別する。
+		bool isGpuTimingValid; // 未対応・取得失敗と0msを区別する。
 
-		std::array<float, static_cast<size_t>(Section::Count)> milliseconds{};
+		std::array<float, static_cast<size_t>(Section::Count)> milliseconds;
 
-		uint64_t drawCalls = 0; // Mesh経由の実際のD3D12描画命令数。インスタンス数とは分ける。
-		uint64_t triangles = 0;
-		uint64_t instances = 0;
-		uint64_t uiDrawCalls = 0; // ImGuiの有効な描画コマンド。通常描画とは分離する。
+		uint64_t drawCalls; // Mesh経由の実際のD3D12描画命令数。インスタンス数とは分ける。
+		uint64_t triangles;
+		uint64_t instances;
+		uint64_t uiDrawCalls; // ImGuiの有効な描画コマンド。通常描画とは分離する。
 	};
 
 	// スコープの終了時に積算する。入れ子の区間は親の時間にも含まれる。
@@ -140,7 +140,7 @@ private:
 	static Clock::time_point started_;
 };
 
-// Sampleを含む型定義が揃った後で、共有データを一度だけ初期化する。
+// 型定義が揃った後で共有データを定義し、各Sampleの数値・フラグ・配列を値初期化する。
 inline FrameProfiler::Sample FrameProfiler::current_{};
 
 inline FrameProfiler::Sample FrameProfiler::latest_{};

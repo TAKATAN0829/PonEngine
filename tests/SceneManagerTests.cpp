@@ -4,12 +4,12 @@
 
 namespace {
 	struct SceneCounts {
-		int initialized = 0;
-		int updated = 0;
-		int drawn = 0;
-		int finalized = 0;
-		int destroyed = 0;
-		bool isPlaying = false;
+		int initialized;
+		int updated;
+		int drawn;
+		int finalized;
+		int destroyed;
+		bool isPlaying;
 	};
 
 	class TrackedScene : public IScene {
@@ -36,10 +36,10 @@ namespace {
 
 // GPUを使わず、更新・描画中に破棄しないことと、再生停止時の所有権の復帰を確認する。
 void RunSceneManagerTests() {
-	SceneCounts original;
-	SceneCounts game;
-	SceneCounts title;
-	SceneCounts cancelled;
+	SceneCounts original{};
+	SceneCounts game{};
+	SceneCounts title{};
+	SceneCounts cancelled{};
 	SceneManager manager;
 	TrackedScene* originalScene = new TrackedScene(original);
 	manager.Initialize({}, originalScene);

@@ -55,15 +55,15 @@ private:
 		std::string name;
 		std::string extension;
 
-		bool isDirectory = false;
+		bool isDirectory;
 	};
 
 	struct FolderEntry {
 		std::filesystem::path path;
 
-		size_t depth = 0;
+		size_t depth;
 
-		bool hasChildren = false;
+		bool hasChildren;
 	};
 
 	//=============================================================================================//

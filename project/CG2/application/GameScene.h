@@ -59,12 +59,8 @@ private:
 	// ゲームHUD
 
 	SpriteCommon* spriteCommon_ = nullptr; // Engineが所有し、このシーンより長く生存する。
-
 	std::unique_ptr<Sprite> sprite_; // サンプル画像の描画リソースを所有する。
-
 	Vector2 spritePosition_ = {100, 100};
-
 	float spriteRotation_ = 0;
-
 	Vector2 spriteSize_ = {256, 256};
 };

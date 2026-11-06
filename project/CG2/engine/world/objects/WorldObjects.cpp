@@ -102,7 +102,7 @@ size_t WorldObjects::GetEditableObjectCount() const {
 EditableObjectView WorldObjects::GetEditableObject(size_t index) {
 	// 一覧の範囲を確認し、設定を書き換えるための参照を返す。
 	if (index >= objects_.size()) {
-		return {};
+		return {kInvalidWorldObjectId, ""};
 	}
 
 	WorldObjectData& object = objects_[index];

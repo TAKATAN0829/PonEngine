@@ -56,7 +56,7 @@ private:
 	//=============================================================================================//
 	// 場面と描画機能
 
-	SceneContext context_; // Engineが所有する機能。すべてのシーンより長く生存する。
+	SceneContext context_{}; // Engineが所有する機能。すべてのシーンより長く生存する。
 
 	std::unique_ptr<IScene> currentScene_;
 	std::unique_ptr<IScene> pendingScene_; // まだInitializeしていない遷移先。

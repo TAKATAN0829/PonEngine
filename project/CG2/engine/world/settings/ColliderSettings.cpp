@@ -1,6 +1,20 @@
 #include "ColliderSettings.h"
 
 //=============================================================================================//
+// 初期化処理
+
+ColliderSettings::ColliderSettings()
+	: isPresent(false),
+	isEnabled(true),
+	isTrigger(false),
+	shape(ColliderShape::Box),
+	center{},
+	size{1,1,1},
+	radius(0.5f) {
+	// 追加前のColliderに、単位サイズのBoxと球の半径を用意する。
+}
+
+//=============================================================================================//
 // Transformに対するローカル形状
 
 bool AreColliderSettingsValid(const ColliderSettings& settings) {

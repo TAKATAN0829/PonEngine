@@ -476,6 +476,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\world\IScene.cpp" />
     <ClCompile Include="engine\world\IWorldObjects.cpp" />
     <ClCompile Include="engine\world\settings\AssetSettings.cpp" />
+    <ClCompile Include="engine\world\objects\WorldObjectData.cpp" />
     <ClCompile Include="engine\world\settings\ColliderSettings.cpp" />
     <ClCompile Include="engine\world\settings\MotionSettings.cpp" />
     <ClCompile Include="engine\world\settings\RigidBodySettings.cpp" />

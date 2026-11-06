@@ -9,60 +9,62 @@
 
 // 保存・履歴用の設定。実行中の粒子やGPUリソースは含めない。
 struct ParticleSettings {
+	ParticleSettings();
+
 	//=============================================================================================//
 	// 発生条件
 
-	Vector3 emitterPosition{}; // 個別EmitterはTransformの位置を使う。
-	Vector3 spread = {1,1,1}; // 発生位置をランダムに広げる範囲。
+	Vector3 emitterPosition; // 個別EmitterはTransformの位置を使う。
+	Vector3 spread; // 発生位置をランダムに広げる範囲。
 
-	uint32_t spawnCount = 3; // 一回の発生数。最大100。
+	uint32_t spawnCount; // 一回の発生数。最大100。
 
-	float interval = 0.1f; // 発生間隔（秒）。
+	float interval; // 発生間隔（秒）。
 
 	//=============================================================================================//
 	// 移動・寿命
 
-	Vector3 velocityMinimum = {-1,-1,-1};
-	Vector3 velocityMaximum = {1,1,1};
-	Vector3 acceleration = {0,1,0};
+	Vector3 velocityMinimum;
+	Vector3 velocityMaximum;
+	Vector3 acceleration;
 
-	bool isAccelerationEnabled = false;
+	bool isAccelerationEnabled;
 
-	float lifetimeMinimum = 1; // 最短寿命（秒）。
-	float lifetimeMaximum = 3; // 最長寿命（秒）。
+	float lifetimeMinimum; // 最短寿命（秒）。
+	float lifetimeMaximum; // 最長寿命（秒）。
 
 	//=============================================================================================//
 	// 表示・合成
 
-	Vector3 particleScale = {1,1,1};
+	Vector3 particleScale;
 
-	Vector4 color = {1,0.65f,0.2f,1};
+	Vector4 color;
 
-	bool isRandomColorEnabled = false; // 設定色を基準に粒子ごとの色を変える。
-	bool isBillboardEnabled = true; // 各粒子をカメラの方へ向ける。
+	bool isRandomColorEnabled; // 設定色を基準に粒子ごとの色を変える。
+	bool isBillboardEnabled; // 各粒子をカメラの方へ向ける。
 
-	BlendMode blendMode = kBlendModeAdd;
+	BlendMode blendMode;
 
-	std::string texture = "resources/circle.png";
+	std::string texture;
 
 	//=============================================================================================//
 	// 寿命による見た目 / 既存データは無効で従来のAlpha減衰を維持する。
 
-	bool isLifetimeAppearanceEnabled = false;
+	bool isLifetimeAppearanceEnabled;
 
-	float startSize = 1; // particleScaleに掛ける発生時の倍率。
-	float endSize = 1; // 消滅時の倍率。0なら縮んで消える。
+	float startSize; // particleScaleに掛ける発生時の倍率。
+	float endSize; // 消滅時の倍率。0なら縮んで消える。
 
-	Vector4 endColor = {1,0.65f,0.2f,0};
+	Vector4 endColor;
 
-	float fadeIn = 0; // 寿命に対するフェードイン区間（0〜1）。
+	float fadeIn; // 寿命に対するフェードイン区間（0〜1）。
 
 	//=============================================================================================//
 	// モデルとの交差 / ワールド単位で境界をぼかす。
 
-	bool areSoftParticlesEnabled = false;
+	bool areSoftParticlesEnabled;
 
-	float softDistance = 0.5f;
+	float softDistance;
 };
 
 enum class ParticlePresetKind { 
@@ -73,9 +75,9 @@ enum class ParticlePresetKind {
 
 // 実行状態を持たない評価値。CPUテストと実描画で同じ補間を使う。
 struct ParticleAppearance {
-	float size = 1;
+	float size;
 
-	Vector4 color{};
+	Vector4 color;
 };
 
 //=============================================================================================//
@@ -90,20 +92,22 @@ ParticleSettings MakeParticlePreset(ParticlePresetKind kind);
 
 // 操作中だけの状態。プリセットとシーンファイルの保存対象には含めない。
 struct ParticlePreviewState {
+	ParticlePreviewState();
+
 	//=============================================================================================//
 	// 対象・再生状態
 
-	uint64_t targetObject = 0; // 0は共通プリセット、それ以外はシーン内EmitterのID。
+	uint64_t targetObject; // 0は共通プリセット、それ以外はシーン内EmitterのID。
 
-	bool isEnabled = false;
-	bool isPaused = false;
-	bool isStepRequested = false; // 次の一回だけ時間を進める。
+	bool isEnabled;
+	bool isPaused;
+	bool isStepRequested; // 次の一回だけ時間を進める。
 
 	//=============================================================================================//
 	// 表示・発生モード
 
-	bool shouldIsolateParticles = false; // モデルを隠してParticleだけを確認する。
-	bool isAutomaticEmissionEnabled = true; // falseならBurst操作だけで発生する。
+	bool shouldIsolateParticles; // モデルを隠してParticleだけを確認する。
+	bool isAutomaticEmissionEnabled; // falseならBurst操作だけで発生する。
 };
 
 //=============================================================================================//

@@ -164,7 +164,7 @@ private:
 
 	PerformancePanel performancePanel_; // 計測履歴の選択とCSV出力の表示。
 
-	EditorToolVisibility toolVisibility_; // 補助画面は初期状態ではすべて閉じる。
+	EditorToolVisibility toolVisibility_{}; // 補助画面は初期状態ではすべて閉じる。
 
 	EditorLayout layout_; // メニュー・初期ドッキング・通知欄。
 

@@ -177,7 +177,7 @@ private:
 
 		std::string model;
 
-		bool isAnimationPreviewEnabled = false; // Editor内での個別再生。保存・履歴には含めない。
+		bool isAnimationPreviewEnabled; // Editor内での個別再生。保存・履歴には含めない。
 	};
 
 private:

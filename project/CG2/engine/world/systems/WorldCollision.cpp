@@ -347,7 +347,7 @@ void WorldCollision::Update(IWorldObjects& scene) {
 			break;
 		}
 
-		WorldCollider shape;
+		WorldCollider shape{};
 
 		Matrix4x4 world{};
 
@@ -528,7 +528,7 @@ bool WorldCollision::DoShapesIntersect(const WorldCollider& first, const WorldCo
 
 bool WorldCollision::GetContact(const WorldCollider& first, const WorldCollider& second, CollisionContact& contact) {
 	// 形状の組合せに応じて、接触方向と押し戻し量を求める。
-	contact = {};
+	contact = {{0, 1, 0}, 0};
 
 	if (!DoBoundsOverlap(first.bounds,second.bounds)) {
 		return false;

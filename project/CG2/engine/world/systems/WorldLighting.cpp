@@ -27,7 +27,7 @@ bool WorldLighting::GetDirection(const Matrix4x4& world, Vector3& direction) {
 
 WorldLightCollection WorldLighting::Collect(const IWorldObjects& scene) {
 	// 有効なライトだけを種類ごとに集め、GPU配列の上限内へ収める。
-	WorldLightCollection collection;
+	WorldLightCollection collection{};
 
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const WorldObjectData* object = scene.GetObjectData(objectIndex);

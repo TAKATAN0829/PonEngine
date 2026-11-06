@@ -51,13 +51,13 @@ private:
 
 	// 選択ルートの初期値だけを保存し、親子を重複して動かさない。
 	struct DragObject {
-		WorldObjectId identifier = 0;
+		WorldObjectId identifier;
 
-		TransformData local{};
+		TransformData local;
 
-		Vector3 position{};
+		Vector3 position;
 
-		Matrix4x4 world{};
+		Matrix4x4 world;
 	};
 
 	//=============================================================================================//

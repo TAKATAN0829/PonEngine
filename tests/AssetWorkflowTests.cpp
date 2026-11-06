@@ -42,8 +42,21 @@ void RunAssetWorkflowTests(const std::filesystem::path& directory) {
 	// ルート・モデル・ライトの階層を作り、Prefabが複数段の親子関係を保つか確認する。
 	RequireAsset(source.SetObjectParent(modelId, parentId, error), "Prefab model parenting failed");
 	RequireAsset(source.SetObjectParent(lightId, modelId, error), "Prefab light parenting failed");
-	source.GetEditableObject(1).materials->push_back({0, "white1x1.png", {0.3f, 0.6f, 0.9f, 1}, 85, false});
-	*source.GetEditableObject(1).animation = {2, false, true, 1.75f, 0.25f};
+	// 既定値と区別できるマテリアル・再生設定を保存対象にする。
+	MaterialSettings material;
+	material.texture = "white1x1.png";
+	material.color = {0.3f, 0.6f, 0.9f, 1};
+	material.shininess = 85;
+	material.isLightingEnabled = false;
+
+	source.GetEditableObject(1).materials->push_back(material);
+
+	AnimationSettings& animation = *source.GetEditableObject(1).animation;
+	animation.clip = 2;
+	animation.shouldAutoplay = false;
+	animation.speed = 1.75f;
+	animation.time = 0.25f;
+
 	const std::filesystem::path scenePath = directory / "asset-settings.ponscene";
 	RequireAsset(SceneFile::Save(source, scenePath, error), "Asset settings save failed");
 	WorldObjects restored;

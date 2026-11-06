@@ -14,7 +14,7 @@ bool ModelAssetPayload::Read(const void* data, size_t size, std::string& result)
 		return false;
 	}
 
-	ModelAssetPayload payload;
+	ModelAssetPayload payload{};
 
 	std::memcpy(&payload, data, sizeof(payload));
 

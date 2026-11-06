@@ -1,5 +1,5 @@
 #include "FrameProfiler.h"
-#include <exception>
+#include <stdexcept>
 #include "ModelManager.h"
 #include <utility>
 
@@ -51,37 +51,28 @@ void ModelManager::Finalize() {
 
 
 void ModelManager::LoadModel(const std::string& filePath) {
-	// 読込済みモデルの重複を避け、指定ファイルを登録する。
-
-	if (models_.contains(filePath)) {
-
-		return;
+	std::string error;
+	if (!TryLoadModel(filePath, error)) {
+		throw std::runtime_error(error);
 	}
-
-	FrameProfiler::Scope loadTime(FrameProfiler::Section::ModelLoad);
-
-	std::unique_ptr<Model> model = std::make_unique<Model>();
-
-	model->Initialize(modelCommon_, kDirectoryPath, filePath);
-
-	// 初期化に成功したモデルをキャッシュへ登録し、以降の描画で共有する。
-	models_.insert(std::make_pair(filePath, std::move(model)));
 }
 
 // 壊れたアセットはキャッシュに登録せず、UIへ理由を返す。
 bool ModelManager::TryLoadModel(const std::string& filePath, std::string& error) {
-	// モデルの読込を試し、例外や失敗を通知へ変換する。
 	error.clear();
 
-	try {
-		LoadModel(filePath);
+	if (models_.contains(filePath)) {
+		return true;
 	}
-	catch (const std::exception& failure) {
-		error = failure.what();
 
+	FrameProfiler::Scope loadTime(FrameProfiler::Section::ModelLoad);
+	auto model = std::make_unique<Model>();
+
+	if (!model->TryInitialize(modelCommon_, kDirectoryPath, filePath, error)) {
 		return false;
 	}
 
+	models_.emplace(filePath, std::move(model));
 	return true;
 }
 

@@ -13,33 +13,21 @@ void TitleScene::Initialize(const SceneContext& context) {
 	WorldObjectData titleCube;
 
 	titleCube.id = 1;
-
 	titleCube.name = "Title Cube - Enter to start";
-
 	titleCube.model = WorldPrimitives::kCubeModel;
-
 	titleCube.color = {0.2f, 0.65f, 1, 1};
-
 	titleCube.isLightingEnabled = false;
-
 	titleCube.transform.rotate = {0.3f, 0, 0};
-
 	titleCube.motion.hasRotation = true;
-
 	titleCube.motion.rotationDegreesPerSecond = {0, 30, 0};
 
 	WorldObjectData titleCamera;
-
+	
 	titleCamera.id = 2;
-
 	titleCamera.name = "Title Camera";
-
 	titleCamera.type = WorldObjectType::Camera;
-
 	titleCamera.hasMeshRenderer = false;
-
 	titleCamera.isMainCamera = true;
-
 	titleCamera.transform.translate = {0, 0, -4};
 
 	std::string error;

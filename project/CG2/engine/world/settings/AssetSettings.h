@@ -6,25 +6,29 @@
 
 // シーン・Prefab・履歴で共有する、GPUリソースを含まないアセット設定。
 struct MaterialSettings {
-	uint32_t slot = 0; // モデル内のマテリアル番号。
+	MaterialSettings();
+
+	uint32_t slot; // モデル内のマテリアル番号。
 
 	std::string texture; // resourcesからの相対パス。空文字ならモデル既定の画像。
 
-	Vector4 color = {1, 1, 1, 1};
+	Vector4 color;
 
-	float shininess = 40;
+	float shininess;
 
-	bool isLightingEnabled = true;
+	bool isLightingEnabled;
 };
 
 struct AnimationSettings {
-	int clip = 0; // モデルに含まれるクリップの番号。
+	AnimationSettings();
 
-	bool shouldAutoplay = true; // ゲーム再生開始時に再生する。
-	bool shouldLoop = true;
+	int clip; // モデルに含まれるクリップの番号。
 
-	float speed = 1;
-	float time = 0; // 開始位置と、Inspectorで指定したシーク位置（秒）。
+	bool shouldAutoplay; // ゲーム再生開始時に再生する。
+	bool shouldLoop;
+
+	float speed;
+	float time; // 開始位置と、Inspectorで指定したシーク位置（秒）。
 };
 
 // 設定の比較はUIと履歴で共通にし、見た目の変更をUndoから漏らさない。

@@ -10,22 +10,24 @@ enum class ColliderShape { Box, Sphere };
 
 // 一つのオブジェクトに一つの判定形状。押し戻し・重力の設定はRigidbodyが所有する。
 struct ColliderSettings {
+	ColliderSettings();
+
 	//=============================================================================================//
 	// 存在・有効状態
 
-	bool isPresent = false;
-	bool isEnabled = true;
-	bool isTrigger = false; // 通知だけを行い、押し戻しを適用しない。
+	bool isPresent;
+	bool isEnabled;
+	bool isTrigger; // 通知だけを行い、押し戻しを適用しない。
 
-	ColliderShape shape = ColliderShape::Box;
+	ColliderShape shape;
 
 	//=============================================================================================//
 	// Transformに対するローカル形状
 
-	Vector3 center{};
-	Vector3 size = {1,1,1}; // Boxの全幅。親子の回転・拡縮も反映する。
+	Vector3 center;
+	Vector3 size; // Boxの全幅。親子の回転・拡縮も反映する。
 
-	float radius = 0.5f; // Sphereはワールド変換後の外接球で判定する。
+	float radius; // Sphereはワールド変換後の外接球で判定する。
 };
 
 bool AreColliderSettingsValid(const ColliderSettings& settings);

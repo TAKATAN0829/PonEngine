@@ -222,7 +222,9 @@ namespace {
         AssetDialogFixture() {
             world_.AddObject("plane.gltf");
 
-            world_.GetEditableObject(0).materials->push_back({0, "fence/fence.png"});
+            MaterialSettings material;
+            material.texture = "fence/fence.png";
+            world_.GetEditableObject(0).materials->push_back(material);
 
             history_.Initialize(world_);
 

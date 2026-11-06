@@ -53,7 +53,7 @@ namespace {
 		std::filesystem::path backup;
 		std::filesystem::path updated;
 
-		bool wasApplied = false;
+		bool wasApplied;
 	};
 }
 
@@ -285,7 +285,7 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 			continue;
 		}
 
-		StagedDocument file;
+		StagedDocument file{};
 
 		file.original = root_ / document.GetPath();
 

@@ -17,7 +17,7 @@ namespace {
 	WorldCollider MakeCollider(ColliderShape shape, const Vector3& position, const Vector3& rotation = {}, const Vector3& scale = {1,1,1}) {
 		ColliderSettings settings;
 		settings.shape = shape;
-		WorldCollider result;
+		WorldCollider result{};
 		RequireCollision(WorldCollision::BuildWorld(settings,MathUtility::MakeAffineMatrix(scale,rotation,position),result), "World collider build failed");
 		return result;
 	}
@@ -39,13 +39,13 @@ namespace {
 		RequireCollision(WorldCollision::DoShapesIntersect(rotated,MakeCollider(ColliderShape::Sphere,{0.3f,0.3f,0})), "Rotated box sphere overlap missing");
 		const WorldCollider negative = MakeCollider(ColliderShape::Box,{}, {}, {-2,1,1});
 		RequireCollision(WorldCollision::DoShapesIntersect(negative,MakeCollider(ColliderShape::Sphere,{1.4f,0,0})), "Negative scale box collision failed");
-		WorldCollider sheared;
+		WorldCollider sheared{};
 		Matrix4x4 shear = MathUtility::MakeIdentity4x4();
 		shear.m[1][0] = 1;
 		RequireCollision(WorldCollision::BuildWorld({},shear,sheared), "Sheared box build failed");
 		RequireCollision(WorldCollision::DoShapesIntersect(sheared,MakeCollider(ColliderShape::Sphere,{0,0,0})), "Sheared box containment failed");
 		RequireCollision(!WorldCollision::DoShapesIntersect(sheared,MakeCollider(ColliderShape::Sphere,{0.9f,-0.4f,0},{},{0.1f,0.1f,0.1f})), "Sheared box closest point incorrect");
-		WorldCollider invalid;
+		WorldCollider invalid{};
 		RequireCollision(!WorldCollision::BuildWorld({},MathUtility::MakeScaleMatrix({0,1,1}),invalid), "Degenerate box accepted");
 		const WorldCollider stretchedSphere = MakeCollider(ColliderShape::Sphere,{}, {}, {2,3,1});
 		RequireCollision(std::abs(stretchedSphere.radius-1.5f) < 0.0001f, "Nonuniform sphere must use largest scale");

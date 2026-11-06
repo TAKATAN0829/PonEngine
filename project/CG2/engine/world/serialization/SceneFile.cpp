@@ -196,23 +196,36 @@ namespace {
 	}
 
 	struct Record {
-		WorldObjectId id{};
+		Record();
 
-		unsigned mask{}; // 下位4ビットがTransform・色・ライティング・光沢の有無を表す。
+		WorldObjectId id;
 
-		std::array<float, 14> values{}; // 拡縮・回転・位置・色・光沢の順に保存する。
+		unsigned mask; // 下位4ビットがTransform・色・ライティング・光沢の有無を表す。
 
-		int lighting{};
+		std::array<float, 14> values; // 拡縮・回転・位置・色・光沢の順に保存する。
+
+		int lighting;
 
 		std::string name;
 		std::string model;
 
-		int rootMatrix = 1;
-		int active = 1;
-		int meshRenderer = 1;
+		int rootMatrix;
+		int active;
+		int meshRenderer;
 
 		WorldObjectData components; // 形式4で追加した種類別Componentの値。
 	};
+
+	Record::Record()
+		: id{},
+		mask{},
+		values{},
+		lighting{},
+		rootMatrix(1),
+		active(1),
+		meshRenderer(1) {
+		// 旧形式に含まれない描画フラグは有効として扱う。
+	}
 
 	// 公開されているプロパティの有無をビットへ変換し、保存形式に記録する。
 	unsigned GetPropertyMask(const EditableObjectView& view) {

@@ -13,55 +13,59 @@
 
 // 保存する透視投影の設定。画角はラジアン、描画距離はワールド単位。
 struct CameraSettings {
-	float fieldOfView = 0.785398163f;
-	float nearClip = 0.1f;
-	float farClip = 1000;
+	CameraSettings();
+
+	float fieldOfView;
+	float nearClip;
+	float farClip;
 };
 
 // ゲームカメラの計算結果。Editorの入力や画面状態は含めない。
 struct CameraView {
-	Matrix4x4 cameraWorld{};
-	Matrix4x4 viewProjection{};
+	Matrix4x4 cameraWorld;
+	Matrix4x4 viewProjection;
 };
 
 // 保存・履歴に使う共有データ。描画用のGPUリソースはGameScene側で別に管理する。
 struct WorldObjectData {
+	WorldObjectData();
+
 	//=============================================================================================//
 	// 識別情報
 
-	WorldObjectId id = kInvalidWorldObjectId;
-	WorldObjectId parentId = kInvalidWorldObjectId; // 0なら最上位。Transformは親に対するローカル値。
+	WorldObjectId id;
+	WorldObjectId parentId; // 0なら最上位。Transformは親に対するローカル値。
 
-	std::string name = "Model";
-	std::string model = "plane.gltf";
+	std::string name;
+	std::string model;
 
 	//=============================================================================================//
 	// Transform・Mesh Renderer
 
-	TransformData transform = {{1, 1, 1}, {}, {}};
+	TransformData transform;
 
-	Vector4 color = {1, 1, 1, 1};
+	Vector4 color;
 
-	bool isLightingEnabled = true;
+	bool isLightingEnabled;
 
-	float shininess = 40;
+	float shininess;
 
-	bool isRootNodeMatrixUsed = true;
-	bool isActive = true; // 無効でも設定は残し、描画対象からだけ外す。
-	bool hasMeshRenderer = true; // Componentを外してもモデルや色の設定は保持する。
+	bool isRootNodeMatrixUsed;
+	bool isActive; // 無効でも設定は残し、描画対象からだけ外す。
+	bool hasMeshRenderer; // Componentを外してもモデルや色の設定は保持する。
 
 	//=============================================================================================//
 	// 種類別Component
 
-	WorldObjectType type = WorldObjectType::Model;
+	WorldObjectType type;
 
-	float lightIntensity = 1;
-	float lightRadius = 10;
-	float lightDecay = 1;
+	float lightIntensity;
+	float lightRadius;
+	float lightDecay;
 
 	CameraSettings camera;
 
-	bool isMainCamera = false; // メイン指定はSetMainCamera経由で一つだけにする。
+	bool isMainCamera; // メイン指定はSetMainCamera経由で一つだけにする。
 
 	ParticleSettings particle; // 発生位置はTransformを使用し、それ以外の設定を個別に保持する。
 
@@ -84,51 +88,51 @@ struct WorldObjectData {
 // シーンが所有する値への借用参照。追加・削除・読込の後は取得し直す必要がある。
 // UI側から破棄せず、フレームをまたいで保持しない。ImGuiには依存しない。
 struct EditableObjectView {
-	WorldObjectId id = kInvalidWorldObjectId;
+	WorldObjectId id;
 
-	const char* name = "";
+	const char* name;
 
-	TransformData* transform = nullptr;
+	TransformData* transform;
 
-	Vector4* color = nullptr;
+	Vector4* color;
 
-	bool* isLightingEnabled = nullptr;
+	bool* isLightingEnabled;
 
-	float* shininess = nullptr;
+	float* shininess;
 
-	std::string* model = nullptr;
+	std::string* model;
 
-	bool* isRootNodeMatrixUsed = nullptr;
+	bool* isRootNodeMatrixUsed;
 
-	std::string* editableName = nullptr;
+	std::string* editableName;
 
-	bool* isActive = nullptr;
-	bool* hasMeshRenderer = nullptr;
+	bool* isActive;
+	bool* hasMeshRenderer;
 
-	WorldObjectType type = WorldObjectType::Model;
+	WorldObjectType type;
 
-	float* lightIntensity = nullptr;
-	float* lightRadius = nullptr;
-	float* lightDecay = nullptr;
+	float* lightIntensity;
+	float* lightRadius;
+	float* lightDecay;
 
-	ParticleSettings* particleSettings = nullptr;
+	ParticleSettings* particleSettings;
 
-	WorldObjectId parentId = kInvalidWorldObjectId; // 変更はSetObjectParentを通して検証する。
+	WorldObjectId parentId; // 変更はSetObjectParentを通して検証する。
 
-	CameraSettings* camera = nullptr;
+	CameraSettings* camera;
 
-	bool isMainCamera = false;
+	bool isMainCamera;
 
-	std::vector<MaterialSettings>* materials = nullptr;
+	std::vector<MaterialSettings>* materials;
 
-	AnimationSettings* animation = nullptr;
+	AnimationSettings* animation;
 
-	RigidBodySettings* body = nullptr; // 実行中の速度への参照は公開しない。
+	RigidBodySettings* body; // 実行中の速度への参照は公開しない。
 
-	ColliderSettings* collider = nullptr; // 借用参照。構造変更後は取得し直す。
+	ColliderSettings* collider; // 借用参照。構造変更後は取得し直す。
 
-	MotionSettings* motion = nullptr; // 借用参照。フレームをまたいで保持しない。
+	MotionSettings* motion; // 借用参照。フレームをまたいで保持しない。
 
-	LightSettings* light = nullptr; // Light固有設定。構造変更後は取得し直す。
+	LightSettings* light; // Light固有設定。構造変更後は取得し直す。
 };
 

@@ -104,21 +104,21 @@ namespace {
 
 struct ModelAnimation::AnimationData {
 	struct Node {
-		const aiNode* source = nullptr;
+		const aiNode* source;
 
-		int parent = -1;
+		int parent;
 	};
 
 	struct Bone {
-		size_t node = 0;
+		size_t node;
 
 		aiMatrix4x4 offset;
 	};
 
 	struct Weight {
-		size_t bone = 0;
+		size_t bone;
 
-		float weight = 0;
+		float weight;
 	};
 
 	struct Vertex {
@@ -126,14 +126,14 @@ struct ModelAnimation::AnimationData {
 		aiVector3D normal;
 		aiVector3D uv;
 
-		size_t node = 0;
+		size_t node;
 
 		std::vector<Weight> weights;
 	};
 
 	Assimp::Importer importer;
 
-	const aiScene* scene = nullptr; // importerが所有し、この構造体と同じ寿命。
+	const aiScene* scene; // importerが所有し、この構造体と同じ寿命。
 
 	std::vector<Node> nodes;
 
@@ -166,7 +166,7 @@ struct ModelAnimation::AnimationData {
 		}
 	}
 
-	void ReadMesh(size_t meshIndex) {
+	bool ReadMesh(size_t meshIndex, std::string& error) {
 		// 頂点とスキニング情報を読み込み、アニメーション用のメッシュを作る。
 		const aiMesh& mesh = *scene->mMeshes[meshIndex];
 
@@ -176,7 +176,8 @@ struct ModelAnimation::AnimationData {
 			const aiBone& bone = *mesh.mBones[boneIndex];
 
 			if (!nodeIndices.contains(bone.mName.C_Str())) {
-				throw std::runtime_error("Animation bone node is missing.");
+				error = "Animation bone node is missing.";
+				return false;
 			}
 
 			const size_t paletteIndex = bones.size();
@@ -187,7 +188,8 @@ struct ModelAnimation::AnimationData {
 				const aiVertexWeight& weight = bone.mWeights[weightIndex];
 
 				if (weight.mVertexId >= weights.size() || !std::isfinite(weight.mWeight) || weight.mWeight < 0) {
-					throw std::runtime_error("Invalid skinning weight.");
+					error = "Invalid skinning weight.";
+					return false;
 				}
 
 				weights[weight.mVertexId].push_back({paletteIndex, weight.mWeight});
@@ -198,7 +200,8 @@ struct ModelAnimation::AnimationData {
 			const aiFace& face = mesh.mFaces[faceIndex];
 
 			if (face.mNumIndices != 3) {
-				throw std::runtime_error("Animation mesh must contain triangles.");
+				error = "Animation mesh must contain triangles.";
+				return false;
 			}
 
 			for (unsigned int element = 0; element < face.mNumIndices; ++element) {
@@ -221,6 +224,8 @@ struct ModelAnimation::AnimationData {
 				vertices.push_back(std::move(vertex));
 			}
 		}
+
+		return true;
 	}
 };
 
@@ -237,26 +242,36 @@ ModelAnimation::~ModelAnimation() = default;
 
 
 void ModelAnimation::Initialize(const std::string& path) {
-	// ノード・クリップ・スキニング情報を読込み、再生用のデータを作る。
-	data_ = std::make_unique<AnimationData>();
+	std::string error;
+	if (!TryInitialize(path, error)) {
+		throw std::runtime_error(error);
+	}
+}
 
-	data_->scene = data_->importer.ReadFile(path,
+bool ModelAnimation::TryInitialize(const std::string& path, std::string& error) {
+	// ノード・クリップ・スキニング情報を読込み、再生用のデータを作る。
+	auto data = std::make_unique<AnimationData>();
+
+	data->scene = data->importer.ReadFile(path,
 		aiProcess_FlipWindingOrder | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenSmoothNormals);
 
-	if (data_->scene == nullptr) {
-		throw std::runtime_error(data_->importer.GetErrorString());
+	if (data->scene == nullptr) {
+		error = data->importer.GetErrorString();
+		return false;
 	}
 
-	data_->meshNodes.resize(data_->scene->mNumMeshes);
+	data->meshNodes.resize(data->scene->mNumMeshes);
 
-	data_->AddNode(data_->scene->mRootNode, -1);
+	data->AddNode(data->scene->mRootNode, -1);
 
-	for (size_t meshIndex = 0; meshIndex < data_->scene->mNumMeshes; ++meshIndex) {
-		data_->ReadMesh(meshIndex);
+	for (size_t meshIndex = 0; meshIndex < data->scene->mNumMeshes; ++meshIndex) {
+		if (!data->ReadMesh(meshIndex, error)) {
+			return false;
+		}
 	}
 
-	for (unsigned int clipIndex = 0; clipIndex < data_->scene->mNumAnimations; ++clipIndex) {
-		const aiAnimation& clip = *data_->scene->mAnimations[clipIndex];
+	for (unsigned int clipIndex = 0; clipIndex < data->scene->mNumAnimations; ++clipIndex) {
+		const aiAnimation& clip = *data->scene->mAnimations[clipIndex];
 
 		double ticksPerSecond = clip.mTicksPerSecond;
 
@@ -270,20 +285,23 @@ void ModelAnimation::Initialize(const std::string& path) {
 			name = "Clip " + std::to_string(clipIndex + 1);
 		}
 
-		data_->clips.push_back({name, static_cast<float>(clip.mDuration / ticksPerSecond)});
+		data->clips.push_back({name, static_cast<float>(clip.mDuration / ticksPerSecond)});
 
-		std::vector<const aiNodeAnim*> channels(data_->nodes.size(), nullptr);
+		std::vector<const aiNodeAnim*> channels(data->nodes.size(), nullptr);
 
 		for (unsigned int channelIndex = 0; channelIndex < clip.mNumChannels; ++channelIndex) {
 			const aiNodeAnim* channel = clip.mChannels[channelIndex];
 
-			if (data_->nodeIndices.contains(channel->mNodeName.C_Str())) {
-				channels[data_->nodeIndices.at(channel->mNodeName.C_Str())] = channel;
+			if (data->nodeIndices.contains(channel->mNodeName.C_Str())) {
+				channels[data->nodeIndices.at(channel->mNodeName.C_Str())] = channel;
 			}
 		}
 
-		data_->channels.push_back(std::move(channels));
+		data->channels.push_back(std::move(channels));
 	}
+
+	data_ = std::move(data);
+	return true;
 }
 
 void ModelAnimation::Update(int clipIndex, float seconds, bool shouldLoop, std::vector<Mesh::VertexData>& vertices) const {

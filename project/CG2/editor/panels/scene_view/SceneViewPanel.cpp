@@ -702,7 +702,7 @@ EditableObjectView SceneViewPanel::FindObject(IEditableWorld& scene, WorldObject
 		}
 	}
 
-	return {};
+	return {kInvalidWorldObjectId, ""};
 }
 
 //=============================================================================================//
@@ -798,7 +798,7 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 
 	const bool isImageHovered = ImGui::IsItemHovered() && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId);
 
-	EditorViewInfo viewInfo;
+	EditorViewInfo viewInfo{};
 
 	if (!scene.GetEditorViewInfo(viewInfo)) {
 		ResetInteraction();
@@ -918,7 +918,7 @@ void SceneViewPanel::DrawColliders(IEditableWorld& scene, const EditorSelection&
 
 		Matrix4x4 world{};
 
-		WorldCollider shape;
+		WorldCollider shape{};
 
 		if (!scene.GetObjectWorldMatrix(identifier,world)) {
 			continue;
@@ -1142,11 +1142,11 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 
 	// この呼出内だけに画面位置を保持し、シーンの借用参照は保存しない。
 	struct AxisHandle {
-		Vector3 direction{};
+		Vector3 direction;
 
-		Vector2 end{};
+		Vector2 end;
 
-		bool isVisible = false;
+		bool isVisible;
 	};
 
 	AxisHandle handles[3]{};
@@ -1297,7 +1297,7 @@ bool SceneViewPanel::AcceptModelDrop(IEditableWorld& scene, EditorSelection& sel
 		return false;
 	}
 
-	EditorViewInfo view;
+	EditorViewInfo view{};
 
 	if (!scene.GetEditorViewInfo(view)) {
 		return false;

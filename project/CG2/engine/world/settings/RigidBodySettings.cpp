@@ -1,6 +1,23 @@
 #include "RigidBodySettings.h"
 
 //=============================================================================================//
+// 初期化処理
+
+RigidBodySettings::RigidBodySettings()
+	: isPresent(false),
+	isEnabled(true),
+	mode(BodyMode::Dynamic),
+	isGravityEnabled(true),
+	mass(1),
+	gravityScale(1),
+	restitution(0),
+	friction(0.6f),
+	linearDamping(0),
+	initialVelocity{} {
+	// 追加前のRigidbodyに、重力を受ける動的な物体の設定を用意する。
+}
+
+//=============================================================================================//
 // 質量・接触特性・初速
 
 bool AreBodySettingsValid(const RigidBodySettings& settings) {

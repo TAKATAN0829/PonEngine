@@ -8,19 +8,19 @@
 
 namespace {
 	struct TransitionState {
-		int frame = 0;
-		int phase = 0;
-		int originInitializations = 0;
-		int originFinalizations = 0;
-		int gameFinalizations = 0;
-		int returnFinalizations = 0;
-		uint64_t originPreviewHandle = 0;
-		uint64_t returnPreviewHandle = 0;
-		uint64_t restoredPreviewHandle = 0;
+		int frame;
+		int phase;
+		int originInitializations;
+		int originFinalizations;
+		int gameFinalizations;
+		int returnFinalizations;
+		uint64_t originPreviewHandle;
+		uint64_t returnPreviewHandle;
+		uint64_t restoredPreviewHandle;
 
-		bool wasRestored = false;
-		bool wasUndone = false;
-		bool wasRedone = false;
+		bool wasRestored;
+		bool wasUndone;
+		bool wasRedone;
 	};
 
 	class TransitionTitleScene : public TitleScene {
@@ -170,7 +170,7 @@ namespace {
 }
 
 void RunSceneTransitionGraphicsTests() {
-	TransitionState state;
+	TransitionState state{};
 	Engine engine;
 	engine.Initialize(new TransitionTitleScene(state, true));
 	engine.Run(90);
