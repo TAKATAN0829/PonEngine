@@ -1,4 +1,4 @@
-﻿#include "PerformancePanel.h"
+#include "PerformancePanel.h"
 #include <algorithm>
 #include "FrameProfiler.h"
 
@@ -40,7 +40,6 @@ namespace {
 			ImGui::TableSetupColumn("CPU区間（子区間は親に含む）");
 
 			ImGui::TableSetupColumn("ms");
-
 			ImGui::TableHeadersRow();
 
 			for (size_t sectionIndex = 0; sectionIndex < static_cast<size_t>(FrameProfiler::Section::Count); ++sectionIndex) {

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "IEditableWorld.h"
 #include "../../assets/AssetActionDialog.h"
@@ -51,18 +51,14 @@ private:
 
 	struct AssetEntry {
 		std::filesystem::path path;
-
 		std::string name;
 		std::string extension;
-
 		bool isDirectory;
 	};
 
 	struct FolderEntry {
 		std::filesystem::path path;
-
 		size_t depth;
-
 		bool hasChildren;
 	};
 

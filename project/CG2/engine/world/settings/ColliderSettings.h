@@ -18,7 +18,6 @@ struct ColliderSettings {
 	bool isPresent;
 	bool isEnabled;
 	bool isTrigger; // 通知だけを行い、押し戻しを適用しない。
-
 	ColliderShape shape;
 
 	//=============================================================================================//
@@ -26,7 +25,6 @@ struct ColliderSettings {
 
 	Vector3 center;
 	Vector3 size; // Boxの全幅。親子の回転・拡縮も反映する。
-
 	float radius; // Sphereはワールド変換後の外接球で判定する。
 };
 

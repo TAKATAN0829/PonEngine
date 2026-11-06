@@ -51,9 +51,7 @@ namespace {
 		}
 
 		basis[0] = MathUtility::Multiply(1.0f / result.scale.x, basis[0]);
-
 		basis[1] = MathUtility::Multiply(1.0f / result.scale.y, basis[1]);
-
 		basis[2] = MathUtility::Multiply(1.0f / result.scale.z, basis[2]);
 
 		result.rotate.y = std::asin((std::clamp)(-basis[0].z, -1.0f, 1.0f));
@@ -437,11 +435,8 @@ bool WorldObjects::GetCameraView(WorldObjectId cameraId, float aspectRatio, Came
 	view.cameraWorld = MathUtility::MakeIdentity4x4();
 
 	view.cameraWorld.m[0][0] = right.x; view.cameraWorld.m[0][1] = right.y; view.cameraWorld.m[0][2] = right.z;
-
 	view.cameraWorld.m[1][0] = up.x; view.cameraWorld.m[1][1] = up.y; view.cameraWorld.m[1][2] = up.z;
-
 	view.cameraWorld.m[2][0] = forward.x; view.cameraWorld.m[2][1] = forward.y; view.cameraWorld.m[2][2] = forward.z;
-
 	view.cameraWorld.m[3][0] = world.m[3][0]; view.cameraWorld.m[3][1] = world.m[3][1]; view.cameraWorld.m[3][2] = world.m[3][2];
 
 	const CameraSettings& lens = objects_[FindObjectIndex(cameraId)].camera;
@@ -494,13 +489,9 @@ WorldObjectId WorldObjects::PlaceModel(const std::string& model, WorldObjectId p
 	WorldObjectData object;
 
 	object.id = nextId_;
-
 	object.name = model + " #" + std::to_string(object.id);
-
 	object.model = model;
-
 	object.parentId = parentId;
-
 	object.transform.translate = position;
 
 	if (parentId != kInvalidWorldObjectId) {
@@ -556,9 +547,7 @@ WorldObjectId WorldObjects::AddObject(const std::string& model) {
 	WorldObjectData object;
 
 	object.id = nextId_;
-
 	object.model = model;
-
 	object.name = model + " #" + std::to_string(object.id);
 
 	objects_.push_back(std::move(object));
@@ -588,7 +577,6 @@ WorldObjectId WorldObjects::CreateObject(WorldObjectType type) {
 	WorldObjectData& object = objects_.back();
 
 	object.type = type;
-
 	object.hasMeshRenderer = type == WorldObjectType::Model;
 
 	std::string typeName = "Model";
@@ -611,7 +599,6 @@ WorldObjectId WorldObjects::CreateObject(WorldObjectType type) {
 		typeName = LightTypes::GetName(type);
 
 		object.transform.translate.y = 2;
-
 		object.transform.rotate.x = 1.57079632679f;
 	}
 
@@ -619,7 +606,6 @@ WorldObjectId WorldObjects::CreateObject(WorldObjectType type) {
 		typeName = "Camera";
 
 		object.transform.translate = {0,0,-30};
-
 		object.isMainCamera = GetMainCameraId() == kInvalidWorldObjectId;
 	}
 

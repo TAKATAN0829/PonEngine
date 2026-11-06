@@ -75,9 +75,7 @@ bool PrefabOperations::Save(IWorldObjects& scene, WorldObjectId rootId, const st
 
 	// 配置時の位置を原点に揃え、親から受けていた回転と拡縮は維持する。
 	world.m[3][0] = 0;
-
 	world.m[3][1] = 0;
-
 	world.m[3][2] = 0;
 
 	if (!prefab.SetObjectWorldTransform(rootId, world)) {
@@ -309,11 +307,8 @@ bool PrefabOperations::Revert(IWorldObjects& scene, WorldObjectId rootId, std::s
 
 		if (object.id == importedRoot) {
 			object.id = rootId;
-
 			object.parentId = original.parentId;
-
 			object.transform = original.transform;
-
 			object.prefabSource = original.prefabSource;
 
 			// インスタンスのメイン指定は他のカメラと競合させない。

@@ -58,7 +58,6 @@ namespace {
 		}
 
 		object.animation.shouldAutoplay = autoplay != 0;
-
 		object.animation.shouldLoop = loop != 0;
 
 		return static_cast<bool>(input);
@@ -81,7 +80,6 @@ namespace {
 		int flags[4]{};
 
 		input >> flags[0] >> flags[1] >> settings.rotationDegreesPerSecond.x >> settings.rotationDegreesPerSecond.y >> settings.rotationDegreesPerSecond.z;
-
 		input >> flags[2] >> flags[3] >> settings.movementOffset.x >> settings.movementOffset.y >> settings.movementOffset.z >> settings.movementPeriod;
 
 		if (!input) {
@@ -95,11 +93,8 @@ namespace {
 		}
 
 		settings.hasRotation = flags[0] != 0;
-
 		settings.isRotationEnabled = flags[1] != 0;
-
 		settings.hasMovement = flags[2] != 0;
-
 		settings.isMovementEnabled = flags[3] != 0;
 
 		return AreMotionSettingsValid(settings);
@@ -108,7 +103,6 @@ namespace {
 	void WriteMotionSettings(std::ostream& output, const MotionSettings& settings) {
 		// 回転と往復移動の設定値を、保存形式で決めた順番に書き出す。
 		output << ' ' << settings.hasRotation << ' ' << settings.isRotationEnabled << ' ' << settings.rotationDegreesPerSecond.x << ' ' << settings.rotationDegreesPerSecond.y << ' ' << settings.rotationDegreesPerSecond.z;
-
 		output << ' ' << settings.hasMovement << ' ' << settings.isMovementEnabled << ' ' << settings.movementOffset.x << ' ' << settings.movementOffset.y << ' ' << settings.movementOffset.z << ' ' << settings.movementPeriod;
 	}
 
@@ -119,7 +113,6 @@ namespace {
 		int shape = 0;
 
 		input >> present >> enabled >> shape >> settings.center.x >> settings.center.y >> settings.center.z;
-
 		input >> settings.size.x >> settings.size.y >> settings.size.z >> settings.radius;
 
 		if (!input) {
@@ -131,9 +124,7 @@ namespace {
 		}
 
 		settings.isPresent = present != 0;
-
 		settings.isEnabled = enabled != 0;
-
 		settings.shape = static_cast<ColliderShape>(shape);
 
 		return AreColliderSettingsValid(settings);
@@ -142,7 +133,6 @@ namespace {
 	void WriteColliderSettings(std::ostream& output, const ColliderSettings& settings) {
 		// Colliderの設定値を、保存形式で決めた順番に書き出す。
 		output << ' ' << settings.isPresent << ' ' << settings.isEnabled << ' ' << static_cast<int>(settings.shape) << ' ' << settings.center.x << ' ' << settings.center.y << ' ' << settings.center.z;
-
 		output << ' ' << settings.size.x << ' ' << settings.size.y << ' ' << settings.size.z << ' ' << settings.radius;
 	}
 
@@ -156,9 +146,7 @@ namespace {
 		int gravity = 0;
 
 		input >> trigger >> present >> enabled >> mode >> gravity;
-
 		input >> object.body.mass >> object.body.gravityScale >> object.body.restitution >> object.body.friction >> object.body.linearDamping;
-
 		input >> object.body.initialVelocity.x >> object.body.initialVelocity.y >> object.body.initialVelocity.z;
 
 		if (!input) {
@@ -174,13 +162,9 @@ namespace {
 		}
 
 		object.collider.isTrigger = trigger != 0;
-
 		object.body.isPresent = present != 0;
-
 		object.body.isEnabled = enabled != 0;
-
 		object.body.mode = static_cast<BodyMode>(mode);
-
 		object.body.isGravityEnabled = gravity != 0;
 
 		return AreBodySettingsValid(object.body);
@@ -189,9 +173,7 @@ namespace {
 	void WriteBodySettings(std::ostream& output, const WorldObjectData& object) {
 		// Rigidbodyの設定値を、保存形式で決めた順番に書き出す。
 		output << ' ' << object.collider.isTrigger << ' ' << object.body.isPresent << ' ' << object.body.isEnabled << ' ' << static_cast<int>(object.body.mode) << ' ' << object.body.isGravityEnabled;
-
 		output << ' ' << object.body.mass << ' ' << object.body.gravityScale << ' ' << object.body.restitution << ' ' << object.body.friction << ' ' << object.body.linearDamping;
-
 		output << ' ' << object.body.initialVelocity.x << ' ' << object.body.initialVelocity.y << ' ' << object.body.initialVelocity.z;
 	}
 
@@ -271,11 +253,8 @@ namespace {
 
 		// 0～2が拡縮、3～5が回転、6～8が位置、9～12が色、13が光沢。
 		object.transform = {{values[0], values[1], values[2]}, {values[3], values[4], values[5]}, {values[6], values[7], values[8]}};
-
 		object.color = {values[9], values[10], values[11], values[12]};
-
 		object.isLightingEnabled = record.lighting != 0;
-
 		object.shininess = values[13];
 	}
 }
@@ -349,11 +328,8 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 
 		if (view.color) {
 			record.values[9] = view.color->x;
-
 			record.values[10] = view.color->y;
-
 			record.values[11] = view.color->z;
-
 			record.values[12] = view.color->w;
 		}
 
@@ -389,9 +365,7 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 			}
 
 			record.components = objects[objectIndex];
-
 			record.name = objects[objectIndex].name;
-
 			record.model = objects[objectIndex].model;
 
 			if (!objects[objectIndex].isActive) {
@@ -757,13 +731,9 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 
 			if (version >= 2) {
 				object.name = record.name;
-
 				object.model = record.model;
-
 				object.isRootNodeMatrixUsed = record.rootMatrix != 0;
-
 				object.isActive = record.active != 0;
-
 				object.hasMeshRenderer = record.meshRenderer != 0;
 
 				objects.push_back(std::move(object));
@@ -839,7 +809,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 	}
 
 	std::vector<Record> records(count);
-
+	
 	std::vector<size_t> targets;
 
 	std::unordered_set<WorldObjectId> fileIds;

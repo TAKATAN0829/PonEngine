@@ -1,4 +1,4 @@
-﻿#include "InspectorPanel.h"
+#include "InspectorPanel.h"
 #include "../../ui/EditorProperties.h"
 #include "objects/WorldPrimitives.h"
 #include <cstdio>
@@ -366,9 +366,7 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* isParticleEdit
 
 #else
 	(void)object;
-
 	(void)isParticleEditorOpen;
-
 	(void)scene;
 
 #endif
@@ -502,9 +500,7 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 				// 親子が同時に選ばれているとき、子に差分を重ねて適用しない。
 				if (roots.contains(object.id)) {
 					object.transform->translate = MathUtility::Add(object.transform->translate, MathUtility::Subtract(edited.translate, original.translate));
-
 					object.transform->rotate = MathUtility::Add(object.transform->rotate, MathUtility::Subtract(edited.rotate, original.rotate));
-
 					object.transform->scale = MathUtility::Add(object.transform->scale, MathUtility::Subtract(edited.scale, original.scale));
 				}
 			}
@@ -523,7 +519,6 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 
 #else
 	(void)scene;
-
 	(void)selection;
 
 #endif
@@ -559,7 +554,6 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 		MaterialSettings settings;
 
 		settings.slot = static_cast<uint32_t>(slotIndex);
-
 		settings.color = imported[slotIndex].color;
 
 		size_t overrideIndex = object.materials->size();
@@ -671,7 +665,6 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 
 #else
 	(void)object;
-
 	(void)scene;
 
 #endif
@@ -769,7 +762,6 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableWo
 
 #else
 	(void)object;
-
 	(void)scene;
 
 #endif
@@ -1035,12 +1027,10 @@ void InspectorPanel::DrawMotionComponents(const EditableObjectView& object, IEdi
 	}
 
 	DrawRotation(*object.motion);
-
 	DrawMovement(*object.motion);
 
 #else
 	(void)object;
-
 	(void)scene;
 
 #endif

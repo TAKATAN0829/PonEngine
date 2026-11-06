@@ -19,7 +19,6 @@ void SceneAssetDialog::OpenForLoad() {
 	status_.clear();
 
 	isOverwritePending_ = false;
-
 	isOpenRequested_ = true;
 }
 
@@ -34,7 +33,6 @@ void SceneAssetDialog::OpenForSave(const std::filesystem::path& suggestion) {
 	status_.clear();
 
 	isOverwritePending_ = false;
-
 	isOpenRequested_ = true;
 }
 
@@ -48,7 +46,6 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 		Scan(document);
 
 		isSelectionReady_ = false;
-
 		wasCancelled_ = false;
 
 		ImGui::OpenPopup("Sceneファイル");

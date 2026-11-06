@@ -1,4 +1,4 @@
-﻿#include "ProjectPanel.h"
+#include "ProjectPanel.h"
 #include "prefab/PrefabOperations.h"
 #include "FrameProfiler.h"
 #include <algorithm>
@@ -70,9 +70,7 @@ void ProjectPanel::Update() {
 			AssetEntry asset{};
 
 			asset.path = entry.path();
-
 			asset.name = PathText(entry.path().filename());
-
 			asset.extension = PathText(entry.path().extension());
 
 			for (char& character : asset.extension) {
@@ -262,7 +260,7 @@ void ProjectPanel::CacheFolders(const std::filesystem::path& directory, size_t d
 	folders_.push_back({directory,depth,false});
 
 	std::error_code error;
-
+	
 	std::vector<std::filesystem::path> children;
 
 	std::filesystem::directory_iterator iterator(directory,error);
@@ -418,15 +416,10 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 
 #else
 	(void)scene;
-
 	(void)selection;
-
 	(void)visibility;
-
 	(void)activeScenePath;
-
 	(void)history;
-
 	(void)particles;
 
 #endif
@@ -489,7 +482,6 @@ void ProjectPanel::DrawFolders() {
 			}
 		}
 
-
 		if (folder.path != root_) {
 			if (ImGui::BeginDragDropSource()) {
 				const std::string relative = PathText(folder.path.lexically_relative(root_));
@@ -515,7 +507,6 @@ void ProjectPanel::DrawFolders() {
 
 			ImGui::EndPopup();
 		}
-
 
 		if (indent > 0) {
 			ImGui::Unindent(indent);
@@ -588,7 +579,7 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 		fileActions_.AcceptMoveDrop(entry.path, areFileOperationsAllowed_);
 	}
 
-	{
+	{//
 		const std::string model = PathText(entry.path.lexically_relative(root_));
 
 		const char* payloadType = ModelAssetPayload::kProjectType;
@@ -614,7 +605,7 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 				ImGui::EndDragDropSource();
 			}
 		}
-	}
+	}//
 
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("%s", entry.name.c_str());
@@ -703,11 +694,8 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 
 #else
 	(void)entry;
-
 	(void)scene;
-
 	(void)selection;
-
 	(void)visibility;
 
 #endif
@@ -786,11 +774,8 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 
 #else
 	(void)entry;
-
 	(void)scene;
-
 	(void)selection;
-
 	(void)visibility;
 
 #endif

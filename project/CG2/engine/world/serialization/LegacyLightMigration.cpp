@@ -1,4 +1,4 @@
-﻿#include "serialization/LegacyLightMigration.h"
+#include "serialization/LegacyLightMigration.h"
 #include "objects/WorldObjects.h"
 #include <limits>
 #include <numbers>
@@ -42,45 +42,29 @@ bool LegacyLightMigration::AddLegacyDefaults(std::vector<WorldObjectData>& objec
 	WorldObjectData light;
 
 	light.hasMeshRenderer = false;
-
 	light.id = nextId++;
-
 	light.type = WorldObjectType::DirectionalLight;
-
 	light.name = "Directional Light (Migrated)";
-
 	light.transform.rotate.x = std::numbers::pi_v<float>/2;
 
 	migrated.push_back(light);
 
 	light.id = nextId++;
-
 	light.type = WorldObjectType::PointLight;
-
 	light.name = "Point Light (Migrated)";
-
 	light.transform.rotate = {};
-
 	light.transform.translate = {0,2,0};
-
+	
 	migrated.push_back(light);
 
 	light.id = nextId;
-
 	light.type = WorldObjectType::SpotLight;
-
 	light.name = "Spot Light (Migrated)";
-
 	light.transform.translate = {2,1.25f,0};
-
 	light.transform.rotate = {std::numbers::pi_v<float>/4,-std::numbers::pi_v<float>/2,0};
-
 	light.lightIntensity = 4;
-
 	light.lightRadius = 7;
-
 	light.lightDecay = 2;
-
 	light.light.outerAngle = 120; // 旧cosAngle=0.5、内角は0度。
 
 	migrated.push_back(light);

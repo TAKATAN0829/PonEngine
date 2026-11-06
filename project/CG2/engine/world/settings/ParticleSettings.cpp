@@ -97,74 +97,42 @@ ParticleSettings MakeParticlePreset(ParticlePresetKind kind) {
 	ParticleSettings settings;
 
 	settings.isLifetimeAppearanceEnabled = true;
-
 	settings.areSoftParticlesEnabled = true;
-
 	settings.spread = {0.2f,0.05f,0.2f};
-
 	settings.velocityMinimum = {-0.15f,0.6f,-0.15f};
-
 	settings.velocityMaximum = {0.15f,1.5f,0.15f};
-
 	settings.particleScale = {0.5f,0.5f,0.5f};
-
 	settings.color = {1,0.75f,0.15f,0.8f};
-
 	settings.endColor = {0.8f,0.08f,0.01f,0};
-
 	settings.startSize = 0.5f;
-
 	settings.endSize = 0.1f;
-
 	settings.fadeIn = 0.1f;
-
 	settings.lifetimeMinimum = 0.6f;
-
 	settings.lifetimeMaximum = 1.2f;
-
 	settings.interval = 0.05f;
 
 	if (kind == ParticlePresetKind::Smoke) {
 		settings.blendMode = kBlendModeNormal;
-
 		settings.color = {0.25f,0.25f,0.28f,0.35f};
-
 		settings.endColor = {0.5f,0.5f,0.53f,0};
-
 		settings.startSize = 0.3f;
-
 		settings.endSize = 2.5f;
-
 		settings.fadeIn = 0.2f;
-
 		settings.lifetimeMinimum = 2;
-
 		settings.lifetimeMaximum = 4;
-
 		settings.velocityMaximum.y = 0.8f;
 	} else if (kind == ParticlePresetKind::Sparks) {
 		settings.spread = {0.05f,0.05f,0.05f};
-
 		settings.velocityMinimum = {-2,1,-2};
-
 		settings.velocityMaximum = {2,4,2};
-
 		settings.particleScale = {0.06f,0.06f,0.06f};
-
 		settings.isAccelerationEnabled = true;
-
 		settings.acceleration = {0,-5,0};
-
 		settings.startSize = 1;
-
 		settings.endSize = 0;
-
 		settings.fadeIn = 0;
-
 		settings.softDistance = 0.1f;
-
 		settings.lifetimeMinimum = 0.3f;
-
 		settings.lifetimeMaximum = 0.8f;
 	}
 

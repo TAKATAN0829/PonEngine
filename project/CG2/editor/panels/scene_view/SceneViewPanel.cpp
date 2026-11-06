@@ -1,4 +1,4 @@
-﻿#include "SceneViewPanel.h"
+#include "SceneViewPanel.h"
 #include "prefab/PrefabOperations.h"
 #include "../game_view/GameViewPanel.h"
 #include "FrameProfiler.h"
@@ -638,9 +638,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 
 #else
 	(void)scene;
-
 	(void)viewInfo;
-
 	(void)mousePosition;
 
 #endif
@@ -838,7 +836,6 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 
 #else
 	(void)scene;
-
 	(void)selection;
 
 #endif
@@ -1065,25 +1062,18 @@ bool SceneViewPanel::BeginDrag(IEditableWorld& scene, EditorSelection& selection
 	const EditableObjectView selected = FindObject(scene,selection.GetPrimarySelectedObjectId());
 
 	isGroupDrag_ = selection.GetIds().size() > 1;
-
 	isDragging_ = true;
 
 	draggedObject_ = selected.id;
-
 	dragStartPosition_ = axisOrigin;
-
 	dragStartTransform_ = *selected.transform;
 
 	scene.GetObjectWorldMatrix(selected.id,dragStartWorld_);
 
 	dragStartMouse_ = mousePosition;
-
 	dragStartAngle_ = std::atan2(mousePosition.y-screenOrigin.y,mousePosition.x-screenOrigin.x);
-
 	dragAxisLength_ = axisLength;
-
 	dragAxis_ = axisDirection;
-
 	dragAxisIndex_ = axisIndex;
 
 	placementStatus_.clear();

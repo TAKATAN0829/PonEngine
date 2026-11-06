@@ -12,7 +12,6 @@ struct MotionSettings {
 
 	bool hasRotation;
 	bool isRotationEnabled;
-
 	Vector3 rotationDegreesPerSecond; // 各ローカルEuler角へ加える度/秒。
 
 	//=============================================================================================//
@@ -20,9 +19,7 @@ struct MotionSettings {
 
 	bool hasMovement;
 	bool isMovementEnabled;
-
 	Vector3 movementOffset; // 開始位置から終点までの、親座標系での変位。
-
 	float movementPeriod; // 開始位置→終点→開始位置の一往復にかかる秒数。
 };
 

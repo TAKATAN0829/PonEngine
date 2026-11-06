@@ -6,9 +6,7 @@
 // 描画中のカメラと表示領域。Editorは描画クラスを直接参照せず、この情報で画面操作を行う。
 struct EditorViewInfo {
 	Matrix4x4 viewProjection; // Sceneカメラのビュー射影行列。
-
 	Vector3 cameraPosition; // ワールド座標でのカメラ位置。
-
 	float viewportWidth; // 画像上の投影とレイ判定に共通で使う幅。
 	float viewportHeight; // 同じ表示領域の高さ。
 };

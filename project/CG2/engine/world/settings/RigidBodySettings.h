@@ -14,9 +14,7 @@ struct RigidBodySettings {
 
 	bool isPresent; // 有効な親RigidbodyもないColliderは固定物として扱う。
 	bool isEnabled;
-
 	BodyMode mode;
-
 	bool isGravityEnabled;
 
 	//=============================================================================================//
@@ -27,7 +25,6 @@ struct RigidBodySettings {
 	float restitution; // 0は跳ね返らず、1は弾性衝突。
 	float friction;
 	float linearDamping;
-
 	Vector3 initialVelocity; // ワールド単位/秒。Play開始時だけ適用する。
 };
 

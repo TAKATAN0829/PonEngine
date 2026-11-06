@@ -16,9 +16,7 @@ struct ParticleSettings {
 
 	Vector3 emitterPosition; // 個別EmitterはTransformの位置を使う。
 	Vector3 spread; // 発生位置をランダムに広げる範囲。
-
 	uint32_t spawnCount; // 一回の発生数。最大100。
-
 	float interval; // 発生間隔（秒）。
 
 	//=============================================================================================//
@@ -27,9 +25,7 @@ struct ParticleSettings {
 	Vector3 velocityMinimum;
 	Vector3 velocityMaximum;
 	Vector3 acceleration;
-
 	bool isAccelerationEnabled;
-
 	float lifetimeMinimum; // 最短寿命（秒）。
 	float lifetimeMaximum; // 最長寿命（秒）。
 
@@ -37,33 +33,25 @@ struct ParticleSettings {
 	// 表示・合成
 
 	Vector3 particleScale;
-
 	Vector4 color;
-
 	bool isRandomColorEnabled; // 設定色を基準に粒子ごとの色を変える。
 	bool isBillboardEnabled; // 各粒子をカメラの方へ向ける。
-
 	BlendMode blendMode;
-
 	std::string texture;
 
 	//=============================================================================================//
 	// 寿命による見た目 / 既存データは無効で従来のAlpha減衰を維持する。
 
 	bool isLifetimeAppearanceEnabled;
-
 	float startSize; // particleScaleに掛ける発生時の倍率。
 	float endSize; // 消滅時の倍率。0なら縮んで消える。
-
 	Vector4 endColor;
-
 	float fadeIn; // 寿命に対するフェードイン区間（0〜1）。
 
 	//=============================================================================================//
 	// モデルとの交差 / ワールド単位で境界をぼかす。
 
 	bool areSoftParticlesEnabled;
-
 	float softDistance;
 };
 
@@ -76,7 +64,6 @@ enum class ParticlePresetKind {
 // 実行状態を持たない評価値。CPUテストと実描画で同じ補間を使う。
 struct ParticleAppearance {
 	float size;
-
 	Vector4 color;
 };
 

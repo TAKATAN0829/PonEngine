@@ -1,4 +1,4 @@
-﻿#include "FrameProfiler.h"
+#include "FrameProfiler.h"
 #include "Editor.h"
 #include "../panels/hierarchy/HierarchyPanel.h"
 #include "../panels/inspector/InspectorPanel.h"
@@ -49,7 +49,6 @@ namespace {
 
 		if (icon == PlaybackIcon::Pause) {
 			drawList->AddRectFilled ({ center.x - 6,center.y - 7 }, { center.x - 2,center.y + 7 }, color);
-
 			drawList->AddRectFilled ({ center.x + 2,center.y - 7 }, { center.x + 6,center.y + 7 }, color);
 		}
 
@@ -77,9 +76,7 @@ void Editor::InitializeUi() {
 	ImGuiIO& inputOutput = ImGui::GetIO();
 
 	inputOutput.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
 	inputOutput.IniFilename = "editor-layout.ini";
-
 	inputOutput.ConfigWindowsMoveFromTitleBarOnly = true;
 
 	// 配色、余白、フォント倍率をEditorのテーマへそろえる。
@@ -297,18 +294,13 @@ void Editor::Draw(IEditableWorld* scene) {
 	}
 
 	consolePanel_.Draw();
-
 	sceneView_.Draw(*scene, selection_);
-
 	InspectorPanel::DrawSelection(*scene,selection_,&toolVisibility_.isParticleEditorVisible);
-
 	scene->DrawEditorTools(toolVisibility_);
-
 	performancePanel_.Draw(toolVisibility_.isPerformanceVisible);
 
 	// 配置を失う操作は、保存確認を通してから実行する。
 	DrawDiscardPrompt(*scene);
-
 	DrawSceneAssetDialog(*scene);
 }
 

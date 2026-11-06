@@ -9,29 +9,22 @@
 // 描画と判定が共有するワールド形状。Boxはせん断を含む平行六面体として扱う。
 struct WorldCollider {
 	WorldObjectId identifier;
-
 	ColliderShape shape;
-
 	Vector3 center;
-
 	std::array<Vector3,3> halfEdges;
-
 	float radius;
-
 	AABB bounds; // 候補の絞り込みだけに使用し、最後は実形状で判定する。
 };
 
 struct CollisionEvent {
 	WorldObjectId first;
 	WorldObjectId second;
-
 	bool isEntering; // trueは接触開始、falseは接触終了。Stayは通知しない。
 };
 
 // 法線はfirstからsecondへの向き。押し戻すときfirstを逆向き、secondを同じ向きへ動かす。
 struct CollisionContact {
 	Vector3 normal;
-
 	float penetration;
 };
 

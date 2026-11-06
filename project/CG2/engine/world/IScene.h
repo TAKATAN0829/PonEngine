@@ -15,11 +15,8 @@ class ParticleRenderer;
 // シーンに渡す描画機能
 
 struct SceneContext {
-
 	Object3dCommon* object3dCommon;
-
 	SpriteCommon* spriteCommon;
-
 	ParticleRenderer* particleRenderer;
 };
 

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "IEditableWorld.h"
 
@@ -47,16 +47,17 @@ private:
 	//=============================================================================================//
 	// 型 / ギズモとドラッグ開始値
 
-	enum class TransformTool { Move, Rotate, Scale };
+	enum class TransformTool { 
+		Move, 
+		Rotate,
+		Scale 
+	};
 
 	// 選択ルートの初期値だけを保存し、親子を重複して動かさない。
 	struct DragObject {
 		WorldObjectId identifier;
-
 		TransformData local;
-
 		Vector3 position;
-
 		Matrix4x4 world;
 	};
 

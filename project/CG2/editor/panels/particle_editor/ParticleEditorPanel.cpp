@@ -292,9 +292,7 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 			if (!preview_.isEnabled) {
 				if (ImGui::Button("プレビュー開始")) {
 					preview_.isEnabled = true;
-
 					preview_.isPaused = false;
-
 					preview_.isAutomaticEmissionEnabled = true;
 
 					scene.ResetParticlePreview();
@@ -318,9 +316,7 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 			if (ImGui::Button("一度だけ発生")) {
 				// 連続発生を止めて、今回のクリック分だけ粒子を発生させる。
 				preview_.isEnabled = true;
-
 				preview_.isPaused = false;
-
 				preview_.isAutomaticEmissionEnabled = false;
 
 				scene.BurstParticles();
@@ -440,11 +436,8 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 			}
 
 			DrawEmitterSettings(*settings, emitterTransform);
-
 			DrawMotionSettings(*settings);
-
 			DrawAppearanceSettings(*settings);
-
 			DrawLifetimeSettings(*settings);
 
 			ImGui::EndDisabled();
@@ -463,7 +456,6 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 
 #else
 	(void)isGamePlaying;
-
 	(void)isOpen;
 
 #endif

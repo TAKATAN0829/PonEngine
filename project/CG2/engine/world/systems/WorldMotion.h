@@ -28,9 +28,7 @@ private:
 
 	struct MovementState {
 		Vector3 origin; // 最初に動き始めたフレームのローカル位置。
-
 		double elapsed; // 大きな累積誤差を避けるためdoubleで保持する。
-
 		bool isInitialized;
 	};
 

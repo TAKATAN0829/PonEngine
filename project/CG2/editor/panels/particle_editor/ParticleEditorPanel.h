@@ -54,7 +54,14 @@ private:
 	//=============================================================================================//
 	// 型 / プリセット操作
 
-	enum class PresetAction { None, Load, Defaults, Fire, Smoke, Sparks };
+	enum class PresetAction {
+		None, 
+		Load,
+		Defaults,
+		Fire, 
+		Smoke, 
+		Sparks 
+	};
 
 	//=============================================================================================//
 	// Getter / 編集設定

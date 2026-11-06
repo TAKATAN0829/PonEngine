@@ -4,7 +4,13 @@
 #include "IEditableWorld.h"
 
 // UIは選ばれた操作だけを返し、保存・読込の実行はEditorへ任せる。
-enum class EditorMenuAction { None, NewScene, SaveScene, SaveSceneAs, LoadScene };
+enum class EditorMenuAction {
+	None,
+	NewScene,
+	SaveScene,
+	SaveSceneAs,
+	LoadScene
+};
 
 // 初期ドッキングを構築し、その後の配置変更はImGuiの保存済み設定で復元する。
 class EditorLayout {

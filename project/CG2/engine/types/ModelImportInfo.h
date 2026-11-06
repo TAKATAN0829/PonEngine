@@ -7,13 +7,11 @@
 struct ModelMaterialInfo {
 	std::string name;
 	std::string texture;
-
 	Vector4 color;
 };
 
 // モデルに含まれるアニメーションクリップの名前と長さ。
 struct ModelAnimationInfo {
 	std::string name;
-
 	float duration; // 秒。
 };

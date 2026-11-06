@@ -142,15 +142,10 @@ bool ParticlePresetFile::Load(ParticleSettings& settings, const std::filesystem:
 void ParticlePresetFile::WriteSettings(std::ostream& output, const ParticleSettings& settings) {
 	// 保存対象の設定値を、形式で決めた順番に書き出す。
 	WriteVector(output, settings.emitterPosition);
-
 	WriteVector(output, settings.spread);
-
 	WriteVector(output, settings.velocityMinimum);
-
 	WriteVector(output, settings.velocityMaximum);
-
 	WriteVector(output, settings.particleScale);
-
 	WriteVector(output, settings.acceleration);
 
 	output << settings.color.x << ' ' << settings.color.y << ' ' << settings.color.z << ' ' << settings.color.w << '\n';
@@ -179,15 +174,10 @@ bool ParticlePresetFile::ReadSettings(std::istream& input, ParticleSettings& set
 	int blendMode = 0;
 
 	ReadVector(input, loaded.emitterPosition);
-
 	ReadVector(input, loaded.spread);
-
 	ReadVector(input, loaded.velocityMinimum);
-
 	ReadVector(input, loaded.velocityMaximum);
-
 	ReadVector(input, loaded.particleScale);
-
 	ReadVector(input, loaded.acceleration);
 
 	input >> loaded.color.x >> loaded.color.y >> loaded.color.z >> loaded.color.w;
@@ -216,11 +206,8 @@ bool ParticlePresetFile::ReadSettings(std::istream& input, ParticleSettings& set
 	}
 
 	loaded.isRandomColorEnabled = randomColor != 0;
-
 	loaded.isBillboardEnabled = billboard != 0;
-
 	loaded.isAccelerationEnabled = acceleration != 0;
-
 	loaded.blendMode = static_cast<BlendMode>(blendMode);
 
 	if (version >= 2) {

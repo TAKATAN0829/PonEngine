@@ -36,19 +36,14 @@ private:
 		Vector3 previousPosition;
 		Vector3 frameStart; // Kinematicの移動をサブステップへ分配する。
 		Vector3 frameTarget;
-
 		BodyMode mode;
-
 		float inverseMass;
-
 		bool isActive;
 	};
 
 	struct ShapeEntry {
 		WorldCollider shape;
-
 		WorldObjectId owner; // 親Rigidbodyの子Colliderも同じ質量として扱う。
-
 		bool isTrigger;
 	};
 

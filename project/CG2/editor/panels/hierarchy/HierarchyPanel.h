@@ -30,14 +30,10 @@ private:
 	struct HierarchyRequest {
 		WorldObjectId childId;
 		WorldObjectId parentId;
-
 		bool isRequested;
-
 		std::string model; // Projectからのモデル配置要求。
-
 		bool isPrefab; // 同じ固定長パスをPrefab配置にも使う。
 		bool isContextRequested; // 行のIDスコープを抜けてからメニューを開く。
-
 		WorldObjectId contextObjectId;
 	};
 

@@ -79,9 +79,19 @@ private:
 	//=============================================================================================//
 	// 型 / シーン操作
 
-	enum class SceneAction { None, NewScene, LoadScene, Exit };
+	enum class SceneAction { 
+		None,
+		NewScene, 
+		LoadScene,
+		Exit 
+	};
 
-	enum class FileDialogAction { None, Open, SaveAs, SaveBeforeAction };
+	enum class FileDialogAction {
+		None,
+		Open,
+		SaveAs, 
+		SaveBeforeAction
+	};
 
 	//=============================================================================================//
 	// シーン保存・切替

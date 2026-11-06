@@ -1,4 +1,4 @@
-﻿#include "FrameProfiler.h"
+#include "FrameProfiler.h"
 #include "HierarchyPanel.h"
 #include "../../state/EditorSelection.h"
 #include "../../assets/AssetDragPayload.h"
@@ -144,7 +144,6 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 
 #else
 	(void)scene;
-
 	(void)selection;
 
 #endif
@@ -265,7 +264,6 @@ void HierarchyPanel::DrawCreateMenu(IEditableWorld& scene, EditorSelection& sele
 
 #else
 	(void)scene;
-
 	(void)selection;
 
 #endif
@@ -365,7 +363,6 @@ void HierarchyPanel::DrawContextMenu(IEditableWorld& scene, EditorSelection& sel
 
 #else
 	(void)scene;
-
 	(void)selection;
 
 #endif
@@ -503,13 +500,9 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 
 #else
 	(void)scene;
-
 	(void)selection;
-
 	(void)children;
-
 	(void)parentId;
-
 	(void)request;
 
 #endif
@@ -553,7 +546,6 @@ void HierarchyPanel::AcceptParentDrop(WorldObjectId parentId, HierarchyRequest& 
 
 #else
 	(void)parentId;
-
 	(void)request;
 
 #endif

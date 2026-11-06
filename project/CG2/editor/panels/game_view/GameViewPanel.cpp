@@ -38,9 +38,7 @@ void GameViewPanel::Draw(IEditableWorld& scene, uint64_t textureHandle, uint32_t
 
 	// 描画先に渡す幅と高さをそれぞれ4096ピクセルまでに収める。
 	width = static_cast<uint32_t>((std::min)(available.x, 4096.0f));
-
 	height = static_cast<uint32_t>((std::min)(available.y, 4096.0f));
-
 	scene.SetEditorViewport(width,height);
 
 	// 描画側へゲーム用の視点を使うよう伝える。
@@ -51,11 +49,8 @@ void GameViewPanel::Draw(IEditableWorld& scene, uint64_t textureHandle, uint32_t
 
 #else
 	(void)scene;
-
 	(void)textureHandle;
-
 	(void)width;
-
 	(void)height;
 
 #endif
