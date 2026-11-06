@@ -23,6 +23,7 @@ bool AreMotionSettingsValid(const MotionSettings& settings) {
 		}
 	}
 
+	// 往復の周期は秒で扱う。後で周期で割って進み具合を求めるため、0を許可しない。
 	if (std::isfinite(settings.movementPeriod) && settings.movementPeriod >= 0.01f && settings.movementPeriod <= 3600) {
 		return true;
 	}

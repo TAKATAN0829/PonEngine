@@ -17,6 +17,7 @@ namespace StringUtility {
 			return std::wstring ();
 		}
 
+		// まず変換後の文字数を取得し、その長さの領域を確保してから文字を書き込む。
 		auto sizeNeeded = MultiByteToWideChar (
 			CP_UTF8,
 			0,
@@ -52,6 +53,7 @@ namespace StringUtility {
 			return std::string ();
 		}
 
+		// UTF-8は文字ごとにバイト数が異なるため、出力に必要なバイト数を先に調べる。
 		auto sizeNeeded = WideCharToMultiByte (
 			CP_UTF8,
 			0,

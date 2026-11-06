@@ -11,6 +11,7 @@ void WorldAssetReferences::Collect(const std::vector<WorldObjectData>& objects, 
 
 		references.push_back({object.model, location + " / Model"});
 
+		// Prefabのリンク先も利用中のAssetとして扱い、移動・削除時の検査に含める。
 		if (!object.prefabSource.empty()) {
 			references.push_back({object.prefabSource, location + " / Prefab"});
 		}

@@ -123,6 +123,7 @@ bool SceneDocument::SaveAs(IEditableWorld& world, const std::filesystem::path& p
 
 	// 別の既存ファイルを上書きする場合は確認を要求する。
 	if (std::filesystem::exists(resolved, fileError)) {
+		// 両方向に包含するか調べ、同じパスと親子のパスを区別する。
 		const bool isCurrentFile = AssetPathChange::DoesContain(path_, resolved) && AssetPathChange::DoesContain(resolved, path_);
 
 		if (!isCurrentFile) {
@@ -186,6 +187,7 @@ bool SceneDocument::ResolvePath(const std::filesystem::path& requested, bool mus
 		}
 	}
 
+	// 保存時だけ拡張子の省略を許可する。読込時は入力されたファイルを探す。
 	if (!mustExist) {
 		if (candidate.extension().empty()) {
 			candidate += L".ponscene";

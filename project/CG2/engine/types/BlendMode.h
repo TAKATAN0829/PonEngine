@@ -1,5 +1,6 @@
 #pragma once
 
+// 設定と描画処理で共有する色の合成方法。
 enum BlendMode {
 
 	// ブレンドなし

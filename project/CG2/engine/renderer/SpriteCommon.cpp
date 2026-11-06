@@ -63,6 +63,7 @@ void SpriteCommon::DrawSettingCommon() {
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
 	// RootSignatureをセットするコマンド
+	// スプライト用の定数バッファとテクスチャを渡せるように、GPU側の受け取り口を切り替える。
 	commandList->SetGraphicsRootSignature(rootSignature_.Get());
 
 	// GraphicsPipelineStateをセットするコマンド

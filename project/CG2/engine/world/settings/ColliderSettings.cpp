@@ -20,6 +20,7 @@ bool AreColliderSettingsValid(const ColliderSettings& settings) {
 	const float sizes[] = {settings.size.x, settings.size.y, settings.size.z, settings.radius};
 
 	for (float size : sizes) {
+		// | size < 0.001f|厚みのない当たり判定や計算不能な値を、衝突処理に渡す前に弾く。
 		if (!std::isfinite(size) || size < 0.001f || size > 100000) {
 			return false;
 		}

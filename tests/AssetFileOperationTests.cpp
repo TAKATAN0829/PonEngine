@@ -1,5 +1,5 @@
 #include "../project/CG2/editor/assets/AssetFileOperations.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include "serialization/SceneFile.h"
 #include "serialization/ParticlePresetFile.h"
 #include "objects/WorldObjects.h"
@@ -23,6 +23,7 @@ namespace {
 
         output << bytes;
 
+        // テスト用のファイルを用意できなければ、ファイル操作の判定に進まない。
         RequireFileOperation(static_cast<bool>(output), "Cannot write isolated asset fixture.");
     }
 

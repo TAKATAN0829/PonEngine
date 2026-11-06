@@ -1,6 +1,6 @@
 #include "AssetActionDialog.h"
-#include "../EditorSession.h"
-#include "../AssetDragPayload.h"
+#include "../state/EditorSession.h"
+#include "AssetDragPayload.h"
 #include "../panels/particle_editor/ParticleEditorPanel.h"
 #include <cstdio>
 #ifdef USE_IMGUI
@@ -327,6 +327,7 @@ bool AssetActionDialog::Execute(IEditableWorld& scene, EditorSession& history, P
 				return false;
 			}
 		} else {
+			// 改名は同じ親の中で行い、移動では選んだフォルダへ元の名前で置く。
 			std::filesystem::path destination = source_.parent_path() / entered;
 
 			if (action_ == Action::Move) {
@@ -337,6 +338,7 @@ bool AssetActionDialog::Execute(IEditableWorld& scene, EditorSession& history, P
 				return false;
 			}
 
+			// ファイル操作の成功後に、履歴とParticleプリセットの参照も移動先へ合わせる。
 			pathChange_ = {root_, source_.lexically_relative(root_), destination.lexically_normal().lexically_relative(root_)};
 
 			history.RemapAssetPaths(pathChange_);

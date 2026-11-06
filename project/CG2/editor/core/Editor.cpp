@@ -1,7 +1,8 @@
 ﻿#include "FrameProfiler.h"
 #include "Editor.h"
-#include "panels/hierarchy/HierarchyPanel.h"
-#include "panels/inspector/InspectorPanel.h"
+#include "../panels/hierarchy/HierarchyPanel.h"
+#include "../panels/inspector/InspectorPanel.h"
+#include "../ui/EditorTheme.h"
 #include "serialization/SceneFile.h"
 #include "LogSystem.h"
 #include <utility>
@@ -70,6 +71,22 @@ namespace {
 // 初期化処理
 
 
+void Editor::InitializeUi() {
+#ifdef USE_IMGUI
+	// 最初のフレームでEditor用の配置を読み込めるよう、保存先と操作方法を先に設定する。
+	ImGuiIO& inputOutput = ImGui::GetIO();
+
+	inputOutput.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+	inputOutput.IniFilename = "editor-layout.ini";
+
+	inputOutput.ConfigWindowsMoveFromTitleBarOnly = true;
+
+	// 配色、余白、フォント倍率をEditorのテーマへそろえる。
+	EditorTheme::Initialize();
+#endif
+}
+
 void Editor::Initialize(IEditableWorld* scene, const std::string& initialPath) {
 	// 編集対象を切り替え、選択・履歴・保存確認を初期状態へ戻す。
 	scene_ = scene;
@@ -78,13 +95,9 @@ void Editor::Initialize(IEditableWorld* scene, const std::string& initialPath) {
 
 	editParticleEditor_.reset();
 
-	HierarchyPanel::Initialize();
-
-	InspectorPanel::Initialize();
+	ResetPanelSelection();
 
 	sceneView_.Initialize();
-
-	selection_.Clear();
 
 	fileStatus_.clear();
 
@@ -141,13 +154,9 @@ void Editor::OnSceneChanged(IEditableWorld* scene, const char* sceneName, const 
 
 		scene_ = scene;
 
-		selection_.Clear();
-
 		sceneView_.ResetInteraction();
 
-		HierarchyPanel::Initialize();
-
-		InspectorPanel::Initialize();
+		ResetPanelSelection();
 
 		if (!session_.IsPlaying()) {
 			playOrigin_ = nullptr;
@@ -535,8 +544,7 @@ void Editor::ResetSceneEditingState(IEditableWorld& scene) {
 	// シーン切替の成功後に、選択・履歴・各パネルの操作状態を解除する。
 	session_.Initialize(scene);
 
-	// 前のシーンのIDを選択状態に残さない。
-	selection_.Clear();
+	ResetPanelSelection();
 
 	sceneView_.Initialize();
 
@@ -547,15 +555,20 @@ void Editor::ResetSceneEditingState(IEditableWorld& scene) {
 	// 共通プリセットの保存基準を残し、プレビューだけ止める。
 	particleEditor_.ResetScenePreview(scene);
 
-	HierarchyPanel::Initialize();
-
-	InspectorPanel::Initialize();
-
 	if (document_.HasPath()) {
 		projectPanel_.RevealAsset(document_.GetPath());
 	} else {
 		projectPanel_.RequestRefresh();
 	}
+}
+
+void Editor::ResetPanelSelection() {
+	// 前のシーンで選んだIDと、パネルに残っている操作対象・通知を消す。
+	selection_.Clear();
+
+	HierarchyPanel::Initialize();
+
+	InspectorPanel::Initialize();
 }
 
 // 操作の種類と各保存対象の変更を順に確認する。
@@ -609,6 +622,7 @@ void Editor::DrawToolbar (IEditableWorld& scene) {
 	// この行だけ縦の項目間隔を詰め、下の作業領域を広く保つ。
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {ImGui::GetStyle().ItemSpacing.x, 2});
 
+	// ボタン3個とその間の隙間2つを含めた幅で、操作列を中央に置く。
 	const float controlsWidth = 3 * 30.0f + 2 * ImGui::GetStyle ().ItemSpacing.x;
 	const float availableWidth = ImGui::GetContentRegionAvail ().x;
 	const float toolbarStart = ImGui::GetCursorPosX();
@@ -623,6 +637,7 @@ void Editor::DrawToolbar (IEditableWorld& scene) {
 
 	std::string displayName = document_.GetName();
 
+	// 再生中に遷移した場合は、いま表示している場面の名前を出す。
 	if (session_.IsPlaying()) {
 		if (scene_ != playOrigin_) {
 			displayName = sceneName_;
@@ -669,6 +684,7 @@ void Editor::DrawToolbar (IEditableWorld& scene) {
 
 	ImGui::SameLine ();
 
+	// ステップは一時停止中の再生に対してだけ予約できる。
 	ImGui::BeginDisabled (!session_.IsPlaying () || !session_.IsPaused ());
 
 	if (DrawPlaybackButton ("##Step", PlaybackIcon::Step, "1フレーム進める", false)) {

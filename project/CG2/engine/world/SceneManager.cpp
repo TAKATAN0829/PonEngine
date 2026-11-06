@@ -30,6 +30,7 @@ void SceneManager::Update(Input* input, bool shouldSimulate) {
 	currentScene_->UpdateEditorFrame(input, shouldSimulate);
 
 	if (pendingScene_ == nullptr) {
+		// 遷移先の所有権を受け取り、実際の切り替えはフレーム末尾まで待つ。
 		pendingScene_ = currentScene_->TakeNextScene();
 	}
 }

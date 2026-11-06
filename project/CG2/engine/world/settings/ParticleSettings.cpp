@@ -37,6 +37,7 @@ ParticleAppearance EvaluateParticleAppearance(const ParticleSettings& settings, 
 		return appearance;
 	}
 
+	// 寿命を0〜1にした進み具合で、開始時と終了時の大きさ・色を補間する。
 	appearance.size = std::lerp(settings.startSize,settings.endSize,age);
 
 	appearance.color = {std::lerp(initialColor.x,settings.endColor.x,age),std::lerp(initialColor.y,settings.endColor.y,age),

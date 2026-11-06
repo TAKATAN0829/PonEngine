@@ -22,6 +22,7 @@ namespace {
 			}
 
 			if (parent->body.isPresent && parent->body.isEnabled) {
+				// 親の移動が階層経由で反映される場合を検出し、子の物理更新との二重適用を防ぐ。
 				if (parent->body.mode == BodyMode::Dynamic) {
 					return true;
 				}

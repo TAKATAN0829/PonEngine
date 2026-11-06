@@ -69,6 +69,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstri
 
 	DxcBuffer shaderSourceBuffer{};
 
+	// 読み込んだソースのアドレスと長さを、コンパイラへ渡す構造体に詰める。
 	shaderSourceBuffer.Ptr =shaderSource->GetBufferPointer ();
 
 	shaderSourceBuffer.Size =shaderSource->GetBufferSize ();

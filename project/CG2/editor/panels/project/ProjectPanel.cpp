@@ -1,16 +1,16 @@
 ﻿#include "ProjectPanel.h"
+#include "prefab/PrefabOperations.h"
 #include "FrameProfiler.h"
 #include <algorithm>
 #include <cctype>
 #include <utility>
 #include <limits>
-#include "../../EditorSelection.h"
-#include "../../AssetDragPayload.h"
+#include "../../state/EditorSelection.h"
+#include "../../assets/AssetDragPayload.h"
 #include "objects/WorldObjects.h"
 #include <cstring>
-#include "TextureManager.h"
 #include "LogSystem.h"
-#include "../../EditorSession.h"
+#include "../../state/EditorSession.h"
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
@@ -115,8 +115,8 @@ void ProjectPanel::Draw(IEditableWorld& scene, const EditorSelection& selection,
 
 	Update();
 
-	// モデルのプレビュー読込回数をフレーム単位で制限する。
-	wasPreviewLoadedThisFrame_ = false;
+	// 一覧を描く前に、このフレームでのサムネイル準備を許可する。
+	thumbnails_.BeginFrame();
 
 	areFileOperationsAllowed_ = !history.IsPlaying();
 
@@ -139,7 +139,7 @@ void ProjectPanel::Draw(IEditableWorld& scene, const EditorSelection& selection,
 
 		LogSystem::Log(status_ + "\n");
 
-		previews_.clear();
+		thumbnails_.Clear();
 
 		isRefreshRequested_ = true;
 
@@ -309,6 +309,7 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 	if (ImGui::Begin("Project",nullptr,ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
 		const ImVec2 headerOrigin = ImGui::GetCursorScreenPos();
 
+		// 検索欄は右側に置き、幅を200ピクセルまたはパネル幅の4割までに抑える。
 		const float searchWidth = (std::min)(200.0f,ImGui::GetContentRegionAvail().x*0.4f);
 		const float availableWidth = ImGui::GetContentRegionAvail().x;
 
@@ -318,6 +319,7 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 			relative.clear();
 		}
 
+		// 長いフォルダパスが右側の検索欄に重ならないよう、描画範囲を区切る。
 		ImGui::PushClipRect(headerOrigin,{headerOrigin.x+availableWidth-searchWidth-8,headerOrigin.y+ImGui::GetFrameHeight()},true);
 
 		ImGui::AlignTextToFramePadding();
@@ -342,6 +344,7 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 
 		ImGui::Separator();
 
+		// 表の上下の余白を除いた高さを、左右のスクロール領域で共有する。
 		const float bodyHeight = (std::max)(1.0f,ImGui::GetContentRegionAvail().y-2*ImGui::GetStyle().CellPadding.y);
 
 		if (!ImGui::BeginTable("ProjectSplit",2,ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp,{0,0})) {
@@ -368,6 +371,7 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 
 		ImGui::BeginChild("AssetGrid", {0,bodyHeight});
 
+		// グリッドの幅から1行に収まる件数を求め、狭いときも1列は表示する。
 		int column = 0;
 		int columns = static_cast<int>(ImGui::GetContentRegionAvail().x / 102);
 
@@ -384,6 +388,7 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 
 			DrawAsset(entry, scene, selection, visibility);
 
+			// 表示した項目だけを数え、1行分を描いたら次の行へ移る。
 			if (++column < columns) {
 				ImGui::SameLine();
 			}
@@ -639,9 +644,15 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-	const Preview preview = GetPreview(entry, scene);
+	AssetThumbnail preview;
+
+	// ファイルは共通窓口に画像を頼み、フォルダには専用アイコンを描く。
+	if (!entry.isDirectory) {
+		preview = thumbnails_.GetThumbnail(entry.path, root_, entry.extension, scene, status_);
+	}
 
 	if (preview.handle != 0) {
+		// 縦横比を保ち、64ピクセル四方に収めて中央に描く。
 		const float scale = (std::min)(64.0f / preview.width, 64.0f / preview.height);
 
 		const ImVec2 size = {preview.width * scale, preview.height * scale};
@@ -727,7 +738,7 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 
 	if (entry.extension == ".ponprefab") {
 		if (ImGui::MenuItem("Prefabをシーンに配置")) {
-			scene.PlacePrefab(relative, 0, {}, status_);
+			PrefabOperations::Place(scene, relative, 0, {}, status_);
 		}
 
 		return;
@@ -781,81 +792,6 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 	(void)selection;
 
 	(void)visibility;
-
-#endif
-}
-
-// Assetタイル・サムネイル・右クリック・ドラッグ＆ドロップを担当する。
-ProjectPanel::Preview ProjectPanel::GetPreview(const AssetEntry& entry, IEditableWorld& scene) {
-	// Assetの種類に応じた画像を、キャッシュと読込上限を使って取得する。
-#ifdef USE_IMGUI
-	const std::string key = PathText(entry.path);
-
-	if (previews_.contains(key)) {
-		return previews_.at(key);
-	}
-
-	// フォルダは画像プレビューの対象にしない。
-	if (entry.isDirectory) {
-		return {};
-	}
-
-	const std::string model = PathText(entry.path.lexically_relative(root_));
-
-	if (WorldObjects::IsSupportedModel(model)) {
-		if (wasPreviewLoadedThisFrame_) {
-			return {};
-		}
-
-		wasPreviewLoadedThisFrame_ = true;
-
-		Preview modelPreview;
-
-		modelPreview.handle = scene.GetModelPreview(model,status_);
-
-		modelPreview.width = 128;
-
-		modelPreview.height = 128;
-
-		previews_[key] = modelPreview;
-
-		return modelPreview;
-	}
-
-	if (entry.extension != ".png" && entry.extension != ".jpg" && entry.extension != ".jpeg" && entry.extension != ".bmp") {
-		return {};
-	}
-
-	if (wasPreviewLoadedThisFrame_) {
-		return {};
-	}
-
-	if (previews_.size() >= 64) {
-		return {};
-	}
-
-	wasPreviewLoadedThisFrame_ = true;
-
-	Preview preview;
-
-	if (TextureManager::GetInstance()->TryLoad(key, status_)) {
-		preview.handle = TextureManager::GetInstance()->GetSrvHandleGPU(key).ptr;
-
-		preview.width = static_cast<float>(TextureManager::GetInstance()->GetMetaData(key).width);
-
-		preview.height = static_cast<float>(TextureManager::GetInstance()->GetMetaData(key).height);
-	}
-
-	previews_[key] = preview;
-
-	return preview;
-
-#else
-	(void)entry;
-
-	(void)scene;
-
-	return {};
 
 #endif
 }

@@ -1,12 +1,12 @@
 ﻿#include "InspectorPanel.h"
-#include "../../EditorProperties.h"
+#include "../../ui/EditorProperties.h"
 #include "objects/WorldPrimitives.h"
 #include <cstdio>
-#include "../../AssetDragPayload.h"
+#include "../../assets/AssetDragPayload.h"
 #include <algorithm>
 #include "settings/LightSettings.h"
 #include "systems/WorldCollision.h"
-#include "../../EditorSelection.h"
+#include "../../state/EditorSelection.h"
 #include "FrameProfiler.h"
 #include <unordered_set>
 
@@ -449,6 +449,7 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 		return;
 	}
 
+	// 主選択の元の値と編集用のコピーを分け、各オブジェクトに適用する差分を残す。
 	const TransformData original = *primary.transform;
 
 	TransformData edited = original;
@@ -464,6 +465,7 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 	if (EditorProperties::Begin("MultipleFields")) {
 		hasTransformChanged = EditorProperties::Vector("Position",&edited.translate,0.05f);
 
+		// 内部の回転はラジアン。入力欄では度で編集してから戻す。
 		Vector3 degrees = MathUtility::Multiply(57.2957795f,edited.rotate);
 
 		if (EditorProperties::Vector("Rotation",&degrees,0.5f)) {
@@ -481,6 +483,7 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 		EditorProperties::End();
 	}
 
+	// 操作された項目だけ反映する。他の項目はオブジェクトごとの値を保つ。
 	if (hasTransformChanged || hasActiveStateChanged || hasColorChanged) {
 		std::unordered_set<WorldObjectId> roots;
 
@@ -496,6 +499,7 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 			}
 
 			if (hasTransformChanged) {
+				// 親子が同時に選ばれているとき、子に差分を重ねて適用しない。
 				if (roots.contains(object.id)) {
 					object.transform->translate = MathUtility::Add(object.transform->translate, MathUtility::Subtract(edited.translate, original.translate));
 

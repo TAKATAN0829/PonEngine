@@ -31,6 +31,7 @@ const WorldObjectData* IWorldObjects::GetObjectDataById(WorldObjectId identifier
 // 子Colliderを最も近い有効な親Rigidbodyへ結び付ける。0は固定Collider。
 WorldObjectId IWorldObjects::GetBodyOwner(WorldObjectId identifier) const {
 	// 親をたどり、Colliderが属する最も近い有効なRigidbodyを探す。
+	// 不正な循環があっても親をたどり続けないよう、探索する深さに上限を設ける。
 	for (size_t depth = 0; depth < 64; ++depth) {
 		const WorldObjectData* object = GetObjectDataById(identifier);
 
@@ -155,12 +156,6 @@ std::vector<WorldObjectData> IWorldObjects::CaptureObjects() const {
 
 //=============================================================================================//
 // 作成・配置・置換
-
-// Prefabを新しいIDの独立した階層として追加する。
-WorldObjectId IWorldObjects::PlacePrefab(const std::string&, WorldObjectId, const Vector3&, std::string&) {
-	// 既定実装はこの機能を持たないため、利用できる対象や値がないことを返す。
-	return 0;
-}
 
 // 配置に必要な変換・親・モデルを先に検証し、失敗時は一覧を変更しない。
 WorldObjectId IWorldObjects::PlaceModel(const std::string&, WorldObjectId, const Vector3&, std::string& error) {

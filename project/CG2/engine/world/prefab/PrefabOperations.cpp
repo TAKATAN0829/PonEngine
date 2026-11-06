@@ -1,4 +1,4 @@
-#include "serialization/PrefabFile.h"
+#include "PrefabOperations.h"
 #include "serialization/SceneFile.h"
 #include "objects/WorldObjects.h"
 #include <limits>
@@ -6,10 +6,11 @@
 #include <unordered_set>
 
 //=============================================================================================//
-// 保存 / 読み込み・配置
+// Prefab保存・配置
 
 
-bool PrefabFile::Save(IWorldObjects& scene, WorldObjectId rootId, const std::filesystem::path& path, std::string& error) {
+bool PrefabOperations::Save(IWorldObjects& scene, WorldObjectId rootId, const std::filesystem::path& path, std::string& error) {
+	// シーンを直接変更せず、保存対象の階層だけを取り出す。
 	error.clear();
 
 	std::vector<WorldObjectData> source = scene.CaptureObjects();
@@ -88,8 +89,9 @@ bool PrefabFile::Save(IWorldObjects& scene, WorldObjectId rootId, const std::fil
 	return SceneFile::Save(prefab, path, error);
 }
 
-WorldObjectId PrefabFile::Instantiate(IWorldObjects& scene, const std::filesystem::path& path,
+WorldObjectId PrefabOperations::Instantiate(IWorldObjects& scene, const std::filesystem::path& path,
 	WorldObjectId parentId, const Vector3& position, std::string& error) {
+	// 一時データで読込・採番・親子変換を済ませてから、配置全体を反映する。
 	error.clear();
 
 	WorldObjects prefab;
@@ -101,8 +103,15 @@ WorldObjectId PrefabFile::Instantiate(IWorldObjects& scene, const std::filesyste
 	std::vector<WorldObjectData> candidate = scene.CaptureObjects();
 	std::vector<WorldObjectData> imported = prefab.CaptureObjects();
 
-	if (imported.empty() || candidate.size() + imported.size() > WorldObjects::kMaxObjects) {
-		error = "Prefab is empty or exceeds the scene object limit.";
+	// 内容の有無と配置可能な個数は、それぞれ別に確認する。
+	if (imported.empty()) {
+		error = "Prefab is empty.";
+
+		return 0;
+	}
+
+	if (candidate.size() + imported.size() > WorldObjects::kMaxObjects) {
+		error = "Prefab exceeds the scene object limit.";
 
 		return 0;
 	}
@@ -173,6 +182,7 @@ WorldObjectId PrefabFile::Instantiate(IWorldObjects& scene, const std::filesyste
 			object.parentId = remapped.at(object.parentId);
 		}
 
+		// 配置先にメインカメラがいるときは、Prefab内のカメラでメイン指定を上書きしない。
 		if (scene.GetMainCameraId() != 0) {
 			object.isMainCamera = false;
 		}
@@ -193,10 +203,12 @@ WorldObjectId PrefabFile::Instantiate(IWorldObjects& scene, const std::filesyste
 		return 0;
 	}
 
+	// 配置位置を決めてから親へつなぎ、親子変換が成立するか一時データ上で確認する。
 	if (!validator.SetObjectParent(rootId, parentId, error)) {
 		return 0;
 	}
 
+	// 実際の配置先へ渡し、実行側のモデル準備と最終検証も通す。
 	if (!scene.ReplaceObjects(validator.CaptureObjects(), error)) {
 		return 0;
 	}
@@ -204,11 +216,24 @@ WorldObjectId PrefabFile::Instantiate(IWorldObjects& scene, const std::filesyste
 	return rootId;
 }
 
+WorldObjectId PrefabOperations::Place(IWorldObjects& scene, const std::string& prefab,
+	WorldObjectId parentId, const Vector3& position, std::string& error) {
+	// UIからのパスはresources内へ制限し、共通のパス検証を使う。
+	const std::filesystem::path path = ResolveSource(prefab, error);
+
+	if (path.empty()) {
+		return kInvalidWorldObjectId;
+	}
+
+	// World自身へファイル読込の役割を持たせず、操作側で配置を組み立てる。
+	return Instantiate(scene, path, parentId, position, error);
+}
+
 //=============================================================================================//
 // 元Assetへの反映・復元
 
 
-bool PrefabFile::Apply(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
+bool PrefabOperations::Apply(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
 	// Prefabの現在の階層を保存し、元Assetへ反映する。
 	for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 		const WorldObjectData* object = scene.GetObjectData(objectIndex);
@@ -233,8 +258,8 @@ bool PrefabFile::Apply(IWorldObjects& scene, WorldObjectId rootId, std::string& 
 	return false;
 }
 
-// 一時シーンで子孫を入れ替え、リソース検証にも成功した時だけ本体へ反映する。
-bool PrefabFile::Revert(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
+bool PrefabOperations::Revert(IWorldObjects& scene, WorldObjectId rootId, std::string& error) {
+	// 一時シーンで子孫を入れ替え、リソース検証にも成功した時だけ本体へ反映する。
 	WorldObjects candidate;
 
 	if (!candidate.ReplaceObjects(scene.CaptureObjects(), error)) {
@@ -303,8 +328,8 @@ bool PrefabFile::Revert(IWorldObjects& scene, WorldObjectId rootId, std::string&
 	return scene.ReplaceObjects(std::move(objects), error);
 }
 
-std::filesystem::path PrefabFile::ResolveSource(const std::string& source, std::string& error) {
-	// Prefabのリンク先を確認し、階層のルートと保存先を求める。
+std::filesystem::path PrefabOperations::ResolveSource(const std::string& source, std::string& error) {
+	// Prefabのリンク先がresources内のファイルパスか確認する。
 	error.clear();
 
 	if (source.find('\0') != std::string::npos) {
@@ -315,7 +340,19 @@ std::filesystem::path PrefabFile::ResolveSource(const std::string& source, std::
 
 	const std::filesystem::path relative(std::u8string(source.begin(), source.end()));
 
-	if (source.empty() || relative.is_absolute() || relative.has_root_name() || relative.extension() != ".ponprefab") {
+	if (source.empty()) {
+		error = "Invalid prefab source path.";
+
+		return {};
+	}
+
+	if (relative.is_absolute() || relative.has_root_name()) {
+		error = "Invalid prefab source path.";
+
+		return {};
+	}
+
+	if (relative.extension() != ".ponprefab") {
 		error = "Invalid prefab source path.";
 
 		return {};

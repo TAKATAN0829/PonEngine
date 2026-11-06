@@ -64,6 +64,7 @@ void ModelManager::LoadModel(const std::string& filePath) {
 
 	model->Initialize(modelCommon_, kDirectoryPath, filePath);
 
+	// 初期化に成功したモデルをキャッシュへ登録し、以降の描画で共有する。
 	models_.insert(std::make_pair(filePath, std::move(model)));
 }
 

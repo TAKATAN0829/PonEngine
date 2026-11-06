@@ -60,6 +60,7 @@ void TitleScene::Update(Input* input) {
 	// 入力による場面遷移を確認し、共通のゲーム更新を進める。
 	if (input != nullptr) {
 		if (CanHandleGameInput()) {
+			// 押しっぱなしでは繰り返さず、Enterを押した瞬間だけゲームへの遷移を要求する。
 			if (input->IsTriggerKey(DIK_RETURN)) {
 				RequestSceneChange(std::make_unique<GameScene>());
 			}

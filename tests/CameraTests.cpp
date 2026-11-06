@@ -1,6 +1,6 @@
 #include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include <cmath>
 #include <fstream>
 #include <stdexcept>
@@ -16,6 +16,7 @@ namespace {
 void RunCameraTests(const std::filesystem::path& directory) {
 	WorldObjects scene;
 	CameraView view{};
+	// カメラを置いていない場面では、ゲーム用カメラがあると報告しないことを確認する。
 	RequireCamera(!scene.GetGameCameraView(1, view), "Empty scene has a camera");
 	const WorldObjectId firstId = scene.CreateObject(WorldObjectType::Camera);
 	const WorldObjectId secondId = scene.CreateObject(WorldObjectType::Camera);

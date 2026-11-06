@@ -35,6 +35,7 @@ WorldObjectId WorldPrimitives::Create(IWorldObjects& scene, PrimitiveType type, 
 
 	primitive.model = kCubeModel;
 
+	// 基本形状には最初から当たり判定を付け、球だけ形状をSphereへ切り替える。
 	primitive.collider.isPresent = true;
 
 	if (type == PrimitiveType::Sphere) {

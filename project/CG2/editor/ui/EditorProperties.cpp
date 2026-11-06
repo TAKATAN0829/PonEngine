@@ -44,6 +44,7 @@ bool EditorProperties::Header(const char* title, const char* help) {
 bool EditorProperties::Begin(const char* identifier) {
 	// プロパティを名前と編集欄の二列で表示する準備をする。
 #ifdef USE_IMGUI
+	// 内部で使う表名が同じでも、セクションごとに識別できるようにする。
 	ImGui::PushID(identifier);
 
 	if (!ImGui::BeginTable("##Properties",2,ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings)) {
@@ -52,6 +53,7 @@ bool EditorProperties::Begin(const char* identifier) {
 		return false;
 	}
 
+	// ラベル列は表示幅の3割を基準に75〜120ピクセルへ収め、残りを入力欄に使う。
 	const float labelWidth = (std::clamp)(ImGui::GetContentRegionAvail().x * 0.30f,75.0f,120.0f);
 
 	ImGui::TableSetupColumn("Property",ImGuiTableColumnFlags_WidthFixed,labelWidth);
@@ -81,6 +83,7 @@ void EditorProperties::Row(const char* label) {
 
 	ImGui::TableSetColumnIndex(1);
 
+	// 次の入力欄は、値の列の右端近くまで広げる。
 	ImGui::SetNextItemWidth(-FLT_MIN);
 
 #else
@@ -129,18 +132,25 @@ bool EditorProperties::Vector(const char* label, Vector3* value, float speed, fl
 #ifdef USE_IMGUI
 	Row(label);
 
+	// 項目名でIDを分け、PositionとScaleなどで同じ軸の入力欄が衝突しないようにする。
 	ImGui::PushID(label);
 
+	// 軸ラベルと余白の見込み分を引いて3等分し、各入力欄は最低16ピクセル確保する。
 	const float width = (std::max)(16.0f,(ImGui::GetContentRegionAvail().x-3*12-5*4)/3);
 
+	// 入力欄の横に表示する軸名。以下の配列もX、Y、Zの順に揃える。
 	const char* axes[] = {"X","Y","Z"};
 
+	// 軸ラベルの色はXが赤、Yが緑、Zが青。
 	const ImVec4 colors[] = {{0.65f,0.24f,0.22f,1},{0.28f,0.58f,0.26f,1},{0.25f,0.42f,0.70f,1}};
 
+	// DragFloatが元のVector3の各成分へ直接書き込めるよう、アドレスを渡す。
 	float* components[] = {&value->x,&value->y,&value->z};
 
+	// どれか1軸でも編集されたらtrueにする。
 	bool hasChanged = false;
 
+	// 最小値と最大値で範囲が指定された場合だけ、その範囲内に制限する。
 	ImGuiSliderFlags flags = ImGuiSliderFlags_None;
 
 	if (minimum < maximum) {
@@ -152,6 +162,7 @@ bool EditorProperties::Vector(const char* label, Vector3* value, float speed, fl
 			ImGui::SameLine(0,4);
 		}
 
+		// 項目内でも軸番号でIDを分け、各軸を個別に操作できるようにする。
 		ImGui::PushID(static_cast<int>(axisIndex));
 
 		ImGui::AlignTextToFramePadding();
@@ -162,6 +173,7 @@ bool EditorProperties::Vector(const char* label, Vector3* value, float speed, fl
 
 		ImGui::SetNextItemWidth(width);
 
+		// この軸の変更結果を、ここまでの変更結果に足し合わせる。
 		hasChanged |= ImGui::DragFloat("##Axis",components[axisIndex],speed,minimum,maximum,"%.2f",flags);
 
 		ImGui::PopID();

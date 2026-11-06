@@ -17,9 +17,6 @@ EditorMenuAction EditorLayout::Begin(bool isSceneAvailable, bool isPlaying, bool
 
 #ifdef USE_IMGUI
 
-	// プロジェクト共通の読みやすい倍率に固定する。
-	ImGui::GetStyle().FontScaleMain = 0.85f;
-
 	const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
 	ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -180,6 +177,7 @@ void EditorLayout::Draw(const std::string& status) {
 
 	char statistics[96] = "FPS --";
 
+	// 最新の計測結果を使い、GPU時間が有効なフレームだけGPUの値を表示する。
 	const FrameProfiler::Sample& sample = FrameProfiler::GetLatest();
 
 	if (sample.frameMilliseconds > 0) {
@@ -194,6 +192,7 @@ void EditorLayout::Draw(const std::string& status) {
 
 	float messageWidth = width-16;
 
+	// 通知を表示できる幅を残せる場合だけ、右端に計測値を出す。
 	const bool shouldShowStatistics = width > statisticsWidth+120;
 
 	if (shouldShowStatistics) {
@@ -202,6 +201,7 @@ void EditorLayout::Draw(const std::string& status) {
 
 	ImGui::SetCursorScreenPos({origin.x+8,origin.y+2});
 
+	// 長い通知を計測値の手前で切り、全文はマウスを重ねたときに表示する。
 	ImGui::PushClipRect(origin,{origin.x+messageWidth,origin.y+statusHeight},true);
 
 	if (status.empty()) {

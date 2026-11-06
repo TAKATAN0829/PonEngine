@@ -11,6 +11,7 @@ bool AreLightSettingsValid(const LightSettings& settings) {
 		return false;
 	}
 
+	// 内側の光の範囲を外側の円錐に収め、スポットライトの角度を有効な範囲に制限する。
 	return settings.outerAngle >= 1 && settings.outerAngle <= 179 && settings.innerAngle >= 0 && settings.innerAngle <= settings.outerAngle;
 }
 

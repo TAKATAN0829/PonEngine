@@ -27,6 +27,7 @@ void LightingGraphicsTests::Initialize(const SceneContext& context) {
 		<< "vt 0 1\nvt 0 0\nvt 1 1\nvt 1 0\nvn 0 0 -1\nf 1/1/1 2/2/1 3/3/1\nf 3/3/1 2/2/1 4/4/1\n";
 	mesh.close();
 	std::string error;
+	// ライトの差がピクセルに表れるよう、照明を当てる平面を用意する。
 	if (!ModelManager::GetInstance()->TryLoadModel("fixtures/light-plane.obj",error)) {
 		throw std::runtime_error(error);
 	}

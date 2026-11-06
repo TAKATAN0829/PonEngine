@@ -34,6 +34,7 @@ PixelShaderOutput main(VertexShaderOutput input) {
     float4 transformedUV = mul(float4(input.texcoord,0,1),gMaterial.uvTransform);
     float4 textureColor = gTexture.Sample(gSampler,transformedUV.xy);
 
+    // 透けたピクセルを捨て、葉や網の穴などに背景が見えるようにする。
     if (textureColor.a <= 0.5f) {
         discard;
     }

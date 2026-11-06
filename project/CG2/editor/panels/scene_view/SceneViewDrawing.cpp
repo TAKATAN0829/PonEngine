@@ -18,6 +18,7 @@ void SceneViewDrawing::DrawWorldLine(ImDrawList& drawList, const EditorViewInfo&
 	Vector2 screenStart{};
 	Vector2 screenEnd{};
 
+	// 線分を画像内の座標へ投影し、画像の左上を足して描画リストに渡す。
 	if (SceneViewMath::ProjectLine(start, end, viewInfo.viewProjection, viewInfo.viewportWidth, viewInfo.viewportHeight, screenStart, screenEnd)) {
 		drawList.AddLine(ToDrawPosition(screenStart, viewportOrigin), ToDrawPosition(screenEnd, viewportOrigin), color, thickness);
 	}

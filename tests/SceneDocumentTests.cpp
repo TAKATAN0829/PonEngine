@@ -1,6 +1,6 @@
 #include "../project/CG2/editor/scene/SceneDocument.h"
 #include "../project/CG2/editor/assets/AssetFileOperations.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
 #include <Windows.h>
@@ -53,6 +53,7 @@ void RunSceneDocumentTests(const std::filesystem::path& directory) {
 
 	RequireDocument(document.Initialize(resources, {}, error), "Scene document initialization failed.");
 
+	// 新規作成後は保存先を再選択できるよう、前のファイル名を保持しないことを確認する。
 	RequireDocument(!document.HasPath() && document.GetName() == "Untitled", "New document retained a filename.");
 
 	RequireDocument(!document.Save(world, error), "Untitled document was silently saved to a default filename.");

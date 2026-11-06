@@ -60,6 +60,7 @@ uint32_t SrvManager::Allocate() {
 
 	assert(!IsFull());
 
+	// 解放済みの番号を先に再利用し、未使用の枠を消費しない。
 	if (!freeIndices_.empty()) {
 
 		uint32_t srvIndex = freeIndices_.front();

@@ -6,7 +6,7 @@
 #include "systems/WorldMotion.h"
 #include "systems/WorldCollision.h"
 #include "systems/WorldPhysics.h"
-#include "SceneRenderTarget.h"
+#include "ModelPreviewRenderer.h"
 #include <memory>
 #include <unordered_map>
 #include "EngineStructs.h"
@@ -160,9 +160,6 @@ private:
 
 	void UpdateEmitter(const WorldObjectData& data, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
 
-	// 要求された3Dサムネイルを、Scene描画が始まる前に一度だけ描画する。
-	void DrawModelPreviews();
-
 	//=============================================================================================//
 	// Getter / Particle更新条件
 
@@ -181,17 +178,6 @@ private:
 		std::string model;
 
 		bool isAnimationPreviewEnabled = false; // Editor内での個別再生。保存・履歴には含めない。
-	};
-
-	// 描画結果と専用描画リソースを一組で保持する。
-	struct ModelPreview {
-		SceneRenderTarget target;
-
-		std::unique_ptr<Object3d> object;
-
-		Matrix4x4 world{};
-
-		bool wasRendered = false;
 	};
 
 private:
@@ -231,10 +217,7 @@ private:
 	// 編集データのIDに対応する描画用リソース。保存ファイルや履歴には含めない。
 	std::unordered_map<WorldObjectId, RuntimeObject> runtimeObjects_;
 
-	// 3Dサムネイルは最大24件を保持し、通常のシーン描画用とは別に所有する。
-	std::unordered_map<std::string, std::unique_ptr<ModelPreview>> modelPreviews_;
-
-	std::vector<std::unique_ptr<ModelPreview>> retiredPreviews_; // 描画受付済みのハンドルを終了まで保持する。
+	ModelPreviewRenderer modelPreviewRenderer_; // このシーンの3Dサムネイルを描画・保持する。
 
 	//=============================================================================================//
 	// 再生状態

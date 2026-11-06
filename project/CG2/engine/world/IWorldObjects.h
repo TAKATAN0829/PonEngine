@@ -75,9 +75,6 @@ public:
 	//=============================================================================================//
 	// 作成・配置・置換
 
-	// Prefabを新しいIDの独立した階層として追加する。
-	virtual WorldObjectId PlacePrefab(const std::string&, WorldObjectId, const Vector3&, std::string&);
-
 	// 配置に必要な変換・親・モデルを先に検証し、失敗時は一覧を変更しない。
 	virtual WorldObjectId PlaceModel(const std::string&, WorldObjectId, const Vector3&, std::string& error);
 

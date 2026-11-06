@@ -1,4 +1,3 @@
-#include "../../editor/EditorTheme.h"
 #include "FrameProfiler.h"
 #include "ImGuiSystem.h"
 
@@ -73,14 +72,7 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 
 	ImGuiIO& inputOutput = ImGui::GetIO();
 
-	inputOutput.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
 	ImGui::StyleColorsDark();
-
-    // 以前の自由配置と混ざらない専用設定を使い、ウィンドウ位置は次回も復元する。
-    inputOutput.IniFilename = "editor-layout.ini";
-
-    inputOutput.ConfigWindowsMoveFromTitleBarOnly = true;
 
     wchar_t windowsDirectory[MAX_PATH]{};
 
@@ -90,6 +82,7 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 
     std::error_code fontError;
 
+    // 日本語フォントのファイルがあるときだけ読み込み、ない環境では既定フォントを使う。
     if (std::filesystem::exists(fontPath, fontError)) {
         ImFontConfig fontConfiguration;
 
@@ -99,8 +92,6 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
     } else {
         inputOutput.Fonts->AddFontDefault();
     }
-
-	EditorTheme::Initialize();
 
 	//===========================================//
 	// Win32初期化
@@ -157,7 +148,6 @@ void ImGuiSystem::Begin() {
 
 	ImGui::NewFrame();
 
-	// EditorLayoutが中央・左右・下部のドッキング領域を構築する。
 #endif
 }
 

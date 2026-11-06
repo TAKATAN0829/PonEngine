@@ -51,6 +51,7 @@ bool ParticlePresetFile::Save(const ParticleSettings& settings, const std::files
 
 	std::filesystem::path temporaryPath = path;
 
+	// 書き込みが途中で失敗しても既存のプリセットを壊さないよう、一時ファイルへ出力する。
 	temporaryPath += L".tmp";
 
 	std::ofstream output(temporaryPath);

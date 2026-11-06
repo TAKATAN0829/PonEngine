@@ -1,7 +1,7 @@
-#include "../project/CG2/editor/EditorSelection.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/state/EditorSelection.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include "../project/CG2/engine/diagnostics/FrameProfiler.h"
-#include "serialization/PrefabFile.h"
+#include "prefab/PrefabOperations.h"
 #include "serialization/SceneFile.h"
 #include "objects/WorldObjects.h"
 #include "SceneViewMath.h"
@@ -26,6 +26,7 @@ namespace {
 		selection.Select(parent);
 		selection.Toggle(child);
 		selection.Toggle(independent);
+		// 複数選択の件数と、最後に選んだ主選択のIDを同時に確かめる。
 		RequireWorkflow(selection.GetPrimarySelectedObjectId() == independent && selection.GetIds().size() == 3, "Primary/multiple selection incorrect");
 		RequireWorkflow(selection.GetRoots(scene).size() == 2, "Selected child must not be operated twice");
 		EditorSession history;
@@ -73,16 +74,25 @@ namespace {
 		const WorldObjectId child = source.AddObject("axis.obj");
 		std::string error;
 		RequireWorkflow(source.SetObjectParent(child, root, error), "Linked prefab setup failed");
-		RequireWorkflow(PrefabFile::Save(source, root, "resources/workflow.ponprefab", error), "Linked prefab save failed");
+		RequireWorkflow(PrefabOperations::Save(source, root, "resources/workflow.ponprefab", error), "Linked prefab save failed");
 		WorldObjects scene;
 		// 高いルートIDが再配置した子の範囲に入っても重複させない。
 		WorldObjectData seed;
 		seed.id = 100;
 		RequireWorkflow(scene.ReplaceObjects({seed}, error), "Prefab seed failed");
-		const WorldObjectId instance = scene.PlacePrefab("workflow.ponprefab", 0, {3,4,5}, error);
+		const WorldObjectId instance = PrefabOperations::Place(scene, "workflow.ponprefab", 0, {3,4,5}, error);
 		RequireWorkflow(instance != 0 && !scene.GetObjectData(1)->prefabSource.empty(), "Prefab source link missing");
-		const WorldObjectId second = scene.PlacePrefab("workflow.ponprefab", 0, {}, error);
+		const WorldObjectId second = PrefabOperations::Place(scene, "workflow.ponprefab", 0, {}, error);
 		RequireWorkflow(second != 0, "Second linked instance failed");
+
+		// UI経由の配置ではresources外の参照と埋め込みNULを拒否する。
+		const size_t countBeforeInvalidPlacement = scene.GetEditableObjectCount();
+		const std::string sourceWithNull("workflow.ponprefab\0ignored", 25);
+
+		RequireWorkflow(PrefabOperations::Place(scene, "../escape.ponprefab", 0, {}, error) == 0, "Escaping placement source accepted");
+		RequireWorkflow(PrefabOperations::Place(scene, sourceWithNull, 0, {}, error) == 0, "Embedded null placement source accepted");
+		RequireWorkflow(scene.GetEditableObjectCount() == countBeforeInvalidPlacement, "Invalid placement changed objects");
+
 		RequireWorkflow(SceneFile::Save(scene, "linked.ponscene", error), "Linked scene save failed");
 		WorldObjects restored;
 		RequireWorkflow(SceneFile::Load(restored, "linked.ponscene", error), "Linked scene load failed");
@@ -105,24 +115,24 @@ namespace {
 		RequireWorkflow(SceneFile::Load(previousScene, "previous-format.ponscene", error), "Format 7 backward compatibility failed");
 		RequireWorkflow(previousScene.GetObjectData(1)->prefabSource.empty(), "Legacy scene inherited a prefab link");
 		*scene.GetEditableObject(2).editableName = "Applied Child";
-		RequireWorkflow(PrefabFile::Apply(scene, instance, error), "Prefab Apply failed");
-		RequireWorkflow(PrefabFile::Revert(scene, second, error), "Other instance Revert failed");
+		RequireWorkflow(PrefabOperations::Apply(scene, instance, error), "Prefab Apply failed");
+		RequireWorkflow(PrefabOperations::Revert(scene, second, error), "Other instance Revert failed");
 		RequireWorkflow(scene.GetObjectData(scene.GetEditableObjectCount()-1)->name == "Applied Child", "Revert did not load applied asset");
 		EditorSession history;
 		history.Initialize(scene);
 		*scene.GetEditableObject(2).editableName = "Unsaved Override";
 		history.Update(scene, false);
-		RequireWorkflow(PrefabFile::Revert(scene, instance, error), "Prefab Revert failed");
+		RequireWorkflow(PrefabOperations::Revert(scene, instance, error), "Prefab Revert failed");
 		RequireWorkflow(scene.GetObjectWorldPosition(instance).x == 3 && scene.GetObjectWorldPosition(instance).y == 4, "Revert changed root transform");
 		history.Update(scene, false);
 		RequireWorkflow(history.Undo(scene, error), "Prefab Revert undo failed");
 		RequireWorkflow(scene.GetObjectData(2)->name == "Unsaved Override", "Prefab undo did not recover override");
-		RequireWorkflow(PrefabFile::ResolveSource("../escape.ponprefab", error).empty(), "Escaping prefab source accepted");
-		RequireWorkflow(!PrefabFile::Apply(scene, 99999, error), "Missing linked root accepted");
+		RequireWorkflow(PrefabOperations::ResolveSource("../escape.ponprefab", error).empty(), "Escaping prefab source accepted");
+		RequireWorkflow(!PrefabOperations::Apply(scene, 99999, error), "Missing linked root accepted");
 		// ソースが欠けている場合もシーンを変えない。
 		const size_t previousCount = scene.GetEditableObjectCount();
 		std::filesystem::rename("resources/workflow.ponprefab", "resources/missing.ponprefab");
-		RequireWorkflow(!PrefabFile::Revert(scene, instance, error) && scene.GetEditableObjectCount() == previousCount, "Failed Revert partially changed scene");
+		RequireWorkflow(!PrefabOperations::Revert(scene, instance, error) && scene.GetEditableObjectCount() == previousCount, "Failed Revert partially changed scene");
 	}
 
 	void VerifyProfiler() {

@@ -1,8 +1,8 @@
 #include "systems/WorldMotion.h"
 #include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
-#include "serialization/PrefabFile.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "prefab/PrefabOperations.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include <cmath>
 #include <fstream>
 #include <limits>
@@ -36,6 +36,7 @@ namespace {
 		WorldMotion runtime;
 		runtime.Initialize();
 		runtime.Update(scene, 0.5f);
+		// 周期の4分の1で指定位置に進むことを確認し、時計とローカル移動の対応を調べる。
 		RequireMotion(NearMotion(scene.GetObjectDataById(child)->transform.translate.x, 3), "Quarter-period movement incorrect");
 		RequireMotion(NearMotion(scene.GetObjectWorldPosition(child).x, 13), "Movement ignored parent space");
 		RequireMotion(NearMotion(scene.GetObjectDataById(child)->transform.rotate.y, std::numbers::pi_v<float> / 4), "Rotation degrees/seconds incorrect");
@@ -87,8 +88,8 @@ namespace {
 		WorldObjects restored;
 		RequireMotion(SceneFile::Load(restored, directory / "motion.ponscene", error), "Motion scene load failed");
 		RequireMotion(AreMotionSettingsEqual(restored.GetObjectData(0)->motion, expected), "Motion roundtrip failed");
-		RequireMotion(PrefabFile::Save(scene, identifier, directory / "motion.ponprefab", error), "Motion prefab save failed");
-		RequireMotion(PrefabFile::Instantiate(restored, directory / "motion.ponprefab", 0, {}, error) != 0, "Motion prefab placement failed");
+		RequireMotion(PrefabOperations::Save(scene, identifier, directory / "motion.ponprefab", error), "Motion prefab save failed");
+		RequireMotion(PrefabOperations::Instantiate(restored, directory / "motion.ponprefab", 0, {}, error) != 0, "Motion prefab placement failed");
 		RequireMotion(AreMotionSettingsEqual(restored.GetObjectData(1)->motion, expected), "Prefab lost motion settings");
 		RequireMotion(session.BeginPlay(scene, error), "Motion Play failed");
 		WorldMotion runtime;

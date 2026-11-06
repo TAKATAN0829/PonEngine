@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IWorldObjects.h"
+#include "ModelImportInfo.h"
 
 // 描画中のカメラと表示領域。Editorは描画クラスを直接参照せず、この情報で画面操作を行う。
 struct EditorViewInfo {

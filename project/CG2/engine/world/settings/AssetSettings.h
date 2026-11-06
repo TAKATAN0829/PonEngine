@@ -3,7 +3,6 @@
 #include "EngineStructs.h"
 #include <cstdint>
 #include <string>
-#include <vector>
 
 // シーン・Prefab・履歴で共有する、GPUリソースを含まないアセット設定。
 struct MaterialSettings {
@@ -26,19 +25,6 @@ struct AnimationSettings {
 
 	float speed = 1;
 	float time = 0; // 開始位置と、Inspectorで指定したシーク位置（秒）。
-};
-
-struct ModelMaterialInfo {
-	std::string name;
-	std::string texture;
-
-	Vector4 color = {1, 1, 1, 1};
-};
-
-struct ModelAnimationInfo {
-	std::string name;
-
-	float duration = 0;
 };
 
 // 設定の比較はUIと履歴で共通にし、見た目の変更をUndoから漏らさない。

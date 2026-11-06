@@ -63,7 +63,7 @@ void FrameProfiler::EndFrame() {
 	// 計測が完了したフレームを公開する。
 	latest_ = current_;
 
-	// 最も時間がかかったフレームを保持する。
+	// 履歴の巡回で古いフレームが消えても参照できるよう、最大時間のサンプルを別に保管する。
 	if (latest_.frameMilliseconds > peak_.frameMilliseconds) {
 		peak_ = latest_;
 	}

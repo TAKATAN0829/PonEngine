@@ -66,6 +66,7 @@ ConstantBuffer<SpotLightBuffer> gSpotLights : register(b4);
 float3 CalculateLightContribution(float3 baseColor, float3 normal, float3 toEye, float3 toLight, float3 radiance, float shininess) {
     float diffuseFactor = pow(dot(normal,toLight)*0.5f+0.5f,2.0f);
 
+    // 光源方向と視線方向の中間を求め、法線に近いほど鏡面のハイライトを強くする。
     float3 halfDirection = toLight+toEye;
 
     halfDirection /= max(length(halfDirection),0.00001f);

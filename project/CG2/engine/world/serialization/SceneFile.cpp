@@ -29,6 +29,7 @@ namespace {
 			return false;
 		}
 
+		// 保存された件数の検証が済んでから、各スロットを読み込む領域を用意する。
 		object.materials.resize(materialCount);
 
 		for (MaterialSettings& material : object.materials) {

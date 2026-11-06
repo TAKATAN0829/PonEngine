@@ -2,7 +2,7 @@
 
 // 自作
 #include "EngineStructs.h"
-#include "../../dx12/BlendMode.h"
+#include "BlendMode.h"
 
 // C++
 #include <string>

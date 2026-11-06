@@ -1,7 +1,7 @@
 #include "objects/WorldObjects.h"
 #include "SceneViewMath.h"
-#include "../project/CG2/editor/AssetDragPayload.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/assets/AssetDragPayload.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include <cmath>
 #include <stdexcept>
 #include <limits>
@@ -27,6 +27,7 @@ void RunPlacementTests() {
 	scene.GetEditableObject(1).transform->translate = {10,2,3};
 	scene.GetEditableObject(1).transform->rotate.y = 0.4f;
 	scene.GetEditableObject(1).transform->scale = {2,3,4};
+	// 回転・拡縮した親へドロップしても、指定したワールド位置で配置されることを確認する。
 	const WorldObjectId child = scene.PlaceModel("axis.obj",parent,{10,2,3},error);
 	CheckPlacement(child != 0 && scene.GetEditableObject(2).parentId == parent);
 	CheckPlacement(std::abs(scene.GetObjectWorldPosition(child).x-10) < 0.001f);
@@ -45,6 +46,7 @@ void RunPlacementTests() {
 	std::string model;
 	CheckPlacement(ModelAssetPayload::Read(&payload,sizeof(payload),model) && model == "plane.gltf");
 	CheckPlacement(!ModelAssetPayload::Read(&payload,3,model));
+	// 終端文字がないドラッグデータを作り、配列の外を読まずに拒否することを確認する。
 	std::memset(payload.model,'a',sizeof(payload.model));
 	CheckPlacement(!ModelAssetPayload::Read(&payload,sizeof(payload),model));
 }

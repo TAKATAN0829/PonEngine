@@ -41,6 +41,7 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR commandLine, 
 
 	const std::string_view arguments(commandLine);
 
+	// 起動引数で最初の場面を選ぶ。通常の起動ではゲーム画面を開く。
 	if (arguments.find("--title") != std::string_view::npos) {
 		engine.Initialize(new TitleScene());
 	} else {
@@ -56,6 +57,7 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR commandLine, 
 		engine.Run();
 	}
 
+	// 描画機能を解放する前に、起動試験の終了コードに使うエラー状態を取得する。
 	const bool hasGraphicsErrors = engine.HasGraphicsErrors();
 
 	engine.Finalize ();

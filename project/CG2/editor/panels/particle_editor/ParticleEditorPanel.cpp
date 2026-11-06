@@ -205,10 +205,12 @@ void ParticleEditorPanel::ResetScenePreview(IEditableWorld& scene) {
 // 更新処理
 
 void ParticleEditorPanel::Update(IEditableWorld& scene, bool isGamePlaying, WorldObjectId selectedId) {
+	// シーンが切り替わったら、編集対象とプレビュー状態を初期化する。
 	if (scene_ != &scene) {
 		Initialize(scene);
 	}
 
+	// 選択中のParticleが見つからないときは、共通プリセットを編集対象にする。
 	targetId_ = kInvalidWorldObjectId;
 
 	TransformData* emitterTransform = nullptr;
@@ -236,6 +238,7 @@ void ParticleEditorPanel::Update(IEditableWorld& scene, bool isGamePlaying, Worl
 
 	preview_.targetObject = targetId_;
 
+	// 共通プリセットの発生位置を使い、個別のParticleなら親の変換も含めた位置を使う。
 	const ParticleSettings* settings = GetEditingSettings(scene);
 
 	if (settings != nullptr) {
@@ -283,6 +286,7 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 
 			ImGui::TextWrapped("Scene内でプレビューします。ゲーム停止中にも調整できます。");
 
+			// ゲーム再生中の粒子には、Editorからプレビュー操作を送らない。
 			ImGui::BeginDisabled(isGamePlaying);
 
 			if (!preview_.isEnabled) {
@@ -312,6 +316,7 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 			}
 
 			if (ImGui::Button("一度だけ発生")) {
+				// 連続発生を止めて、今回のクリック分だけ粒子を発生させる。
 				preview_.isEnabled = true;
 
 				preview_.isPaused = false;

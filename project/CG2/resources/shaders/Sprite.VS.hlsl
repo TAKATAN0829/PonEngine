@@ -19,6 +19,7 @@ VertexShaderOutput main(VertexShaderInput input)
 {
     VertexShaderOutput output;
 
+    // スプライトの頂点を描画先のクリップ座標へ変換する。
     output.position = mul(input.position, gTransformationMatrix.WVP);
 
     output.texcoord = input.texcoord;

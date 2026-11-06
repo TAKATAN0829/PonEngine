@@ -1,8 +1,8 @@
 ﻿#include "FrameProfiler.h"
 #include "HierarchyPanel.h"
-#include "../../EditorSelection.h"
-#include "../../AssetDragPayload.h"
-#include "serialization/PrefabFile.h"
+#include "../../state/EditorSelection.h"
+#include "../../assets/AssetDragPayload.h"
+#include "prefab/PrefabOperations.h"
 #include "objects/WorldPrimitives.h"
 #include <cstring>
 #include <cstdio>
@@ -115,7 +115,7 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 		WorldObjectId placedId = 0;
 
 		if (request.isPrefab) {
-			placedId = scene->PlacePrefab(request.model, request.parentId, position, status_);
+			placedId = PrefabOperations::Place(*scene, request.model, request.parentId, position, status_);
 		} else {
 			placedId = scene->PlaceModel(request.model, request.parentId, position, status_);
 		}
@@ -305,13 +305,13 @@ void HierarchyPanel::DrawContextMenu(IEditableWorld& scene, EditorSelection& sel
 				ImGui::TextWrapped("Applyは元Assetを上書きします（ファイル変更はUndo対象外）。他の配置はRevertで更新します。");
 
 				if (ImGui::MenuItem("Apply / 元Assetを上書き")) {
-					if (PrefabFile::Apply(scene, contextTarget_, status_)) {
+					if (PrefabOperations::Apply(scene, contextTarget_, status_)) {
 						status_ = "Prefab Assetを更新しました。";
 					}
 				}
 
 				if (ImGui::MenuItem("Revert / Assetから子孫ごと復元")) {
-					if (PrefabFile::Revert(scene, contextTarget_, status_)) {
+					if (PrefabOperations::Revert(scene, contextTarget_, status_)) {
 						selection.Select(contextTarget_);
 
 						status_ = "Prefabを復元しました（ルートTransformは維持）。";
@@ -387,7 +387,7 @@ void HierarchyPanel::DrawPrefabSaveMenu(IEditableWorld& scene) {
 		if (name.empty() || name.find_first_of("\\/:*?\"<>|") != std::string::npos || name == "." || name == "..") {
 			status_ = "ファイル名に使えない文字が含まれています。";
 		} else {
-			const std::filesystem::path path = PrefabFile::ResolveSource("prefabs/" + name + ".ponprefab", status_);
+			const std::filesystem::path path = PrefabOperations::ResolveSource("prefabs/" + name + ".ponprefab", status_);
 
 			if (path.empty()) {
 				ImGui::EndMenu();
@@ -395,7 +395,7 @@ void HierarchyPanel::DrawPrefabSaveMenu(IEditableWorld& scene) {
 				return;
 			}
 
-			if (PrefabFile::Save(scene, contextTarget_, path, status_)) {
+			if (PrefabOperations::Save(scene, contextTarget_, path, status_)) {
 				std::vector<WorldObjectData> connected = scene.CaptureObjects();
 
 				for (WorldObjectData& object : connected) {
@@ -422,6 +422,7 @@ void HierarchyPanel::DrawPrefabSaveMenu(IEditableWorld& scene) {
 void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selection, const ChildIndices& children,
 	WorldObjectId parentId, HierarchyRequest& request) {
 #ifdef USE_IMGUI
+	// 親IDから直下の子だけを取り出し、子がなければ描画を終える。
 	const ChildIndices::const_iterator found = children.find(parentId);
 
 	if (found == children.end()) {
@@ -431,6 +432,7 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 	for (size_t objectIndex : found->second) {
 		const EditableObjectView object = scene.GetEditableObject(objectIndex);
 
+		// 同名でも選択・展開状態を区別できるよう、名前とは別にIDを付ける。
 		const std::string identifier = std::to_string(object.id);
 
 		ImGui::PushID(identifier.c_str());
@@ -441,6 +443,7 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 			flags |= ImGuiTreeNodeFlags_Selected;
 		}
 
+		// 子がいない行は葉として描き、子を表示するための階層を積まない。
 		if (!children.contains(object.id)) {
 			flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 		}
@@ -455,6 +458,7 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 			ImGui::PopStyleColor();
 		}
 
+		// 展開矢印のクリックでは選択を変えず、Ctrl付きなら選択を追加・解除する。
 		if (ImGui::IsItemClicked()) {
 			if (!ImGui::IsItemToggledOpen()) {
 				if (ImGui::GetIO().KeyCtrl) {
@@ -474,6 +478,7 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 			}
 		}
 
+		// 配置が変わっても対象を識別できるよう、ドラッグでは行番号ではなくIDを渡す。
 		if (ImGui::BeginDragDropSource()) {
 			ImGui::SetDragDropPayload("PON_SCENE_OBJECT", &object.id, sizeof(object.id));
 
@@ -484,6 +489,7 @@ void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selectio
 
 		AcceptParentDrop(object.id, request);
 
+		// 展開中の枝だけ再帰的に描画し、子の描画が済んだら階層を戻す。
 		if (isExpanded) {
 			if (children.contains(object.id)) {
 				DrawBranch(scene, selection, children, object.id, request);

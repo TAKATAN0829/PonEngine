@@ -2,8 +2,8 @@
 #include "systems/WorldLighting.h"
 #include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
-#include "serialization/PrefabFile.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "prefab/PrefabOperations.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include <cmath>
 #include <fstream>
 #include <limits>
@@ -28,6 +28,7 @@ namespace {
 		converted << "PON_SCENE 12\n";
 		while (std::getline(input,line)) {
 			const std::string suffix = " 60 0";
+			// 現行データの末尾からライト設定を外し、旧形式の読込を試せるようにする。
 			if (line.ends_with(suffix)) {
 				line.erase(line.size()-suffix.size());
 			}
@@ -84,8 +85,8 @@ void RunLightingTests(const std::filesystem::path& directory) {
 	RequireLight(AreLightSettingsEqual(*scene.GetEditableObject(2).light,*loaded.GetEditableObject(2).light),"Light angles lost in save");
 	RequireLight(loaded.GetObjectData(3)->type == WorldObjectType::DirectionalLight,"Directional type lost in save");
 	const std::filesystem::path prefab = directory/"lights.ponprefab";
-	RequireLight(PrefabFile::Save(scene,root,prefab,error),"Light prefab save failed");
-	RequireLight(PrefabFile::Instantiate(loaded,prefab,0,{},error) != 0,"Light prefab instantiate failed");
+	RequireLight(PrefabOperations::Save(scene,root,prefab,error),"Light prefab save failed");
+	RequireLight(PrefabOperations::Instantiate(loaded,prefab,0,{},error) != 0,"Light prefab instantiate failed");
 	lights = WorldLighting::Collect(loaded);
 	RequireLight(lights.spots.count == 2 && lights.directional.count == 2,"Prefab lost lights");
 	for (WorldObjectType type : {WorldObjectType::PointLight,WorldObjectType::SpotLight,WorldObjectType::DirectionalLight}) {

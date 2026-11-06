@@ -1,8 +1,8 @@
 #include "objects/WorldPrimitives.h"
 #include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
-#include "serialization/PrefabFile.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "prefab/PrefabOperations.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include <stdexcept>
 
 namespace {
@@ -19,6 +19,7 @@ void RunPrimitiveTests(const std::filesystem::path& directory) {
 	history.Initialize(scene);
 	std::string error;
 	const WorldObjectId cube = WorldPrimitives::Create(scene,PrimitiveType::Cube,error);
+	// 作成成功時に、シーン上の基本形状を参照するためのIDが返ることを確認する。
 	RequirePrimitive(cube != 0,"Cube creation failed");
 	history.Update(scene,false);
 	const WorldObjectId sphere = WorldPrimitives::Create(scene,PrimitiveType::Sphere,error);
@@ -38,8 +39,8 @@ void RunPrimitiveTests(const std::filesystem::path& directory) {
 	RequirePrimitive(loaded.GetObjectData(1)->parentId == cube && loaded.GetObjectWorldPosition(sphere).y == 2,"Primitive hierarchy lost on reload");
 	RequirePrimitive(loaded.GetObjectData(0)->collider.isPresent && loaded.GetObjectData(1)->model == WorldPrimitives::kSphereModel,"Primitive properties lost on reload");
 	const std::filesystem::path prefab = directory/"primitives.ponprefab";
-	RequirePrimitive(PrefabFile::Save(scene,cube,prefab,error),"Primitive prefab save failed");
-	RequirePrimitive(PrefabFile::Instantiate(loaded,prefab,0,{},error) != 0 && loaded.GetEditableObjectCount() == 4,"Primitive prefab import failed");
+	RequirePrimitive(PrefabOperations::Save(scene,cube,prefab,error),"Primitive prefab save failed");
+	RequirePrimitive(PrefabOperations::Instantiate(loaded,prefab,0,{},error) != 0 && loaded.GetEditableObjectCount() == 4,"Primitive prefab import failed");
 	RequirePrimitive(loaded.GetObjectData(3)->collider.shape == ColliderShape::Sphere,"Primitive prefab lost collider");
 	const size_t originalCount = loaded.GetEditableObjectCount();
 	RequirePrimitive(WorldPrimitives::Create(loaded,static_cast<PrimitiveType>(99),error) == 0 && loaded.GetEditableObjectCount() == originalCount,"Invalid primitive partially created an object");

@@ -1,8 +1,8 @@
 #include "systems/WorldCollision.h"
 #include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
-#include "serialization/PrefabFile.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "prefab/PrefabOperations.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include <cmath>
 #include <fstream>
 #include <numbers>
@@ -23,6 +23,7 @@ namespace {
 	}
 	void VerifyGeometry() {
 		const WorldCollider box = MakeCollider(ColliderShape::Box,{});
+		// 面がちょうど接する場合も、衝突として扱う境界条件を確認する。
 		RequireCollision(WorldCollision::DoShapesIntersect(box,MakeCollider(ColliderShape::Box,{1,0,0})), "Touching boxes should overlap");
 		RequireCollision(!WorldCollision::DoShapesIntersect(box,MakeCollider(ColliderShape::Box,{1.1f,0,0})), "Separated boxes overlap");
 		RequireCollision(WorldCollision::DoShapesIntersect(box,MakeCollider(ColliderShape::Sphere,{1,0,0})), "Box sphere tangent missing");
@@ -100,8 +101,8 @@ namespace {
 		RequireCollision(SceneFile::Save(scene,file,error), "Collider save failed");
 		WorldObjects restored;
 		RequireCollision(SceneFile::Load(restored,file,error) && AreColliderSettingsEqual(restored.GetObjectData(0)->collider,expected), "Collider roundtrip failed");
-		RequireCollision(PrefabFile::Save(scene,identifier,directory/"collider.ponprefab",error), "Collider prefab save failed");
-		RequireCollision(PrefabFile::Instantiate(restored,directory/"collider.ponprefab",0,{},error) != 0, "Collider prefab placement failed");
+		RequireCollision(PrefabOperations::Save(scene,identifier,directory/"collider.ponprefab",error), "Collider prefab save failed");
+		RequireCollision(PrefabOperations::Instantiate(restored,directory/"collider.ponprefab",0,{},error) != 0, "Collider prefab placement failed");
 		RequireCollision(AreColliderSettingsEqual(restored.GetObjectData(1)->collider,expected), "Prefab lost collider settings");
 		std::vector<WorldObjectData> invalid = scene.CaptureObjects();
 		invalid[0].collider.radius = 0;

@@ -1,13 +1,14 @@
 ﻿#include "SceneViewPanel.h"
+#include "prefab/PrefabOperations.h"
 #include "../game_view/GameViewPanel.h"
 #include "FrameProfiler.h"
-#include "../../EditorSelection.h"
+#include "../../state/EditorSelection.h"
 #include <algorithm>
 #include "MathUtility.h"
 #include "settings/LightSettings.h"
 #include <cmath>
 #include "SceneViewMath.h"
-#include "../../AssetDragPayload.h"
+#include "../../assets/AssetDragPayload.h"
 #include <limits>
 #include "systems/WorldCollision.h"
 #include <numbers>
@@ -487,6 +488,7 @@ void SceneViewPanel::ResetInteraction() {
 // ドラッグ開始値からTransformを更新し、失敗・キャンセル時は全対象を復元する。
 void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInfo, const Vector2& mousePosition) {
 #ifdef USE_IMGUI
+	// ドラッグ開始時のIDで対象を引き直し、途中で消えていたら操作を解除する。
 	const EditableObjectView object = FindObject(scene, draggedObject_);
 
 	if (object.transform == nullptr) {
@@ -505,12 +507,14 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 		Vector2 center{};
 
 		if (SceneViewMath::Project(dragStartPosition_,viewInfo.viewProjection,viewInfo.viewportWidth,viewInfo.viewportHeight,center)) {
+			// 画面に映した回転中心を基準に、ドラッグ開始からの角度差を求める。
 			float angle = std::remainder(std::atan2(mousePosition.y-center.y,mousePosition.x-center.x)-dragStartAngle_,6.283185307f);
 
 			const Vector3 toCamera = MathUtility::Subtract(viewInfo.cameraPosition,dragStartPosition_);
 
 			if (MathUtility::Length(toCamera) > 0.001f) {
 				if (std::abs(MathUtility::Dot(MathUtility::Normalize(toCamera),dragAxis_)) < 0.2f) {
+					// 回転リングを横から見ると角度を取りづらいため、マウスの移動量を使う。
 					angle = (mousePosition.x-dragStartMouse_.x-mousePosition.y+dragStartMouse_.y) * 0.01f;
 				} else if (MathUtility::Dot(toCamera,dragAxis_) < 0) {
 					// 画面Yは下向き。軸を裏側から見る場合は角度の符号を反転する。
@@ -519,6 +523,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 			}
 
 			if (isSnapEnabled_ || ImGui::GetIO().KeyCtrl) {
+				// 設定された度数をラジアンに換算し、最も近い刻みへ丸める。
 				const float increment = snapAngle_ * 0.0174532925f;
 
 				angle = std::round(angle / increment) * increment;
@@ -534,6 +539,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 				rotation = MathUtility::MakeRotateZMatrix(angle);
 			}
 
+			// 回転中心を一度原点へ移して回し、その後で元の位置へ戻す。
 			Matrix4x4 delta = MathUtility::MakeTranslateMatrix(MathUtility::Multiply(-1.0f, dragStartPosition_));
 
 			delta = MathUtility::Multiply(MathUtility::Multiply(delta, rotation), MathUtility::MakeTranslateMatrix(dragStartPosition_));
@@ -553,6 +559,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 
 	float axisDistance = 0;
 
+	// 画面上のマウス位置をワールドのレイに変換し、操作軸に沿った移動量を求める。
 	if (SceneViewMath::CreateRay(mousePosition, viewInfo.viewProjection, viewInfo.viewportWidth, viewInfo.viewportHeight,
 		rayOrigin, rayDirection)) {
 		if (SceneViewMath::GetAxisDistance(rayOrigin, rayDirection, dragStartPosition_, dragAxis_, axisDistance)) {
@@ -565,12 +572,14 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 			}
 
 			if (tool_ == TransformTool::Scale) {
+				// ギズモの軸の長さを基準に、移動量を拡縮の倍率に変換する。
 				float factor = 1.0f + movement / dragAxisLength_;
 
 				if (isSnapEnabled_ || ImGui::GetIO().KeyCtrl) {
 					factor = 1.0f + std::round((factor-1.0f)/snapScale_)*snapScale_;
 				}
 
+				// 軸が潰れたり反転したりしないよう、倍率を正の範囲に収める。
 				factor = (std::clamp)(factor,0.01f,100.0f);
 
 				if (isGroupDrag_) {
@@ -591,6 +600,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 
 					ApplyDragTransform(scene, delta);
 				} else {
+					// 毎フレーム、ドラッグ開始時の値から計算して倍率の累積を防ぐ。
 					object.transform->scale = dragStartTransform_.scale;
 
 					if (dragAxisIndex_ == 0) {
@@ -657,6 +667,7 @@ bool SceneViewPanel::ApplyDragTransform(IEditableWorld& scene, const Matrix4x4& 
 	// ドラッグの変換行列を選択ルートへ適用する。
 	for (const DragObject& target : dragObjects_) {
 		if (!scene.SetObjectWorldTransform(target.identifier, MathUtility::Multiply(target.world, delta))) {
+			// 一つでも適用できなければ、途中まで反映した対象も操作前の状態へ戻す。
 			for (const DragObject& restore : dragObjects_) {
 				const EditableObjectView object = FindObject(scene, restore.identifier);
 
@@ -851,6 +862,7 @@ bool SceneViewPanel::ResizeViewport(IEditableWorld& scene, const ImVec2& availab
 	const uint32_t nextWidth = static_cast<uint32_t>((std::min)(availableSize.x, 4096.0f));
 	const uint32_t nextHeight = static_cast<uint32_t>((std::min)(availableSize.y, 4096.0f));
 
+	// 画像サイズが変わるとドラッグ開始時とマウス座標の対応がずれるため、操作を取り消す。
 	if (isDragging_) {
 		if (width_ != nextWidth || height_ != nextHeight) {
 			CancelDrag(scene);
@@ -1337,7 +1349,7 @@ bool SceneViewPanel::AcceptModelDrop(IEditableWorld& scene, EditorSelection& sel
 	WorldObjectId placedId = 0;
 
 	if (isPrefab) {
-		placedId = scene.PlacePrefab(model, kInvalidWorldObjectId, position, placementStatus_);
+		placedId = PrefabOperations::Place(scene, model, kInvalidWorldObjectId, position, placementStatus_);
 	} else {
 		placedId = scene.PlaceModel(model, kInvalidWorldObjectId, position, placementStatus_);
 	}

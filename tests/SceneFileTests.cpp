@@ -1,5 +1,5 @@
 void RunSceneManagerTests();
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include "serialization/SceneFile.h"
 #include "IEditableWorld.h"
 #include "objects/WorldObjects.h"
@@ -61,6 +61,7 @@ namespace {
 		scene.GetEditableObject(0).transform->translate.x = expectedPosition;
 
 		std::string error;
+		// 壊れた保存データを受け入れず、失敗の理由も得られることを確認する。
 		Require(!SceneFile::Load(scene, invalidScenePath, error), "Invalid scene file was accepted");
 		Require(!error.empty(), "Missing error message");
 		Require(scene.GetEditableObjectCount() == originalObjectCount, "Failed load changed object count");

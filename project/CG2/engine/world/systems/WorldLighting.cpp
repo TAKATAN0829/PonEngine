@@ -10,6 +10,7 @@
 // 実行中の向きとGPU用一覧だけを計算し、具体的なシーン管理や保存処理は使わない。
 bool WorldLighting::GetDirection(const Matrix4x4& world, Vector3& direction) {
 	// ライトがワールド空間で向く方向を取得する。
+	// ライトのローカル前方である+Z軸をワールド行列から取り出す。
 	direction = {world.m[2][0],world.m[2][1],world.m[2][2]};
 
 	const float length = MathUtility::Length(direction);
@@ -18,6 +19,7 @@ bool WorldLighting::GetDirection(const Matrix4x4& world, Vector3& direction) {
 		return false;
 	}
 
+	// 親などの拡縮の影響を除き、向きだけを単位ベクトルとして使う。
 	direction = MathUtility::Multiply(1/length,direction);
 
 	return true;

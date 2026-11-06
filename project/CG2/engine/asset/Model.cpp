@@ -30,6 +30,7 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 
 	modelData_ = LoadModelFile(directoryPath, filename);
 
+	// 描画できる三角形がないモデルは、GPU用のバッファを作る前に拒否する。
 	if (modelData_.vertices.empty()) {
 		throw std::runtime_error("Model has no triangle vertices.");
 	}
@@ -51,6 +52,7 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 		localBounds_ = {{firstPosition.x, firstPosition.y, firstPosition.z},
 			{firstPosition.x, firstPosition.y, firstPosition.z}};
 
+		// 全頂点の各軸の最小値と最大値を集め、選択判定などで使うモデルの範囲を作る。
 		for (const Mesh::VertexData& vertex : modelData_.vertices) {
 			if (vertex.position.x < localBounds_.min.x) {
 				localBounds_.min.x = vertex.position.x;

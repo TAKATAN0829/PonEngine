@@ -55,6 +55,7 @@ void Material::Bind() {
 	//=============================================================================================//
 	// Texture設定
 
+	// 画像そのものではなく、GPUが画像を参照するためのSRVをバインドする。
 	srvManager_->SetGraphicsRootDescriptorTable(2, textureIndex_);
 }
 

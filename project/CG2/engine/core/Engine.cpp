@@ -51,6 +51,7 @@ void Engine::Initialize(IScene* firstScene) {
 
 	TextureManager::GetInstance()->Initialize(dxCommon_, srvManager_);
 
+	// 色だけを表示する素材でもテクスチャを参照できるよう、共通の白画像を先に読み込む。
 	TextureManager::GetInstance()->Load("resources/white1x1.png");
 
 	//=============================================================================================//
@@ -91,6 +92,9 @@ void Engine::Initialize(IScene* firstScene) {
 	imGuiSystem_->Initialize(winApp_, dxCommon_, srvManager_);
 
 #ifdef USE_IMGUI
+	// ImGuiの起動後、シーンやパネルを描く前にEditorの表示設定を適用する。
+	editor_.InitializeUi();
+
 	sceneTarget_.Initialize(dxCommon_, srvManager_);
 
 #endif

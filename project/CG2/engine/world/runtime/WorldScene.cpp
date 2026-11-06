@@ -50,6 +50,9 @@ void WorldScene::Initialize(const SceneContext& context) {
 
 	object3dCommon_ = context.object3dCommon;
 
+	// サムネイル描画にも、このシーンと同じ描画基盤を渡す。
+	modelPreviewRenderer_.Initialize(object3dCommon_);
+
 	//=============================================================================================//
 	// Particle初期化
 
@@ -79,6 +82,7 @@ void WorldScene::Update(Input*) {
 
 		physics_.Update(*this,1.0f / 60.0f);
 
+		// 同じ物理エラーを毎フレーム出さず、内容が変わったときだけログを更新する。
 		if (physics_.GetError() != physicsStatusLogged_) {
 			physicsStatusLogged_ = physics_.GetError();
 
@@ -168,17 +172,8 @@ void WorldScene::Finalize() {
 
 	physics_.Finalize();
 
-	for (std::pair<const std::string,std::unique_ptr<ModelPreview>>& entry : modelPreviews_) {
-		entry.second->target.Finalize();
-	}
-
-	modelPreviews_.clear();
-
-	for (std::unique_ptr<ModelPreview>& preview : retiredPreviews_) {
-		preview->target.Finalize();
-	}
-
-	retiredPreviews_.clear();
+	// シーン切替はGPUの完了後に行われるため、ここでサムネイルの描画先を解放できる。
+	modelPreviewRenderer_.Finalize();
 
 	//=============================================================================================//
 	// Particle解放
@@ -220,55 +215,31 @@ bool WorldScene::IsColliderTouching(WorldObjectId identifier) const {
 }
 
 uint64_t WorldScene::GetModelPreview(const std::string& model, std::string& error) {
-	// キャッシュを確認し、必要な場合だけモデルと描画先を準備する。
-	if (modelPreviews_.contains(model)) {
-		return modelPreviews_.at(model)->target.GetTextureHandle();
+	// 描画先があれば再利用し、上限に達した場合は新しいモデルを読まない。
+	const uint64_t cachedHandle = modelPreviewRenderer_.GetTextureHandle(model);
+
+	if (cachedHandle != 0) {
+		return cachedHandle;
 	}
 
-	if (modelPreviews_.size() >= 24) {
+	if (!modelPreviewRenderer_.CanCreatePreview()) {
 		return 0;
 	}
 
-	if (!PrepareModel(model,error)) {
+	// シーンと同じモデルの検証・読込を通し、描画先の準備は専用クラスへ渡す。
+	if (!PrepareModel(model, error)) {
 		return 0;
 	}
-
-	std::unique_ptr<ModelPreview> preview = std::make_unique<ModelPreview>();
-
-	preview->target.Initialize(object3dCommon_->GetDxCommon(),object3dCommon_->GetSrvManager());
-
-	preview->target.Resize(128,128);
-
-	preview->object = std::make_unique<Object3d>();
-
-	preview->object->Initialize(object3dCommon_);
 
 	Model* loadedModel = ModelManager::GetInstance()->FindModel(model);
 
-	preview->object->SetModel(loadedModel);
+	if (loadedModel == nullptr) {
+		error = "Model is unavailable for preview.";
 
-	preview->object->SetTexture("resources/white1x1.png");
+		return 0;
+	}
 
-	preview->object->SetEnableLighting(false);
-
-	preview->object->SetMaterials({});
-
-	const AABB bounds = SceneViewMath::TransformBounds(loadedModel->GetLocalBounds(),loadedModel->GetRootNode().localMatrix);
-
-	const float diameter = (std::max)({bounds.max.x-bounds.min.x,bounds.max.y-bounds.min.y,bounds.max.z-bounds.min.z,0.001f});
-	const float scale = 1.2f / diameter;
-
-	const Vector3 center = MathUtility::Multiply(0.5f,MathUtility::Add(bounds.min,bounds.max));
-
-	preview->world = MathUtility::MakeAffineMatrix({scale,scale,scale},{},MathUtility::Multiply(-scale,center));
-
-	preview->world = MathUtility::Multiply(preview->world,MathUtility::MakeAffineMatrix({1,1,1},{0.2f,0.4f,0},{}));
-
-	const uint64_t handle = preview->target.GetTextureHandle();
-
-	modelPreviews_[model] = std::move(preview);
-
-	return handle;
+	return modelPreviewRenderer_.CreatePreview(model, *loadedModel);
 }
 
 bool WorldScene::PrepareModel(const std::string& model, std::string& error) {
@@ -604,29 +575,8 @@ void WorldScene::RemapAssetPaths(const AssetPathChange& change) {
 		entry.second.model = change.RemapRelative(entry.second.model);
 	}
 
-	std::vector<std::string> changedKeys;
-
-	for (const std::pair<const std::string, std::unique_ptr<ModelPreview>>& entry : modelPreviews_) {
-		if (change.RemapRelative(entry.first) != entry.first) {
-			changedKeys.push_back(entry.first);
-		}
-	}
-
-	for (const std::string& key : changedKeys) {
-		const std::string destination = change.RemapRelative(key);
-
-		std::unordered_map<std::string, std::unique_ptr<ModelPreview>>::node_type node = modelPreviews_.extract(key);
-
-		if (modelPreviews_.contains(destination)) {
-			retiredPreviews_.push_back(std::move(modelPreviews_.at(destination)));
-
-			modelPreviews_.erase(destination);
-		}
-
-		node.key() = destination;
-
-		modelPreviews_.insert(std::move(node));
-	}
+	// Projectから移動後のパスで同じサムネイルを取得できるようにする。
+	modelPreviewRenderer_.RemapAssetPaths(change);
 }
 
 // 新しい配置へ前の速度・接触・プレビュー・カメラ操作を持ち越さない。
@@ -913,7 +863,8 @@ void WorldScene::UpdateObject() {
 	{
 		FrameProfiler::Scope sectionTime(FrameProfiler::Section::Previews);
 
-		DrawModelPreviews();
+		// 専用の描画先へ描いてから、通常のシーン描画を続ける。
+		modelPreviewRenderer_.Draw();
 	}
 
 	{
@@ -1085,32 +1036,6 @@ void WorldScene::UpdateEmitter(const WorldObjectData& data, const Matrix4x4& vie
 	}
 
 	emitter->Update(viewProjection, cameraMatrix, ShouldSimulateEmitter(data.id, true), ShouldEmitEmitter(data.id, true));
-}
-
-void WorldScene::DrawModelPreviews() {
-	// 要求されたモデルをプレビュー用の描画先へ描く。
-	for (std::pair<const std::string,std::unique_ptr<ModelPreview>>& entry : modelPreviews_) {
-		ModelPreview& preview = *entry.second;
-
-		if (preview.wasRendered) {
-			continue;
-		}
-
-		const Matrix4x4 cameraWorld = MathUtility::MakeAffineMatrix({1,1,1},{},{0,0,-3});
-		const Matrix4x4 projection = MathUtility::MakePerspectiveFovMatrix(0.785398163f,1,0.1f,100);
-
-		preview.object->Update(MathUtility::Multiply(MathUtility::Inverse(cameraWorld),projection),preview.world);
-
-		preview.target.Begin();
-
-		object3dCommon_->DrawSettingCommon();
-
-		preview.object->Draw();
-
-		preview.target.End();
-
-		preview.wasRendered = true;
-	}
 }
 
 //=============================================================================================//

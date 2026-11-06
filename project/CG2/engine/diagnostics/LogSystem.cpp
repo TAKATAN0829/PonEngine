@@ -65,6 +65,7 @@ void LogSystem::Log (const std::string& message) {
 	// Console表示は件数を制限し、長時間起動してもログを無制限に保持しない。
 	recentMessages_.push_back(message.substr(0, 16384));
 
+	// Console用のメモリ上の履歴を256件に収め、古い行から取り除く。
 	if (recentMessages_.size() > 256) { recentMessages_.pop_front(); }
 
 	// 出力ウィンドウに表示

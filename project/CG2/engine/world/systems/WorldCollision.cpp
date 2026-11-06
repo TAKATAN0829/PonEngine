@@ -42,6 +42,7 @@ namespace {
 			return false;
 		}
 
+		// ほぼ長さ0の候補を除いた後、投影距離の単位をそろえるために軸を正規化する。
 		const Vector3 axis = MathUtility::Multiply(1 / length, candidate);
 
 		float extent = 0;

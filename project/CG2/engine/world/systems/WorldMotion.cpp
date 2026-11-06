@@ -38,6 +38,7 @@ void WorldMotion::Update(IWorldObjects& scene, float deltaSeconds) {
 		}
 
 		if (shouldRemoveState) {
+			// 削除した要素を再び使わないよう、eraseが返す次の位置へ進む。
 			state = movementStates_.erase(state);
 		} else {
 			++state;

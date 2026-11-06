@@ -1,8 +1,8 @@
 #include "serialization/ParticlePresetFile.h"
 #include "serialization/SceneFile.h"
 #include "objects/WorldObjects.h"
-#include "serialization/PrefabFile.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "prefab/PrefabOperations.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include <sstream>
 #include <cmath>
 #include <iomanip>
@@ -48,6 +48,7 @@ void RunParticlePresetTests() {
 	settings = {};
 	RequireParticleCondition(ParticlePresetFile::Load(settings, presetPath, error) && AreParticleSettingsEqual(settings, original),
 		"Particle settings did not roundtrip");
+	// 不正な値での保存を拒否し、先に保存したプリセットを読み直せることを確認する。
 	settings.spawnCount = 0;
 	RequireParticleCondition(!ParticlePresetFile::Save(settings, presetPath, error), "Invalid emission count was saved");
 	RequireParticleCondition(ParticlePresetFile::Load(settings, presetPath, error) && AreParticleSettingsEqual(settings, original),
@@ -132,8 +133,8 @@ void RunParticlePresetTests() {
 	WorldObjects loaded;
 	RequireParticleCondition(SceneFile::Load(loaded,scenePath,error) && AreParticleSettingsEqual(*scene.GetEditableObject(0).particleSettings,*loaded.GetEditableObject(0).particleSettings),"Particle lifetime scene roundtrip failed");
 	const std::filesystem::path prefabPath = directory/"lifetime.ponprefab";
-	RequireParticleCondition(PrefabFile::Save(scene,emitter,prefabPath,error),"Particle lifetime prefab save failed");
-	RequireParticleCondition(PrefabFile::Instantiate(loaded,prefabPath,0,{},error) != 0,"Particle lifetime prefab instantiate failed");
+	RequireParticleCondition(PrefabOperations::Save(scene,emitter,prefabPath,error),"Particle lifetime prefab save failed");
+	RequireParticleCondition(PrefabOperations::Instantiate(loaded,prefabPath,0,{},error) != 0,"Particle lifetime prefab instantiate failed");
 	RequireParticleCondition(AreParticleSettingsEqual(*scene.GetEditableObject(0).particleSettings,*loaded.GetEditableObject(1).particleSettings),"Prefab lost lifetime appearance");
 	std::ifstream savedScene(scenePath);
 	std::string legacyScene((std::istreambuf_iterator<char>(savedScene)),std::istreambuf_iterator<char>());

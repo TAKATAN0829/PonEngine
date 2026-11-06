@@ -100,7 +100,7 @@ MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1
 
 ## レイアウト・Particle Editorの追加
 
-操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。EditorLayoutが初期ドッキングを構築し、ImGuiSystemが日本語フォントと配色を設定する。ParticleSettingsとParticlePresetFileはUI・GPUに依存しない。ParticleEditorPanelは設定への借用参照とプレビュー操作だけを持ち、WorldSceneがParticleへの適用と実行を担当する。
+操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。ImGuiSystemが日本語フォントを読み込み、起動後にEditorがドッキングと配置の保存先を設定する。EditorThemeが配色と倍率を適用し、EditorLayoutが初期ドッキングを構築する。ParticleSettingsとParticlePresetFileはUI・GPUに依存しない。ParticleEditorPanelは設定への借用参照とプレビュー操作だけを持ち、WorldSceneがParticleへの適用と実行を担当する。
 
 
 ### 種類別オブジェクトと保存形式4
@@ -128,7 +128,8 @@ typesへ新しい状態管理や初期化処理を追加しない。coreへ新�
 | --- | --- |
 | `objects` | `WorldObjectData`の共有データ定義、`WorldObjects`の一覧・ID・親子関係・検証と、`WorldPrimitives`の基本形状作成 |
 | `settings` | `AssetSettings`、`ParticleSettings`、Motion・Collider・Body・Lightの設定値と設定単体の処理 |
-| `serialization` | `SceneFile`・`PrefabFile`・`ParticlePresetFile`の保存・読込・旧形式への対応 |
+| `serialization` | `SceneFile`・`ParticlePresetFile`の保存・読込・旧形式への対応 |
+| `prefab` | `PrefabOperations`による階層の保存・配置・Apply／Revertの組立 |
 | `systems` | `WorldMotion`・`WorldCollision`・`WorldPhysics`の実行時更新と、`WorldLighting`のライト収集・方向計算 |
 
 includeは`objects/WorldObjects.h`や`serialization/SceneFile.h`のように、既存の`engine/world`を起点に分類を明記する。各サブフォルダを追加のinclude検索先にせず、同名ファイルの曖昧な解決を避ける。実際のディレクトリとVisual Studioのフィルターも揃える。
@@ -225,7 +226,9 @@ ProjectPanelはInitialize/Update/Drawでフォルダ一覧を管理する。フ�
 
 ## アセット編集・Prefab・アニメーション
 
-AssetSettingsはGPUに依存しないスロット上書きと再生設定を定義する。SceneFile形式7、EditorSession、PrefabFileが同じデータを使う。PrefabはSceneFileの検証と原子的保存を再利用し、一つのルートだけを許可する。Instantiateは一時WorldObjectsでID・親・配置・個数上限を検証し、最後にIEditableWorld.ReplaceObjectsへ渡す。GameSceneはモデルと画像を準備してから編集データを置き換える。
+AssetSettingsはGPUに依存しないスロット上書きと再生設定を定義する。SceneFile、EditorSession、PrefabOperationsが同じデータを使う。PrefabはSceneFileの検証と原子的保存を再利用し、一つのルートだけを許可する。Instantiateは一時WorldObjectsでID・親・配置・個数上限を検証し、最後にIWorldObjectsの仮想関数ReplaceObjectsへ渡す。実際の配置先がWorldSceneなら、モデルと画像を準備してから編集データを置き換える。
+
+Editorからresources相対パスで配置するときは`PrefabOperations::Place(scene, "prefabs/Enemy.ponprefab", parentId, position, error)`を使う。Placeがパスを検証してInstantiateへ接続する。IWorldObjectsとWorldObjectsはPrefabの読込を担当せず、serializationもPrefab操作を参照しない。保存形式はScene13のまま維持する。
 
 Modelは共有する元頂点・マテリアル情報・描画範囲・ModelAnimationを所有する。Object3dはスロットごとのMaterial、再生時計、変形用Meshを個別に所有する。ModelAnimationはAssimpのノード階層・キー・ボーンと逆バインド行列を保持し、位置・回転・拡縮を補間してCPUスキニングする。頂点と法線を変形し、描画時と選択時で同じ範囲を使う。プレビューの再生時計は履歴に含めず、開始・停止時にリセットする。共有のModelの頂点は更新しない。
 

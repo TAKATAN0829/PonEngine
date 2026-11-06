@@ -10,6 +10,7 @@
 void ModelCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 	// モデル描画で借用する共通描画機能とSRV管理を保持する。
 
+	// 呼び出し元が用意した描画機能を借りるため、初期化時に両方の参照があることを確認する。
 	assert(dxCommon);
 
 	assert(srvManager);

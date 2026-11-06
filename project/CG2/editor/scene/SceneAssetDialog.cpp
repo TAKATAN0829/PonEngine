@@ -229,6 +229,7 @@ void SceneAssetDialog::Scan(const SceneDocument& document) {
 				}
 
 				if (extension == ".ponscene") {
+					// 一覧と入力欄では同じresources相対パスを使う。
 					scenes_.push_back(iterator->path().lexically_relative(document.GetRoot()));
 				}
 			}
@@ -273,6 +274,7 @@ void SceneAssetDialog::Submit(const SceneDocument& document, bool isOverwriteCon
 		}
 	}
 
+	// パスと上書き確認の結果を、実際に保存・読込する側へ渡す。
 	isSelectedOverwriteConfirmed_ = isOverwriteConfirmed;
 
 	isSelectionReady_ = true;

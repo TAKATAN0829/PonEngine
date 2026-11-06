@@ -72,6 +72,7 @@ void DirectXCommon::PreDraw() {
 	ResizeIfNeeded();
 
 	if (timestampFrequency_ != 0) {
+		// 描画命令の前に開始時刻を入れ、フレーム末尾の時刻との差からGPU実行時間を求める。
 		commandList_->EndQuery(timestampHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0);
 	}
 

@@ -80,6 +80,7 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 	if (shouldSimulate && shouldEmit) {
 		emitter_.frequencyTime += kDeltaTime;
 
+		// 経過時間に含まれる発生間隔の回数だけ粒子を出し、間隔に満たない時間は持ち越す。
 		while (emitter_.frequency <= emitter_.frequencyTime) {
 			if (particles_.size() >= kNumMaxInstance) {
 				emitter_.frequencyTime = std::fmod(emitter_.frequencyTime, emitter_.frequency);
@@ -111,6 +112,7 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 
 	for (std::list<ParticleData>::iterator particleIterator = particles_.begin(); particleIterator != particles_.end();) {
 
+		// 寿命に達した粒子は描画データを作る前に除く。
 		if (particleIterator->lifeTime <= particleIterator->currentTime) {
 
 			particleIterator = particles_.erase(particleIterator);

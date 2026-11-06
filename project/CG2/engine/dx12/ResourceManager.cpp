@@ -21,6 +21,7 @@ ResourceManager::CreateBufferResource (ID3D12Device* device, size_t sizeInBytes,
 
 	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
 
+	// CPUから書き込めるヒープを使い、更新するデータをGPUへ渡す。
 	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
 
 	//=============================================================================================//
@@ -93,6 +94,7 @@ ResourceManager::CreateTextureResource (ID3D12Device* device, const DirectX::Tex
 
 	D3D12_HEAP_PROPERTIES heapProperties{};
 
+	// テクスチャ本体をGPU向けの領域に置き、初期データは別の転送用領域からコピーする。
 	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 
 	//=============================================================================================//

@@ -133,6 +133,7 @@ PipelineManager::CreateBlendState (BlendMode blendMode) {
 	//=============================================================================================//
 	// 色の合成
 
+	// 描画する色と描画先の色に掛ける係数を、合成方法ごとに選ぶ。
 	switch (blendMode) {
 
 	case kBlendModeNormal:

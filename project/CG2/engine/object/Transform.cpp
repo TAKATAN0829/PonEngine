@@ -9,6 +9,7 @@ void Transform::UpdateMatrix() {
 
 	Matrix4x4 localMatrix = MathUtility::MakeAffineMatrix(local_.scale, local_.rotate, local_.translate);
 
+	// 親がいればローカル行列へ親のワールド行列を掛け、階層全体の変換にする。
 	if (parent_) {
 		worldMatrix_ = MathUtility::Multiply(localMatrix, parent_->worldMatrix_);
 	} else {

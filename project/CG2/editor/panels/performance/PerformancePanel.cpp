@@ -19,6 +19,7 @@ namespace {
 
 		float framesPerSecond = 0;
 
+		// 1秒をフレーム時間で割る。計測時間が0なら除算しない。
 		if (sample.frameMilliseconds > 0) {
 			framesPerSecond = 1000.0f / sample.frameMilliseconds;
 		}
@@ -28,6 +29,7 @@ namespace {
 
 		ImGui::Text("Triangles: %llu   Instances: %llu", static_cast<unsigned long long>(sample.triangles), static_cast<unsigned long long>(sample.instances));
 
+		// GPUのタイムスタンプがそろったサンプルだけ、GPU実行時間を表示する。
 		if (sample.isGpuTimingValid) {
 			ImGui::Text("GPU execution: %.3f ms", sample.gpuMilliseconds);
 		} else {
@@ -64,6 +66,7 @@ namespace {
 		float average = 0;
 		float maximum = 0;
 
+		// 履歴をグラフ用の配列に写し、同時に平均と縦軸の上限に使う値を求める。
 		for (size_t sampleIndex = 0; sampleIndex < FrameProfiler::GetCount(); ++sampleIndex) {
 			durations[sampleIndex] = FrameProfiler::GetSample(sampleIndex).frameMilliseconds;
 
@@ -82,10 +85,12 @@ namespace {
 
 		if (ImGui::IsItemHovered()) {
 			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+				// グラフ上の横位置を0〜1の割合に変換して、対応するフレームを選ぶ。
 				const float fraction = (ImGui::GetIO().MousePos.x - ImGui::GetItemRectMin().x) / ImGui::GetItemRectSize().x;
 
 				selectedFrame_ = (std::clamp)(static_cast<int>(fraction * static_cast<float>(FrameProfiler::GetCount())), 0, static_cast<int>(FrameProfiler::GetCount()) - 1);
 
+				// 選んだフレームが履歴の更新でずれないよう、計測記録を止める。
 				FrameProfiler::SetPaused(true);
 			}
 		}
@@ -138,6 +143,7 @@ void PerformancePanel::Draw(bool& isVisible) {
 		ImGui::SliderInt("履歴フレーム", &selectedFrame_, 0, static_cast<int>(FrameProfiler::GetCount()) - 1);
 	}
 
+	// 通常は最新値を表示し、停止中は選んだ履歴、ピーク表示中は最大フレームを使う。
 	const FrameProfiler::Sample* sample = &FrameProfiler::GetLatest();
 
 	if (FrameProfiler::IsPaused()) {

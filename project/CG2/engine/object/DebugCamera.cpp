@@ -46,6 +46,7 @@ void DebugCamera::Update() {
 		if (inputState.MouseDelta.x != 0 || inputState.MouseDelta.y != 0) {
 			transform_.rotate.x += inputState.MouseDelta.y * rotateSpeed_;
 
+			// 上下を向き切って視点がひっくり返らない範囲に、縦の回転角を抑える。
 			transform_.rotate.x = (std::clamp)(transform_.rotate.x, -1.55f, 1.55f);
 
 			transform_.rotate.y += inputState.MouseDelta.x * rotateSpeed_;

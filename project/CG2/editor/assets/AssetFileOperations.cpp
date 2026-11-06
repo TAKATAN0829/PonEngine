@@ -270,9 +270,11 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 
 	std::vector<StagedDocument> staged;
 
+	// 移動を始める前に、参照の更新に必要な原本と書き換え済みファイルをそろえる。
 	for (const AssetDocument& document : documents_) {
 		std::string current;
 
+		// 検査後に別の操作で書き換わった場合は、古い内容で上書きしない。
 		if (!ReadBytes(root_ / document.GetPath(), current) || current != document.GetOriginal()) {
 			error = "An asset changed during reference inspection. Try again.";
 
@@ -308,6 +310,7 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 		staged.push_back(std::move(file));
 	}
 
+	// 手動で復旧するときに、バックアップをどこへ戻すか分かる一覧を作る。
 	std::ostringstream manifest;
 
 	manifest << "Source: " << AssetPathChange::Text(change.source) << "\nDestination: " << AssetPathChange::Text(change.destination) << '\n';
@@ -337,6 +340,7 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 
 	bool isSuccessful = !fileError;
 
+	// Assetを移動できてから参照先を書き換え、反映済みのファイルを記録する。
 	if (isSuccessful) {
 		for (StagedDocument& file : staged) {
 			if (!MoveFileExW(file.updated.c_str(), file.destination.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
@@ -349,6 +353,7 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 		}
 	}
 
+	// 途中で失敗したら、反映した参照とAssetの位置を元へ戻す。
 	if (!isSuccessful) {
 		bool wasRestored = true;
 

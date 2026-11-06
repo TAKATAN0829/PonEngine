@@ -101,7 +101,7 @@ void IEditableWorld::OnSceneContentsChanged() {
 
 // 3Dプレビュー用の画像ハンドルを返す。描画を持たないシーンは0を返す。
 uint64_t IEditableWorld::GetModelPreview(const std::string&, std::string&) {
-	// 既定実装はこの機能を持たないため、利用できる対象や値がないことを返す。
+	// 画像を生成できない場合は0を返し、Projectパネルに代替表示を任せる。
 	return 0;
 }
 

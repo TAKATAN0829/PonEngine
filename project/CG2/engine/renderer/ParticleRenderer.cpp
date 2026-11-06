@@ -163,6 +163,7 @@ void ParticleRenderer::Initialize(DirectXCommon* dxCommon, SrvManager* srvManage
 	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 
 	// BlendModeの数だけPSOを生成
+	// 描画時には合成方法に対応する設定を選ぶだけで済むよう、先に全種類を作る。
 	for (int blendMode = 0; blendMode < kCountOfBlendMode; ++blendMode) {
 
 		D3D12_BLEND_DESC blendDesc = pipelineManager.CreateBlendState(static_cast<BlendMode>(blendMode));
@@ -256,6 +257,7 @@ void ParticleRenderer::PreDraw(BlendMode blendMode, bool isBrightnessAlphaEnable
 	if (passDepth_.ptr != 0) {
 		depthTexture = passDepth_;
 
+		// シーンの深度が使え、フェード距離も指定された場合にだけ交差部分を薄くする。
 		if (softDistance > 0) {
 			surfaceSettings.soft = 1;
 		}

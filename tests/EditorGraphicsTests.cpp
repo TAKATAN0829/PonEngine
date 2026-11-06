@@ -12,7 +12,7 @@
 #include "DebugCamera.h"
 #include "TextureManager.h"
 #include "ModelManager.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include "../project/CG2/editor/panels/inspector/InspectorPanel.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
@@ -57,6 +57,7 @@ public:
 		std::ofstream brokenModel("resources/broken-preview.obj");
 		brokenModel << "not a valid mesh";
 		brokenModel.close();
+		// 壊れたモデルを配置しようとしても、シーンのオブジェクトを追加しないことを確認する。
 		if (PlaceModel("broken-preview.obj",0,{},modelError) != 0) {
 			FailTest(__LINE__);
 		}

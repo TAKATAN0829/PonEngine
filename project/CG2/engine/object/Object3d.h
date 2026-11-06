@@ -20,6 +20,7 @@
 #include "Camera.h"
 #include "Transform.h"
 #include "BlendMode.h"
+#include "settings/AssetSettings.h"
 
 class Object3dCommon;
 

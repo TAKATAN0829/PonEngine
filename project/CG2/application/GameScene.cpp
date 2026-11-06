@@ -52,6 +52,7 @@ void GameScene::Initialize(const SceneContext& context) {
 
 	std::error_code presetError;
 
+	// 保存済みプリセットがある場合だけ、共通Particle設定へ読み込む。
 	if (std::filesystem::exists(ParticlePresetFile::kDefaultPath, presetError)) {
 		std::string presetMessage;
 

@@ -12,6 +12,7 @@
 #include "Mesh.h"
 #include "Material.h"
 #include "ModelAnimation.h"
+#include "ModelImportInfo.h"
 
 class ModelCommon;
 

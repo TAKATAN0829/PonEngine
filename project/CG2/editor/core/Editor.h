@@ -1,16 +1,16 @@
 #pragma once
 
 // 自作
-#include "EditorSelection.h"
-#include "EditorSession.h"
-#include "panels/scene_view/SceneViewPanel.h"
-#include "panels/particle_editor/ParticleEditorPanel.h"
-#include "panels/project/ProjectPanel.h"
-#include "panels/console/ConsolePanel.h"
-#include "panels/performance/PerformancePanel.h"
-#include "EditorLayout.h"
-#include "scene/SceneDocument.h"
-#include "scene/SceneAssetDialog.h"
+#include "../state/EditorSelection.h"
+#include "../state/EditorSession.h"
+#include "../panels/scene_view/SceneViewPanel.h"
+#include "../panels/particle_editor/ParticleEditorPanel.h"
+#include "../panels/project/ProjectPanel.h"
+#include "../panels/console/ConsolePanel.h"
+#include "../panels/performance/PerformancePanel.h"
+#include "../ui/EditorLayout.h"
+#include "../scene/SceneDocument.h"
+#include "../scene/SceneAssetDialog.h"
 
 // C++
 #include <string>
@@ -22,6 +22,9 @@ public:
 
 	//=============================================================================================//
 	// 初期化処理
+
+	// ImGui初期化後、最初のフレームより前にEditor専用の表示設定を適用する。
+	void InitializeUi();
 
 	// 対象シーンに合わせて選択・履歴・確認待ちの状態を初期化する。
 	void Initialize(IEditableWorld* scene, const std::string& initialPath = {});
@@ -94,6 +97,9 @@ private:
 	void PerformSceneAction(IEditableWorld& scene);
 
 	void ResetSceneEditingState(IEditableWorld& scene);
+
+	// 選択と、それに紐づくHierarchy・Inspectorの操作状態を解除する。
+	void ResetPanelSelection();
 
 	bool IsSaveConfirmationNeeded(SceneAction action, IEditableWorld& scene) const;
 

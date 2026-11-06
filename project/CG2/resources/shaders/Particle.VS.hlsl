@@ -23,6 +23,7 @@ VertexShaderOutput main(VertexShaderInput input, uint32_t instanceId : SV_Instan
 {
     VertexShaderOutput output;
 
+    // 同じ板ポリゴンでも、粒子ごとに別の変換を使って配置する。
     output.position = mul(input.position, gParticle[instanceId].WVP);
 
     output.texcoord = input.texcoord;

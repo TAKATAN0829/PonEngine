@@ -132,6 +132,7 @@ bool TextureManager::TryLoad(const std::string& filePath, std::string& error) {
 		return true;
 	}
 
+	// 新しい画像に必要なSRVの空きがあるか確認し、なければ読込を中止する。
 	if (srvManager_->IsFull()) {
 		error = "Texture descriptor limit reached.";
 

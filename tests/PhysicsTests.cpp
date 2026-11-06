@@ -1,8 +1,8 @@
 #include "systems/WorldPhysics.h"
 #include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
-#include "serialization/PrefabFile.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "prefab/PrefabOperations.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include <cmath>
 #include <fstream>
 #include <stdexcept>
@@ -44,6 +44,7 @@ namespace {
 		WorldPhysics physics;
 		physics.Initialize(scene);
 		Advance(physics,scene,240);
+		// 落下後の中心が床の上に止まり、当たり判定が床を抜けていないことを確認する。
 		RequirePhysics(std::abs(scene.GetObjectWorldPosition(2).y-0.5f) < 0.002f, "Falling object did not rest on floor");
 		RequirePhysics(std::abs(physics.GetVelocity(2).y) < 0.02f, "Resting object retained downward velocity");
 		RequirePhysics(scene.GetObjectWorldPosition(1).y == -0.5f, "Static floor was displaced");
@@ -181,8 +182,8 @@ namespace {
 		RequirePhysics(SceneFile::Save(scene,directory/"physics.ponscene",error), "Physics save failed");
 		WorldObjects restored;
 		RequirePhysics(SceneFile::Load(restored,directory/"physics.ponscene",error) && AreBodySettingsEqual(restored.GetObjectData(1)->body,expected) && restored.GetObjectData(0)->collider.isTrigger, "Physics settings roundtrip failed");
-		RequirePhysics(PrefabFile::Save(scene,2,directory/"physics.ponprefab",error), "Physics prefab save failed");
-		RequirePhysics(PrefabFile::Instantiate(restored,directory/"physics.ponprefab",0,{},error) != 0 && AreBodySettingsEqual(restored.GetObjectData(2)->body,expected), "Prefab lost Rigidbody settings");
+		RequirePhysics(PrefabOperations::Save(scene,2,directory/"physics.ponprefab",error), "Physics prefab save failed");
+		RequirePhysics(PrefabOperations::Instantiate(restored,directory/"physics.ponprefab",0,{},error) != 0 && AreBodySettingsEqual(restored.GetObjectData(2)->body,expected), "Prefab lost Rigidbody settings");
 		RequirePhysics(session.BeginPlay(scene,error), "Physics Play failed");
 		WorldPhysics physics;
 		physics.Initialize(scene);

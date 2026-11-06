@@ -30,6 +30,7 @@ namespace {
 		size_t lower = 0;
 		size_t upper = count - 1;
 
+		// 再生時刻を挟むキーを二分探索し、補間に使う二つの位置を求める。
 		while (lower + 1 < upper) {
 			const size_t middle = (lower + upper) / 2;
 

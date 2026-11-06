@@ -40,9 +40,7 @@ public:
 	// 親を考慮してローカルTRSへ戻す。せん断や特異な変換では編集しない。
 	bool SetObjectWorldTransform(WorldObjectId id, const Matrix4x4& world) override;
 
-	// resources内のPrefabを検証して一括配置する。
-	WorldObjectId PlacePrefab(const std::string& prefab, WorldObjectId parentId, const Vector3& position, std::string& error) override;
-
+	// 親の座標系へ変換して、ワールド位置を設定する。
 	bool SetObjectWorldPosition(WorldObjectId id, const Vector3& position) override;
 
 	bool IsObjectActive(WorldObjectId id) const override;

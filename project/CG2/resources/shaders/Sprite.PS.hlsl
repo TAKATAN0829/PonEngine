@@ -29,6 +29,7 @@ PixelShaderOutput main(VertexShaderOutput input)
 
     output.color = gMaterial.color * textureColor;
 
+    // 完全に透明なピクセルは描画先へ書き込まない。
     if (output.color.a == 0.0f)
     {
         discard;

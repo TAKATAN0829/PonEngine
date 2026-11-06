@@ -3,7 +3,11 @@
   <ItemGroup>
     <Filter Include="editor\scene" />
     <Filter Include="editor\assets" />
+    <Filter Include="editor\core" />
+    <Filter Include="editor\state" />
+    <Filter Include="editor\ui" />
     <Filter Include="engine\world\runtime" />
+    <Filter Include="engine\world\prefab" />
     <Filter Include="engine">
       <UniqueIdentifier>{99ef638a-3a6b-45d8-a79c-cf50764d385b}</UniqueIdentifier>
     </Filter>
@@ -241,8 +245,8 @@
     <ClInclude Include="engine\object\Particle.h">
       <Filter>engine\object</Filter>
     </ClInclude>
-    <ClInclude Include="engine\dx12\BlendMode.h">
-      <Filter>engine\dx12</Filter>
+    <ClInclude Include="engine\types\BlendMode.h">
+      <Filter>engine\types</Filter>
     </ClInclude>
     <ClInclude Include="engine\dx12\PipelineManager.h">
       <Filter>engine\dx12</Filter>
@@ -342,11 +346,11 @@
   </ItemGroup>
   <ItemGroup><Filter Include="editor" /><Filter Include="editor\panels" /></ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\Editor.cpp"><Filter>editor</Filter></ClCompile>
+    <ClCompile Include="editor\core\Editor.cpp"><Filter>editor\core</Filter></ClCompile>
     <ClCompile Include="editor\panels\hierarchy\HierarchyPanel.cpp"><Filter>editor\panels\hierarchy</Filter></ClCompile>
     <ClCompile Include="editor\panels\inspector\InspectorPanel.cpp"><Filter>editor\panels\inspector</Filter></ClCompile>
-    <ClInclude Include="editor\Editor.h"><Filter>editor</Filter></ClInclude>
-    <ClInclude Include="editor\EditorSelection.h"><Filter>editor</Filter></ClInclude>
+    <ClInclude Include="editor\core\Editor.h"><Filter>editor\core</Filter></ClInclude>
+    <ClInclude Include="editor\state\EditorSelection.h"><Filter>editor\state</Filter></ClInclude>
     <ClInclude Include="editor\panels\hierarchy\HierarchyPanel.h"><Filter>editor\panels\hierarchy</Filter></ClInclude>
     <ClInclude Include="editor\panels\inspector\InspectorPanel.h"><Filter>editor\panels\inspector</Filter></ClInclude>
     <ClInclude Include="engine\world\IEditableWorld.h"><Filter>engine\world</Filter></ClInclude>
@@ -360,8 +364,8 @@
     <ClInclude Include="engine\world\objects\WorldObjects.h"><Filter>engine\world\objects</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\EditorSession.cpp"><Filter>editor</Filter></ClCompile>
-    <ClInclude Include="editor\EditorSession.h"><Filter>editor</Filter></ClInclude>
+    <ClCompile Include="editor\state\EditorSession.cpp"><Filter>editor\state</Filter></ClCompile>
+    <ClInclude Include="editor\state\EditorSession.h"><Filter>editor\state</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\math\SceneViewMath.cpp"><Filter>engine\math</Filter></ClCompile>
@@ -376,8 +380,8 @@
     <ClInclude Include="engine\world\settings\ParticleSettings.h"><Filter>engine\world\settings</Filter></ClInclude>
     <ClCompile Include="engine\world\serialization\ParticlePresetFile.cpp"><Filter>engine\world\serialization</Filter></ClCompile>
     <ClInclude Include="engine\world\serialization\ParticlePresetFile.h"><Filter>engine\world\serialization</Filter></ClInclude>
-    <ClCompile Include="editor\EditorLayout.cpp"><Filter>editor</Filter></ClCompile>
-    <ClInclude Include="editor\EditorLayout.h"><Filter>editor</Filter></ClInclude>
+    <ClCompile Include="editor\ui\EditorLayout.cpp"><Filter>editor\ui</Filter></ClCompile>
+    <ClInclude Include="editor\ui\EditorLayout.h"><Filter>editor\ui</Filter></ClInclude>
     <ClCompile Include="editor\panels\particle_editor\ParticleEditorPanel.cpp"><Filter>editor\panels\particle_editor</Filter></ClCompile>
     <ClInclude Include="editor\panels\particle_editor\ParticleEditorPanel.h"><Filter>editor\panels\particle_editor</Filter></ClInclude>
 
@@ -395,7 +399,7 @@
     <ClInclude Include="editor\panels\scene_view\SceneViewDrawing.h"><Filter>editor\panels\scene_view</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\EditorSelection.cpp"><Filter>editor</Filter></ClCompile>
+    <ClCompile Include="editor\state\EditorSelection.cpp"><Filter>editor\state</Filter></ClCompile>
     <ClCompile Include="editor\panels\performance\PerformancePanel.cpp"><Filter>editor\panels\performance</Filter></ClCompile>
     <ClInclude Include="engine\diagnostics\FrameProfiler.h"><Filter>engine\diagnostics</Filter></ClInclude>
   </ItemGroup>
@@ -420,10 +424,10 @@
     <ClInclude Include="engine\world\settings\RigidBodySettings.h"><Filter>engine\world\settings</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\EditorTheme.cpp"><Filter>editor</Filter></ClCompile>
-    <ClCompile Include="editor\EditorProperties.cpp"><Filter>editor</Filter></ClCompile>
-    <ClInclude Include="editor\EditorTheme.h"><Filter>editor</Filter></ClInclude>
-    <ClInclude Include="editor\EditorProperties.h"><Filter>editor</Filter></ClInclude>
+    <ClCompile Include="editor\ui\EditorTheme.cpp"><Filter>editor\ui</Filter></ClCompile>
+    <ClCompile Include="editor\ui\EditorProperties.cpp"><Filter>editor\ui</Filter></ClCompile>
+    <ClInclude Include="editor\ui\EditorTheme.h"><Filter>editor\ui</Filter></ClInclude>
+    <ClInclude Include="editor\ui\EditorProperties.h"><Filter>editor\ui</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\systems\WorldLighting.cpp"><Filter>engine\world\systems</Filter></ClCompile>
@@ -445,6 +449,7 @@
   <ItemGroup>
     <ClInclude Include="engine\types\LightLimits.h"><Filter>engine\types</Filter></ClInclude>
     <ClInclude Include="engine\types\WorldObjectTypes.h"><Filter>engine\types</Filter></ClInclude>
+    <ClInclude Include="engine\types\ModelImportInfo.h"><Filter>engine\types</Filter></ClInclude>
     <ClCompile Include="engine\world\settings\LightSettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
     <ClCompile Include="engine\world\serialization\LegacyLightMigration.cpp"><Filter>engine\world\serialization</Filter></ClCompile>
     <ClInclude Include="engine\world\serialization\LegacyLightMigration.h"><Filter>engine\world\serialization</Filter></ClInclude>
@@ -460,6 +465,8 @@
     <ClCompile Include="application\TitleScene.cpp"><Filter>application</Filter></ClCompile>
     <ClInclude Include="application\TitleScene.h"><Filter>application</Filter></ClInclude>
     <ClCompile Include="engine\world\runtime\WorldScene.cpp"><Filter>engine\world\runtime</Filter></ClCompile>
+    <ClCompile Include="engine\renderer\ModelPreviewRenderer.cpp"><Filter>engine\renderer</Filter></ClCompile>
+    <ClInclude Include="engine\renderer\ModelPreviewRenderer.h"><Filter>engine\renderer</Filter></ClInclude>
     <ClInclude Include="engine\world\runtime\WorldScene.h"><Filter>engine\world\runtime</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -475,6 +482,8 @@
   <ItemGroup>
     <ClInclude Include="editor\assets\AssetActionDialog.h"><Filter>editor\assets</Filter></ClInclude>
     <ClCompile Include="editor\assets\AssetActionDialog.cpp"><Filter>editor\assets</Filter></ClCompile>
+    <ClInclude Include="editor\assets\AssetThumbnailCache.h"><Filter>editor\assets</Filter></ClInclude>
+    <ClCompile Include="editor\assets\AssetThumbnailCache.cpp"><Filter>editor\assets</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="editor\scene\SceneDocument.h"><Filter>editor\scene</Filter></ClInclude>
@@ -486,12 +495,15 @@
     <ClCompile Include="engine\diagnostics\FrameProfiler.cpp"><Filter>engine\diagnostics</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\AssetDragPayload.cpp"><Filter>editor</Filter></ClCompile>
+    <ClCompile Include="editor\assets\AssetDragPayload.cpp"><Filter>editor\assets</Filter></ClCompile>
+    <ClInclude Include="editor\assets\AssetDragPayload.h"><Filter>editor\assets</Filter></ClInclude>
     <ClCompile Include="editor\panels\scene_view\SceneViewDrawing.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
     <ClCompile Include="engine\math\MathUtility.cpp"><Filter>engine\math</Filter></ClCompile>
     <ClCompile Include="engine\world\IEditableWorld.cpp"><Filter>engine\world</Filter></ClCompile>
     <ClCompile Include="engine\world\IScene.cpp"><Filter>engine\world</Filter></ClCompile>
     <ClCompile Include="engine\world\IWorldObjects.cpp"><Filter>engine\world</Filter></ClCompile>
+    <ClCompile Include="engine\world\prefab\PrefabOperations.cpp"><Filter>engine\world\prefab</Filter></ClCompile>
+    <ClInclude Include="engine\world\prefab\PrefabOperations.h"><Filter>engine\world\prefab</Filter></ClInclude>
     <ClCompile Include="engine\world\settings\AssetSettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
     <ClCompile Include="engine\world\settings\ColliderSettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
     <ClCompile Include="engine\world\settings\MotionSettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>

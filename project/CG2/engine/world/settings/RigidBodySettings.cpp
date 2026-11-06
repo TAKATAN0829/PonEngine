@@ -19,6 +19,7 @@ bool AreBodySettingsValid(const RigidBodySettings& settings) {
 
 	const float coefficients[] = {settings.restitution, settings.friction};
 
+	// 反発や摩擦などの係数を、物理計算で扱う0〜1の範囲にそろえる。
 	for (float coefficient : coefficients) {
 		if (!std::isfinite(coefficient) || coefficient < 0 || coefficient > 1) {
 			return false;

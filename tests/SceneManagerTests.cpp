@@ -45,6 +45,7 @@ void RunSceneManagerTests() {
 	manager.Initialize({}, originalScene);
 	RequireSceneState(std::string(manager.GetSceneName()) == "TrackedScene", "Scene name was not exposed.");
 	manager.Update(nullptr, false);
+	// 一時停止中はシーンを保持したまま、ゲームの更新回数が増えないことを確認する。
 	RequireSceneState(original.updated == 0, "Paused scene advanced.");
 	manager.SetPlayState(true);
 	TrackedScene* gameScene = new TrackedScene(game);

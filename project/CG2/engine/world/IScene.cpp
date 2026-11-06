@@ -16,7 +16,7 @@ std::string IScene::GetInitialAssetPath() const {
 
 // 更新中は要求だけを取り出す。破棄と初期化はSceneManagerがフレーム境界で行う。
 std::unique_ptr<IScene> IScene::TakeNextScene() {
-	// 保留中のシーンの所有権を、遷移管理側へ渡す。
+	// 遷移管理側へ所有権を渡すと予約は空になり、次の遷移を受け付けられる。
 	return std::move(nextScene_);
 }
 

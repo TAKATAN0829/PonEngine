@@ -14,7 +14,7 @@
 #include "SceneManager.h"
 
 #ifdef USE_IMGUI
-#include "../../editor/Editor.h"
+#include "../../editor/core/Editor.h"
 #include "SceneRenderTarget.h"
 #endif
 

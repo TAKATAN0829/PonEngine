@@ -20,6 +20,7 @@ D3DResourceLeakChecker::~D3DResourceLeakChecker() {
 	// リソースリークチェック
 	Microsoft::WRL::ComPtr<IDXGIDebug1> debug;
 
+	// デバッグ用の窓口を取得できた環境で、終了時に残っている描画リソースを調べる。
 	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
 
 		debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);

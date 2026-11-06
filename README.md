@@ -220,7 +220,12 @@ project/
   PonEngine.slnx
   CG2/
     application/       GameScene・TitleSceneの初期配置、HUD、場面遷移
-    editor/            Editorの状態・履歴・レイアウト
+    editor/            Editorの実装
+      core/            Editor本体・各機能の接続
+      state/           選択・編集履歴・再生前の状態
+      ui/              レイアウト・配色・共通の入力欄
+      assets/          Asset操作・パネル間のドラッグ情報
+      scene/           シーンの保存先・ファイル選択
       panels/          タブごとに実装を分類
         hierarchy/     Hierarchyのツリーと右クリック操作
         inspector/     InspectorのComponent編集・複数選択
@@ -243,7 +248,8 @@ project/
         runtime/       WorldSceneによる共通の更新・描画・Editor窓口
         objects/       オブジェクト一覧・親子関係・基本形状の作成
         settings/      Material・Animation・Particle・物理・ライトなどの設定値
-        serialization/ Scene・Prefab・Particleプリセットの保存と読込
+        serialization/ Scene・Particleプリセットの保存と読込
+        prefab/        Prefab階層の保存・配置・Apply／Revertの手順
         systems/       動作・衝突判定・物理更新・ライトの収集
       asset/           モデル・テクスチャ・アニメーションの読込
       math/            行列・投影・選択用の計算
@@ -255,6 +261,8 @@ generated/             ビルド結果・テスト生成物（Git管理外）
 ```
 
 オブジェクトの保存用データは`world/objects/WorldObjectData.h`にまとめ、実行・保存処理は`IWorldObjects`を窓口にします。Editorは、その操作を継承してカメラ・プレビュー操作を加えた`IEditableWorld`を使います。保存用データと実行中の状態を分け、UIはシーン所有の参照をフレームをまたいで保持しない方針です。
+
+Prefab操作は`world/prefab/PrefabOperations.h/.cpp`にまとめています。Editorが保存・配置・Apply／Revertを依頼し、PrefabOperationsが`SceneFile`へ読書きを委譲します。`WorldObjects`はデータ一覧と親子関係・Transformの操作を担当し、Prefabや保存処理を参照しません。配置は一時データで検証し、最後に配置先の`ReplaceObjects`へ渡すため、実行側のモデル準備や失敗時の復元も維持します。詳しい呼出順は[依存関係](docs/dependencies.md)に記載しています。
 
 命名ではSceneをGameScene・TitleSceneなどの場面とその管理に使い、共通の実行処理にはWorld、設定値にはRigidBodySettings・ColliderSettingsなどの機能名を使います。SceneFileは場面の保存、SceneViewはEditorの画面名として残しています。
 

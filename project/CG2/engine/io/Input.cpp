@@ -50,7 +50,7 @@ void Input::Initialize(WinApp* winApp) {
 
 void Input::Update() {
 
-	// 前フレームの入力を保存
+	// 更新前の入力を残し、押し始めと離した瞬間を前後の比較で判定する。
 	memcpy(preKey_, key_, sizeof(key_));
 
 	// キーボード取得開始

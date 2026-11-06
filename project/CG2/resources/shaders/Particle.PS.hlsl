@@ -70,6 +70,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     {
         float32_t sceneDepth = gSceneDepth.Load(int32_t3(int32_t2(input.position.xy), 0));
 
+        // 深度が初期値の場所には背景の物体がないため、交差によるフェードはかけない。
         if (sceneDepth < 1.0f)
         {
             float32_t2 normalizedPosition = input.position.xy / depthSize * float32_t2(2, -2) + float32_t2(-1, 1);
@@ -79,6 +80,7 @@ PixelShaderOutput main(VertexShaderOutput input)
 
             float32_t separation = length(sceneWorld.xyz / sceneWorld.w - particleWorld.xyz / particleWorld.w);
 
+            // 背景との距離が指定値より近いほど透明にし、粒子の板と物体の境目をぼかす。
             output.color.a *= saturate(separation / softDistance);
         }
     }

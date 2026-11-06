@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Mesh.h"
-#include "settings/AssetSettings.h"
+#include "ModelImportInfo.h"
 #include <memory>
 #include <string>
 #include <vector>

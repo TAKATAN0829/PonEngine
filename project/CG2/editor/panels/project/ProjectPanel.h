@@ -2,8 +2,8 @@
 
 #include "IEditableWorld.h"
 #include "../../assets/AssetActionDialog.h"
+#include "../../assets/AssetThumbnailCache.h"
 #include <filesystem>
-#include <unordered_map>
 #include <vector>
 #include <optional>
 
@@ -11,7 +11,7 @@ class EditorSelection;
 class EditorSession;
 class ParticleEditorPanel;
 
-// Projectだけの状態を所有する。画像・モデルのGPUリソースは各Managerから借用する。
+// Projectの一覧と操作を管理し、取得したサムネイルをタイルへ表示する。
 class ProjectPanel {
 public:
 
@@ -47,7 +47,7 @@ public:
 private:
 
 	//=============================================================================================//
-	// 型 / 一覧とプレビュー
+	// 型 / 一覧
 
 	struct AssetEntry {
 		std::filesystem::path path;
@@ -64,13 +64,6 @@ private:
 		size_t depth = 0;
 
 		bool hasChildren = false;
-	};
-
-	struct Preview {
-		uint64_t handle = 0;
-
-		float width = 1;
-		float height = 1;
 	};
 
 	//=============================================================================================//
@@ -101,8 +94,6 @@ private:
 
 	void DrawAssetActions(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
 
-	Preview GetPreview(const AssetEntry& entry, IEditableWorld& scene);
-
 private:
 
 	//=============================================================================================//
@@ -127,7 +118,7 @@ private:
 	//=============================================================================================//
 	// 更新要求・プレビュー
 
-	std::unordered_map<std::string, Preview> previews_; // Managerが所有する画像ハンドルをキャッシュする。
+	AssetThumbnailCache thumbnails_; // モデルと画像の取得をまとめる。
 
 	std::string status_;
 
@@ -137,5 +128,4 @@ private:
 
 	bool isInitialized_ = false;
 	bool isRefreshRequested_ = false;
-	bool wasPreviewLoadedThisFrame_ = false; // 画像・モデルの読込は一フレーム一件まで。
 };

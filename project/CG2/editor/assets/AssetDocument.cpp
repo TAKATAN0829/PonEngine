@@ -220,6 +220,7 @@ namespace {
 						break;
 					}
 
+					// UTF-16の上位サロゲートに続く下位サロゲートを読み、1文字のコードポイントに戻す。
 					if (codepoint >= 0xd800 && codepoint <= 0xdbff) {
 						if (text.substr(position, 2) != "\\u") {
 							break;
@@ -242,6 +243,7 @@ namespace {
 						break;
 					}
 
+					// ファイル名として扱えるよう、復元した文字をUTF-8で追加する。
 					AppendUnicode(decoded, codepoint);
 
 					continue;
@@ -414,17 +416,20 @@ bool AssetDocument::WriteUpdated(const std::filesystem::path& stagingPath, const
 
 	std::string updated = text_;
 
+	// 後ろから置き換えれば、まだ処理していない参照の開始位置がずれない。
 	for (std::vector<Link>::const_reverse_iterator link = links_.rbegin(); link != links_.rend(); ++link) {
 		updated.replace(link->begin, link->length, GetUpdatedLink(*link, change));
 	}
 
 	if (extension_ == ".glb") {
+		// GLBのJSONチャンクの長さは4バイト境界にそろえる。
 		while (updated.size() % 4 != 0) {
 			updated.push_back(' ');
 		}
 
 		std::string container;
 
+		// GLBヘッダーとJSONチャンクの長さを再計算し、元のバイナリ部分を末尾につなぐ。
 		WriteUint32(container, 0x46546c67);
 
 		WriteUint32(container, 2);

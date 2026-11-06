@@ -1,12 +1,12 @@
 #include "../project/CG2/editor/panels/scene_view/SceneViewPanel.h"
-#include "../project/CG2/editor/EditorSelection.h"
+#include "../project/CG2/editor/state/EditorSelection.h"
 #include "objects/WorldObjects.h"
 #include "SceneViewMath.h"
 #include "MathUtility.h"
 #include "../project/CG2/editor/panels/inspector/InspectorPanel.h"
 #include "../project/CG2/editor/panels/performance/PerformancePanel.h"
 #include "../project/CG2/editor/assets/AssetActionDialog.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include "../project/CG2/editor/panels/particle_editor/ParticleEditorPanel.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
@@ -101,6 +101,7 @@ namespace {
 			Draw();
 			Draw();
 			const ImGuiWindow* popup = ImGui::FindWindowByName("##Combo_00");
+			// ツール一覧が開いていることを確かめてから、次のマウス操作を送る。
 			RequireInteraction(popup != nullptr && popup->Active,"Tool combo did not open");
 			const ImVec2 item = {popup->Pos.x+30,popup->Pos.y+popup->WindowPadding.y+
 				static_cast<float>(toolIndex)*ImGui::GetTextLineHeightWithSpacing()+ImGui::GetTextLineHeight()*0.5f};

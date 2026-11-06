@@ -199,6 +199,7 @@ void Object3dCommon::CreateGraphicsPipeline() {
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc = pipelineManager.CreateDepthStencilState();
 
 	// BlendModeの数だけPSOを生成
+	// 合成方法ごとにパイプラインを準備し、描画中は対応するものへ切り替える。
 	for (int blendMode = 0; blendMode < kCountOfBlendMode; ++blendMode) {
 
 		D3D12_BLEND_DESC blendDesc = pipelineManager.CreateBlendState(static_cast<BlendMode>(blendMode));

@@ -1,4 +1,4 @@
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include "objects/WorldObjects.h"
 
 #include <stdexcept>
@@ -36,6 +36,7 @@ void RunEditorSessionTests() {
 		unchangedSession.Update(unchangedScene, false);
 		RequireSessionCondition(!unchangedSession.IsDirty(unchangedScene), "Unchanged scene became dirty");
 	}
+	// 変更がない間は、比較のためにシーン全体をコピーしないことを確認する。
 	RequireSessionCondition(unchangedScene.GetCaptureCount() == initialCaptureCount, "Unchanged frames copied scene snapshots");
 	unchangedScene.GetEditableObject(0).transform->translate.x = 1;
 	unchangedSession.Update(unchangedScene, false);

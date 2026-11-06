@@ -1,5 +1,5 @@
 #include "SceneDocumentInteractionTests.h"
-#include "../project/CG2/editor/Editor.h"
+#include "../project/CG2/editor/core/Editor.h"
 #include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
 #include "imgui/imgui.h"
@@ -111,6 +111,7 @@ namespace {
 		}
 
 		void EnterFilename(const std::filesystem::path& path) {
+			// メニュー操作でファイル選択画面が開いたことを、ImGuiの状態から確認する。
 			RequireSceneUi(PopupActive("Sceneファイル"), "Scene file picker did not open.");
 
 			ImGui::GetIO().AddKeyEvent(ImGuiMod_Ctrl, true);

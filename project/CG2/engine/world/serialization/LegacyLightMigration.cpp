@@ -9,12 +9,14 @@
 
 
 bool LegacyLightMigration::AddLegacyDefaults(std::vector<WorldObjectData>& objects, std::string& error, WorldObjectId minimumId) {
+	// 従来の既定ライト3個を追加する前に、新しいIDを割り振れるか確認する。
 	if (minimumId >= (std::numeric_limits<WorldObjectId>::max)()-3) {
 		error = "No IDs available for legacy lights.";
 
 		return false;
 	}
 
+	// 移行で増えるライトも、シーン全体のオブジェクト数に含めて検証する。
 	if (objects.size()+3 > WorldObjects::kMaxObjects) {
 		error = "Legacy lights exceed scene capacity.";
 

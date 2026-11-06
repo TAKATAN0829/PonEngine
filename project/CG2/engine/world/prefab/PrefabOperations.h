@@ -1,20 +1,29 @@
 #pragma once
 
-#include "IWorldObjects.h"
+#include "WorldObjectTypes.h"
+#include "Vector3.h"
 #include <filesystem>
+#include <string>
 
-// Prefabはルートと子孫を保存する。元Assetへの明示的なApply/Revertを提供する。
-class PrefabFile {
+class IWorldObjects;
+
+// Prefabの保存・配置・Apply/Revertの手順を組み立てる。
+// 配置データはWorldが所有し、ファイル形式の読書きはSceneFileへ任せる。
+class PrefabOperations {
 public:
 
 	//=============================================================================================//
-	// 保存 / 読み込み・配置
+	// Prefab保存・配置
 
 	// シーン形式を再利用し、マテリアル・アニメーション・種類別Componentも保存する。
 	static bool Save(IWorldObjects& scene, WorldObjectId rootId, const std::filesystem::path& path, std::string& error);
 
 	// 全件を検証してから新しいIDを割り当てる。失敗時にシーンを部分変更しない。
 	static WorldObjectId Instantiate(IWorldObjects& scene, const std::filesystem::path& path,
+		WorldObjectId parentId, const Vector3& position, std::string& error);
+
+	// Projectなどのresources相対パスを検証し、配置を依頼する。
+	static WorldObjectId Place(IWorldObjects& scene, const std::string& prefab,
 		WorldObjectId parentId, const Vector3& position, std::string& error);
 
 	//=============================================================================================//

@@ -24,6 +24,7 @@ void VerifyPrimitiveAssets(GameScene& scene) {
 			throw std::runtime_error("Primitive model was not imported.");
 		}
 		const AABB& bounds = model->GetLocalBounds();
+		// 描画用モデルの大きさが1辺1の範囲に収まり、既定の当たり判定と合うか確認する。
 		if (std::abs(bounds.min.x+0.5f)>0.00001f || std::abs(bounds.max.x-0.5f)>0.00001f ||
 			std::abs(bounds.min.y+0.5f)>0.00001f || std::abs(bounds.max.y-0.5f)>0.00001f ||
 			std::abs(bounds.min.z+0.5f)>0.00001f || std::abs(bounds.max.z-0.5f)>0.00001f) {

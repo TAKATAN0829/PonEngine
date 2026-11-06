@@ -15,6 +15,7 @@ void ConsolePanel::Draw() {
 	// ログの検索条件を受け取り、一致したメッセージを表示する。
 #ifdef USE_IMGUI
 	if (ImGui::Begin("Console")) {
+		// 検索欄がパネル幅を占めすぎないようにして、右に全件数を表示する。
 		ImGui::SetNextItemWidth((std::min)(250.0f,ImGui::GetContentRegionAvail().x*0.6f));
 
 		ImGui::InputTextWithHint("##LogSearch","ログを検索",search_,sizeof(search_));
@@ -25,9 +26,11 @@ void ConsolePanel::Draw() {
 
 		ImGui::Separator();
 
+		// 検索欄を固定し、メッセージ一覧だけをスクロールする。
 		ImGui::BeginChild("ConsoleMessages");
 
 		if (ImGui::BeginTable("LogRows",2,ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
+			// 番号列は固定幅、本文列は残りの幅を使う。
 			ImGui::TableSetupColumn("#",ImGuiTableColumnFlags_WidthFixed,38);
 
 			ImGui::TableSetupColumn("Message",ImGuiTableColumnFlags_WidthStretch);
@@ -35,6 +38,7 @@ void ConsolePanel::Draw() {
 			size_t messageIndex = 0;
 
 			for (const std::string& message : LogSystem::GetRecentMessages()) {
+				// 絞り込んでも元の一覧での行番号を表示する。
 				++messageIndex;
 
 				if (search_[0] != '\0') {
@@ -43,6 +47,7 @@ void ConsolePanel::Draw() {
 					}
 				}
 
+				// 同じ本文のログでも、右クリックメニューを行ごとに区別する。
 				ImGui::PushID(static_cast<int>(messageIndex));
 
 				ImGui::TableNextRow();
@@ -53,6 +58,7 @@ void ConsolePanel::Draw() {
 
 				ImGui::TableSetColumnIndex(1);
 
+				// 一覧は先頭行だけを描き、全文はツールチップとコピーに使う。
 				size_t lineEnd = message.find('\n');
 
 				if (lineEnd == std::string::npos) {

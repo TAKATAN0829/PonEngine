@@ -114,6 +114,7 @@ void SceneRenderTarget::End() {
 // 新しいリソースの作成に成功するまでは、現在の描画先を保持する。
 void SceneRenderTarget::Resize(uint32_t width, uint32_t height) {
 	// 現在の寸法と比較し、必要な場合だけ描画先を作り直す。
+	// ゼロ寸法での作成を防ぎ、寸法が同じフレームでは描画先を再利用する。
 	if (width == 0 || height == 0 || (width == width_ && height == height_)) {
 		return;
 	}

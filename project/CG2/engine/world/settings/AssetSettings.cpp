@@ -17,6 +17,7 @@ bool AreMaterialSettingsEqual(const MaterialSettings& first, const MaterialSetti
 
 bool AreAnimationSettingsEqual(const AnimationSettings& first, const AnimationSettings& second) {
 	// アニメーションの保存対象の値を比較する。
+	// 再生開始位置やループの違いも、保存・履歴の変更として扱う。
 	if (first.clip == second.clip && first.shouldAutoplay == second.shouldAutoplay && first.shouldLoop == second.shouldLoop &&
 		first.speed == second.speed && first.time == second.time) {
 		return true;

@@ -1,6 +1,5 @@
 #include "objects/WorldObjects.h"
 #include "objects/WorldAssetReferences.h"
-#include "serialization/PrefabFile.h"
 #include "settings/LightSettings.h"
 
 #include <array>
@@ -46,6 +45,7 @@ namespace {
 			return false;
 		}
 
+		// 軸の向きが反転している場合は、その符号を拡縮へ移して回転から分離する。
 		if (MathUtility::Dot(CrossProduct(basis[0], basis[1]), basis[2]) < 0) {
 			result.scale.x = -result.scale.x;
 		}
@@ -58,6 +58,7 @@ namespace {
 
 		result.rotate.y = std::asin((std::clamp)(-basis[0].z, -1.0f, 1.0f));
 
+		// Y軸が約90度のときはX軸とZ軸の回転を個別に求められないため、別の式で復元する。
 		if (std::abs(std::cos(result.rotate.y)) > 0.0001f) {
 			result.rotate.x = std::atan2(basis[1].z, basis[2].z);
 
@@ -209,44 +210,6 @@ bool WorldObjects::SetObjectWorldTransform(WorldObjectId id, const Matrix4x4& wo
 	objects_[index].transform = transform;
 
 	return true;
-}
-
-WorldObjectId WorldObjects::PlacePrefab(const std::string& prefab, WorldObjectId parentId, const Vector3& position, std::string& error) {
-	// Prefabの階層を読み込み、新しいIDへ置き換えて配置する。
-	const std::filesystem::path relative(std::u8string(prefab.begin(), prefab.end()));
-
-	if (relative.is_absolute() || relative.has_root_name() || relative.extension() != ".ponprefab") {
-		error = "Invalid prefab path.";
-
-		return 0;
-	}
-
-	for (const std::filesystem::path& part : relative) {
-		if (part == "..") {
-			error = "Prefab must be inside resources.";
-
-			return 0;
-		}
-	}
-
-	std::error_code fileError;
-
-	const std::filesystem::path root = std::filesystem::weakly_canonical("resources", fileError);
-	const std::filesystem::path resolved = std::filesystem::weakly_canonical(root / relative, fileError);
-
-	if (fileError || resolved.lexically_relative(root).empty()) {
-		error = "Cannot resolve prefab path.";
-
-		return 0;
-	}
-
-	if (*resolved.lexically_relative(root).begin() == "..") {
-		error = "Prefab must be inside resources.";
-
-		return 0;
-	}
-
-	return PrefabFile::Instantiate(*this, resolved, parentId, position, error);
 }
 
 bool WorldObjects::SetObjectWorldPosition(WorldObjectId id, const Vector3& position) {

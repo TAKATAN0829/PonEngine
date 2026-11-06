@@ -32,6 +32,7 @@ void AudioSystem::Finalize () {
 	//=============================================================================================//
 	// MasterVoice解放
 
+	// 出力先のボイスを先に破棄してから、XAudio2の本体を解放する。
 	if (masterVoice_ != nullptr) {
 
 		masterVoice_->DestroyVoice ();

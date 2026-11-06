@@ -26,6 +26,7 @@ VertexShaderOutput main(VertexShaderInput input)
 
     output.texcoord = input.texcoord;
 
+    // 軸ごとに違う倍率で拡縮しても法線が面に垂直になるよう、逆転置行列を使う。
     output.normal = normalize(mul(input.normal, (float32_t3x3) gTransformationMatrix.WorldInverseTranspose));
 
     output.worldPosition = mul(input.position, gTransformationMatrix.World).xyz;

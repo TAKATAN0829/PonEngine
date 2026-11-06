@@ -8,7 +8,7 @@
 <ItemDefinitionGroup><ClCompile><LanguageStandard>stdcpp20</LanguageStandard><AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions><AdditionalIncludeDirectories>$(ProjectDir)..\project\CG2\engine\world;$(ProjectDir)..\project\CG2\engine\asset;$(ProjectDir)..\project\CG2\engine\io;$(ProjectDir)..\project\CG2\engine\types;$(ProjectDir)..\project\CG2\engine\math</AdditionalIncludeDirectories><WarningLevel>Level3</WarningLevel><TreatWarningAsError>true</TreatWarningAsError></ClCompile><Link><SubSystem>Console</SubSystem></Link></ItemDefinitionGroup>
 <ItemGroup><ClCompile Include="SceneFileTests.cpp" /><ClCompile Include="HierarchyTests.cpp" /><ClCompile Include="CameraTests.cpp" /><ClCompile Include="PlacementTests.cpp" /><ClCompile Include="..\project\CG2\engine\world\serialization\SceneFile.cpp" /><ClCompile Include="..\project\CG2\engine\world\objects\WorldObjects.cpp" /></ItemGroup>
 <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-<ItemGroup><ClCompile Include="EditorSessionTests.cpp" /><ClCompile Include="..\project\CG2\editor\EditorSession.cpp" /></ItemGroup><ItemGroup><ClCompile Include="SceneViewMathTests.cpp" /><ClCompile Include="..\project\CG2\engine\math\SceneViewMath.cpp" /></ItemGroup><ItemGroup><ClCompile Include="..\project\CG2\engine\world\settings\ParticleSettings.cpp" /><ClCompile Include="..\project\CG2\engine\world\serialization\ParticlePresetFile.cpp" /><ClCompile Include="ParticlePresetTests.cpp" /></ItemGroup><ItemGroup><ClCompile Include="..\project\CG2\engine\world\serialization\PrefabFile.cpp" /><ClCompile Include="AssetWorkflowTests.cpp" /></ItemGroup><ItemGroup><ClCompile Include="EditorWorkflowTests.cpp" /></ItemGroup><ItemGroup><ClCompile Include="..\project\CG2\editor\EditorSelection.cpp" /></ItemGroup>
+<ItemGroup><ClCompile Include="EditorSessionTests.cpp" /><ClCompile Include="..\project\CG2\editor\state\EditorSession.cpp" /></ItemGroup><ItemGroup><ClCompile Include="SceneViewMathTests.cpp" /><ClCompile Include="..\project\CG2\engine\math\SceneViewMath.cpp" /></ItemGroup><ItemGroup><ClCompile Include="..\project\CG2\engine\world\settings\ParticleSettings.cpp" /><ClCompile Include="..\project\CG2\engine\world\serialization\ParticlePresetFile.cpp" /><ClCompile Include="ParticlePresetTests.cpp" /></ItemGroup><ItemGroup><ClCompile Include="..\project\CG2\engine\world\prefab\PrefabOperations.cpp" /><ClCompile Include="AssetWorkflowTests.cpp" /></ItemGroup><ItemGroup><ClCompile Include="EditorWorkflowTests.cpp" /></ItemGroup><ItemGroup><ClCompile Include="..\project\CG2\editor\state\EditorSelection.cpp" /></ItemGroup>
   <ItemGroup><ClCompile Include="..\project\CG2\engine\world\systems\WorldMotion.cpp" /><ClCompile Include="MotionTests.cpp" /></ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\project\CG2\engine\world\systems\WorldCollision.cpp" />
@@ -45,7 +45,7 @@
 <ItemGroup><ClCompile Include="SceneDocumentTests.cpp" /></ItemGroup>
   <ItemGroup><ClCompile Include="..\project\CG2\engine\diagnostics\FrameProfiler.cpp" /></ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\project\CG2\editor\AssetDragPayload.cpp" />
+    <ClCompile Include="..\project\CG2\editor\assets\AssetDragPayload.cpp" />
     <ClCompile Include="..\project\CG2\engine\math\MathUtility.cpp" />
     <ClCompile Include="..\project\CG2\engine\world\IEditableWorld.cpp" />
     <ClCompile Include="..\project\CG2\engine\world\IScene.cpp" />

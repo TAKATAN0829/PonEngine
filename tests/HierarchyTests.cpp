@@ -1,6 +1,6 @@
 #include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include <cmath>
 #include <fstream>
 #include <stdexcept>
@@ -17,6 +17,7 @@ namespace {
 	void RequireMatrixNear(const Matrix4x4& first, const Matrix4x4& second) {
 		for (size_t rowIndex = 0; rowIndex < 4; ++rowIndex) {
 			for (size_t columnIndex = 0; columnIndex < 4; ++columnIndex) {
+				// 各要素を許容誤差つきで比較し、親の変更前後で見た目が保たれることを確認する。
 				RequireHierarchy(std::abs(first.m[rowIndex][columnIndex] - second.m[rowIndex][columnIndex]) < 0.001f, "World matrix changed unexpectedly");
 			}
 		}

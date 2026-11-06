@@ -64,6 +64,7 @@ bool SceneViewMath::ProjectLine(const Vector3& start, const Vector3& end, const 
 	float startParameter = 0;
 	float endParameter = 1;
 
+	// 透視除算の前に、近クリップ面より手前の部分を切り落とす。
 	if (!ClipLineInterval(first.z, second.z, startParameter, endParameter)) {
 		return false;
 	}

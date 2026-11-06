@@ -80,6 +80,7 @@ bool WinApp::ProcessMessage() {
 	MSG message{};
 
 	// マウス移動とキー入力を同時に行っても、古い入力を次フレームへ溜めない。
+	// メッセージが来るまで待たず、今ある分だけ処理してゲームの更新へ戻る。
 	while (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
 		if (message.message == WM_QUIT) {
 			return true;

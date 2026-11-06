@@ -168,6 +168,7 @@ Matrix4x4 MathUtility::Multiply(const Matrix4x4& firstMatrix, const Matrix4x4& s
 
 Matrix4x4 MathUtility::Inverse(const Matrix4x4& matrix) {
 	// 行列式と余因子から、元の変換を打ち消す逆行列を求める。
+	// 行列式を先に求め、逆行列の各要素を余因子から計算する際に共通で使う。
 	float determinant =
 		matrix.m[0][0] * matrix.m[1][1] * matrix.m[2][2] * matrix.m[3][3]
 		- matrix.m[0][0] * matrix.m[1][1] * matrix.m[2][3] * matrix.m[3][2]

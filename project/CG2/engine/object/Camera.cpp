@@ -52,6 +52,7 @@ void Camera::Update () {
 // Gameビューも描画先の寸法に合わせ、縦横比による引き伸ばしを防ぐ。
 void Camera::SetViewportSize(int32_t width, int32_t height) {
 	// 表示サイズを保存し、必要な投影や描画基準へ反映する。
+	// 有効な縦横比を作れないサイズは採用せず、現在の投影設定を保つ。
 	if (width <= 0 || height <= 0) {
 		return;
 	}

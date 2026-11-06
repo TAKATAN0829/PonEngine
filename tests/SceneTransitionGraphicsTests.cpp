@@ -14,6 +14,10 @@ namespace {
 		int originFinalizations = 0;
 		int gameFinalizations = 0;
 		int returnFinalizations = 0;
+		uint64_t originPreviewHandle = 0;
+		uint64_t returnPreviewHandle = 0;
+		uint64_t restoredPreviewHandle = 0;
+
 		bool wasRestored = false;
 		bool wasUndone = false;
 		bool wasRedone = false;
@@ -47,10 +51,18 @@ namespace {
 				}
 			}
 			if (isOriginScene_) {
+				// 再生後の復帰段階で、ゲームを進めずに編集時の座標へ戻ったことを確認する。
 				if (state_.phase == 2) {
 					if (!shouldSimulate) {
 						if (GetEditableObject(0).transform->translate.x == 3) {
 							state_.wasRestored = true;
+
+							// 停止で元のシーンへ戻ったとき、再生前の画像をもう一度取得する。
+							if (state_.restoredPreviewHandle == 0) {
+								std::string error;
+
+								state_.restoredPreviewHandle = GetModelPreview("teapot.obj", error);
+							}
 						}
 					}
 				}
@@ -59,6 +71,20 @@ namespace {
 		void DrawEditorTools(EditorToolVisibility& visibility) override {
 			TitleScene::DrawEditorTools(visibility);
 			++state_.frame;
+
+			// 同じモデルを、再生前のシーンと遷移先のシーンからそれぞれ要求する。
+			if (isOriginScene_) {
+				if (state_.originPreviewHandle == 0) {
+					std::string error;
+
+					state_.originPreviewHandle = GetModelPreview("teapot.obj", error);
+				}
+			} else if (state_.returnPreviewHandle == 0) {
+				std::string error;
+
+				state_.returnPreviewHandle = GetModelPreview("teapot.obj", error);
+			}
+
 			if (isOriginScene_) {
 				if (state_.frame == 1) {
 					// 保存基準x=2から編集x=3を履歴へ入れ、遷移後もUndo/Redoできるか調べる。
@@ -153,6 +179,20 @@ void RunSceneTransitionGraphicsTests() {
 	if (hasGraphicsErrors) {
 		throw std::runtime_error("GPU validation failed during scene transitions.");
 	}
+
+	// 遷移先は専用の画像を持ち、停止後には元のシーンのハンドルが戻る。
+	if (state.originPreviewHandle == 0 || state.returnPreviewHandle == 0) {
+		throw std::runtime_error("The title scenes did not prepare model previews.");
+	}
+
+	if (state.originPreviewHandle == state.returnPreviewHandle) {
+		throw std::runtime_error("The destination scene reused the origin scene's preview.");
+	}
+
+	if (state.restoredPreviewHandle != state.originPreviewHandle) {
+		throw std::runtime_error("Stopping play did not restore the origin scene's preview.");
+	}
+
 	if (state.phase != 2 || !state.wasRestored || !state.wasUndone || !state.wasRedone || state.originInitializations != 1 ||
 		state.originFinalizations != 1 || state.gameFinalizations != 1 || state.returnFinalizations != 1) {
 		std::cerr << "phase=" << state.phase << " restored=" << state.wasRestored

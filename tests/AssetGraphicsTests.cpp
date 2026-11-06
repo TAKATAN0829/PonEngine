@@ -3,7 +3,8 @@
 #include "ModelManager.h"
 #include "TextureManager.h"
 #include "../project/CG2/editor/assets/AssetFileOperations.h"
-#include "../project/CG2/editor/EditorSession.h"
+#include "../project/CG2/editor/assets/AssetThumbnailCache.h"
+#include "../project/CG2/editor/state/EditorSession.h"
 #include <chrono>
 #include <stdexcept>
 #include <assimp/Importer.hpp>
@@ -43,13 +44,46 @@ void RunAssetGraphicsTests(GameScene& scene) {
 
     scene.GetEditableObject(scene.GetEditableObjectCount() - 1).transform->translate = {20, 0, 0};
 
-    const uint64_t previewBefore = scene.GetModelPreview(originalModel, error);
+    // Projectと同じ取得窓口へ、まず3Dモデルを依頼する。
+    AssetThumbnailCache thumbnails;
+
+    thumbnails.BeginFrame();
+
+    const AssetThumbnail modelThumbnail = thumbnails.GetThumbnail(resources / source / "fence.obj", resources, ".obj", scene, error);
+
+    // 新しい画像は次のフレームまで待たせ、モデルと画像が同じ準備上限を使うことを確認する。
+    if (thumbnails.GetThumbnail(resources / source / "fence.png", resources, ".png", scene, error).handle != 0) {
+        throw std::runtime_error("Asset thumbnails exceeded the shared frame budget.");
+    }
+
+    thumbnails.BeginFrame();
+
+    const AssetThumbnail imageThumbnail = thumbnails.GetThumbnail(resources / source / "fence.png", resources, ".png", scene, error);
+
+    if (imageThumbnail.handle == 0) {
+        throw std::runtime_error("Image thumbnail preparation failed: " + error);
+    }
+
+    if (imageThumbnail.width != 990 || imageThumbnail.height != 360) {
+        throw std::runtime_error("Image thumbnail did not preserve the source dimensions.");
+    }
+
     const uint64_t textureBefore = TextureManager::GetInstance()->GetSrvHandleGPU(originalTexture).ptr;
 
     Model* modelBefore = ModelManager::GetInstance()->FindModel(originalModel);
 
-    if (previewBefore == 0 || modelBefore == nullptr) {
+    // 移動後と比較できるよう、元のモデルと正方形のサムネイルを確保する。
+    if (modelThumbnail.handle == 0 || modelBefore == nullptr) {
         throw std::runtime_error("Asset move GPU preview preparation failed.");
+    }
+
+    if (modelThumbnail.width != 128 || modelThumbnail.height != 128) {
+        throw std::runtime_error("Model thumbnail is not 128 pixels square.");
+    }
+
+    // 準備上限に達したフレームでも、取得済みのサムネイルは返る。
+    if (thumbnails.GetThumbnail(resources / source / "fence.obj", resources, ".obj", scene, error).handle != modelThumbnail.handle) {
+        throw std::runtime_error("Thumbnail cache did not reuse the model preview.");
     }
 
     // 移動前から実行用Object3dとプレビューが存在する状態にする。
@@ -87,8 +121,19 @@ void RunAssetGraphicsTests(GameScene& scene) {
         throw std::runtime_error("Asset move replaced the existing texture descriptor.");
     }
 
-    if (scene.GetModelPreview(movedModel, error) != previewBefore) {
+    // Projectの一覧を更新した後も、移動先から同じGPUハンドルを受け取れる。
+    thumbnails.Clear();
+
+    thumbnails.BeginFrame();
+
+    if (thumbnails.GetThumbnail(resources / destination / "fence.obj", resources, ".obj", scene, error).handle != modelThumbnail.handle) {
         throw std::runtime_error("Asset move lost the existing preview descriptor.");
+    }
+
+    thumbnails.BeginFrame();
+
+    if (thumbnails.GetThumbnail(resources / destination / "fence.png", resources, ".png", scene, error).handle != imageThumbnail.handle) {
+        throw std::runtime_error("Asset move lost the existing image thumbnail descriptor.");
     }
 
     if (!history.Undo(scene, error)) {

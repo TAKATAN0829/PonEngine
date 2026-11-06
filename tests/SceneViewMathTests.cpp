@@ -29,6 +29,7 @@ void RunSceneViewMathTests() {
 	const Matrix4x4 viewProjection = MathUtility::Multiply(MathUtility::Inverse(cameraMatrix),
 		MathUtility::MakePerspectiveFovMatrix(0.8f, 1280.0f / 720.0f, 0.1f, 100.0f));
 	Vector2 screenPosition{};
+	// 既知のワールド座標で投影が成功することを先に確かめてから、画面上の位置を比較する。
 	RequireViewCondition(SceneViewMath::Project({}, viewProjection, 1280, 720, screenPosition), "Origin did not project");
 	RequireNear(screenPosition.x, 640, "Horizontal projection is incorrect");
 	RequireNear(screenPosition.y, 360, "Vertical projection is incorrect");

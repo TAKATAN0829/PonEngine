@@ -36,6 +36,7 @@ bool AssetPathChange::DoesContain(const std::filesystem::path& parent, const std
 		const std::wstring childName = childPart->native();
 
 		// Windowsと同じ序数比較を使い、日本語を含むパスでもCロケールに依存しない。
+		// Windowsのファイル名と同じく大文字小文字を区別せず、パスの要素単位で照合する。
 		if (CompareStringOrdinal(parentName.c_str(), static_cast<int>(parentName.size()),
 			childName.c_str(), static_cast<int>(childName.size()), TRUE) != CSTR_EQUAL) {
 			return false;

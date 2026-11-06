@@ -92,6 +92,7 @@ void Object3d::UpdateAnimation(const AnimationSettings& settings, float deltaSec
 		if (static_cast<size_t>(settings.clip) < animation->GetClips().size()) {
 			const float duration = animation->GetClips()[settings.clip].duration;
 
+			// 繰り返し再生では時刻をクリップ内へ折り返す。長さが0のクリップでは除算を避ける。
 			if (settings.shouldLoop && duration > 0) {
 				animationTime_ = std::fmod(animationTime_, duration);
 			} else {

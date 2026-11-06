@@ -69,6 +69,7 @@ void Mesh::Initialize(DirectXCommon* dxCommon, const std::vector<VertexData>& ve
 
 	std::memcpy(vertexData_, vertices.data(), sizeof(VertexData) * vertexCount_);
 
+	// 読み込んだ頂点は三角形の順に並んでいるため、同じ順のインデックスを振る。
 	for (uint32_t index = 0; index < indexCount_; ++index) {
 
 		indexData_[index] = index;
