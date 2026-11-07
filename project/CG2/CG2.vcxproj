@@ -72,12 +72,12 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\types;$(ProjectDir)engine\platform;$(ProjectDir)engine\diagnostics;$(ProjectDir)engine\ui;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\types;$(ProjectDir)engine\platform;$(ProjectDir)engine\diagnostics;$(ProjectDir)engine\ui;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(ProjectDir)..\externals;$(ProjectDir)..\externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)externals\assimp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\externals\assimp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -102,14 +102,14 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\types;$(ProjectDir)engine\platform;$(ProjectDir)engine\diagnostics;$(ProjectDir)engine\ui;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\types;$(ProjectDir)engine\platform;$(ProjectDir)engine\diagnostics;$(ProjectDir)engine\ui;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(ProjectDir)..\externals;$(ProjectDir)..\externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalOptions>/ignore:4049 /ignore:4098 /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
-      <AdditionalLibraryDirectories>$(SolutionDir)externals\assimp\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\externals\assimp\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
@@ -134,14 +134,14 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\types;$(ProjectDir)engine\platform;$(ProjectDir)engine\diagnostics;$(ProjectDir)engine\ui;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(SolutionDir)externals;$(SolutionDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\core;$(ProjectDir)engine\types;$(ProjectDir)engine\platform;$(ProjectDir)engine\diagnostics;$(ProjectDir)engine\ui;$(ProjectDir)engine\dx12;$(ProjectDir)engine\asset;$(ProjectDir)engine\renderer;$(ProjectDir)engine\object;$(ProjectDir)engine\math;$(ProjectDir)engine\io;$(ProjectDir)engine\audio;$(ProjectDir)engine\world;$(ProjectDir)engine\utility;$(ProjectDir)application;$(ProjectDir)..\externals;$(ProjectDir)..\externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalOptions>/ignore:4049 /ignore:4098 /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
-      <AdditionalLibraryDirectories>$(SolutionDir)externals\assimp\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\externals\assimp\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
