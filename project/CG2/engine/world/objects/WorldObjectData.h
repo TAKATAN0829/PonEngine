@@ -5,6 +5,7 @@
 #include <vector>
 #include "EngineStructs.h"
 #include "settings/ParticleSettings.h"
+#include "settings/ParticleEffect.h"
 #include "settings/AssetSettings.h"
 #include "settings/MotionSettings.h"
 #include "settings/ColliderSettings.h"
@@ -58,6 +59,7 @@ struct WorldObjectData {
 	CameraSettings camera;
 	bool isMainCamera; // メイン指定はSetMainCamera経由で一つだけにする。
 	ParticleSettings particle; // 発生位置はTransformを使用し、それ以外の設定を個別に保持する。
+	ParticleEffectDocument particleEffect; // 新しいParticle Effect Component。旧particle値は互換読込と共通プリセットに使う。
 	std::vector<MaterialSettings> materials; // 空のスロットはモデル既定値を使用する。
 	AnimationSettings animation;
 
@@ -96,6 +98,7 @@ struct EditableObjectView {
 	float* lightDecay;
 
 	ParticleSettings* particleSettings;
+	ParticleEffectDocument* particleEffect;
 
 	WorldObjectId parentId; // 変更はSetObjectParentを通して検証する。
 

@@ -28,5 +28,7 @@ WorldObjectData::WorldObjectData()
 	lightDecay(1),
 	isMainCamera(false) {
 	// 新しいオブジェクトを、原点にある有効なモデルとして用意する。
+	// 既存の単一Particle設定は、最初からルートEmitter文書として扱う。
+	particleEffect = MakeParticleEffectDocument(particle);
 }
 

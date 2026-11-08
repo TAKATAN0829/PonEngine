@@ -6,6 +6,20 @@
 
 // C++
 #include <string>
+#include <array>
+
+enum class ParticleEmissionShape : uint32_t {
+	Point,
+	Box,
+	Sphere,
+	Cone,
+};
+
+struct ParticleLifetimeKey {
+	float time;
+	float size;
+	Vector4 color;
+};
 
 // 保存・履歴用の設定。実行中の粒子やGPUリソースは含めない。
 struct ParticleSettings {
@@ -53,6 +67,22 @@ struct ParticleSettings {
 
 	bool areSoftParticlesEnabled;
 	float softDistance;
+
+	//=============================================================================================//
+	// 寿命カーブ・発生形状・追加シミュレーション
+
+	bool isLifetimeCurveEnabled;
+	std::array<ParticleLifetimeKey, 4> lifetimeCurve;
+	ParticleEmissionShape emissionShape;
+	float shapeRadius;
+	float coneAngle; // 度数。
+	bool isGroundCollisionEnabled;
+	float collisionHeight;
+	float collisionRestitution;
+	bool isTrailEnabled;
+	float trailInterval;
+	float trailLifetime;
+	float trailWidth;
 };
 
 enum class ParticlePresetKind { 

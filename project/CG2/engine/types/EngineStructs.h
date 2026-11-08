@@ -29,5 +29,6 @@ struct TransformationMatrix {
 
 struct MaterialData {
 	std::string textureFilePath;
+
 	uint32_t textureIndex;
 };

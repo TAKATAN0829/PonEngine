@@ -3,6 +3,7 @@
 #include "IWorldObjects.h"
 #include "objects/WorldObjects.h"
 #include "serialization/ParticlePresetFile.h"
+#include "serialization/ParticleEffectFile.h"
 
 #include <Windows.h>
 #include <array>
@@ -365,6 +366,15 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 			}
 
 			record.components = objects[objectIndex];
+			if (record.components.type == WorldObjectType::Particle) {
+				// 旧設定欄も先頭Emitterで同期し、正規のEffect階層は後段に保存する。
+				for (const ParticleEffectNode& node : record.components.particleEffect.nodes) {
+					if (node.type == ParticleNodeType::Emitter) {
+						record.components.particle = node.emitter;
+						break;
+					}
+				}
+			}
 			record.name = objects[objectIndex].name;
 			record.model = objects[objectIndex].model;
 
@@ -423,7 +433,7 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 	unsigned formatVersion = 1;
 
 	if (hasObjectCollectionSupport) {
-		formatVersion = 13;
+		formatVersion = 14;
 	}
 
 	outputFile << "PON_SCENE " << formatVersion << '\n' << records.size() << '\n';
@@ -462,6 +472,11 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 			WriteBodySettings(outputFile, record.components);
 
 			outputFile << ' ' << record.components.light.outerAngle << ' ' << record.components.light.innerAngle;
+
+			if (record.components.type == WorldObjectType::Particle) {
+				// v14では従来設定の後ろへEffectを連結し、既存Component列の順序を保つ。
+				ParticleEffectFile::WriteDocument(outputFile, record.components.particleEffect);
+			}
 		}
 
 		outputFile << '\n';
@@ -521,7 +536,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 		return false;
 	}
 
-	if (magic != "PON_SCENE" || version < 1 || version > 13) {
+	if (magic != "PON_SCENE" || version < 1 || version > 14) {
 		error = "Unsupported scene format.";
 
 		return false;
@@ -637,6 +652,8 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 
 						return false;
 					}
+					// v13以前には階層がないため、旧設定からルートEmitterを復元する。
+					record.components.particleEffect = MakeParticleEffectDocument(record.components.particle);
 				}
 			}
 
@@ -678,6 +695,20 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 
 			if (version >= 13) {
 				inputFile >> record.components.light.outerAngle >> record.components.light.innerAngle;
+			}
+
+			if (version >= 14 && record.components.type == WorldObjectType::Particle) {
+				// v14の階層を読み、旧設定欄も先頭Emitterへ合わせて後方互換を保つ。
+				if (!ParticleEffectFile::ReadFromStream(inputFile, record.components.particleEffect)) {
+					error = "Invalid particle effect in scene.";
+					return false;
+				}
+				for (const ParticleEffectNode& node : record.components.particleEffect.nodes) {
+					if (node.type == ParticleNodeType::Emitter) {
+						record.components.particle = node.emitter;
+						break;
+					}
+				}
 			}
 
 			if (!inputFile) {

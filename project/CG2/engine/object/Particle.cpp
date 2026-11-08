@@ -3,6 +3,7 @@
 // C++
 #include <cassert>
 #include <cmath>
+#include <algorithm>
 
 // 自作
 #include "ParticleRenderer.h"
@@ -22,6 +23,7 @@ void Particle::Initialize(ParticleRenderer* renderer) {
 	assert(renderer);
 
 	renderer_ = renderer;
+	emitterWorld_ = MathUtility::MakeIdentity4x4();
 
 	DirectXCommon* dxCommon = renderer_->GetDxCommon();
 
@@ -129,6 +131,28 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 			particleIterator->transform.translate = MathUtility::Add(particleIterator->transform.translate, MathUtility::Multiply(kDeltaTime, particleIterator->velocity));
 
 			particleIterator->currentTime += kDeltaTime;
+			// 地面を下回った位置を戻し、下向き速度だけを反射させて貫通を防ぐ。
+			if (!particleIterator->isTrail && settings_.isGroundCollisionEnabled && particleIterator->transform.translate.y < settings_.collisionHeight) {
+				particleIterator->transform.translate.y = settings_.collisionHeight;
+				if (particleIterator->velocity.y < 0) particleIterator->velocity.y = -particleIterator->velocity.y * settings_.collisionRestitution;
+			}
+			if (!particleIterator->isTrail && settings_.isTrailEnabled) {
+				// 粒子ごとに経過間隔を持ち、最大数に達するまで通過位置へ残像を置く。
+				particleIterator->trailTimer += kDeltaTime;
+				while (particleIterator->trailTimer >= settings_.trailInterval && particles_.size() < kNumMaxInstance) {
+					particleIterator->trailTimer -= settings_.trailInterval;
+					ParticleData trail{};
+					trail.transform = particleIterator->transform;
+					trail.transform.scale = {settings_.trailWidth, settings_.trailWidth, settings_.trailWidth};
+					trail.velocity = {};
+					trail.color = particleIterator->color;
+					trail.lifeTime = settings_.trailLifetime;
+					trail.currentTime = 0;
+					trail.isTrail = true;
+					trail.trailTimer = 0;
+					particles_.push_back(trail);
+				}
+			}
 		}
 
 		if (numInstance_ < kNumMaxInstance) {
@@ -294,6 +318,11 @@ void Particle::SetEmitterPosition(const Vector3& position) {
 	emitter_.transform.translate = position;
 }
 
+void Particle::SetEmitterWorldTransform(const Matrix4x4& transform) {
+	// 平行移動だけでなく回転・拡縮も保持し、新規粒子の位置と初速をローカル空間から変換する。
+	emitterWorld_ = transform;
+}
+
 //=============================================================================================//
 // Setter
 
@@ -345,13 +374,31 @@ Particle::ParticleData Particle::MakeNewParticle(const Vector3& translate) {
 
 	particle.transform.rotate = { 0.0f,0.0f,0.0f };
 
-	Vector3 randomTranslate = {Random::Range(-settings_.spread.x, settings_.spread.x),
-		Random::Range(-settings_.spread.y, settings_.spread.y), Random::Range(-settings_.spread.z, settings_.spread.z)};
+	// 形状はEmitterローカル空間で生成し、後段で親子Transformを適用する。
+	Vector3 randomTranslate{};
+	if (settings_.emissionShape == ParticleEmissionShape::Box) {
+		randomTranslate = {Random::Range(-settings_.spread.x, settings_.spread.x), Random::Range(-settings_.spread.y, settings_.spread.y), Random::Range(-settings_.spread.z, settings_.spread.z)};
+	} else if (settings_.emissionShape == ParticleEmissionShape::Sphere) {
+		const float z = Random::Range(-1.0f, 1.0f); const float angle = Random::Range(0.0f, 6.2831853f);
+		const float radial = std::sqrt((std::max)(0.0f, 1.0f - z * z)); const float radius = settings_.shapeRadius * std::cbrt(Random::Range(0.0f, 1.0f));
+		randomTranslate = {radial * std::cos(angle) * radius, z * radius, radial * std::sin(angle) * radius};
+	} else if (settings_.emissionShape == ParticleEmissionShape::Cone) {
+		const float height = Random::Range(0.0f, settings_.shapeRadius);
+		const float radius = height * std::tan(settings_.coneAngle * 0.0174532925f) * std::sqrt(Random::Range(0.0f, 1.0f));
+		const float angle = Random::Range(0.0f, 6.2831853f);
+		randomTranslate = {radius * std::cos(angle), height, radius * std::sin(angle)};
+	} else {
+		randomTranslate = {Random::Range(-settings_.spread.x, settings_.spread.x), Random::Range(-settings_.spread.y, settings_.spread.y), Random::Range(-settings_.spread.z, settings_.spread.z)};
+	}
 
-	particle.transform.translate = MathUtility::Add(translate, randomTranslate);
+	// 点のTransform同士の差を取り、位置に含まれた平行移動をオフセットから除く。
+	const Vector3 worldOffset = MathUtility::Subtract(MathUtility::Transform(randomTranslate, emitterWorld_), MathUtility::Transform(Vector3{}, emitterWorld_));
+	particle.transform.translate = MathUtility::Add(translate, worldOffset);
 
-	particle.velocity = {Random::Range(settings_.velocityMinimum.x, settings_.velocityMaximum.x),
+	// 速度も方向ベクトルとして変換し、Emitterの回転・拡縮を反映する。
+	const Vector3 localVelocity = {Random::Range(settings_.velocityMinimum.x, settings_.velocityMaximum.x),
 		Random::Range(settings_.velocityMinimum.y, settings_.velocityMaximum.y), Random::Range(settings_.velocityMinimum.z, settings_.velocityMaximum.z)};
+	particle.velocity = MathUtility::Subtract(MathUtility::Transform(localVelocity, emitterWorld_), MathUtility::Transform(Vector3{}, emitterWorld_));
 
 	particle.color = settings_.color;
 
@@ -366,6 +413,8 @@ Particle::ParticleData Particle::MakeNewParticle(const Vector3& translate) {
 	particle.lifeTime = Random::Range(settings_.lifetimeMinimum, settings_.lifetimeMaximum);
 
 	particle.currentTime = 0.0f;
+	particle.isTrail = false;
+	particle.trailTimer = 0;
 
 	return particle;
 }

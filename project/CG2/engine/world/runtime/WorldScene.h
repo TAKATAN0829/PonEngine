@@ -199,7 +199,12 @@ private:
 
 	ParticleRenderer* particleRenderer_ = nullptr; // SceneContextが所有し、Sceneより長く生存する。
 
-	std::unordered_map<WorldObjectId, std::unique_ptr<Particle>> runtimeParticles_;
+	struct RuntimeParticleEmitter {
+		uint64_t nodeId;
+		std::unique_ptr<Particle> particle;
+	};
+
+	std::unordered_map<WorldObjectId, std::vector<RuntimeParticleEmitter>> runtimeParticles_;
 
 	//=============================================================================================//
 	// DebugCamera

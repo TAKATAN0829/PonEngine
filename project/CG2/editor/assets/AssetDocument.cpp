@@ -1,7 +1,7 @@
 #include "AssetDocument.h"
 #include "objects/WorldObjects.h"
 #include "serialization/SceneFile.h"
-#include "serialization/ParticlePresetFile.h"
+#include "serialization/ParticleEffectFile.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -339,11 +339,16 @@ bool AssetDocument::Load(const std::filesystem::path& root, const std::filesyste
 	}
 
 	if (extension_ == ".ponparticle") {
-		if (!ParticlePresetFile::Load(particle_, root / relative, error)) {
+		// Emitterごとのテクスチャ参照を記録し、移動前にどのノードが使うか示す。
+		if (!ParticleEffectFile::Load(particleEffect_, root / relative, error)) {
 			return false;
 		}
-
-		references_.push_back({AssetPathChange::Text(AssetPathChange::Path(particle_.texture).lexically_relative("resources")), AssetPathChange::Text(relative) + " / Particle"});
+		for (const ParticleEffectNode& node : particleEffect_.nodes) {
+			if (node.type == ParticleNodeType::Emitter) {
+				references_.push_back({AssetPathChange::Text(AssetPathChange::Path(node.emitter.texture).lexically_relative("resources")),
+					AssetPathChange::Text(relative) + " / " + node.name});
+			}
+		}
 
 		return true;
 	}
@@ -404,11 +409,14 @@ bool AssetDocument::WriteUpdated(const std::filesystem::path& stagingPath, const
 	}
 
 	if (extension_ == ".ponparticle") {
-		ParticleSettings updated = particle_;
-
-		updated.texture = change.RemapResource(updated.texture);
-
-		return ParticlePresetFile::Save(updated, stagingPath, error);
+		// 読込済み文書を複製して全Emitterの参照を更新し、元のAssetモデルを保つ。
+		ParticleEffectDocument updated = particleEffect_;
+		for (ParticleEffectNode& node : updated.nodes) {
+			if (node.type == ParticleNodeType::Emitter) {
+				node.emitter.texture = change.RemapResource(node.emitter.texture);
+			}
+		}
+		return ParticleEffectFile::Save(updated, stagingPath, error);
 	}
 
 	std::string updated = text_;

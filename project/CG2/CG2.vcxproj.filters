@@ -378,8 +378,12 @@
     <ClInclude Include="engine\dx12\SceneRenderTarget.h"><Filter>engine\dx12</Filter></ClInclude>
     <ClCompile Include="engine\world\settings\ParticleSettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
     <ClInclude Include="engine\world\settings\ParticleSettings.h"><Filter>engine\world\settings</Filter></ClInclude>
+    <ClCompile Include="engine\world\settings\ParticleEffect.cpp"><Filter>engine\world\settings</Filter></ClCompile>
+    <ClInclude Include="engine\world\settings\ParticleEffect.h"><Filter>engine\world\settings</Filter></ClInclude>
     <ClCompile Include="engine\world\serialization\ParticlePresetFile.cpp"><Filter>engine\world\serialization</Filter></ClCompile>
     <ClInclude Include="engine\world\serialization\ParticlePresetFile.h"><Filter>engine\world\serialization</Filter></ClInclude>
+    <ClCompile Include="engine\world\serialization\ParticleEffectFile.cpp"><Filter>engine\world\serialization</Filter></ClCompile>
+    <ClInclude Include="engine\world\serialization\ParticleEffectFile.h"><Filter>engine\world\serialization</Filter></ClInclude>
     <ClCompile Include="editor\ui\EditorLayout.cpp"><Filter>editor\ui</Filter></ClCompile>
     <ClInclude Include="editor\ui\EditorLayout.h"><Filter>editor\ui</Filter></ClInclude>
     <ClCompile Include="editor\panels\particle_editor\ParticleEditorPanel.cpp"><Filter>editor\panels\particle_editor</Filter></ClCompile>

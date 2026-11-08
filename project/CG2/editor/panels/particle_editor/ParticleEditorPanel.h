@@ -69,6 +69,8 @@ private:
 	// 返すポインタはこのフレームだけ借用する。
 	ParticleSettings* GetEditingSettings(IEditableWorld& scene) const;
 
+	ParticleEffectDocument* GetEditingDocument(IEditableWorld& scene) const;
+
 	TransformData* GetEditingTransform(IEditableWorld& scene) const;
 
 	//=============================================================================================//
@@ -86,6 +88,8 @@ private:
 	IEditableWorld* scene_ = nullptr; // シーン切替検出用。所有権は持たない。
 
 	WorldObjectId targetId_ = kInvalidWorldObjectId; // 0なら共通プリセット。
+	uint64_t selectedNodeId_ = 0;
+	ParticleEffectDocument commonDocument_; // 共通プリセットの編集文書。現状はEmitter 1個。
 
 	Vector3 focusPosition_{}; // Sceneカメラへ渡す発生位置。
 
@@ -93,6 +97,7 @@ private:
 	// 保存・プレビュー
 
 	ParticleSettings savedSettings_; // 共通プリセットの保存済み設定。
+	ParticleEffectDocument savedDocument_; // 共通プリセットの保存済み文書。
 
 	ParticlePreviewState preview_; // プレビューの再生・停止・対象ID。
 

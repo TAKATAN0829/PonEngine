@@ -447,6 +447,7 @@ bool EditorSession::AreObjectsEqual(const WorldObjectData& firstObject, const Wo
 	const TransformData& firstTransform = firstObject.transform;
 	const TransformData& secondTransform = secondObject.transform;
 
+	// ノード名・階層・有効状態もScene Undoと未保存差分に含める。
 	// 識別情報・描画設定・Transformの残りの項目を比較する。
 	return firstObject.prefabSource == secondObject.prefabSource && firstObject.id == secondObject.id && firstObject.parentId == secondObject.parentId && firstObject.name == secondObject.name &&
 		firstObject.model == secondObject.model && firstObject.isActive == secondObject.isActive &&
@@ -456,6 +457,7 @@ bool EditorSession::AreObjectsEqual(const WorldObjectData& firstObject, const Wo
 		firstObject.isMainCamera == secondObject.isMainCamera && firstObject.camera.fieldOfView == secondObject.camera.fieldOfView &&
 		firstObject.camera.nearClip == secondObject.camera.nearClip && firstObject.camera.farClip == secondObject.camera.farClip &&
 		AreParticleSettingsEqual(firstObject.particle, secondObject.particle) &&
+		AreParticleEffectDocumentsEqual(firstObject.particleEffect, secondObject.particleEffect) &&
 		firstObject.isLightingEnabled == secondObject.isLightingEnabled && firstObject.shininess == secondObject.shininess &&
 		firstObject.isRootNodeMatrixUsed == secondObject.isRootNodeMatrixUsed &&
 		firstTransform.scale.x == secondTransform.scale.x && firstTransform.scale.y == secondTransform.scale.y &&

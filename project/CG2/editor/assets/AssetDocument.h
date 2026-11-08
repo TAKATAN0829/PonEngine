@@ -1,6 +1,7 @@
 #pragma once
 
 #include "objects/WorldAssetReferences.h"
+#include "settings/ParticleEffect.h"
 #include <filesystem>
 
 // 保存形式の参照と、モデル内の相対パスを扱う。ファイル操作の確定は担当しない。
@@ -61,7 +62,7 @@ private:
 
 	std::vector<WorldObjectData> objects_;
 
-	ParticleSettings particle_;
+	ParticleEffectDocument particleEffect_;
 
 	std::vector<AssetReference> references_;
 

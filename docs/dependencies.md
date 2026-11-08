@@ -89,6 +89,8 @@ Editorは選択・履歴・表示要求を所有し、InspectorPanel::DrawSelect
 | `systems`・`serialization` | `IWorldObjects` | Transform・Componentの参照・更新と保存・復元 |
 | `systems/WorldLighting.h` | `types/LightStructs.h` | 描画へ渡す固定長ライト配列 |
 | `settings/ParticleSettings.h` | `types/BlendMode.h` | 合成方法のenum |
+| `settings/ParticleEffect.h` | `settings/ParticleSettings.h`・`types/EngineStructs.h` | Particleエフェクト文書とノード階層 |
+| `serialization/ParticleEffectFile.cpp` | `ParticleEffect`・`ParticlePresetFile` | エフェクト文書の保存、旧単一Emitter形式の移行 |
 
 Prefab操作を`prefab/PrefabOperations`へ移し、`objects ↔ serialization`を解消した。`objects`はPrefab操作や保存処理を参照せず、`serialization`もPrefab操作を参照しない。ライトの種別・上限は共通規則へ、旧形式移行は保存処理側へ移し、`objects ↔ systems`も解消している。systemsから具体的なWorldObjectsへの参照も、serializationからsystemsへの参照もない。
 
@@ -98,7 +100,7 @@ Prefab操作を`prefab/PrefabOperations`へ移し、`objects ↔ serialization`�
 
 最終反映は仮想関数の呼出を維持する。実際の配置先が`WorldScene`なら、モデルなどのGPU準備も成功してから置き換える。準備や検証に失敗した場合は、既存の配置と次のIDを変更しない。Undo／Redoは従来どおり反映後の配置を記録する。
 
-`WorldObjects`を読むときはデータ一覧とTransform操作、`PrefabOperations`を読むときは保存・配置・Apply／Revertの手順、`SceneFile`を読むときは保存形式と読書きに集中できる。新しいインターフェースやManagerは追加せず、既存の共通操作を利用している。Scene13形式と`.ponprefab`の内容は変更していない。
+`WorldObjects`を読むときはデータ一覧とTransform操作、`PrefabOperations`を読むときは保存・配置・Apply／Revertの手順、`SceneFile`を読むときは保存形式と読書きに集中できる。新しいインターフェースやManagerは追加せず、既存の共通操作を利用している。Scene14形式はParticle Effect文書を追加している。
 
 ライトの共通規則は標準ヘッダーとtypesの共有定義だけを参照し、WorldObjectData・WorldObjects・IWorldObjectsを必要としない。GPU配列とCPU側の上限検証は同じLightLimitsを使用する。ファイル単位のinclude件数は共通定義への明示的な参照によって増えているが、機能間の相互依存は減っている。
 

@@ -105,10 +105,11 @@ EditableObjectView WorldObjects::GetEditableObject(size_t index) {
 
 	WorldObjectData& object = objects_[index];
 
+	// 旧ParticleSettings参照と、複数Emitterを含むEffect文書参照を同じViewで渡す。
 	return {object.id, object.name.c_str(), &object.transform, &object.color, &object.isLightingEnabled,
 		&object.shininess, &object.model, &object.isRootNodeMatrixUsed, &object.name,
 		&object.isActive, &object.hasMeshRenderer, object.type, &object.lightIntensity,
-		&object.lightRadius, &object.lightDecay, &object.particle, object.parentId, &object.camera, object.isMainCamera,
+		&object.lightRadius, &object.lightDecay, &object.particle, &object.particleEffect, object.parentId, &object.camera, object.isMainCamera,
 		&object.materials, &object.animation, &object.body, &object.collider, &object.motion, &object.light};
 }
 
@@ -770,7 +771,16 @@ bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::str
 		}
 
 		if (object.type == WorldObjectType::Particle) {
-			++particleCount;
+			// Scene上限はComponent数ではなく、GPU状態を持つEmitterノード数で数える。
+			if (!IsParticleEffectDocumentValid(object.particleEffect)) {
+				error = "Invalid particle effect document.";
+				return false;
+			}
+			for (const ParticleEffectNode& node : object.particleEffect.nodes) {
+				if (node.type == ParticleNodeType::Emitter) {
+					++particleCount;
+				}
+			}
 		}
 
 		if (object.isMainCamera) {
@@ -788,7 +798,7 @@ bool WorldObjects::ReplaceObjects(std::vector<WorldObjectData> objects, std::str
 		}
 
 		if (particleCount > 32) {
-			error = "Scene supports up to 32 particle emitters.";
+			error = "Scene supports up to 32 particle effect emitters.";
 
 			return false;
 		}
@@ -1041,7 +1051,7 @@ bool WorldObjects::IsObjectValid(const WorldObjectData& object, bool areModelFil
 	}
 
 	if (object.type == WorldObjectType::Particle) {
-		if (!AreParticleSettingsValid(object.particle)) {
+		if (!AreParticleSettingsValid(object.particle) || !IsParticleEffectDocumentValid(object.particleEffect)) {
 			return false;
 		}
 	}

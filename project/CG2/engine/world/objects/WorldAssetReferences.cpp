@@ -23,7 +23,13 @@ void WorldAssetReferences::Collect(const std::vector<WorldObjectData>& objects, 
 		}
 
 		if (object.type == WorldObjectType::Particle) {
-			references.push_back({AssetPathChange::Text(AssetPathChange::Path(object.particle.texture).lexically_relative("resources")), location + " / Particle"});
+			// EffectはEmitterごとに画像を持つため、Groupを除いて参照を列挙する。
+			for (const ParticleEffectNode& node : object.particleEffect.nodes) {
+				if (node.type == ParticleNodeType::Emitter) {
+					references.push_back({AssetPathChange::Text(AssetPathChange::Path(node.emitter.texture).lexically_relative("resources")),
+						location + " / " + node.name});
+				}
+			}
 		}
 	}
 }
@@ -43,5 +49,11 @@ void WorldAssetReferences::Remap(std::vector<WorldObjectData>& objects, const As
 		}
 
 		object.particle.texture = change.RemapResource(object.particle.texture);
+		// 旧欄とEffect階層の両方を更新し、旧形式保存と新形式実行で参照を食い違わせない。
+		for (ParticleEffectNode& node : object.particleEffect.nodes) {
+			if (node.type == ParticleNodeType::Emitter) {
+				node.emitter.texture = change.RemapResource(node.emitter.texture);
+			}
+		}
 	}
 }

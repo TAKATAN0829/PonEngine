@@ -2,7 +2,7 @@
 #include "TitleScene.h"
 #include "serialization/SceneFile.h"
 #include "serialization/LegacyLightMigration.h"
-#include "serialization/ParticlePresetFile.h"
+#include "serialization/ParticleEffectFile.h"
 #include "ModelManager.h"
 #include "LogSystem.h"
 #include "WinApp.h"
@@ -44,11 +44,11 @@ void GameScene::Initialize(const SceneContext& context) {
 
 	std::error_code presetError;
 
-	// 保存済みプリセットがある場合だけ、共通Particle設定へ読み込む。
-	if (std::filesystem::exists(ParticlePresetFile::kDefaultPath, presetError)) {
+	// 共通設定は単一Emitterで動かすため、Effectファイルから対応可能な文書だけを読み込む。
+	if (std::filesystem::exists(ParticleEffectFile::kDefaultPath, presetError)) {
 		std::string presetMessage;
 
-		if (!ParticlePresetFile::Load(*GetParticleSettings(), ParticlePresetFile::kDefaultPath, presetMessage)) {
+		if (!ParticleEffectFile::LoadSingleEmitter(*GetParticleSettings(), ParticleEffectFile::kDefaultPath, presetMessage)) {
 			LogSystem::Log("Particle preset: " + presetMessage + "\n");
 		}
 	}

@@ -73,6 +73,7 @@ public:
 
 	// 親子変換で求めたワールド位置。プリセットのローカル設定とは分けて適用する。
 	void SetEmitterPosition(const Vector3& position);
+	void SetEmitterWorldTransform(const Matrix4x4& transform);
 
 	//=============================================================================================//
 	// Setter
@@ -106,6 +107,8 @@ private:
 
 		float lifeTime;
 		float currentTime;
+		bool isTrail;
+		float trailTimer;
 	};
 
 	//=============================================================================================//
@@ -231,4 +234,5 @@ private:
 	bool isBrightnessAlphaEnabled_ = false; // Alphaのない画像は黒背景を透明にする。画像変更時だけ判定。
 
 	Matrix4x4 inverseViewProjection_{}; // 深度から交差距離を復元する。Updateで描画カメラに合わせる。
+	Matrix4x4 emitterWorld_{};
 };

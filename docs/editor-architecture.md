@@ -51,11 +51,11 @@ SceneDocumentが編集中のresources内`.ponscene`と保存先を所有する�
 
 保存済みファイルがあればGameSceneの初期化時に自動読込する。Releaseでも読込できる。ファイルがない場合は既定値で開始し、壊れたファイルは値を反映せずログにエラーを出す。保存はメニューまたはショートカットから明示的に行う。
 
-SceneFileはEditorに依存せず、IEditableWorldを引数に受け取る。コレクション対応シーンはテキスト形式 `PON_SCENE 6` で、個数、ID、Transform・色・光沢・ライティング、名前、モデル種類、RootNode行列の適用、Active、Mesh Rendererの有無、オブジェクトの種類、光源値、Emitter設定を記録する。浮動小数点は往復可能な桁数を使う。
+SceneFileはEditorに依存せず、IEditableWorldを引数に受け取る。コレクション対応シーンはテキスト形式 `PON_SCENE 14` で、個数、ID、Transform・色・光沢・ライティング、名前、モデル種類、RootNode行列の適用、Active、Mesh Rendererの有無、オブジェクトの種類、光源値、Emitter設定とParticle Effect文書を記録する。浮動小数点は往復可能な桁数を使う。
 
 読込ではバージョン、件数、IDの重複、モデル種類、プロパティ、有限値、光沢の範囲、末尾の余分なデータを確認してから一覧を一括置換する。0体の保存ファイルもそのまま復元する。保存は隣接する一時ファイルに書き終えてからWindowsのファイル置換APIで置き換える。
 
-以前の `PON_SCENE 1` ファイルはIDが一致する既定モデルへ値を適用し、他の既定モデルを残す。バージョン2はActiveとMesh Rendererを有効にして復元する。次にシーンを保存すると現在のバージョン13で保存する。既存ファイルは読み込むだけでは書き換えない。World Settingsの共通光源、共通Particleプリセット、カメラのデバッグ値はシーン保存の対象外。配置した点光源とEmitterの設定は保存する。
+以前の `PON_SCENE 1` ファイルはIDが一致する既定モデルへ値を適用し、他の既定モデルを残す。バージョン2はActiveとMesh Rendererを有効にして復元する。次にシーンを保存すると現在のバージョン14で保存する。既存ファイルは読み込むだけでは書き換えない。World Settingsの共通光源、共通Particleプリセット、カメラのデバッグ値はシーン保存の対象外。配置した点光源とEmitter階層の設定は保存する。
 
 ## 編集・再生・Component
 
@@ -65,7 +65,7 @@ Pauseはシミュレーションだけを止め、Stepは一度だけ1フレー�
 
 Inspectorは必須のTransformと、追加・削除できるMesh Rendererを表示する。Remove Mesh Rendererはモデル設定を保ったまま描画Componentだけを外し、Add Mesh Rendererで戻す。Activeを外したオブジェクトも描画しない。名前・モデル・色・光沢・有効状態・Componentの有無は保存、Undo/Redo、Stop時の復元対象。
 
-ライトとSpriteはWorld Settingsへ集約し、再生中は編集を無効にしている。Particleは専用Editorと独立したプリセット保存に対応する。ライト・Spriteの保存や、Particle設定の履歴対応は今後の範囲。DebugCameraはEditor用カメラとして扱い、Scene画像上のマウスだけで操作する。文字入力・ギズモ・ポップアップ・他パネルの操作中は入力を渡さない。
+ライトとSpriteはWorld Settingsへ集約し、再生中は編集を無効にしている。Particleはノードツリー、複数Emitter、寿命カーブ、発生形状、地面衝突、残像を専用Editorで編集し、Particle Effectとして独立保存する。DebugCameraはEditor用カメラとして扱い、Scene画像上のマウスだけで操作する。文字入力・ギズモ・ポップアップ・他パネルの操作中は入力を渡さない。
 
 ## 履歴と未保存変更
 
@@ -100,7 +100,9 @@ MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1
 
 ## レイアウト・Particle Editorの追加
 
-操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。ImGuiSystemが日本語フォントを読み込み、起動後にEditorがドッキングと配置の保存先を設定する。EditorThemeが配色と倍率を適用し、EditorLayoutが初期ドッキングを構築する。ParticleSettingsとParticlePresetFileはUI・GPUに依存しない。ParticleEditorPanelは設定への借用参照とプレビュー操作だけを持ち、WorldSceneがParticleへの適用と実行を担当する。
+操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。ImGuiSystemが日本語フォントを読み込み、起動後にEditorがドッキングと配置の保存先を設定する。EditorThemeが配色と倍率を適用し、EditorLayoutが初期ドッキングを構築する。ParticleSettings・ParticleEffectDocument・各Particleファイル形式はUI・GPUに依存しない。ParticleEditorPanelは設定への借用参照とプレビュー操作だけを持ち、WorldSceneがParticleへの適用と実行を担当する。
+
+ParticleEffectDocumentはID・親ID・型・Transformを持つノード階層を保持し、EmitterノードはParticleSettingsを所有する。ParticleEffectFileは新形式`PON_PARTICLE_EFFECT 1`と旧単一Emitter形式`PON_PARTICLE 1/2`を読み込み、保存時はエフェクト文書形式を使う。旧SceneのParticleSettingsやParticlePresetFileの読書き形式は維持する。GameSceneの既存ランタイムへ適用する間はEmitterが1つの文書だけを読み込み、複数Emitterは明示的に拒否する。Scene内Particleの複数ノード実行とツリー編集UIは次段階。
 
 
 ### 種類別オブジェクトと保存形式4
@@ -127,8 +129,8 @@ typesへ新しい状態管理や初期化処理を追加しない。coreへ新�
 | フォルダ | 担当ファイルと責務 |
 | --- | --- |
 | `objects` | `WorldObjectData`の共有データ定義、`WorldObjects`の一覧・ID・親子関係・検証と、`WorldPrimitives`の基本形状作成 |
-| `settings` | `AssetSettings`、`ParticleSettings`、Motion・Collider・Body・Lightの設定値と設定単体の処理 |
-| `serialization` | `SceneFile`・`ParticlePresetFile`の保存・読込・旧形式への対応 |
+| `settings` | `AssetSettings`、`ParticleSettings`、`ParticleEffectDocument`、Motion・Collider・Body・Lightの設定値と設定単体の処理 |
+| `serialization` | `SceneFile`・`ParticlePresetFile`・`ParticleEffectFile`の保存・読込・旧形式への対応 |
 | `prefab` | `PrefabOperations`による階層の保存・配置・Apply／Revertの組立 |
 | `systems` | `WorldMotion`・`WorldCollision`・`WorldPhysics`の実行時更新と、`WorldLighting`のライト収集・方向計算 |
 

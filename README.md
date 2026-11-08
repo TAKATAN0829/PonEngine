@@ -176,7 +176,8 @@ Colliderの補助線は通常が緑、接触中が赤、無効時が灰色です
 2. 「プリセット」から**炎 / Fire、煙 / Smoke、火花 / Sparks**を選ぶ。
 3. 「プレビュー開始」または「一度だけ発生」で確認する。
 4. 発生範囲、個数、間隔、速度、加速度、寿命、サイズ、色、合成を調整する。
-5. 個別Emitterの設定はシーン保存、共通プリセットへの書出しは「プリセット書出し」を使う。
+5. Projectの画像を「画像」欄へドラッグすると、任意の画像をParticleへ適用できる。
+6. 個別Emitterの設定はシーン保存、共通プリセットへの書出しは「プリセット書出し」を使う。
 
 Lifetimeでは開始／終了サイズ倍率、終了色、フェードインを設定できます。Soft Particlesはモデルとの交差部分を深度差で薄くし、板状の境界を目立ちにくくします。「Particleだけを表示」ではモデルの深度がないため、この交差フェードは発生しません。
 
@@ -205,11 +206,11 @@ Consoleでは最近のログを検索し、ホバーで全文を表示、右ク�
 | 対象 | 保存先 | 主な内容 |
 |---|---|---|
 | シーン | resources内で選んだ`.ponscene`（起動時の既定は`resources/scenes/GameScene.ponscene`） | オブジェクト、親子関係、Transform、Component、個別Emitter |
-| 共通Particleプリセット | `resources/particles/Default.ponparticle` | 発生・移動・見た目・寿命変化・Soft Particles設定 |
+| 共通Particleエフェクト | `resources/particles/Default.ponparticle` | Groupと複数Emitter、発生・移動・見た目・寿命カーブ・発生形状・衝突・残像 |
 | Prefab | `resources/prefabs/*.ponprefab` | 対象と子孫の設定 |
 | Editor配置 | `editor-layout.ini` | ドッキング配置 |
 
-現在の書出し形式は**Scene 13 / Particle 2**です。Scene 1〜12とParticle 1も読み込み、新しいParticle項目は従来の見た目を維持する値で補完します。旧シーンの固定ライトは上記の移行を行います。Prefabの読込では移行用のライトを追加しません。再生中の速度・粒子・時計・接触履歴などは保存しません。
+現在の書出し形式は**Scene 14 / Particle Effect 2**です。Scene 1〜13、Particle 1/2、Particle Effect 1も読み込み、新しいParticle項目は既定値で補完します。Scene内の各Particle ComponentはEmitterノード階層を保存し、旧単一Particle設定からも自動移行します。旧シーンの固定ライトは上記の移行を行います。再生中の速度・粒子・時計・接触履歴などは保存しません。
 
 新規・読込・終了などで未保存の変更があれば確認を表示します。シーン保存とParticleプリセット書出しは別の操作です。Sceneメニューの「開く...」（Ctrl+O）と「名前を付けて保存...」（Ctrl+Shift+S）で、resources内の複数シーンを切り替えられます。ProjectのScene Assetはダブルクリック、または右クリック→「Sceneを開く」で開きます。
 
@@ -248,7 +249,7 @@ project/
         runtime/       WorldSceneによる共通の更新・描画・Editor窓口
         objects/       オブジェクト一覧・親子関係・基本形状の作成
         settings/      Material・Animation・Particle・物理・ライトなどの設定値
-        serialization/ Scene・Particleプリセットの保存と読込
+        serialization/ Scene・Particleエフェクト／プリセットの保存と読込
         prefab/        Prefab階層の保存・配置・Apply／Revertの手順
         systems/       動作・衝突判定・物理更新・ライトの収集
       asset/           モデル・テクスチャ・アニメーションの読込
@@ -308,7 +309,7 @@ Editor経由の移動では、編集中の配置、保存済みScene・Prefab・
 
 安全に調査できない操作は理由を表示して止めます。FBXの再配置や、依存を調べられないFBXが存在する場合の画像・フォルダ操作、未対応のMTLオプション、壊れた参照文書、リンク・Junctionを含む構成などが対象です。組込モデル・標準画像・シェーダー・既定保存先はコードから直接参照するため、移動・削除を禁止しています。独自のC++コードや未対応形式に書かれたパスの自動更新は行いません。
 
-走査は操作要求時と確定直前だけで、通常の毎フレーム描画には追加しません。上限は10000ファイル、参照文書1件64 MiB・合計128 MiB、移動後の各パス240 UTF-8バイトです。通常のScene保存形式は13、Particleプリセットは2のままです。参照を更新した旧Sceneは、従来の固定ライト相当を引き継いで形式13へ保存します。
+走査は操作要求時と確定直前だけで、通常の毎フレーム描画には追加しません。上限は10000ファイル、参照文書1件64 MiB・合計128 MiB、移動後の各パス240 UTF-8バイトです。通常のScene保存形式は14、Particleエフェクトは2です。従来のParticleプリセット形式2も読み込みます。参照を更新した旧Sceneは、従来の固定ライト相当を引き継いで形式14へ保存します。
 
 ## GameSceneとTitleScene
 
@@ -349,8 +350,7 @@ GraphicsTests / StartupTestsの実行時リソースは`generated`以下へコ�
 - ライトの影生成・環境光・Image Based Lightingには未対応。
 - 物理は並進運動が中心。角速度・トルク・回転への衝撃・ジョイント・連続衝突判定には未対応。
 - アニメーションはCPUスキニング。遷移グラフ、クリップ間ブレンド、ルートモーション、GPUスキニングには未対応。
-- ParticleのEmitter回転・拡縮、Particle同士のSoft Particles、共通プリセットのUndo/Redoには未対応。
-- Particle Editorの画像候補は標準の3種類。任意画像を選ぶ制作フローは未対応。
+- Particle同士のSoft Particles、共通プリセットのUndo/Redo、イベント発火型の子Emitterには未対応。
 - 入れ子Prefab、任意パスのシーン切替、自動Asset監視・再インポートには未対応。
 - モデルの埋込みテクスチャは白画像へフォールバックする。
 

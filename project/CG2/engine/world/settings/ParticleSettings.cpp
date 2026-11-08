@@ -31,7 +31,19 @@ ParticleSettings::ParticleSettings()
 	endColor{1,0.65f,0.2f,0},
 	fadeIn(0),
 	areSoftParticlesEnabled(false),
-	softDistance(0.5f) {
+	softDistance(0.5f),
+	isLifetimeCurveEnabled(false),
+	lifetimeCurve{{{0.0f,1.0f,{1,1,1,1}},{0.33f,1.0f,{1,1,1,1}},{0.66f,1.0f,{1,1,1,1}},{1.0f,0.0f,{1,1,1,0}}}},
+	emissionShape(ParticleEmissionShape::Point),
+	shapeRadius(1.0f),
+	coneAngle(30.0f),
+	isGroundCollisionEnabled(false),
+	collisionHeight(0.0f),
+	collisionRestitution(0.5f),
+	isTrailEnabled(false),
+	trailInterval(0.05f),
+	trailLifetime(0.3f),
+	trailWidth(0.1f) {
 	// 新しいEmitterとプリセットが共通で使う、発生・速度・外観の既定値を設定する。
 }
 
@@ -52,6 +64,18 @@ namespace {
 		return firstVector.x == secondVector.x && firstVector.y == secondVector.y && firstVector.z == secondVector.z;
 	}
 
+	// RGBA値は複数の設定欄で使うため、比較方法を一か所にそろえる。
+	bool AreColorsEqual(const Vector4& firstColor, const Vector4& secondColor) {
+		return firstColor.x == secondColor.x && firstColor.y == secondColor.y &&
+			firstColor.z == secondColor.z && firstColor.w == secondColor.w;
+	}
+
+	// 寿命キーは時刻・サイズ・色が一組なので、要素単位で差分を調べる。
+	bool AreLifetimeKeysEqual(const ParticleLifetimeKey& firstKey, const ParticleLifetimeKey& secondKey) {
+		return firstKey.time == secondKey.time && firstKey.size == secondKey.size &&
+			AreColorsEqual(firstKey.color, secondKey.color);
+	}
+
 	// 極端な値をファイルから入力されても、乱数生成や行列計算を破綻させない。
 	bool IsWithinRange(const Vector3& value, float minimum, float maximum) {
 		// 有限値で、指定した最小値と最大値の間にあるか確認する。
@@ -66,6 +90,24 @@ namespace {
 ParticleAppearance EvaluateParticleAppearance(const ParticleSettings& settings, const Vector4& initialColor, float normalizedAge) {
 	// 寿命の進み具合から、現在の色と大きさを求める。
 	const float age = (std::clamp)(normalizedAge,0.0f,1.0f);
+	if (settings.isLifetimeCurveEnabled) {
+		// 寿命位置を挟む隣接キーを探し、サイズとRGBAを同じ比率で補間する。
+		const auto& keys = settings.lifetimeCurve;
+		for (size_t index = 1; index < keys.size(); ++index) {
+			if (age <= keys[index].time) {
+				const auto& first = keys[index - 1];
+				const auto& second = keys[index];
+				const float span = second.time - first.time;
+				const float weight = span > 0 ? (age - first.time) / span : 1.0f;
+				return {std::lerp(first.size, second.size, weight),
+					{std::lerp(first.color.x, second.color.x, weight), std::lerp(first.color.y, second.color.y, weight),
+					 std::lerp(first.color.z, second.color.z, weight), std::lerp(first.color.w, second.color.w, weight)}};
+			}
+		}
+		// 寿命が末尾キーに達した場合は、その値をそのまま返す。
+		const auto& last = keys.back();
+		return {last.size, last.color};
+	}
 
 	// 寿命による拡縮を使わない場合の大きさと色を、生成時に指定する。
 	ParticleAppearance appearance{1, initialColor};
@@ -158,6 +200,32 @@ bool AreParticleSettingsValid(const ParticleSettings& settings) {
 		if (!std::isfinite(value)) {
 			return false;
 		}
+	}
+	// 追加設定も無効時を含めて保存するため、有限値と範囲を一律に確認する。
+	const std::array<float, 18> extendedValues = {
+		settings.shapeRadius, settings.coneAngle, settings.collisionHeight, settings.collisionRestitution,
+		settings.trailInterval, settings.trailLifetime, settings.trailWidth,
+		settings.lifetimeCurve[0].time, settings.lifetimeCurve[0].size, settings.lifetimeCurve[0].color.x,
+		settings.lifetimeCurve[1].time, settings.lifetimeCurve[1].size, settings.lifetimeCurve[1].color.x,
+		settings.lifetimeCurve[2].time, settings.lifetimeCurve[2].size, settings.lifetimeCurve[2].color.x,
+		settings.lifetimeCurve[3].time, settings.lifetimeCurve[3].size};
+	for (float value : extendedValues) {
+		if (!std::isfinite(value)) return false;
+	}
+	for (const auto& key : settings.lifetimeCurve) {
+		const float channels[] = {key.color.x, key.color.y, key.color.z, key.color.w};
+		if (!std::isfinite(key.time) || !std::isfinite(key.size) || key.size < 0 || key.size > 100) return false;
+		for (float channel : channels) if (!std::isfinite(channel) || channel < 0 || channel > 1) return false;
+	}
+	if (settings.lifetimeCurve.front().time != 0.0f || settings.lifetimeCurve.back().time != 1.0f ||
+		static_cast<uint32_t>(settings.emissionShape) > static_cast<uint32_t>(ParticleEmissionShape::Cone) ||
+		settings.shapeRadius < 0 || settings.shapeRadius > 100 || settings.coneAngle < 0 || settings.coneAngle > 89 ||
+		settings.collisionHeight < -1000 || settings.collisionHeight > 1000 || settings.collisionRestitution < 0 || settings.collisionRestitution > 1 ||
+		settings.trailInterval < 0.01f || settings.trailInterval > 10 || settings.trailLifetime < 0.01f || settings.trailLifetime > 10 ||
+		settings.trailWidth < 0.001f || settings.trailWidth > 100) return false;
+	for (size_t index = 1; index < settings.lifetimeCurve.size(); ++index) {
+		// キーの順序を保証し、補間時に負の区間やゼロ除算を作らない。
+		if (settings.lifetimeCurve[index - 1].time >= settings.lifetimeCurve[index].time) return false;
 	}
 
 	// 発生条件
@@ -254,30 +322,61 @@ bool AreParticleSettingsValid(const ParticleSettings& settings) {
 
 // 保存対象の設定だけを比較し、プレビュー中の粒子の変化では未保存表示を出さない。
 bool AreParticleSettingsEqual(const ParticleSettings& firstSettings, const ParticleSettings& secondSettings) {
-	// Particleの保存対象の値を比較する。
-	if (firstSettings.isLifetimeAppearanceEnabled != secondSettings.isLifetimeAppearanceEnabled || firstSettings.areSoftParticlesEnabled != secondSettings.areSoftParticlesEnabled) {
+	// ベクトル設定は同じ比較関数へ渡し、位置・速度・加速度の各成分を確認する。
+	if (!AreVectorsEqual(firstSettings.emitterPosition, secondSettings.emitterPosition) ||
+		!AreVectorsEqual(firstSettings.spread, secondSettings.spread) ||
+		!AreVectorsEqual(firstSettings.velocityMinimum, secondSettings.velocityMinimum) ||
+		!AreVectorsEqual(firstSettings.velocityMaximum, secondSettings.velocityMaximum) ||
+		!AreVectorsEqual(firstSettings.particleScale, secondSettings.particleScale) ||
+		!AreVectorsEqual(firstSettings.acceleration, secondSettings.acceleration)) {
 		return false;
 	}
 
-	if (firstSettings.startSize != secondSettings.startSize || firstSettings.endSize != secondSettings.endSize || firstSettings.fadeIn != secondSettings.fadeIn || firstSettings.softDistance != secondSettings.softDistance) {
+	// 色とカーブキーは部品単位で比較し、RGBAの各成分を条件式に展開しない。
+	if (!AreColorsEqual(firstSettings.color, secondSettings.color) ||
+		!AreColorsEqual(firstSettings.endColor, secondSettings.endColor)) {
+		return false;
+	}
+	for (size_t index = 0; index < firstSettings.lifetimeCurve.size(); ++index) {
+		if (!AreLifetimeKeysEqual(firstSettings.lifetimeCurve[index], secondSettings.lifetimeCurve[index])) {
+			return false;
+		}
+	}
+
+	// 発生・寿命と描画の基本値を比較する。
+	if (firstSettings.spawnCount != secondSettings.spawnCount || firstSettings.interval != secondSettings.interval ||
+		firstSettings.lifetimeMinimum != secondSettings.lifetimeMinimum || firstSettings.lifetimeMaximum != secondSettings.lifetimeMaximum ||
+		firstSettings.isRandomColorEnabled != secondSettings.isRandomColorEnabled ||
+		firstSettings.isBillboardEnabled != secondSettings.isBillboardEnabled ||
+		firstSettings.isAccelerationEnabled != secondSettings.isAccelerationEnabled ||
+		firstSettings.blendMode != secondSettings.blendMode || firstSettings.texture != secondSettings.texture) {
 		return false;
 	}
 
-	if (firstSettings.endColor.x != secondSettings.endColor.x || firstSettings.endColor.y != secondSettings.endColor.y || firstSettings.endColor.z != secondSettings.endColor.z || firstSettings.endColor.w != secondSettings.endColor.w) {
+	// 寿命変化、Soft Particles、形状、衝突、残像の設定を比較する。
+	if (firstSettings.isLifetimeAppearanceEnabled != secondSettings.isLifetimeAppearanceEnabled ||
+		firstSettings.areSoftParticlesEnabled != secondSettings.areSoftParticlesEnabled ||
+		firstSettings.isLifetimeCurveEnabled != secondSettings.isLifetimeCurveEnabled ||
+		firstSettings.isGroundCollisionEnabled != secondSettings.isGroundCollisionEnabled ||
+		firstSettings.isTrailEnabled != secondSettings.isTrailEnabled) {
 		return false;
 	}
 
-	return AreVectorsEqual(firstSettings.emitterPosition, secondSettings.emitterPosition) &&
-		AreVectorsEqual(firstSettings.spread, secondSettings.spread) &&
-		AreVectorsEqual(firstSettings.velocityMinimum, secondSettings.velocityMinimum) &&
-		AreVectorsEqual(firstSettings.velocityMaximum, secondSettings.velocityMaximum) &&
-		AreVectorsEqual(firstSettings.particleScale, secondSettings.particleScale) &&
-		AreVectorsEqual(firstSettings.acceleration, secondSettings.acceleration) &&
-		firstSettings.color.x == secondSettings.color.x && firstSettings.color.y == secondSettings.color.y &&
-		firstSettings.color.z == secondSettings.color.z && firstSettings.color.w == secondSettings.color.w &&
-		firstSettings.spawnCount == secondSettings.spawnCount && firstSettings.interval == secondSettings.interval &&
-		firstSettings.lifetimeMinimum == secondSettings.lifetimeMinimum && firstSettings.lifetimeMaximum == secondSettings.lifetimeMaximum &&
-		firstSettings.isRandomColorEnabled == secondSettings.isRandomColorEnabled && firstSettings.isBillboardEnabled == secondSettings.isBillboardEnabled &&
-		firstSettings.isAccelerationEnabled == secondSettings.isAccelerationEnabled &&
-		firstSettings.blendMode == secondSettings.blendMode && firstSettings.texture == secondSettings.texture;
+	if (firstSettings.startSize != secondSettings.startSize || firstSettings.endSize != secondSettings.endSize ||
+		firstSettings.fadeIn != secondSettings.fadeIn || firstSettings.softDistance != secondSettings.softDistance) {
+		return false;
+	}
+
+	if (firstSettings.emissionShape != secondSettings.emissionShape || firstSettings.shapeRadius != secondSettings.shapeRadius ||
+		firstSettings.coneAngle != secondSettings.coneAngle || firstSettings.collisionHeight != secondSettings.collisionHeight ||
+		firstSettings.collisionRestitution != secondSettings.collisionRestitution) {
+		return false;
+	}
+
+	if (firstSettings.trailInterval != secondSettings.trailInterval || firstSettings.trailLifetime != secondSettings.trailLifetime ||
+		firstSettings.trailWidth != secondSettings.trailWidth) {
+		return false;
+	}
+
+	return true;
 }
