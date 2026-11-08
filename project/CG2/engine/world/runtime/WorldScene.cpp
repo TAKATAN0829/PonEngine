@@ -756,14 +756,17 @@ bool WorldScene::CanHandleGameInput() const {
 		return false;
 	}
 
+	// 入力状態を取得。
 	if (ImGui::GetIO().WantTextInput) {
 		return false;
 	}
 
+	// UI操作中か確認。
 	if (ImGui::IsAnyItemActive()) {
 		return false;
 	}
 
+	// ポップアップ状態を確認。
 	if (ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId)) {
 		return false;
 	}

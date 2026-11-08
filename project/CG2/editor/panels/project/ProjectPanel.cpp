@@ -304,11 +304,15 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 	EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
 	// Projectの検索・フォルダツリー・Asset一覧を配置する。
 #ifdef USE_IMGUI
+	// 「Project」ウィンドウを開始。
 	if (ImGui::Begin("Project",nullptr,ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+		// 画面位置を取得。
 		const ImVec2 headerOrigin = ImGui::GetCursorScreenPos();
 
 		// 検索欄は右側に置き、幅を200ピクセルまたはパネル幅の4割までに抑える。
+		// 残り表示領域を取得。
 		const float searchWidth = (std::min)(200.0f,ImGui::GetContentRegionAvail().x*0.4f);
+		// 残り表示領域を取得。
 		const float availableWidth = ImGui::GetContentRegionAvail().x;
 
 		std::string relative = PathText(directory_.lexically_relative(root_));
@@ -318,59 +322,67 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 		}
 
 		// 長いフォルダパスが右側の検索欄に重ならないよう、描画範囲を区切る。
+		// 描画範囲を制限。
 		ImGui::PushClipRect(headerOrigin,{headerOrigin.x+availableWidth-searchWidth-8,headerOrigin.y+ImGui::GetFrameHeight()},true);
-
+		// テキストを中央揃え。
 		ImGui::AlignTextToFramePadding();
-
+		// 「resources / %s」補助テキストを表示。
 		ImGui::TextDisabled("resources / %s",relative.c_str());
-
+		// 描画範囲制限を解除。
 		ImGui::PopClipRect();
-
+		// 横並びに配置。
 		ImGui::SameLine();
-
+		// 画面位置を設定。
 		ImGui::SetCursorScreenPos({headerOrigin.x+availableWidth-searchWidth,headerOrigin.y});
-
+		// 次項目の幅を設定。
 		ImGui::SetNextItemWidth(searchWidth);
-
+		// ヒント付きで文字列を入力。
 		ImGui::InputTextWithHint("##AssetSearch", "Assetsを検索", search_, sizeof(search_));
-
+		// 「ProjectContext」ウィンドウメニューを開始。
 		if (ImGui::BeginPopupContextWindow("ProjectContext", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
 			DrawDirectoryActions();
 
+			// ポップアップを終了。
 			ImGui::EndPopup();
 		}
 
+		// 区切り線を表示。
 		ImGui::Separator();
 
 		// 表の上下の余白を除いた高さを、左右のスクロール領域で共有する。
+		// 残り表示領域を取得。
 		const float bodyHeight = (std::max)(1.0f,ImGui::GetContentRegionAvail().y-2*ImGui::GetStyle().CellPadding.y);
-
+		// 「ProjectSplit」表を開始。
 		if (!ImGui::BeginTable("ProjectSplit",2,ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp,{0,0})) {
+			// ウィンドウを終了。
 			ImGui::End();
 
 			return;
 		}
 
+		// 「Folders」表の列を設定。
 		ImGui::TableSetupColumn("Folders",ImGuiTableColumnFlags_WidthFixed,170);
-
+		// 「Assets」表の列を設定。
 		ImGui::TableSetupColumn("Assets",ImGuiTableColumnFlags_WidthStretch);
-
+		// 表の次行へ移動。
 		ImGui::TableNextRow();
-
+		// 表の列を選択。
 		ImGui::TableSetColumnIndex(0);
-
+		// 「FolderTree」子領域を開始。
 		ImGui::BeginChild("FolderTree",{0,bodyHeight});
 
 		DrawFolders();
 
+		// 子領域を終了。
 		ImGui::EndChild();
-
+		// 表の列を選択。
 		ImGui::TableSetColumnIndex(1);
-
+		// 「AssetGrid」子領域を開始。
 		ImGui::BeginChild("AssetGrid", {0,bodyHeight});
 
 		// グリッドの幅から1行に収まる件数を求め、狭いときも1列は表示する。
 		int column = 0;
+		// 残り表示領域を取得。
 		int columns = static_cast<int>(ImGui::GetContentRegionAvail().x / 102);
 
 		if (columns < 1) {
@@ -388,6 +400,7 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 
 			// 表示した項目だけを数え、1行分を描いたら次の行へ移る。
 			if (++column < columns) {
+				// 横並びに配置。
 				ImGui::SameLine();
 			}
 			else {
@@ -395,23 +408,28 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 			}
 		}
 
+		// 「ProjectGridContext」ウィンドウメニューを開始。
 		if (ImGui::BeginPopupContextWindow("ProjectGridContext", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
 			DrawDirectoryActions();
 
+			// ポップアップを終了。
 			ImGui::EndPopup();
 		}
 
 		if (!status_.empty()) {
+			// 折り返しテキストを表示。
 			ImGui::TextWrapped("%s", status_.c_str());
 		}
 
+		// 子領域を終了。
 		ImGui::EndChild();
-
+		// 表を終了。
 		ImGui::EndTable();
 	}
 
 	fileActions_.Draw(scene, history, particles, activeScenePath);
 
+	// ウィンドウを終了。
 	ImGui::End();
 
 #else
@@ -442,6 +460,7 @@ void ProjectPanel::DrawFolders() {
 		const std::string identifier = PathText(folder.path);
 		const std::string name = PathText(folder.path.filename());
 
+		// 項目IDを追加。
 		ImGui::PushID(identifier.c_str());
 
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_NoTreePushOnOpen;
@@ -463,6 +482,7 @@ void ProjectPanel::DrawFolders() {
 
 			if (!relative.empty()) {
 				if (*relative.begin() != "..") {
+					// 次項目の開閉状態を設定。
 					ImGui::SetNextItemOpen(true);
 				}
 			}
@@ -471,18 +491,22 @@ void ProjectPanel::DrawFolders() {
 		const float indent = static_cast<float>(folder.depth)*12;
 
 		if (indent > 0) {
+			// 字下げ。
 			ImGui::Indent(indent);
 		}
 
+		// ツリー項目を表示。
 		const bool isOpen = ImGui::TreeNodeEx(name.c_str(),flags);
-
+		// クリック状態を確認。
 		if (ImGui::IsItemClicked()) {
+			// 開閉状態を確認。
 			if (!ImGui::IsItemToggledOpen()) {
 				requested = folder.path;
 			}
 		}
 
 		if (folder.path != root_) {
+			// ドラッグ送信を開始。
 			if (ImGui::BeginDragDropSource()) {
 				const std::string relative = PathText(folder.path.lexically_relative(root_));
 
@@ -491,24 +515,29 @@ void ProjectPanel::DrawFolders() {
 
 					std::memcpy(payload.model, relative.c_str(), relative.size() + 1);
 
+					// ドラッグデータを登録。
 					ImGui::SetDragDropPayload(ModelAssetPayload::kProjectType, &payload, sizeof(payload));
 				}
 
+				// テキストを表示。
 				ImGui::TextUnformatted(name.c_str());
-
+				// ドラッグ送信を終了。
 				ImGui::EndDragDropSource();
 			}
 		}
 
 		fileActions_.AcceptMoveDrop(folder.path, areFileOperationsAllowed_);
 
+		// 「FolderActions」項目メニューを開始。
 		if (ImGui::BeginPopupContextItem("FolderActions")) {
 			fileActions_.DrawMenu(folder.path, true, areFileOperationsAllowed_);
 
+			// ポップアップを終了。
 			ImGui::EndPopup();
 		}
 
 		if (indent > 0) {
+			// 字下げを戻す。
 			ImGui::Unindent(indent);
 		}
 
@@ -516,6 +545,7 @@ void ProjectPanel::DrawFolders() {
 			collapsedDepth = folder.depth;
 		}
 
+		// 項目IDを戻す。
 		ImGui::PopID();
 	}
 
@@ -534,14 +564,17 @@ void ProjectPanel::DrawDirectoryActions() {
 #ifdef USE_IMGUI
 	fileActions_.DrawCreateMenu(directory_, areFileOperationsAllowed_);
 
+	// 「resourcesへ戻る」メニュー選択を受け取る。
 	if (ImGui::MenuItem("resourcesへ戻る")) {
 		OpenDirectory(root_);
 	}
 
+	// 「上のフォルダへ」メニュー選択を受け取る。
 	if (ImGui::MenuItem("上のフォルダへ", nullptr, false, directory_ != root_)) {
 		OpenDirectory(directory_.parent_path());
 	}
 
+	// 「更新」メニュー選択を受け取る。
 	if (ImGui::MenuItem("更新")) {
 		isRefreshRequested_ = true;
 	}
@@ -555,19 +588,21 @@ void ProjectPanel::DrawDirectoryActions() {
 void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility) {
 	// Assetのプレビューと名前を描き、選択やドロップを処理する。
 #ifdef USE_IMGUI
+	// 項目IDを追加。
 	ImGui::PushID(entry.name.c_str());
-
+	// UIグループを開始。
 	ImGui::BeginGroup();
-
+	// 画面位置を取得。
 	const ImVec2 origin = ImGui::GetCursorScreenPos();
-
+	// 選択項目を表示。
 	ImGui::Selectable("##Asset", selected_ == entry.path, ImGuiSelectableFlags_AllowDoubleClick, {92, 94});
-
+	// クリック状態を確認。
 	if (ImGui::IsItemClicked()) {
 		selected_ = entry.path;
 
 		if (areFileOperationsAllowed_) {
 			if (entry.extension == ".ponscene") {
+				// ダブルクリックを確認。
 				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 					requestedScene_ = entry.path;
 				}
@@ -593,46 +628,56 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 		}
 
 		if (model.size() < sizeof(ModelAssetPayload::model)) {
+			// ドラッグ送信を開始。
 			if (ImGui::BeginDragDropSource()) {
 				ModelAssetPayload payload{};
 
 				std::memcpy(payload.model, model.c_str(), model.size() + 1);
 
+				// ドラッグデータを登録。
 				ImGui::SetDragDropPayload(payloadType, &payload, sizeof(payload));
-
+				// 「配置: %s」テキストを表示。
 				ImGui::Text("配置: %s", entry.name.c_str());
-
+				// ドラッグ送信を終了。
 				ImGui::EndDragDropSource();
 			}
 		}
 	}//
 
+	// ホバー状態を確認。
 	if (ImGui::IsItemHovered()) {
+		// 補足説明を表示。
 		ImGui::SetTooltip("%s", entry.name.c_str());
 
 		if (entry.isDirectory) {
+			// ダブルクリックを確認。
 			if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 				OpenDirectory(entry.path);
 			}
 		}
 	}
 
+	// 「AssetContext」項目メニューを開始。
 	if (ImGui::BeginPopupContextItem("AssetContext")) {
 		selected_ = entry.path;
 
 		DrawAssetActions(entry, scene, selection, visibility);
 
+		// ポップアップを終了。
 		ImGui::EndPopup();
 	}
 
+	// 表示範囲を確認。
 	if (!ImGui::IsRectVisible(origin, {origin.x + 92, origin.y + 94})) {
+		// UIグループを終了。
 		ImGui::EndGroup();
-
+		// 項目IDを戻す。
 		ImGui::PopID();
 
 		return;
 	}
 
+	// 描画リストを取得。
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
 	AssetThumbnail preview;
@@ -649,12 +694,15 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 		const ImVec2 size = {preview.width * scale, preview.height * scale};
 		const ImVec2 minimum = {origin.x + 46 - size.x * 0.5f, origin.y + 34 - size.y * 0.5f};
 
+		// 画像を描画。
 		drawList->AddImage(ImTextureRef(static_cast<ImTextureID>(preview.handle)), minimum, {minimum.x + size.x, minimum.y + size.y});
 	} else if (entry.isDirectory) {
+		// 塗りつぶし矩形を描画。
 		drawList->AddRectFilled({origin.x+16,origin.y+17},{origin.x+40,origin.y+25},IM_COL32(210,173,87,255),3);
-
+		// 塗りつぶし矩形を描画。
 		drawList->AddRectFilled({origin.x+14,origin.y+23},{origin.x+78,origin.y+61},IM_COL32(224,187,101,255),4);
 	} else {
+		// 矩形枠を描画。
 		drawList->AddRect({origin.x+24,origin.y+10},{origin.x+68,origin.y+63},IM_COL32(150,173,197,255),3.0f,2.0f,ImDrawFlags_None);
 
 		const char* typeName = "FILE";
@@ -679,17 +727,19 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 			typeName = "AUDIO";
 		}
 
+		// 文字列を描画。
 		drawList->AddText({origin.x+28,origin.y+30},IM_COL32(55,35,75,255),typeName);
 	}
 
+	// 描画範囲を制限。
 	drawList->PushClipRect({origin.x+2,origin.y+70},{origin.x+90,origin.y+94},true);
-
+	// 文字列を描画。
 	drawList->AddText({origin.x+3,origin.y+72},ImGui::GetColorU32(ImGuiCol_Text),entry.name.c_str());
-
+	// 描画範囲制限を解除。
 	drawList->PopClipRect();
-
+	// UIグループを終了。
 	ImGui::EndGroup();
-
+	// 項目IDを戻す。
 	ImGui::PopID();
 
 #else
@@ -707,6 +757,7 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 	fileActions_.DrawMenu(entry.path, entry.isDirectory, areFileOperationsAllowed_);
 
 	if (entry.isDirectory) {
+		// 「開く」メニュー選択を受け取る。
 		if (ImGui::MenuItem("開く")) {
 			OpenDirectory(entry.path);
 		}
@@ -717,6 +768,7 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 	const std::string relative = PathText(entry.path.lexically_relative(root_));
 
 	if (entry.extension == ".ponscene") {
+		// 「Sceneを開く」メニュー選択を受け取る。
 		if (ImGui::MenuItem("Sceneを開く", nullptr, false, areFileOperationsAllowed_)) {
 			requestedScene_ = entry.path;
 		}
@@ -725,6 +777,7 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 	}
 
 	if (entry.extension == ".ponprefab") {
+		// 「Prefabをシーンに配置」メニュー選択を受け取る。
 		if (ImGui::MenuItem("Prefabをシーンに配置")) {
 			PrefabOperations::Place(scene, relative, 0, {}, status_);
 		}
@@ -733,12 +786,14 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 	}
 
 	if (WorldObjects::IsSupportedModel(relative)) {
+		// 「シーンに配置」メニュー選択を受け取る。
 		if (ImGui::MenuItem("シーンに配置")) {
 			if (scene.PrepareModel(relative, status_)) {
 				scene.AddObject(relative);
 			}
 		}
 
+		// 「選択中のMesh Rendererへ適用」メニュー選択を受け取る。
 		if (ImGui::MenuItem("選択中のMesh Rendererへ適用")) {
 			for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
 				const EditableObjectView object = scene.GetEditableObject(objectIndex);
@@ -765,10 +820,12 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 			}
 		}
 	} else if (entry.extension == ".ponparticle") {
+		// 「Particle Editorを開く」メニュー選択を受け取る。
 		if (ImGui::MenuItem("Particle Editorを開く")) {
 			visibility.isParticleEditorVisible = true;
 		}
 	} else {
+		// 「プレビュー・ファイル情報の表示」補助テキストを表示。
 		ImGui::TextDisabled("プレビュー・ファイル情報の表示");
 	}
 

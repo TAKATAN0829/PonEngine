@@ -186,33 +186,43 @@ void GameScene::SetEditorViewport(uint32_t width, uint32_t height) {
 //=============================================================================================//
 // 設定パネル描画
 
+// Spriteの基本値を確認し、ゲーム停止中だけ設定を編集できるようにする。
 void GameScene::DrawWorldSettings(bool* isOpen) {
 #ifdef USE_IMGUI
 
 	//=============================================================================================//
 	// ImGui
 
+	// 次のウィンドウサイズを設定。
 	ImGui::SetNextWindowSize({390, 480}, ImGuiCond_FirstUseEver);
-
+	// 「World Settings」ウィンドウを開始。
 	if (!ImGui::Begin("World Settings", isOpen)) {
+		// ウィンドウを終了。
 		ImGui::End();
 
 		return;
 	}
 
+	// 折り返しテキストを表示。
 	ImGui::TextWrapped("ライトはHierarchyの右クリック → 新規作成 → Lightから作成し、Inspectorで編集します。");
 
+	// Spriteの位置・回転・大きさを表示し、ゲーム再生中は誤編集を防ぐ。
+	// 「Sprite」開閉見出しを表示。
 	if (ImGui::CollapsingHeader("Sprite")) {
-
+		// 操作無効化を開始。
 		ImGui::BeginDisabled(IsPlaying());
+		// 「Position」スライダーで2成分値を編集。
 		ImGui::SliderFloat2("Position", &spritePosition_.x, 0.f, static_cast<float>(WinApp::kClientWidth));
+		// 「Rotation」角度をスライダー編集。
 		ImGui::SliderAngle("Rotation", &spriteRotation_);
+		// 「Size」スライダーで2成分値を編集。
 		ImGui::SliderFloat2("Size", &spriteSize_.x, 0.f, 512.f);
-
+		// 操作無効化を終了。
 		ImGui::EndDisabled();
 
 	}
 
+	// ウィンドウを終了。
 	ImGui::End();
 
 #else

@@ -9,6 +9,7 @@
 //=============================================================================================//
 // 実装内補助定義
 
+// Win32入力イベントを処理。
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
 	HWND hwnd,
 	UINT msg,
@@ -158,6 +159,7 @@ LRESULT CALLBACK WinApp::WindowProc(
 	}
 
 #ifdef USE_IMGUI
+	// Win32入力イベントを処理。
 	if (ImGui_ImplWin32_WndProcHandler(
 		hwnd,
 		msg,

@@ -34,6 +34,7 @@ void DebugCamera::Update() {
 		return;
 	}
 
+	// 入力状態を取得。
 	const ImGuiIO& inputState = ImGui::GetIO();
 
 	if (inputState.WantTextInput) {
@@ -42,6 +43,7 @@ void DebugCamera::Update() {
 
 	bool hasChanged = false;
 
+	// マウス押下を確認。
 	if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
 		if (inputState.MouseDelta.x != 0 || inputState.MouseDelta.y != 0) {
 			transform_.rotate.x += inputState.MouseDelta.y * rotateSpeed_;
@@ -57,6 +59,7 @@ void DebugCamera::Update() {
 
 	Vector2 panDelta{};
 
+	// マウス押下を確認。
 	if (ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
 		panDelta = {inputState.MouseDelta.x, inputState.MouseDelta.y};
 	}
@@ -81,19 +84,24 @@ void DebugCamera::Update() {
 void DebugCamera::Draw(bool* isOpen) {
 	// カメラの編集欄を表示し、値が変わった場合だけ行列を更新する。
 #ifdef USE_IMGUI
+	// 次のウィンドウサイズを設定。
 	ImGui::SetNextWindowSize({350, 250}, ImGuiCond_FirstUseEver);
-
+	// 「Camera」ウィンドウを開始。
 	if (ImGui::Begin("Camera", isOpen)) {
+		// カメラの位置と回転を編集し、変更時にビュー行列を更新する。
+		// 「Translate」3成分値をドラッグ編集。
 		bool wasEdited = ImGui::DragFloat3("Translate", &transform_.translate.x, 0.1f);
-
+		// 「Rotate」3成分値をドラッグ編集。
 		if (ImGui::DragFloat3("Rotate", &transform_.rotate.x, 0.01f)) {
 			wasEdited = true;
 		}
 
+		// マウス操作の移動・拡大・回転速度を調整する。
+		// 「Pan Speed」数値をドラッグ編集。
 		ImGui::DragFloat("Pan Speed", &panSpeed_, 0.001f, 0.001f, 1, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-
+		// 「Zoom Speed」数値をドラッグ編集。
 		ImGui::DragFloat("Zoom Speed", &zoomSpeed_, 0.1f, 0.01f, 100, "%.2f", ImGuiSliderFlags_AlwaysClamp);
-
+		// 「Rotate Speed」数値をドラッグ編集。
 		ImGui::DragFloat("Rotate Speed", &rotateSpeed_, 0.001f, 0.001f, 0.1f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 
 		if (wasEdited) {
@@ -101,6 +109,7 @@ void DebugCamera::Draw(bool* isOpen) {
 		}
 	}
 
+	// ウィンドウを終了。
 	ImGui::End();
 
 #else

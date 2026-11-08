@@ -31,11 +31,14 @@ namespace {
 
 		const bool isExpanded = EditorProperties::Header("Transform","位置・回転・拡縮は親に対するローカル値です。見出しを右クリックするとリセットできます。");
 
+		// 「TransformActions」項目メニューを開始。
 		if (ImGui::BeginPopupContextItem("TransformActions")) {
+			// 「リセット」メニュー選択を受け取る。
 			if (ImGui::MenuItem("リセット")) {
 				*transform = {{1,1,1},{},{}};
 			}
 
+			// ポップアップを終了。
 			ImGui::EndPopup();
 		}
 
@@ -49,6 +52,7 @@ namespace {
 
 		EditorProperties::Vector("Position",&transform->translate,0.01f);
 
+		// 操作無効化を開始。
 		ImGui::BeginDisabled(isPositionOnly);
 
 		Vector3 degrees = MathUtility::Multiply(57.2957795f,transform->rotate);
@@ -57,12 +61,14 @@ namespace {
 			transform->rotate = MathUtility::Multiply(0.0174532925f,degrees);
 		}
 
+		// 操作無効化を終了。
 		ImGui::EndDisabled();
-
+		// 操作無効化を開始。
 		ImGui::BeginDisabled(isPositionOnly || type == WorldObjectType::Camera || type == WorldObjectType::SpotLight || type == WorldObjectType::DirectionalLight);
 
 		EditorProperties::Vector("Scale",&transform->scale,0.01f);
 
+		// 操作無効化を終了。
 		ImGui::EndDisabled();
 
 		EditorProperties::End();
@@ -119,13 +125,16 @@ namespace {
 
 		const bool isExpanded = EditorProperties::Header("Mesh Renderer","モデルと見た目の共通設定です。右クリックでComponentを削除できます。");
 
+		// 「MeshRendererActions」項目メニューを開始。
 		if (ImGui::BeginPopupContextItem("MeshRendererActions")) {
 			if (object.hasMeshRenderer != nullptr) {
+				// 「Componentを削除」メニュー選択を受け取る。
 				if (ImGui::MenuItem("Componentを削除")) {
 					*object.hasMeshRenderer = false;
 				}
 			}
 
+			// ポップアップを終了。
 			ImGui::EndPopup();
 		}
 
@@ -149,8 +158,10 @@ namespace {
 			// Projectから適用した任意モデルも、実際の参照先を表示する。
 			EditorProperties::Row("Model");
 
+			// 選択肢一覧を開始。
 			if (ImGui::BeginCombo("##Model", object.model->c_str())) {
 				for (const char* modelName : models) {
+					// 選択項目を表示。
 					if (ImGui::Selectable(modelName, *object.model == modelName)) {
 						*object.model = modelName;
 
@@ -164,6 +175,7 @@ namespace {
 					}
 				}
 
+				// 選択肢一覧を終了。
 				ImGui::EndCombo();
 			}
 		}
@@ -200,11 +212,14 @@ namespace {
 
 		const bool isExpanded = EditorProperties::Header("Rotation","各ローカルEuler角を度/秒で更新します。親の回転も引き継ぎます。");
 
+		// 「RotationComponentMenu」項目メニューを開始。
 		if (ImGui::BeginPopupContextItem("RotationComponentMenu")) {
+			// 「Componentを削除」メニュー選択を受け取る。
 			if (ImGui::MenuItem("Componentを削除")) {
 				settings.hasRotation = false;
 			}
 
+			// ポップアップを終了。
 			ImGui::EndPopup();
 		}
 
@@ -235,11 +250,14 @@ namespace {
 
 		const bool isExpanded = EditorProperties::Header("Ping Pong","最初に動き始めた位置から終点へ進み、戻ります。変位は親の座標系、一往復の時間は秒で指定します。");
 
+		// 「MovementComponentMenu」項目メニューを開始。
 		if (ImGui::BeginPopupContextItem("MovementComponentMenu")) {
+			// 「Componentを削除」メニュー選択を受け取る。
 			if (ImGui::MenuItem("Componentを削除")) {
 				settings.hasMovement = false;
 			}
 
+			// ポップアップを終了。
 			ImGui::EndPopup();
 		}
 
@@ -284,21 +302,26 @@ void InspectorPanel::Initialize() {
 void InspectorPanel::Draw(const EditableObjectView& object, bool* isParticleEditorOpen, IEditableWorld* scene) {
 	// 対象の種類とComponentに応じた編集欄を表示する。
 #ifdef USE_IMGUI
+	// 「Inspector」ウィンドウを開始。
 	if (ImGui::Begin("Inspector")) {
 		if (object.id == kInvalidWorldObjectId) {
+			// 余白を追加。
 			ImGui::Spacing();
-
+			// 「オブジェクトを選択」補助テキストを表示。
 			ImGui::TextDisabled("オブジェクトを選択");
-
+			// 折り返しテキストを表示。
 			ImGui::TextWrapped("HierarchyまたはSceneViewで対象を選択すると、Componentを編集できます。");
 		} else {
 			if (object.isActive != nullptr) {
+				// チェック状態を編集。
 				ImGui::Checkbox("##ObjectActive",object.isActive);
-
+				// ホバー状態を確認。
 				if (ImGui::IsItemHovered()) {
+					// 「オブジェクト全体の有効・無効」補足説明を表示。
 					ImGui::SetTooltip("オブジェクト全体の有効・無効");
 				}
 
+				// 横並びに配置。
 				ImGui::SameLine();
 			}
 
@@ -307,19 +330,22 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* isParticleEdit
 
 				std::snprintf(nameBuffer,sizeof(nameBuffer),"%s",object.editableName->c_str());
 
+				// 次項目の幅を設定。
 				ImGui::SetNextItemWidth(-1);
-
+				// 文字列を入力。
 				if (ImGui::InputText("##ObjectName",nameBuffer,sizeof(nameBuffer))) {
 					if (nameBuffer[0] != '\0') {
 						*object.editableName = nameBuffer;
 					}
 				}
 			} else {
+				// テキストを表示。
 				ImGui::TextUnformatted(object.name);
 			}
 
+			// 「Object  /  ID %llu」補助テキストを表示。
 			ImGui::TextDisabled("Object  /  ID %llu",static_cast<unsigned long long>(object.id));
-
+			// 区切り線を表示。
 			ImGui::Separator();
 
 			DrawTransformComponent(object.transform,object.type);
@@ -351,9 +377,11 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* isParticleEdit
 			}
 
 			if (object.type == WorldObjectType::Particle) {
+				// 「Particle Emitter」補助テキストを表示。
 				ImGui::TextDisabled("Particle Emitter");
 
 				if (isParticleEditorOpen != nullptr) {
+					// 「Particle Editorを開く」ボタン押下を受け取る。
 					if (ImGui::Button("Particle Editorを開く")) {
 						*isParticleEditorOpen = true;
 					}
@@ -362,6 +390,7 @@ void InspectorPanel::Draw(const EditableObjectView& object, bool* isParticleEdit
 		}
 	}
 
+	// ウィンドウを終了。
 	ImGui::End();
 
 #else
@@ -411,17 +440,21 @@ void InspectorPanel::DrawSelection(IEditableWorld& scene, EditorSelection& selec
 void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSelection& selection) {
 	// 複数選択の共通項目を表示し、変更した値を対象へ反映する。
 #ifdef USE_IMGUI
+	// 「Inspector」ウィンドウを開始。
 	if (!ImGui::Begin("Inspector")) {
+		// ウィンドウを終了。
 		ImGui::End();
 
 		return;
 	}
 
+	// 「選択: %zu objects」テキストを表示。
 	ImGui::Text("選択: %zu objects", selection.GetIds().size());
-
+	// 「主選択を基準に一括編集」補助テキストを表示。
 	ImGui::TextDisabled("主選択を基準に一括編集");
-
+	// ホバー状態を確認。
 	if (ImGui::IsItemHovered()) {
+		// 補足説明を表示。
 		ImGui::SetTooltip("Transformはローカル差分を選択ルートへ、色とActiveは選択全体へ適用します。");
 	}
 
@@ -436,12 +469,14 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 	}
 
 	if (primary.transform == nullptr) {
+		// ウィンドウを終了。
 		ImGui::End();
 
 		return;
 	}
 
 	if (primary.isActive == nullptr || primary.color == nullptr) {
+		// ウィンドウを終了。
 		ImGui::End();
 
 		return;
@@ -515,6 +550,7 @@ void InspectorPanel::DrawMultipleSelection(IEditableWorld& scene, const EditorSe
 		}
 	}
 
+	// ウィンドウを終了。
 	ImGui::End();
 
 #else
@@ -543,9 +579,11 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 	const std::vector<ModelMaterialInfo> imported = scene.GetModelMaterials(*object.model);
 
 	for (size_t slotIndex = 0; slotIndex < imported.size(); ++slotIndex) {
+		// 項目IDを追加。
 		ImGui::PushID(static_cast<int>(slotIndex));
-
+		// ツリー項目を表示。
 		if (!ImGui::TreeNode(imported[slotIndex].name.c_str())) {
+			// 項目IDを戻す。
 			ImGui::PopID();
 
 			continue;
@@ -594,19 +632,23 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 			textureLabel = "White";
 		}
 
+		// 「Texture」補助テキストを表示。
 		ImGui::TextDisabled("Texture");
-
+		// スタイル値を適用。
 		ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign,{0,0.5f});
-
+		// ボタン押下を受け取る。
 		ImGui::Button((textureLabel+"##Texture").c_str(),{-1,0});
-
+		// スタイル値を戻す。
 		ImGui::PopStyleVar();
-
+		// ホバー状態を確認。
 		if (ImGui::IsItemHovered()) {
+			// 補足説明を表示。
 			ImGui::SetTooltip("%s\nProjectの画像をドロップして変更できます。",textureLabel.c_str());
 		}
 
+		// ドロップ受け入れを開始。
 		if (ImGui::BeginDragDropTarget()) {
+			// ドロップデータを取得。
 			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kTextureType);
 
 			std::string texture;
@@ -621,16 +663,20 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 				}
 			}
 
+			// ドロップ受け入れを終了。
 			ImGui::EndDragDropTarget();
 		}
 
 		bool shouldReset = false;
 
+		// 「MaterialActions」項目メニューを開始。
 		if (ImGui::BeginPopupContextItem("MaterialActions")) {
+			// 「モデル既定値へ戻す」メニュー選択を受け取る。
 			if (ImGui::MenuItem("モデル既定値へ戻す")) {
 				shouldReset = true;
 			}
 
+			// 「テクスチャを白にする」メニュー選択を受け取る。
 			if (ImGui::MenuItem("テクスチャを白にする")) {
 				settings.texture = "white1x1.png";
 
@@ -639,6 +685,7 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 				}
 			}
 
+			// ポップアップを終了。
 			ImGui::EndPopup();
 		}
 
@@ -654,12 +701,14 @@ void InspectorPanel::DrawMaterials(const EditableObjectView& object, IEditableWo
 			}
 		}
 
+		// ツリー階層を終了。
 		ImGui::TreePop();
-
+		// 項目IDを戻す。
 		ImGui::PopID();
 	}
 
 	if (!status_.empty()) {
+		// 折り返しテキストを表示。
 		ImGui::TextWrapped("%s", status_.c_str());
 	}
 
@@ -702,10 +751,12 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableWo
 
 	EditorProperties::Row("Clip");
 
+	// 選択肢一覧を開始。
 	if (ImGui::BeginCombo("##Clip", selected)) {
 		for (size_t clipIndex = 0; clipIndex < clips.size(); ++clipIndex) {
+			// 項目IDを追加。
 			ImGui::PushID(static_cast<int>(clipIndex));
-
+			// 選択項目を表示。
 			if (ImGui::Selectable(clips[clipIndex].name.c_str(), settings.clip == static_cast<int>(clipIndex))) {
 				settings.clip = static_cast<int>(clipIndex);
 
@@ -714,9 +765,11 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableWo
 				scene.SetAnimationPreview(object.id, false, true);
 			}
 
+			// 項目IDを戻す。
 			ImGui::PopID();
 		}
 
+		// 選択肢一覧を終了。
 		ImGui::EndCombo();
 	}
 
@@ -732,11 +785,14 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableWo
 		scene.SetAnimationPreview(object.id, isPreviewPlaying, false);
 	}
 
+	// 「AnimationActions」項目メニューを開始。
 	if (ImGui::BeginPopupContextItem("AnimationActions")) {
+		// 「停止して開始位置へ戻す」メニュー選択を受け取る。
 		if (ImGui::MenuItem("停止して開始位置へ戻す")) {
 			scene.SetAnimationPreview(object.id, false, true);
 		}
 
+		// ポップアップを終了。
 		ImGui::EndPopup();
 	}
 
@@ -747,6 +803,7 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableWo
 
 		EditorProperties::Row("Time");
 
+		// スライダーで数値編集。
 		if (ImGui::SliderFloat("##Time", &position, 0, duration, "%.3f s", ImGuiSliderFlags_AlwaysClamp)) {
 			settings.time = position;
 
@@ -755,6 +812,7 @@ void InspectorPanel::DrawAnimation(const EditableObjectView& object, IEditableWo
 
 		EditorProperties::Row("Length");
 
+		// テキストを表示。
 		ImGui::Text("%.3f s",duration);
 	}
 
@@ -784,11 +842,14 @@ void InspectorPanel::DrawBodyComponent(const EditableObjectView& object) {
 
 	const bool isExpanded = EditorProperties::Header("Rigidbody","Dynamicは重力と接触で移動します。動く床はKinematic、床・壁はStaticまたはRigidbodyなし。Dynamicは動かない親の下に置きます。角速度と連続衝突判定は未対応です。");
 
+	// 「RigidbodyMenu」項目メニューを開始。
 	if (ImGui::BeginPopupContextItem("RigidbodyMenu")) {
+		// 「Componentを削除」メニュー選択を受け取る。
 		if (ImGui::MenuItem("Componentを削除")) {
 			object.body->isPresent = false;
 		}
 
+		// ポップアップを終了。
 		ImGui::EndPopup();
 	}
 
@@ -812,6 +873,7 @@ void InspectorPanel::DrawBodyComponent(const EditableObjectView& object) {
 		object.body->mode = static_cast<BodyMode>(mode);
 	}
 
+	// 操作無効化を開始。
 	ImGui::BeginDisabled(object.body->mode != BodyMode::Dynamic);
 
 	EditorProperties::Toggle("Use Gravity",&object.body->isGravityEnabled);
@@ -824,6 +886,7 @@ void InspectorPanel::DrawBodyComponent(const EditableObjectView& object) {
 
 	EditorProperties::Float("Damping",&object.body->linearDamping,0.05f,0,100,"%.2f");
 
+	// 操作無効化を終了。
 	ImGui::EndDisabled();
 
 	EditorProperties::Float("Bounce",&object.body->restitution,0.01f,0,1);
@@ -856,11 +919,14 @@ void InspectorPanel::DrawColliderComponent(const EditableObjectView& object) {
 
 	const bool isExpanded = EditorProperties::Header("Collider","Center・Size・RadiusはTransformに対するローカル値です。Sphereは非均等拡縮・せん断では外接球を使います。Triggerは通知のみ。Colliderは最大256個です。");
 
+	// 「ColliderMenu」項目メニューを開始。
 	if (ImGui::BeginPopupContextItem("ColliderMenu")) {
+		// 「Componentを削除」メニュー選択を受け取る。
 		if (ImGui::MenuItem("Componentを削除")) {
 			object.collider->isPresent = false;
 		}
 
+		// ポップアップを終了。
 		ImGui::EndPopup();
 	}
 
@@ -964,12 +1030,16 @@ void InspectorPanel::DrawMotionComponents(const EditableObjectView& object, IEdi
 		return;
 	}
 
+	// 「AddMotionComponent」ウィンドウメニューを開始。
 	if (ImGui::BeginPopupContextWindow("AddMotionComponent", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
+		// 「Componentを追加」メニューを開始。
 		if (ImGui::BeginMenu("Componentを追加")) {
+			// 「Rotation / 自動回転」メニュー選択を受け取る。
 			if (ImGui::MenuItem("Rotation / 自動回転", nullptr, false, !object.motion->hasRotation)) {
 				object.motion->hasRotation = true;
 			}
 
+			// 「Ping Pong / 往復移動」メニュー選択を受け取る。
 			if (ImGui::MenuItem("Ping Pong / 往復移動", nullptr, false, !object.motion->hasMovement)) {
 				object.motion->hasMovement = true;
 			}
@@ -989,25 +1059,29 @@ void InspectorPanel::DrawMotionComponents(const EditableObjectView& object, IEdi
 			}
 
 			if (object.collider != nullptr) {
+				// 操作無効化を開始。
 				ImGui::BeginDisabled(object.collider->isPresent || colliderCount >= WorldCollision::kMaxColliders);
-
+				// 「Box Collider」メニュー選択を受け取る。
 				if (ImGui::MenuItem("Box Collider")) {
 					object.collider->isPresent = true;
 
 					object.collider->shape = ColliderShape::Box;
 				}
 
+				// 「Sphere Collider」メニュー選択を受け取る。
 				if (ImGui::MenuItem("Sphere Collider")) {
 					object.collider->isPresent = true;
 
 					object.collider->shape = ColliderShape::Sphere;
 				}
 
+				// 操作無効化を終了。
 				ImGui::EndDisabled();
 			}
 
 			if (object.hasMeshRenderer != nullptr) {
 				if (object.type == WorldObjectType::Model || object.type == WorldObjectType::Empty) {
+					// 「Mesh Renderer」メニュー選択を受け取る。
 					if (ImGui::MenuItem("Mesh Renderer",nullptr,false,!*object.hasMeshRenderer)) {
 						*object.hasMeshRenderer = true;
 					}
@@ -1015,14 +1089,17 @@ void InspectorPanel::DrawMotionComponents(const EditableObjectView& object, IEdi
 			}
 
 			if (object.body != nullptr) {
+				// 「Rigidbody / 重力・押し戻し」メニュー選択を受け取る。
 				if (ImGui::MenuItem("Rigidbody / 重力・押し戻し",nullptr,false,!object.body->isPresent)) {
 					object.body->isPresent = true;
 				}
 			}
 
+			// メニューを終了。
 			ImGui::EndMenu();
 		}
 
+		// ポップアップを終了。
 		ImGui::EndPopup();
 	}
 

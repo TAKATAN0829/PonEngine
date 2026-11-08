@@ -11,8 +11,9 @@
 
 void EditorTheme::Initialize() {
 #ifdef USE_IMGUI
+	// 明色スタイルを適用。
 	ImGui::StyleColorsLight();
-
+	// 表示スタイルを取得。
 	ImGuiStyle& style = ImGui::GetStyle();
 	// 文字の大きさ
 	style.FontScaleMain = 0.85f;

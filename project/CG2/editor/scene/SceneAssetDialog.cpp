@@ -48,11 +48,13 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 		isSelectionReady_ = false;
 		wasCancelled_ = false;
 
+		// 「Sceneファイル」ポップアップを開く。
 		ImGui::OpenPopup("Sceneファイル");
 
 		isOpenRequested_ = false;
 	}
 
+	// 「Sceneファイル」モーダルを開始。
 	if (!ImGui::BeginPopupModal("Sceneファイル", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		return;
 	}
@@ -63,17 +65,22 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 		action = "保存";
 	}
 
+	// テキストを表示。
 	ImGui::TextUnformatted("resourcesからの相対パス（例: scenes/Stage01.ponscene）");
 
+	// パスを直接入力するか、一覧で選んだSceneを開く・保存する。
+	// 次項目の幅を設定。
 	ImGui::SetNextItemWidth(480);
 
 	// 開いた直後はパス入力へフォーカスを移す。
 	if (shouldFocusInput) {
+		// 入力欄へフォーカス。
 		ImGui::SetKeyboardFocusHere();
 	}
 
+	// 文字列を入力。
 	const bool wasPathSubmitted = ImGui::InputText("##ScenePath", input_, sizeof(input_), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-
+	// 編集状態を確認。
 	if (ImGui::IsItemEdited()) {
 		isOverwritePending_ = false;
 	}
@@ -82,21 +89,26 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 		Submit(document, false);
 	}
 
+	// Sceneファイル一覧を更新し、スクロールできる領域に候補を並べる。
+	// 「一覧を更新」ボタン押下を受け取る。
 	if (ImGui::Button("一覧を更新")) {
 		Scan(document);
 	}
 
+	// 「SceneFiles」子領域を開始。
 	ImGui::BeginChild("SceneFiles", {520, 210}, ImGuiChildFlags_Borders);
 
 	for (const std::filesystem::path& scene : scenes_) {
 		const std::string label = AssetPathChange::Text(scene);
 
+		// 選択項目を表示。
 		if (ImGui::Selectable(label.c_str(), label == input_, ImGuiSelectableFlags_AllowDoubleClick)) {
 			std::snprintf(input_, sizeof(input_), "%s", label.c_str());
 
 			isOverwritePending_ = false;
 
 			if (!isSaving_) {
+				// ダブルクリックを確認。
 				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 					Submit(document, false);
 				}
@@ -104,43 +116,53 @@ void SceneAssetDialog::Draw(const SceneDocument& document) {
 		}
 	}
 
+	// 子領域を終了。
 	ImGui::EndChild();
 
+	// ファイル操作の結果と、上書き確認または確定操作を表示する。
 	if (!status_.empty()) {
+		// 折り返しテキストを表示。
 		ImGui::TextWrapped("%s", status_.c_str());
 	}
 
 	// 上書き確認が必要な選択は、明示的な許可を待つ。
 	if (isOverwritePending_) {
+		// 「既存のSceneファイルを上書きしますか？」テキストを表示。
 		ImGui::TextUnformatted("既存のSceneファイルを上書きしますか？");
-
+		// 「上書きする」ボタン押下を受け取る。
 		if (ImGui::Button("上書きする")) {
 			Submit(document, true);
 		}
 
+		// 横並びに配置。
 		ImGui::SameLine();
-
+		// 「戻る」ボタン押下を受け取る。
 		if (ImGui::Button("戻る")) {
 			isOverwritePending_ = false;
 		}
 	} else {
+		// ボタン押下を受け取る。
 		if (ImGui::Button(action)) {
 			Submit(document, false);
 		}
 	}
 
+	// 横並びに配置。
 	ImGui::SameLine();
-
+	// 「キャンセル」ボタン押下を受け取る。
 	if (ImGui::Button("キャンセル")) {
 		wasCancelled_ = true;
 
+		// 現在のポップアップを閉じる。
 		ImGui::CloseCurrentPopup();
 	}
 
 	if (isSelectionReady_) {
+		// 現在のポップアップを閉じる。
 		ImGui::CloseCurrentPopup();
 	}
 
+	// ポップアップを終了。
 	ImGui::EndPopup();
 #else
 	(void)document;
