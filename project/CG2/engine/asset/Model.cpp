@@ -221,31 +221,39 @@ void Model::RemapAssetPaths(const AssetPathChange& change) {
 
 bool Model::LoadModelFile(const std::string& directoryPath, const std::string& filename, ModelData& modelData, std::string& error) {
 
+	// 読み込んだデータはImporterが所有するため、この関数の中で必要な値を取り出す。
 	Assimp::Importer importer;
 
+	// フォルダとファイル名を合わせ、Assimpに渡すパスにする。
 	std::string filePath = directoryPath + "/" + filename;
 
+	// Assimpにモデル形式の解釈を任せ、面を三角形にそろえた読込結果を受け取る。
 	const aiScene* scene = importer.ReadFile(filePath.c_str(),
 		aiProcess_FlipWindingOrder | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenSmoothNormals);
 
+	// 読み込みに失敗するとポインターが空になるため、Assimpの失敗理由を受け取る。
 	if (scene == nullptr) {
 		error = importer.GetErrorString();
 		return false;
 	}
 
+	// ファイルが読めても、描画に必要なメッシュと階層の起点がそろっているか確認する。
 	if (!scene->HasMeshes()) {
 		error = "Model has no mesh.";
 		return false;
 	}
 
+	// ルートノードがなければ、メッシュをどの座標に置くか階層から求められない。
 	if (scene->mRootNode == nullptr) {
 		error = "Model has no root node.";
 		return false;
 	}
 
+	// アニメーションの有無を調べ、静的モデルと読み取り方を分ける。
 	modelData.isAnimated = scene->HasAnimations();
 
 	for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
+		// クリップがなくても、ボーン付きの頂点には階層を使う処理が必要になる。
 		if (scene->mMeshes[meshIndex]->HasBones()) {
 			modelData.isAnimated = true;
 		}
@@ -271,14 +279,17 @@ bool Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 	//=============================================================================================//
 	// Mesh解析
 
+	// Assimpの結果を、エンジンが使う頂点一覧とマテリアル別の描画範囲に変換する。
 	for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
 
 		aiMesh* mesh = scene->mMeshes[meshIndex];
 
 		ModelData::DrawRange range{};
 
+		// 現在の頂点数が、今から追加するメッシュの描画開始位置になる。
 		range.firstIndex = static_cast<uint32_t>(modelData.vertices.size());
 
+		// 描画時にこの範囲へ使うマテリアル番号を記録する。
 		range.materialIndex = mesh->mMaterialIndex;
 
 		if (!mesh->HasNormals()) {
@@ -297,11 +308,13 @@ bool Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 
 			for (uint32_t element = 0; element < face.mNumIndices; ++element) {
 
+				// 面には頂点そのものではなく番号が並ぶので、その番号で位置や法線を引く。
 				uint32_t vertexIndex = face.mIndices[element];
 
 				aiVector3D& position = mesh->mVertices[vertexIndex];
 				aiVector3D& normal = mesh->mNormals[vertexIndex];
 
+				// UVを持たないメッシュに備え、先に0の座標を用意する。
 				aiVector3D texcoord{};
 
 				if (mesh->HasTextureCoords(0)) {
@@ -310,6 +323,7 @@ bool Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 
 				Mesh::VertexData vertex{};
 
+				// Xの符号を反転し、読み込んだ座標をエンジンの座標系へ合わせる。
 				vertex.position = { -position.x,position.y,position.z,1.0f };
 
 				vertex.normal = { -normal.x,normal.y,normal.z };
@@ -335,6 +349,7 @@ bool Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 
 		aiString materialName;
 
+		// ファイルのマテリアル名を取り出し、名前がなければ番号で表示名を作る。
 		material->Get(AI_MATKEY_NAME, materialName);
 
 		info.name = materialName.C_Str();
@@ -343,6 +358,7 @@ bool Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 			info.name = "Material " + std::to_string(materialIndex);
 		}
 
+		// 色の指定がないマテリアルは白として扱う。
 		aiColor4D color(1, 1, 1, 1);
 
 		material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
@@ -352,6 +368,7 @@ bool Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 		if (material->GetTextureCount(aiTextureType_DIFFUSE) != 0) {
 			aiString texturePath;
 
+			// ベースの色に使う画像のうち、最初に登録されたファイル名を読む。
 			material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
 
 			// AssimpのUTF-8文字列をANSIへ暗黙変換せず、画像の相対パスを組み立てる。
@@ -366,6 +383,7 @@ bool Model::LoadModelFile(const std::string& directoryPath, const std::string& f
 	//=============================================================================================//
 	// Node解析
 
+	// ルートから子をたどり、Importerの外でも使えるノード階層に変換する。
 	modelData.rootNode = ReadNode(scene->mRootNode);
 
 	return true;

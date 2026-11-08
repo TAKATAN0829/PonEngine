@@ -89,14 +89,19 @@ bool ParticlePresetFile::Load(ParticleSettings& settings, const std::filesystem:
 	// 形式と値を検証し、成功した場合だけ設定を反映する。
 	error.clear();
 
+	// テキストとして開き、先頭の形式名と版番号で読み方を決める。
 	std::ifstream input(path);
 
+	// PCの地域設定に関係なく、保存時と同じ小数点の表記を使う。
 	input.imbue(std::locale::classic());
 
+	// 先頭にある形式名の文字列を受け取る。
 	std::string identifier;
 
+	// 形式名に続く版番号を受け取る。
 	int version = 0;
 
+	// ストリームから、形式名と版番号をファイルに並んでいる順で取り出す。
 	input >> identifier >> version;
 
 	// 編集中の設定とは別の領域で読込と検証を行う。
@@ -108,12 +113,14 @@ bool ParticlePresetFile::Load(ParticleSettings& settings, const std::filesystem:
 		return false;
 	}
 
+	// ヘッダーの続きから、確認した版に合う順序で設定本体を読む。
 	if (!ReadSettings(input, loaded,version)) {
 		error = "Invalid particle preset format.";
 
 		return false;
 	}
 
+	// 末尾の空白は許可し、設定の後ろに別の値が残っていれば失敗にする。
 	input >> std::ws;
 
 	if (input.bad() || !input.eof()) {
@@ -122,6 +129,7 @@ bool ParticlePresetFile::Load(ParticleSettings& settings, const std::filesystem:
 		return false;
 	}
 
+	// 読み取った発生間隔や寿命などが、設定として使える範囲にあるか確認する。
 	if (!AreParticleSettingsValid(loaded)) {
 		error = "Invalid particle preset values.";
 
@@ -173,6 +181,7 @@ bool ParticlePresetFile::ReadSettings(std::istream& input, ParticleSettings& set
 	int acceleration = 0;
 	int blendMode = 0;
 
+	// 位置・速度などの三成分を、保存側と同じ順で読み進める。
 	ReadVector(input, loaded.emitterPosition);
 	ReadVector(input, loaded.spread);
 	ReadVector(input, loaded.velocityMinimum);
@@ -180,11 +189,14 @@ bool ParticlePresetFile::ReadSettings(std::istream& input, ParticleSettings& set
 	ReadVector(input, loaded.particleScale);
 	ReadVector(input, loaded.acceleration);
 
+	// 色は赤・緑・青・不透明度の4成分を順に読む。
 	input >> loaded.color.x >> loaded.color.y >> loaded.color.z >> loaded.color.w;
 
+	// フラグと合成方法は整数で受け取り、画像パスは引用符で囲まれた範囲を読む。
 	input >> loaded.spawnCount >> loaded.interval >> loaded.lifetimeMinimum >> loaded.lifetimeMaximum >>
 	randomColor >> billboard >> acceleration >> blendMode >> std::quoted(loaded.texture);
 
+	// 途中で値が足りなかった場合や、数値に変換できなかった場合を検出する。
 	if (!input) {
 		return false;
 	}
@@ -205,15 +217,18 @@ bool ParticlePresetFile::ReadSettings(std::istream& input, ParticleSettings& set
 		return false;
 	}
 
+	// 0/1と確認したフラグをboolへ変え、合成方法の番号を列挙型へ変える。
 	loaded.isRandomColorEnabled = randomColor != 0;
 	loaded.isBillboardEnabled = billboard != 0;
 	loaded.isAccelerationEnabled = acceleration != 0;
 	loaded.blendMode = static_cast<BlendMode>(blendMode);
 
+	// 形式1には外観とソフトパーティクルの追加項目がないため、形式2だけ続きを読む。
 	if (version >= 2) {
 		int lifetimeAppearance = 0;
 		int softParticles = 0;
 
+		// 寿命に応じた見た目の変化に続けて、背景と交差したときのフェード設定を読む。
 		input >> lifetimeAppearance >> loaded.startSize >> loaded.endSize >> loaded.endColor.x >> loaded.endColor.y
 			>> loaded.endColor.z >> loaded.endColor.w >> loaded.fadeIn >> softParticles >> loaded.softDistance;
 
@@ -225,6 +240,7 @@ bool ParticlePresetFile::ReadSettings(std::istream& input, ParticleSettings& set
 			return false;
 		}
 
+		// 形式2の追加フラグを、読み取った整数からboolへ戻す。
 		loaded.isLifetimeAppearanceEnabled = lifetimeAppearance != 0;
 
 		loaded.areSoftParticlesEnabled = softParticles != 0;

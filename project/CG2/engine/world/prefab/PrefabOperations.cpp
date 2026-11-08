@@ -92,13 +92,18 @@ WorldObjectId PrefabOperations::Instantiate(IWorldObjects& scene, const std::fil
 	// 一時データで読込・採番・親子変換を済ませてから、配置全体を反映する。
 	error.clear();
 
+	// 読んだオブジェクトを受け止める空の一覧を用意する。
 	WorldObjects prefab;
 
+	// PrefabはSceneと同じ形式で保存される。配置先とは別のWorldに階層を読み込む。
 	if (!SceneFile::Load(prefab, path, error)) {
 		return 0;
 	}
 
+	// 配置先の現在の内容をコピーし、読み込んだオブジェクトを足す候補にする。
 	std::vector<WorldObjectData> candidate = scene.CaptureObjects();
+
+	// 読み込んだ階層を、新しいIDを割り当てられる値の一覧として取り出す。
 	std::vector<WorldObjectData> imported = prefab.CaptureObjects();
 
 	// 内容の有無と配置可能な個数は、それぞれ別に確認する。
@@ -133,8 +138,10 @@ WorldObjectId PrefabOperations::Instantiate(IWorldObjects& scene, const std::fil
 	WorldObjectId rootId = 0;
 
 	for (const WorldObjectData& object : imported) {
+		// ファイル内のIDをキーに、配置先で使う新しいIDを対応づける。
 		remapped[object.id] = nextId++;
 
+		// 親IDが0の一件を、配置時に移動・接続するルートとして選ぶ。
 		if (object.parentId == 0) {
 			if (rootId != 0) {
 				error = "Prefab must contain exactly one root.";
@@ -177,6 +184,7 @@ WorldObjectId PrefabOperations::Instantiate(IWorldObjects& scene, const std::fil
 		}
 
 		if (object.parentId != 0) {
+			// 親も同じ対応表で置き換え、読み込んだ階層を維持する。
 			object.parentId = remapped.at(object.parentId);
 		}
 

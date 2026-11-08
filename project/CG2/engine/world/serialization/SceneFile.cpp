@@ -24,6 +24,7 @@ namespace {
 		// Materialとアニメーションの設定を読み込み、形式と値を確認する。
 		size_t materialCount = 0;
 
+		// 先頭の件数で、後ろに続くマテリアル設定を何件読むか決まる。
 		input >> materialCount;
 
 		if (!input || materialCount > 256) {
@@ -34,8 +35,10 @@ namespace {
 		object.materials.resize(materialCount);
 
 		for (MaterialSettings& material : object.materials) {
+			// ファイルの0/1をいったん整数で受け、範囲を確かめてからboolに変える。
 			int lighting = 0;
 
+			// 引用符付きのテクスチャパスは、途中に空白があっても一つの値として読む。
 			input >> material.slot >> std::quoted(material.texture) >> material.color.x >> material.color.y >> material.color.z >> material.color.w >> material.shininess >> lighting;
 
 			if (lighting != 0 && lighting != 1) {
@@ -80,6 +83,7 @@ namespace {
 		// 回転と往復移動の値を読み込み、保存形式と数値の範囲を確認する。
 		int flags[4]{};
 
+		// 保存側と同じ順で、回転のフラグと速度、続いて往復移動のフラグと設定を読む。
 		input >> flags[0] >> flags[1] >> settings.rotationDegreesPerSecond.x >> settings.rotationDegreesPerSecond.y >> settings.rotationDegreesPerSecond.z;
 		input >> flags[2] >> flags[3] >> settings.movementOffset.x >> settings.movementOffset.y >> settings.movementOffset.z >> settings.movementPeriod;
 
@@ -113,6 +117,7 @@ namespace {
 		int enabled = 0;
 		int shape = 0;
 
+		// 形状は整数で読み、中心・Boxの大きさ・球の半径と合わせて最後に検証する。
 		input >> present >> enabled >> shape >> settings.center.x >> settings.center.y >> settings.center.z;
 		input >> settings.size.x >> settings.size.y >> settings.size.z >> settings.radius;
 
@@ -146,6 +151,7 @@ namespace {
 		int mode = 0;
 		int gravity = 0;
 
+		// ColliderのTriggerフラグに続いて、Rigidbodyの動作方式・物理量・初速を読む。
 		input >> trigger >> present >> enabled >> mode >> gravity;
 		input >> object.body.mass >> object.body.gravityScale >> object.body.restitution >> object.body.friction >> object.body.linearDamping;
 		input >> object.body.initialVelocity.x >> object.body.initialVelocity.y >> object.body.initialVelocity.z;
@@ -359,6 +365,7 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 				return false;
 			}
 
+			// 一覧を復元する形式では、4種類の共通プロパティがすべて必要になる。
 			if (record.mask != 15) {
 				error = "Incomplete scene object properties.";
 
@@ -510,38 +517,49 @@ bool SceneFile::Save(IWorldObjects& scene, const std::filesystem::path& path, st
 
 // 対応する保存形式を読み込み、全件の整合性を確認してからシーンへ反映する。
 bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, std::string& error, bool shouldMigrateLegacyLights) {
+	// 前回の失敗理由を消し、今回の結果だけを返す。
 	error.clear();
 
+	// 指定されたパスを、テキストファイルとして読込用に開く。
 	std::ifstream inputFile(path);
 
+	// OSの地域設定に関係なく、保存時と同じピリオドを小数点として扱う。
 	inputFile.imbue(std::locale::classic());
 
+	// ストリームが失敗状態なら、まだ中身を読まずに呼び出し元へ返す。
 	if (!inputFile) {
 		error = "Cannot open scene file.";
 
 		return false;
 	}
 
+	// ファイルの種類を見分ける先頭の文字列を受け取る。
 	std::string magic;
 
+	// 後続の項目の並びを決める保存形式の版番号を受け取る。
 	unsigned version{};
 
+	// ファイルが宣言するオブジェクト件数を受け取る。
 	size_t count{};
 
+	// 配置の一覧をまとめて置き換えられるシーンか確認する。
 	const bool hasObjectCollectionSupport = scene.HasObjectCollectionSupport();
 
+	// ヘッダーは形式名・版番号・オブジェクト件数。>> は空白や改行を飛ばして次の値を読む。
 	if (!(inputFile >> magic >> version >> count)) {
 		error = "Incomplete scene header.";
 
 		return false;
 	}
 
+	// Scene形式以外のファイルや、この読込処理が対応していない版は拒否する。
 	if (magic != "PON_SCENE" || version < 1 || version > 14) {
 		error = "Unsupported scene format.";
 
 		return false;
 	}
 
+	// ファイルの件数を信用せず、読み込みやメモリ確保に使う前に上限を確認する。
 	if (count > 100000) {
 		error = "Scene exceeds the supported object count.";
 
@@ -549,18 +567,21 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 	}
 
 	if (hasObjectCollectionSupport) {
+		// 一覧を入れ替える場合は、実際にシーンが持てる件数も確認する。
 		if (count > WorldObjects::kMaxObjects) {
 			error = "Scene exceeds the supported object count.";
 
 			return false;
 		}
 	} else {
+		// 一覧を入れ替えられないシーンでは、既存の値だけを更新する形式1を使う。
 		if (version != 1) {
 			error = "This scene requires format version 1.";
 
 			return false;
 		}
 
+		// 一件ずつ反映できるよう、現在のオブジェクト件数と一致するか確認する。
 		if (count != scene.GetEditableObjectCount()) {
 			error = "Scene object count mismatch.";
 
@@ -573,33 +594,44 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 		std::vector<WorldObjectData> objects;
 
 		if (version == 1) {
+			// 形式1は新しい一覧を作れないので、現在の配置のコピーを更新する。
 			objects = scene.CaptureObjects();
 		}
 
+		// ファイル内で同じIDが複数回出てこないよう、読み取ったIDを記録する。
 		std::unordered_set<WorldObjectId> ids;
 
 		for (size_t objectIndex = 0; objectIndex < count; ++objectIndex) {
+			// まず一件分の受け皿を作る。古い形式にない項目には初期値が残る。
 			Record record;
 
+			// IDと、どの設定項目が保存されているかを示すビット列を読む。
 			inputFile >> record.id >> record.mask;
 
+			// Transform・色・光沢を、保存した順に14個の数値として受け取る。
 			for (float& value : record.values) {
+				// 読み取った数値を、その順番に対応する配列の要素へ入れる。
 				inputFile >> value;
 			}
 
+			// ライティングの有無は、後で検証できるよう0か1の整数として受け取る。
 			inputFile >> record.lighting;
 
+			// 版番号を見て、その版で保存される項目だけを読む。
 			if (version >= 2) {
+				// 名前とモデルパスは空白を含められるよう、引用符付きで読み取る。
 				inputFile >> std::quoted(record.name) >> std::quoted(record.model) >> record.rootMatrix;
 			}
 
 			if (version >= 3) {
+				// 形式3から追加された、オブジェクトの有効状態とメッシュ表示の値を読む。
 				inputFile >> record.active >> record.meshRenderer;
 			}
 
 			if (version >= 4) {
 				int objectType = 0;
 
+				// 種類を表す番号に続いて、ライトの強さ・範囲・減衰を受け取る。
 				inputFile >> objectType >> record.components.lightIntensity >> record.components.lightRadius >> record.components.lightDecay;
 
 				if (!inputFile) {
@@ -608,6 +640,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 					return false;
 				}
 
+				// その版のファイルに登場できる、種類番号の最大値を求める。
 				int maximumType = static_cast<int>(WorldObjectType::Camera);
 
 				if (version >= 13) {
@@ -621,12 +654,14 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 				}
 
 				if (version >= 5) {
+					// 親子関係は位置ではなく、ファイルに記録された親IDで復元する。
 					inputFile >> record.components.parentId;
 				}
 
 				if (version >= 6) {
 					int mainCamera = 0;
 
+					// カメラの画角と描画距離に続いて、メインカメラ指定を整数で受け取る。
 					inputFile >> record.components.camera.fieldOfView >> record.components.camera.nearClip >> record.components.camera.farClip >> mainCamera;
 
 					if (mainCamera != 0 && mainCamera != 1) {
@@ -635,15 +670,18 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 						return false;
 					}
 
+					// 0と1のどちらかと確認できた値をboolへ変換する。
 					record.components.isMainCamera = mainCamera != 0;
 				}
 
+				// 対応範囲を確認した番号を種類に変換し、Particleの場合だけ発生設定を続けて読む。
 				record.components.type = static_cast<WorldObjectType>(objectType);
 
 				if (record.components.type == WorldObjectType::Particle) {
 					unsigned particleVersion = 1;
 
 					if (version >= 12) {
+						// シーン形式12からは、外観設定を含むParticle形式2の並びで読む。
 						particleVersion = 2;
 					}
 
@@ -658,6 +696,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			}
 
 			if (version >= 7) {
+				// マテリアル上書きとアニメーション設定は、専用の読込関数へ任せる。
 				if (!ReadAssetSettings(inputFile, record.components)) {
 					error = "Invalid material or animation settings.";
 
@@ -666,10 +705,12 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			}
 
 			if (version >= 8) {
+				// Prefabから作られたオブジェクトなら、元Assetのパスが入る。
 				inputFile >> std::quoted(record.components.prefabSource);
 			}
 
 			if (version >= 9) {
+				// 自動回転と往復移動の設定を、保存順に読み取る。
 				if (!ReadMotionSettings(inputFile, record.components.motion)) {
 					error = "Invalid motion component settings.";
 
@@ -678,6 +719,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			}
 
 			if (version >= 10) {
+				// 当たり判定の形と寸法を読み取る。
 				if (!ReadColliderSettings(inputFile, record.components.collider)) {
 					error = "Invalid collider settings.";
 
@@ -686,6 +728,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			}
 
 			if (version >= 11) {
+				// Rigidbodyの質量や重力など、物理動作に使う設定を読み取る。
 				if (!ReadBodySettings(inputFile,record.components)) {
 					error = "Invalid Rigidbody settings.";
 
@@ -694,6 +737,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			}
 
 			if (version >= 13) {
+				// スポットライトの照射範囲を決める外角と内角を読む。
 				inputFile >> record.components.light.outerAngle >> record.components.light.innerAngle;
 			}
 
@@ -711,12 +755,14 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 				}
 			}
 
+			// 途中で値が足りなかった場合や、数値欄に文字があった場合はここで止める。
 			if (!inputFile) {
 				error = "Incomplete scene object data.";
 
 				return false;
 			}
 
+			// 読み取れたことと、シーンに使える値であることは別々に確認する。
 			if (!IsValidRecord(record)) {
 				error = "Invalid scene object values.";
 
@@ -729,6 +775,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 				return false;
 			}
 
+			// 挿入結果のsecondがfalseなら、このIDはすでに登場している。
 			if (!ids.insert(record.id).second) {
 				error = "Duplicate scene object ID.";
 
@@ -754,10 +801,13 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 				return false;
 			}
 
+			// 読んだ値を一時一覧用のオブジェクトにまとめ、編集シーンへの反映はまだ行わない。
 			WorldObjectData object = record.components;
 
+			// 共通欄で読んだIDを新しいデータへ移す。
 			object.id = record.id;
 
+			// 14個の数値をTransformや色などの個別の項目へ戻す。
 			ApplyRecordToObject(record, object);
 
 			if (version >= 2) {
@@ -767,8 +817,10 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 				object.isActive = record.active != 0;
 				object.hasMeshRenderer = record.meshRenderer != 0;
 
+				// 一覧を復元する形式では、完成した一件を一時一覧へ追加する。
 				objects.push_back(std::move(object));
 			} else {
+				// 形式1ではファイルの並び順に頼らず、保存時と同じIDのオブジェクトを探す。
 				size_t matchingObjectIndex = 0;
 
 				while (matchingObjectIndex < objects.size() && objects[matchingObjectIndex].id != record.id) {
@@ -785,6 +837,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			}
 		}
 
+		// 最後の改行や空白を読み飛ばし、件数分のデータの後ろに余計な値がないか確かめる。
 		inputFile >> std::ws;
 
 		if (inputFile.bad() || !inputFile.eof()) {
@@ -814,9 +867,11 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			}
 		}
 
+		// 全件読めたら、親子関係など一覧全体の検証と反映をシーン側へ任せる。
 		return scene.ReplaceObjects(std::move(objects), error);
 	}
 
+	// 一覧を置き換えられない形式1のシーンでは、現在のオブジェクトをIDで照合する。
 	std::vector<EditableObjectView> views;
 
 	std::unordered_set<WorldObjectId> sceneIds;
@@ -839,13 +894,17 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 		views.push_back(view);
 	}
 
+	// 読み取った値と反映先の位置を別々に控え、全件の検証が終わるまで書き換えない。
 	std::vector<Record> records(count);
 	
+	// 各レコードをどのオブジェクトに反映するか、現在の一覧の添字で記録する。
 	std::vector<size_t> targets;
 
+	// ファイル側でも同じIDを二重に使っていないかを調べる。
 	std::unordered_set<WorldObjectId> fileIds;
 
 	for (Record& record : records) {
+		// 形式1はID・共通プロパティ・ライティングだけを持ち、名前や種類は続かない。
 		inputFile >> record.id >> record.mask;
 
 		for (float& value : record.values) {
@@ -872,6 +931,7 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			return false;
 		}
 
+		// 現在の一覧からファイルのIDと同じオブジェクトを探す。
 		size_t target = 0;
 
 		while (target < views.size() && views[target].id != record.id) {
@@ -884,12 +944,14 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 			return false;
 		}
 
+		// ファイルにある設定項目を、反映先のオブジェクトも持っているか確認する。
 		if (GetPropertyMask(views[target]) != record.mask) {
 			error = "Scene object property mismatch.";
 
 			return false;
 		}
 
+		// 反映時に同じIDを探し直さずに済むよう、確認済みの位置を保存する。
 		targets.push_back(target);
 	}
 
@@ -907,9 +969,11 @@ bool SceneFile::Load(IWorldObjects& scene, const std::filesystem::path& path, st
 
 		const std::array<float, 14>& values = record.values;
 
+		// 保存順とシーンの並び順が違っても、控えた添字から正しい反映先を取得する。
 		EditableObjectView& view = views[targets[objectIndex]];
 
 		if (view.transform) {
+			// 先頭9個の数値を、拡縮・回転・位置の3組に戻す。
 			*view.transform = { {values[0], values[1], values[2]}, {values[3], values[4], values[5]}, {values[6], values[7], values[8]} };
 		}
 

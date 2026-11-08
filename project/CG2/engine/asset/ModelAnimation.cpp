@@ -252,19 +252,24 @@ bool ModelAnimation::TryInitialize(const std::string& path, std::string& error) 
 	// ノード・クリップ・スキニング情報を読込み、再生用のデータを作る。
 	auto data = std::make_unique<AnimationData>();
 
+	// Assimpが所有するノードやキーを後で参照するため、Importerも再生用データに持たせる。
 	data->scene = data->importer.ReadFile(path,
 		aiProcess_FlipWindingOrder | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenSmoothNormals);
 
+	// Assimpがデータを返せなかったときは、解析を続けず失敗理由を返す。
 	if (data->scene == nullptr) {
 		error = data->importer.GetErrorString();
 		return false;
 	}
 
+	// 先にルートから階層をたどり、メッシュや再生チャンネルをどのノードへ結ぶか調べる。
 	data->meshNodes.resize(data->scene->mNumMeshes);
 
+	// ルートには親がいないので、親のノード番号に-1を渡す。
 	data->AddNode(data->scene->mRootNode, -1);
 
 	for (size_t meshIndex = 0; meshIndex < data->scene->mNumMeshes; ++meshIndex) {
+		// 頂点と、各頂点を動かすボーン・重みをメッシュごとに取り出す。
 		if (!data->ReadMesh(meshIndex, error)) {
 			return false;
 		}
@@ -273,9 +278,11 @@ bool ModelAnimation::TryInitialize(const std::string& path, std::string& error) 
 	for (unsigned int clipIndex = 0; clipIndex < data->scene->mNumAnimations; ++clipIndex) {
 		const aiAnimation& clip = *data->scene->mAnimations[clipIndex];
 
+		// クリップ内の時刻を秒に直すため、1秒あたりの刻み数を読む。
 		double ticksPerSecond = clip.mTicksPerSecond;
 
 		if (ticksPerSecond <= 0) {
+			// 刻み数が指定されていなければ、変換の基準として25を使う。
 			ticksPerSecond = 25;
 		}
 
@@ -285,14 +292,17 @@ bool ModelAnimation::TryInitialize(const std::string& path, std::string& error) 
 			name = "Clip " + std::to_string(clipIndex + 1);
 		}
 
+		// ファイル内の時間単位を秒に換算し、Inspectorで表示できるクリップ情報にする。
 		data->clips.push_back({name, static_cast<float>(clip.mDuration / ticksPerSecond)});
 
+		// 動きが定義されていないノードも含め、ノード番号で参照できる配列を用意する。
 		std::vector<const aiNodeAnim*> channels(data->nodes.size(), nullptr);
 
 		for (unsigned int channelIndex = 0; channelIndex < clip.mNumChannels; ++channelIndex) {
 			const aiNodeAnim* channel = clip.mChannels[channelIndex];
 
 			if (data->nodeIndices.contains(channel->mNodeName.C_Str())) {
+				// ファイル上のノード名を、再生中に使うノード番号へ変換して格納する。
 				channels[data->nodeIndices.at(channel->mNodeName.C_Str())] = channel;
 			}
 		}
@@ -300,6 +310,7 @@ bool ModelAnimation::TryInitialize(const std::string& path, std::string& error) 
 		data->channels.push_back(std::move(channels));
 	}
 
+	// 読込と変換を最後まで終えたデータを、再生用として保持する。
 	data_ = std::move(data);
 	return true;
 }

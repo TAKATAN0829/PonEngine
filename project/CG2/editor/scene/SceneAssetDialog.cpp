@@ -156,10 +156,12 @@ bool SceneAssetDialog::ConsumeSelection(std::filesystem::path& path, bool& isOve
 		return false;
 	}
 
+	// Submit で検証を通ったパスを、Editor 側の変数へコピーする。
 	path = selected_;
 
 	isOverwriteConfirmed = isSelectedOverwriteConfirmed_;
 
+	// 毎フレーム確認されても、同じファイルを二度開かないようにする。
 	isSelectionReady_ = false;
 
 	return true;
@@ -186,10 +188,13 @@ void SceneAssetDialog::Scan(const SceneDocument& document) {
 	// ゴミ箱とリンク先を除外し、選択できるSceneファイルを集める。
 	scenes_.clear();
 
+	// フォルダを開けない場合も、エラーをダイアログに表示できるようにする。
 	std::error_code error;
 
+	// resources を起点に、サブフォルダも含めて候補を探す。
 	std::filesystem::recursive_directory_iterator iterator(document.GetRoot(), error);
 
+	// 走査の終端と比較するための目印を用意する。
 	const std::filesystem::recursive_directory_iterator end;
 
 	size_t inspected = 0;
@@ -204,6 +209,7 @@ void SceneAssetDialog::Scan(const SceneDocument& document) {
 			break;
 		}
 
+		// リンクやジャンクションを判定するため、Windows のファイル属性を取得する。
 		const DWORD attributes = GetFileAttributesW(iterator->path().c_str());
 
 		bool shouldSkip = AssetPathChange::DoesContain(".editor-trash", iterator->path().filename());
@@ -218,9 +224,11 @@ void SceneAssetDialog::Scan(const SceneDocument& document) {
 			// ゴミ箱とリンク先の中へは入らない。
 			iterator.disable_recursion_pending();
 		} else {
+			// フォルダの中は走査するが、候補一覧に載せるのは通常のファイルだけ。
 			if (iterator->is_regular_file(error)) {
 				std::string extension = AssetPathChange::Text(iterator->path().extension());
 
+				// 拡張子の大文字・小文字を区別せず、.ponscene を候補にする。
 				for (char& character : extension) {
 					character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
 				}
@@ -232,6 +240,7 @@ void SceneAssetDialog::Scan(const SceneDocument& document) {
 			}
 		}
 
+		// 次の項目へ進み、アクセスエラーがあれば走査を止める。
 		iterator.increment(error);
 	}
 
@@ -244,7 +253,8 @@ void SceneAssetDialog::Scan(const SceneDocument& document) {
 }
 
 void SceneAssetDialog::Submit(const SceneDocument& document, bool isOverwriteConfirmed) {
-	// 入力パスを検証し、必要な上書き確認が済んだ選択結果を返す。
+	// 入力欄の文字列をパスに変換し、resources 内の Scene ファイルとして検証する。
+	// !isSaving_ は読み込みのときに true になり、既存ファイルを必須にする。
 	if (!document.ResolvePath(AssetPathChange::Path(input_), !isSaving_, selected_, status_)) {
 		return;
 	}

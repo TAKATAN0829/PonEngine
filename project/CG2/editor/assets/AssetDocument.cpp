@@ -285,24 +285,30 @@ bool AssetDocument::Load(const std::filesystem::path& root, const std::filesyste
 		character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
 	}
 
+	// 改行を変換せずに開く。ateで読込位置を最初は末尾に置き、先にサイズを調べる。
 	std::ifstream input(root / relative, std::ios::binary | std::ios::ate);
 
+	// 開けなかったときは、対象のパスをエラーに含めて返す。
 	if (!input) {
 		error = "Cannot read " + AssetPathChange::Text(relative);
 
 		return false;
 	}
 
+	// tellgは現在の読込位置を返す。末尾にいるので、ファイル全体のバイト数として使える。
 	if (input.tellg() > 64 * 1024 * 1024) {
 		error = "Reference document exceeds 64 MiB: " + AssetPathChange::Text(relative);
 
 		return false;
 	}
 
+	// サイズ確認後、seekgで読み始める位置をファイルの先頭に戻す。
 	input.seekg(0);
 
+	// 終端までのバイト列を、後で元ファイルと比較できるように保存する。
 	original_.assign(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
 
+	// ファイルを読み出す途中で入出力の異常が起きていないかを確認する。
 	if (input.bad()) {
 		error = "Cannot read complete asset document.";
 
@@ -325,6 +331,7 @@ bool AssetDocument::Load(const std::filesystem::path& root, const std::filesyste
 			}
 		}
 
+		// 開いているシーンとは別の一時Worldに読み、Assetの参照先だけを集める。
 		WorldObjects world;
 
 		if (!SceneFile::Load(world, root / relative, error, extension_ == ".ponscene")) {
@@ -353,21 +360,25 @@ bool AssetDocument::Load(const std::filesystem::path& root, const std::filesyste
 		return true;
 	}
 
+	// OBJ・MTL・glTFはそのまま文字列として走査し、GLBだけ後でJSON部分に絞る。
 	text_ = original_;
 
 	if (extension_ == ".glb") {
+		// GLBは全体のヘッダー12バイトと最初のチャンクのヘッダー8バイトから始まる。
 		if (original_.size() < 20) {
 			error = "Invalid GLB header.";
 
 			return false;
 		}
 
+		// 先頭12バイトにある識別子・版番号・全体サイズを照合する。
 		if (ReadUint32(original_, 0) != 0x46546c67 || ReadUint32(original_, 4) != 2 || ReadUint32(original_, 8) != original_.size()) {
 			error = "Unsupported GLB header.";
 
 			return false;
 		}
 
+		// 最初のチャンクはJSON。長さがファイル内に収まるかを切り出す前に確認する。
 		const uint32_t jsonLength = ReadUint32(original_, 12);
 
 		if (jsonLength > original_.size() - 20 || ReadUint32(original_, 16) != 0x4e4f534a) {
@@ -376,6 +387,7 @@ bool AssetDocument::Load(const std::filesystem::path& root, const std::filesyste
 			return false;
 		}
 
+		// 参照を探すのはJSON部分。残りのバイナリは書き直しに備えてそのまま控える。
 		text_ = original_.substr(20, jsonLength);
 
 		binarySuffix_ = original_.substr(20 + jsonLength);
@@ -524,6 +536,7 @@ bool AssetDocument::ReadJsonLinks(std::string& error) {
 			return false;
 		}
 
+		// glTFで外部ファイルのパスが入るuriだけを候補にし、続くコロンを確認する。
 		if (key != "uri") {
 			continue;
 		}
@@ -550,6 +563,7 @@ bool AssetDocument::ReadJsonLinks(std::string& error) {
 			return false;
 		}
 
+		// 参照先の文字列と、後で書き換える元データ上の位置・長さを記録する。
 		if (!AddLink(valueStart, position - valueStart, value, true, error)) {
 			return false;
 		}
@@ -559,6 +573,7 @@ bool AssetDocument::ReadJsonLinks(std::string& error) {
 }
 
 bool AssetDocument::ReadWavefrontLinks(std::string& error) {
+	// OBJとMTLは行頭の命令で行の意味が決まるため、一行ずつ切り出して調べる。
 	size_t lineStart = 0;
 
 	while (lineStart < text_.size()) {
@@ -574,6 +589,7 @@ bool AssetDocument::ReadWavefrontLinks(std::string& error) {
 
 		input >> command;
 
+		// OBJのmtllibはマテリアルファイル、MTLのmap_などは画像ファイルへの参照。
 		bool hasDependency = command == "mtllib";
 
 		if (extension_ == ".mtl") {
@@ -589,6 +605,7 @@ bool AssetDocument::ReadWavefrontLinks(std::string& error) {
 				}
 			}
 
+			// 命令名やオプションを読み飛ばした位置が、元の行でのファイル名の開始位置。
 			const std::streampos offset = input.tellg();
 
 			if (offset >= 0) {

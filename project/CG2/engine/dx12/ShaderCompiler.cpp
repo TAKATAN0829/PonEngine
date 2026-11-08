@@ -58,10 +58,13 @@ Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstri
 	//=============================================================================================//
 	// Shaderファイル読み込み
 
+	// ファイルから読んだソースを保持する受け皿を用意する。
 	Microsoft::WRL::ComPtr<IDxcBlobEncoding> shaderSource = nullptr;
 
+	// DXCにHLSLファイルを読ませ、ソースのバイト列を受け取る。コンパイルは後で行う。
 	HRESULT hr = dxcUtils_->LoadFile (filePath.c_str (), nullptr, &shaderSource);
 
+	// ファイルを読めなければ、デバッグ実行ではソースへ触れる前に止める。
 	assert (SUCCEEDED (hr));
 
 	//=============================================================================================//
@@ -69,11 +72,13 @@ Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstri
 
 	DxcBuffer shaderSourceBuffer{};
 
-	// 読み込んだソースのアドレスと長さを、コンパイラへ渡す構造体に詰める。
+	// コンパイラが読めるよう、ソースが置かれたメモリの先頭を渡す。
 	shaderSourceBuffer.Ptr =shaderSource->GetBufferPointer ();
 
+	// 終端文字に頼らず、何バイト読めばよいかを指定する。
 	shaderSourceBuffer.Size =shaderSource->GetBufferSize ();
 
+	// ソースの文字列をUTF-8として解釈するよう指定する。
 	shaderSourceBuffer.Encoding =DXC_CP_UTF8;
 
 	//=============================================================================================//
@@ -93,10 +98,12 @@ Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstri
 
 	Microsoft::WRL::ComPtr<IDxcResult> shaderResult = nullptr;
 
+	// メモリ上のHLSLと設定を渡し、コンパイル結果を受け取る。
 	hr = dxcCompiler_->Compile (
 		&shaderSourceBuffer,
 		arguments,
 		_countof (arguments),
+		// #include先の読み込みはDXCのハンドラーに任せる。
 		includeHandler_.Get (),
 		IID_PPV_ARGS (&shaderResult));
 
@@ -122,6 +129,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> ShaderCompiler::CompileShader (const std::wstri
 
 	Microsoft::WRL::ComPtr<IDxcBlob> shaderBlob = nullptr;
 
+	// コンパイル結果から、GPU用の設定に渡すバイトコードを取り出す。
 	hr = shaderResult->GetOutput (DXC_OUT_OBJECT, IID_PPV_ARGS (&shaderBlob), nullptr);
 
 	assert (SUCCEEDED (hr));

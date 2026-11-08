@@ -480,11 +480,13 @@ void Editor::RequestSceneAction(SceneAction action, IEditableWorld& scene, const
 		}
 	}
 
+	// 保存確認で待つ場合も、利用者が選んだファイルを保持する。
 	pendingScenePath_ = path;
 
 	pendingAction_ = action;
 
 	if (IsSaveConfirmationNeeded(action, scene)) {
+		// 未保存の編集があるときは、読み込みを保留して確認を表示する。
 		shouldOpenDiscardPrompt_ = true;
 	} else {
 		PerformSceneAction(scene);
@@ -499,6 +501,7 @@ void Editor::PerformSceneAction(IEditableWorld& scene) {
 	bool hasSucceeded = false;
 
 	if (pendingAction_ == SceneAction::LoadScene) {
+		// 保留していたパスを SceneDocument に渡し、検証と読み込みを実行する。
 		hasSucceeded = document_.Open(scene, pendingScenePath_, error);
 
 		// 読込に成功した保存先を通知する。
@@ -519,9 +522,11 @@ void Editor::PerformSceneAction(IEditableWorld& scene) {
 
 	if (hasSucceeded) {
 		if (pendingAction_ != SceneAction::Exit) {
+			// 読み込みや新規作成に成功したら、前の Scene の選択や編集履歴を解除する。
 			ResetSceneEditingState(scene);
 		}
 	} else {
+		// パス検証やファイル解析が返した失敗理由を、画面に表示する。
 		fileStatus_ = error;
 	}
 
@@ -803,6 +808,7 @@ void Editor::DrawSceneAssetDialog(IEditableWorld& scene) {
 		fileDialogAction_ = FileDialogAction::None;
 
 		if (action == FileDialogAction::Open) {
+			// 選んだパスを読み込み要求として渡し、未保存の編集を確認する。
 			RequestSceneAction(SceneAction::LoadScene, scene, selected);
 		} else {
 			if (document_.SaveAs(GetEditWorld(scene), selected, isOverwriteConfirmed, fileStatus_)) {

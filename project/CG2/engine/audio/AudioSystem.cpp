@@ -57,20 +57,25 @@ SoundData AudioSystem::LoadWave (const char* filename) {
 
 	std::ifstream file;
 
+	// WAVはバイト単位で構造が決まっているため、改行を変換しないバイナリモードで開く。
 	file.open (filename, std::ios_base::binary);
 
+	// ファイルを開けなければ、デバッグ実行ではここで止める。
 	assert (file.is_open ());
 
 	//=============================================================================================//
 	// RIFFヘッダー読み込み
 
+	// ファイル先頭の識別子やサイズを受け取る領域を用意する。
 	RiffHeader riff{};
 
+	// readは指定したバイト数をコピーする。char*に変換し、ヘッダーの領域を受け皿にする。
 	file.read (reinterpret_cast<char*>(&riff), sizeof (riff));
 
 	//=============================================================================================//
 	// RIFFチェック
 
+	// ヘッダーの最初の4バイトがRIFFと一致するかを調べる。
 	if (strncmp (
 		riff.chunk.id,
 		"RIFF",
@@ -82,6 +87,7 @@ SoundData AudioSystem::LoadWave (const char* filename) {
 	//=============================================================================================//
 	// WAVEチェック
 
+	// RIFFの中身がWAVであることを、続く種類の欄で確認する。
 	if (strncmp (
 		riff.type,
 		"WAVE",
@@ -95,6 +101,7 @@ SoundData AudioSystem::LoadWave (const char* filename) {
 
 	FormatChunk format{};
 
+	// まずfmtチャンクの種類とサイズを読み、続くフォーマット情報の長さを知る。
 	file.read (reinterpret_cast<char*>(&format), sizeof (ChunkHeader));
 
 	if (strncmp (
@@ -105,8 +112,10 @@ SoundData AudioSystem::LoadWave (const char* filename) {
 		assert (0);
 	}
 
+	// ファイルが示すサイズが、受け皿の構造体に収まることを確認する。
 	assert (format.chunk.size <= sizeof (format.fmt));
 
+	// サンプルレートなどの形式情報を、ヘッダーに書かれた長さだけ読む。
 	file.read (reinterpret_cast<char*>(&format.fmt), format.chunk.size);
 
 	//=============================================================================================//
@@ -114,6 +123,7 @@ SoundData AudioSystem::LoadWave (const char* filename) {
 
 	ChunkHeader data{};
 
+	// 形式情報の直後にあるチャンクを見て、波形か読み飛ばす情報かを判別する。
 	file.read (reinterpret_cast<char*>(&data), sizeof (data));
 
 	//=============================================================================================//
@@ -124,6 +134,7 @@ SoundData AudioSystem::LoadWave (const char* filename) {
 		"JUNK",
 		4) == 0) {
 
+		// JUNKは音声データに使わない。現在位置からそのサイズ分進み、次のヘッダーを読む。
 		file.seekg (data.size, std::ios_base::cur);
 
 		file.read (reinterpret_cast<char*>(&data), sizeof (data));
@@ -132,6 +143,7 @@ SoundData AudioSystem::LoadWave (const char* filename) {
 	//=============================================================================================//
 	// dataチェック
 
+	// ここでdataと確認できたチャンクの中身を、次に波形として読む。
 	if (strncmp (
 		data.id,
 		"data",
@@ -143,10 +155,13 @@ SoundData AudioSystem::LoadWave (const char* filename) {
 	//=============================================================================================//
 	// 波形データ読み込み
 
+	// 波形のサイズはファイルごとに違うため、dataヘッダーの長さで領域を確保する。
 	char* pBuffer = new char[data.size];
 
+	// dataチャンクに記録されたサイズだけ、波形をメモリへコピーする。
 	file.read (pBuffer, data.size);
 
+	// 必要なバイトを読み込んだので、ファイルを閉じる。
 	file.close ();
 
 	//=============================================================================================//
@@ -154,8 +169,10 @@ SoundData AudioSystem::LoadWave (const char* filename) {
 
 	SoundData soundData{};
 
+	// 再生側が波形を解釈できるよう、読み取った音声の形式も渡す。
 	soundData.wfex = format.fmt;
 
+	// ファイルを閉じた後も再生できるよう、波形バッファをSoundDataに引き渡す。
 	soundData.pBuffer = reinterpret_cast<BYTE*>(pBuffer);
 
 	soundData.bufferSize = data.size;

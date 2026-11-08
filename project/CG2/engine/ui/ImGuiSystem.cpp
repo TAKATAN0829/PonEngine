@@ -76,8 +76,10 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 
     wchar_t windowsDirectory[MAX_PATH]{};
 
+    // Windows のインストール先を取得し、ドライブ文字に依存せずフォントを探す。
     GetWindowsDirectoryW(windowsDirectory, MAX_PATH);
 
+    // OS の Fonts フォルダにあるメイリオのファイルを指定する。
     const std::filesystem::path fontPath = std::filesystem::path(windowsDirectory) / "Fonts" / "meiryo.ttc";
 
     std::error_code fontError;
@@ -88,6 +90,7 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 
         fontConfiguration.SizePixels = 18;
 
+        // ImGui にフォントファイルを読み込ませ、文字を描画するためのアトラスに登録する。
         inputOutput.Fonts->AddFontFromFileTTF(fontPath.string().c_str(), 18, &fontConfiguration);
     } else {
         inputOutput.Fonts->AddFontDefault();

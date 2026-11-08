@@ -26,11 +26,8 @@ public:
 
 	struct Node {
 		Node();
-
 		Matrix4x4 localMatrix;
-
 		std::string name;
-
 		std::vector<Node> children;
 	};
 
@@ -39,23 +36,16 @@ public:
 
 	struct ModelData {
 		std::vector<Mesh::VertexData> vertices;
-
 		MaterialData material;
-
 		Node rootNode;
-
 		std::vector<ModelMaterialInfo> materials;
-
 		std::vector<uint32_t> textureIndices;
-
 		struct DrawRange {
 			uint32_t firstIndex;
 			uint32_t indexCount;
 			uint32_t materialIndex;
 		};
-
 		std::vector<DrawRange> ranges;
-
 		bool isAnimated;
 	};
 

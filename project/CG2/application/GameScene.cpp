@@ -46,9 +46,12 @@ void GameScene::Initialize(const SceneContext& context) {
 
 	// 共通設定は単一Emitterで動かすため、Effectファイルから対応可能な文書だけを読み込む。
 	if (std::filesystem::exists(ParticleEffectFile::kDefaultPath, presetError)) {
+		// 読込関数から失敗理由を受け取る文字列を用意する。
 		std::string presetMessage;
 
+		// ファイルを読み、共通Particleが使える単一Emitterの設定へ変換する。
 		if (!ParticleEffectFile::LoadSingleEmitter(*GetParticleSettings(), ParticleEffectFile::kDefaultPath, presetMessage)) {
+			// プリセットを使えない理由をログに残し、シーンの初期化を続ける。
 			LogSystem::Log("Particle preset: " + presetMessage + "\n");
 		}
 	}
@@ -56,26 +59,33 @@ void GameScene::Initialize(const SceneContext& context) {
 	// Releaseでも保存した編集用データを読み込み、制作時の配置をゲームへ引き継ぐ。
 	std::error_code fileError;
 
+	// 保存ファイルがない場合と、存在確認そのものに失敗した場合を分ける。
 	const bool hasSavedScene = std::filesystem::exists(SceneFile::kDefaultPath, fileError);
 
+	// ファイルがないときも既定配置を使えるよう、読込成功まではfalseのままにする。
 	bool wasSceneLoaded = false;
 
+	// 存在確認に失敗した場合は、ファイルを開く前のエラーとして記録する。
 	if (fileError) {
 		LogSystem::Log("Scene file check failed: " + fileError.message() + "\n");
 	} else if (hasSavedScene) {
 		std::string error;
 
+		// 現在のGameSceneへ読み込み、末尾のtrueで旧形式のライト補完を許可する。
 		wasSceneLoaded = SceneFile::Load(*this, SceneFile::kDefaultPath, error,true);
 
+		// 存在していても、壊れたデータや未対応の形式なら理由をログへ出す。
 		if (!wasSceneLoaded) {
 			LogSystem::Log("Scene load failed: " + error + "\n");
 		}
 	}
 
+	// 読込成功時だけ、このファイルをEditorの最初の保存先として引き継ぐ。
 	if (wasSceneLoaded) {
 		initialAssetPath_ = SceneFile::kDefaultPath;
 	}
 
+	// 保存データを使えなければ、先に用意した既定の配置へライトを追加する。
 	if (!wasSceneLoaded) {
 		std::vector<WorldObjectData> initial = CaptureObjects();
 

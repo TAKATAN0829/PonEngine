@@ -24,15 +24,18 @@ namespace {
 	}
 
 	bool ReadBytes(const std::filesystem::path& path, std::string& bytes) {
-		// ファイルをバイナリで開き、内容をバイト列として読み込む。
+		// 元ファイルとバイト単位で比較するため、改行を変換せずに開く。
 		std::ifstream input(path, std::ios::binary);
 
+		// 開けなかったときは、出力先の文字列に触れる前に処理を終える。
 		if (!input) {
 			return false;
 		}
 
+		// 空のイテレーターを終端に指定し、空白や改行を含めてそのまま取り込む。
 		bytes.assign(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
 
+		// 終端に到達しただけなら成功とし、入出力の異常があれば失敗を返す。
 		return !input.bad();
 	}
 

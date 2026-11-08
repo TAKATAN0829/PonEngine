@@ -53,11 +53,8 @@ private:
 
 	struct Preview {
 		SceneRenderTarget target;
-
 		std::unique_ptr<Object3d> object;
-
 		Matrix4x4 world;
-
 		bool wasRendered;
 	};
 

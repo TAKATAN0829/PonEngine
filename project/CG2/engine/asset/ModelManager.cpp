@@ -59,19 +59,24 @@ void ModelManager::LoadModel(const std::string& filePath) {
 
 // 壊れたアセットはキャッシュに登録せず、UIへ理由を返す。
 bool ModelManager::TryLoadModel(const std::string& filePath, std::string& error) {
+	// 今回の読み込み結果だけを呼び出し元へ返す。
 	error.clear();
 
+	// 同じパスのモデルが読み込み済みなら、キャッシュを使う。
 	if (models_.contains(filePath)) {
 		return true;
 	}
 
+	// ディスクからの読み込みと初期化にかかった時間を計測する。
 	FrameProfiler::Scope loadTime(FrameProfiler::Section::ModelLoad);
 	auto model = std::make_unique<Model>();
 
+	// 基準フォルダと相対パスを Model に渡し、ファイル解析と初期化を任せる。
 	if (!model->TryInitialize(modelCommon_, kDirectoryPath, filePath, error)) {
 		return false;
 	}
 
+	// 初期化が成功したモデルだけを登録し、次回は同じパスで再利用する。
 	models_.emplace(filePath, std::move(model));
 	return true;
 }

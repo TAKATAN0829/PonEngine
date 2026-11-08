@@ -884,18 +884,27 @@ void ParticleEditorPanel::ApplyPendingAction(IEditableWorld& scene) {
 	}
 
 	if (pendingAction_ == PresetAction::Load) {
+		// Hierarchy の対象がなければ、共通プリセットとして先頭の Emitter 設定を使う。
 		if (targetId_ == kInvalidWorldObjectId) {
+			// 既定パスから Emitter を読み込み、失敗理由は status_ に受け取る。
 			if (ParticleEffectFile::LoadSingleEmitter(*settings, ParticleEffectFile::kDefaultPath, status_)) {
+				// 読み込んだ設定から、共通プリセットの編集用ドキュメントを組み直す。
 				commonDocument_ = MakeParticleEffectDocument(*settings, "Default");
+				// 読み込んだ状態を、未保存の変更を判定する基準にする。
 				savedSettings_ = *settings;
 				savedDocument_ = commonDocument_;
 				status_ = "プリセットを読み込みました。";
+				// 以前の設定で発生した粒子を消す。
 				scene.ResetParticlePreview();
 			}
 		} else {
+			// 読み込み途中で失敗しても編集内容を保持できるよう、一時変数で受け取る。
 			ParticleEffectDocument loaded;
+			// 選択中の Particle 用には、ノードの構成も含めて文書全体を読み込む。
 			if (ParticleEffectFile::Load(loaded, ParticleEffectFile::kDefaultPath, status_)) {
+				// 読み込みに成功した文書を、編集対象に移す。
 				*document = std::move(loaded);
+				// 前の文書の選択 ID を引き継がず、読み込んだ文書の先頭の Emitter を選ぶ。
 				const ParticleEffectNode* firstEmitter = FindFirstEmitter(*document);
 				selectedNodeId_ = firstEmitter != nullptr ? firstEmitter->id : 0;
 				status_ = "エフェクト文書を読み込みました。";

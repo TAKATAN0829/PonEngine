@@ -212,16 +212,21 @@ DirectX::ScratchImage TextureManager::LoadTexture(const std::string& filePath) {
 	//=============================================================================================//
 	// Textureファイルを読む
 
+	// 読み込んだピクセルと画像情報の受け皿を用意する。
 	DirectX::ScratchImage image{};
 
+	// エンジン内のUTF-8パスを、WICが受け取るWindowsのワイド文字列に変換する。
 	std::wstring filePathW = StringUtility::ConvertString(filePath);
 
+	// DirectXTexが画像ファイルを開いてデコードし、CPU上のimageにピクセルと寸法を入れる。
 	HRESULT hr = DirectX::LoadFromWICFile(
 		filePathW.c_str(),
+		// 読み込む色はsRGBとして扱う。
 		DirectX::WIC_FLAGS_FORCE_SRGB,
 		nullptr,
 		image);
 
+	// WICから失敗が返ったときは、画像が得られていないので縮小処理へ進まない。
 	if (FAILED(hr)) {
 		throw std::runtime_error("Texture decoding or mip generation failed.");
 	}
@@ -229,8 +234,10 @@ DirectX::ScratchImage TextureManager::LoadTexture(const std::string& filePath) {
 	//=============================================================================================//
 	// MipMap作成
 
+	// 元の画像を読み取れたら、遠くに描くときに使う縮小画像を作る。
 	DirectX::ScratchImage mipImages{};
 
+	// ピクセル、画像の枚数、寸法や形式を渡し、縮小した各段階の画像を受け取る。
 	hr = DirectX::GenerateMipMaps(
 		image.GetImages(),
 		image.GetImageCount(),

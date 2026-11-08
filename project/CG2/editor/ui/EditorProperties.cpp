@@ -120,7 +120,12 @@ bool EditorProperties::Float(const char* label, float* value, float speed, float
 	return hasChanged;
 
 #else
-	(void)label; (void)value; (void)speed; (void)minimum; (void)maximum; (void)format;
+	(void)label; 
+	(void)value;
+	(void)speed; 
+	(void)minimum; 
+	(void)maximum;
+	(void)format;
 
 	return false;
 
@@ -184,7 +189,11 @@ bool EditorProperties::Vector(const char* label, Vector3* value, float speed, fl
 	return hasChanged;
 
 #else
-	(void)label; (void)value; (void)speed; (void)minimum; (void)maximum;
+	(void)label;
+	(void)value; 
+	(void)speed; 
+	(void)minimum;
+	(void)maximum;
 
 	return false;
 
@@ -205,7 +214,8 @@ bool EditorProperties::Toggle(const char* label, bool* isChecked) {
 	return hasChanged;
 
 #else
-	(void)label; (void)isChecked;
+	(void)label; 
+	(void)isChecked;
 
 	return false;
 
@@ -226,7 +236,9 @@ bool EditorProperties::Combo(const char* label, int* value, const char* choices)
 	return hasChanged;
 
 #else
-	(void)label; (void)value; (void)choices;
+	(void)label;
+	(void)value;
+	(void)choices;
 
 	return false;
 
@@ -247,7 +259,8 @@ bool EditorProperties::Color(const char* label, Vector4* value) {
 	return hasChanged;
 
 #else
-	(void)label; (void)value;
+	(void)label; 
+	(void)value;
 
 	return false;
 
