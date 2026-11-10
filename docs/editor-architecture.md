@@ -51,7 +51,7 @@ SceneDocumentが編集中のresources内`.ponscene`と保存先を所有する�
 
 保存済みファイルがあればGameSceneの初期化時に自動読込する。Releaseでも読込できる。ファイルがない場合は既定値で開始し、壊れたファイルは値を反映せずログにエラーを出す。保存はメニューまたはショートカットから明示的に行う。
 
-SceneFileはEditorに依存せず、IEditableWorldを引数に受け取る。コレクション対応シーンはテキスト形式 `PON_SCENE 14` で、個数、ID、Transform・色・光沢・ライティング、名前、モデル種類、RootNode行列の適用、Active、Mesh Rendererの有無、オブジェクトの種類、光源値、Emitter設定とParticle Effect文書を記録する。浮動小数点は往復可能な桁数を使う。
+SceneFileはEditorに依存せず、IEditableWorldを引数に受け取る。コレクション対応シーンはテキスト形式 `PON_SCENE 14` で、個数、ID、Transform・色・光沢・ライティング、名前、モデル種類、RootNode行列の適用、Active、Mesh Rendererの有無、オブジェクトの種類、光源値、Emitter設定とParticle Effect文書を記録する。Particle Effect 3文書にはノードの編集画面上の配置位置も含む。浮動小数点は往復可能な桁数を使う。
 
 読込ではバージョン、件数、IDの重複、モデル種類、プロパティ、有限値、光沢の範囲、末尾の余分なデータを確認してから一覧を一括置換する。0体の保存ファイルもそのまま復元する。保存は隣接する一時ファイルに書き終えてからWindowsのファイル置換APIで置き換える。
 
@@ -87,22 +87,11 @@ Sceneパネルは、専用レンダーターゲットの画像に選択枠とワ
 
 SceneViewMathは画面投影、レイ生成、交差判定、範囲の変換、軸上の移動量を担当し、GPUやImGuiから独立してテストする。SceneViewPanelは描画と入力だけを担当する。表示領域はSceneパネルの画像サイズに追従する。SceneRenderTargetが専用RTV/DSV/SRVを所有し、描画後にバックバッファを復元してImGuiへ画像を渡す。SRV番号はリサイズしても維持する。バックバッファもウィンドウサイズに追従する。
 
-### 検証
-
-Visual StudioのDeveloper PowerShellでリポジトリのルートから実行する。
-
-```powershell
-MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1 /nr:false
-./generated/scene-file-tests/bin/SceneFileTests.exe
-```
-
-追加・削除・複製、IDの維持と採番、モデル種類・個数の保存・復元、空のシーン、旧形式の移行、不正ファイルでのデータ保持、Undo/Redo、再生前データの復元、Pause/Stepを検証する。SceneViewMathでは画面投影とレイの一致、描画奥行の制限、平行なレイや平面モデルとの交差、負の拡縮・回転後の範囲、軸ドラッグの計算を検証する。
-
 ## レイアウト・Particle Editorの追加
 
-操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。ImGuiSystemが日本語フォントを読み込み、起動後にEditorがドッキングと配置の保存先を設定する。EditorThemeが配色と倍率を適用し、EditorLayoutが初期ドッキングを構築する。ParticleSettings・ParticleEffectDocument・各Particleファイル形式はUI・GPUに依存しない。ParticleEditorPanelは設定への借用参照とプレビュー操作だけを持ち、WorldSceneがParticleへの適用と実行を担当する。
+操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。ImGuiSystemが日本語フォントを読み込み、起動後にEditorがドッキングと配置の保存先を設定する。EditorThemeが配色と倍率を適用し、EditorLayoutが初期ドッキングを構築する。ParticleSettings・ParticleEffectDocument・各Particleファイル形式はUI・GPUに依存しない。ParticleEditorPanelは文書の編集とプレビューを扱い、共通キャンバスの表示・移動・親子接続はNodePanel、実行時のParticle適用はWorldSceneが担当する。
 
-ParticleEffectDocumentはID・親ID・型・Transformを持つノード階層を保持し、EmitterノードはParticleSettingsを所有する。ParticleEffectFileは新形式`PON_PARTICLE_EFFECT 1`と旧単一Emitter形式`PON_PARTICLE 1/2`を読み込み、保存時はエフェクト文書形式を使う。旧SceneのParticleSettingsやParticlePresetFileの読書き形式は維持する。GameSceneの既存ランタイムへ適用する間はEmitterが1つの文書だけを読み込み、複数Emitterは明示的に拒否する。Scene内Particleの複数ノード実行とツリー編集UIは次段階。
+ParticleEffectDocumentはID・親ID・型・Transform・編集画面上の配置位置を持つノード階層を保持し、EmitterノードはParticleSettingsを所有する。ParticleEffectFileは新形式`PON_PARTICLE_EFFECT 1/2/3`と旧単一Emitter形式`PON_PARTICLE 1/2`を読み込み、保存時は形式3を使う。旧SceneのParticleSettingsやParticlePresetFileの読書き形式は維持する。ParticleEditorPanelはNodePanelを継承し、ノードの表示・選択・移動とEmitter設定の編集を行う。
 
 
 ### 種類別オブジェクトと保存形式4
@@ -233,9 +222,6 @@ AssetSettingsはGPUに依存しないスロット上書きと再生設定を定�
 Editorからresources相対パスで配置するときは`PrefabOperations::Place(scene, "prefabs/Enemy.ponprefab", parentId, position, error)`を使う。Placeがパスを検証してInstantiateへ接続する。IWorldObjectsとWorldObjectsはPrefabの読込を担当せず、serializationもPrefab操作を参照しない。保存形式はScene13のまま維持する。
 
 Modelは共有する元頂点・マテリアル情報・描画範囲・ModelAnimationを所有する。Object3dはスロットごとのMaterial、再生時計、変形用Meshを個別に所有する。ModelAnimationはAssimpのノード階層・キー・ボーンと逆バインド行列を保持し、位置・回転・拡縮を補間してCPUスキニングする。頂点と法線を変形し、描画時と選択時で同じ範囲を使う。プレビューの再生時計は履歴に含めず、開始・停止時にリセットする。共有のModelの頂点は更新しない。
-
-AssetWorkflowTestsは保存・履歴・Prefabの再配置と失敗時の非変更を検証する。EditorGraphicsTestsは自作glTFで複数スロット、ボーンの移動・回転・拡縮、ループ・終端、独立した再生速度とPauseを確認する。
-
 
 ## 複数選択・表面スナップ・Prefab接続
 

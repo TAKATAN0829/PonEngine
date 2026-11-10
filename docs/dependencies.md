@@ -100,7 +100,7 @@ Prefab操作を`prefab/PrefabOperations`へ移し、`objects ↔ serialization`�
 
 最終反映は仮想関数の呼出を維持する。実際の配置先が`WorldScene`なら、モデルなどのGPU準備も成功してから置き換える。準備や検証に失敗した場合は、既存の配置と次のIDを変更しない。Undo／Redoは従来どおり反映後の配置を記録する。
 
-`WorldObjects`を読むときはデータ一覧とTransform操作、`PrefabOperations`を読むときは保存・配置・Apply／Revertの手順、`SceneFile`を読むときは保存形式と読書きに集中できる。新しいインターフェースやManagerは追加せず、既存の共通操作を利用している。Scene14形式はParticle Effect文書を追加している。
+`WorldObjects`を読むときはデータ一覧とTransform操作、`PrefabOperations`を読むときは保存・配置・Apply／Revertの手順、`SceneFile`を読むときは保存形式と読書きに集中できる。新しいインターフェースやManagerは追加せず、既存の共通操作を利用している。Scene14形式はParticle Effect文書を追加し、Particle Effect 3はノードの編集画面上の配置位置も保存する。
 
 ライトの共通規則は標準ヘッダーとtypesの共有定義だけを参照し、WorldObjectData・WorldObjects・IWorldObjectsを必要としない。GPU配列とCPU側の上限検証は同じLightLimitsを使用する。ファイル単位のinclude件数は共通定義への明示的な参照によって増えているが、機能間の相互依存は減っている。
 

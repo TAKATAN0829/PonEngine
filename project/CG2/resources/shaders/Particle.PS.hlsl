@@ -55,8 +55,11 @@ PixelShaderOutput main(VertexShaderOutput input)
     if (useBrightnessAlpha != 0)
     {
         float32_t brightness = max(textureColor.r, max(textureColor.g, textureColor.b));
+		// ごく弱い外周光を切り、残った輝度を二乗して膜状の重なりを抑える。
+		float32_t thresholdedBrightness = max(brightness - 0.03f, 0.0f);
+		float32_t alphaBrightness = thresholdedBrightness * thresholdedBrightness;
 
-        textureColor.a *= brightness;
+        textureColor.a *= alphaBrightness;
 
         textureColor.rgb /= max(brightness, 0.00001f);
     }

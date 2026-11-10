@@ -19,8 +19,10 @@ void GameViewPanel::Draw(IEditableWorld& scene, uint64_t textureHandle, uint32_t
 	CameraView camera{};
 
 	if (scene.GetGameCameraView(static_cast<float>(width) / static_cast<float>(height), camera)) {
+		// 「Main Camera / Playで動作確認」テキストを表示。
 		ImGui::TextUnformatted("Main Camera / Playで動作確認");
 	} else {
+		// 「メインカメラ未指定・無効：既定の視点を使用中」補助テキストを表示。
 		ImGui::TextDisabled("メインカメラ未指定・無効：既定の視点を使用中");
 	}
 
@@ -29,6 +31,7 @@ void GameViewPanel::Draw(IEditableWorld& scene, uint64_t textureHandle, uint32_t
 		return;
 	}
 
+	// 残り表示領域を取得。
 	const ImVec2 available = ImGui::GetContentRegionAvail();
 
 	// パネルを縮めたときは、小さすぎるサイズで描画先を更新しない。
@@ -44,6 +47,7 @@ void GameViewPanel::Draw(IEditableWorld& scene, uint64_t textureHandle, uint32_t
 	// 描画側へゲーム用の視点を使うよう伝える。
 	scene.SetEditorGameView(true);
 
+	// 画像を表示。
 	ImGui::Image(ImTextureRef(static_cast<ImTextureID>(textureHandle)),
 		{static_cast<float>(width),static_cast<float>(height)});
 

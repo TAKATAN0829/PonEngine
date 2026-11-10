@@ -2,6 +2,7 @@
 
 #include "ParticleSettings.h"
 #include "EngineStructs.h"
+#include "Vector2.h"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -21,6 +22,8 @@ struct ParticleEffectNode {
 	std::string name;
 	ParticleNodeType type;
 	bool isEnabled;
+	Vector2 editorPosition;
+	bool hasEditorPosition;
 	TransformData transform;
 	ParticleSettings emitter;
 };

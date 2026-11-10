@@ -210,7 +210,7 @@ Consoleでは最近のログを検索し、ホバーで全文を表示、右ク�
 | Prefab | `resources/prefabs/*.ponprefab` | 対象と子孫の設定 |
 | Editor配置 | `editor-layout.ini` | ドッキング配置 |
 
-現在の書出し形式は**Scene 14 / Particle Effect 2**です。Scene 1〜13、Particle 1/2、Particle Effect 1も読み込み、新しいParticle項目は既定値で補完します。Scene内の各Particle ComponentはEmitterノード階層を保存し、旧単一Particle設定からも自動移行します。旧シーンの固定ライトは上記の移行を行います。再生中の速度・粒子・時計・接触履歴などは保存しません。
+現在の書出し形式は**Scene 14 / Particle Effect 3**です。Scene 1〜13、Particle 1/2、Particle Effect 1/2も読み込み、新しいParticle項目は既定値で補完します。Scene内の各Particle ComponentはEmitterノード階層と編集画面上の配置位置を保存し、旧単一Particle設定からも自動移行します。旧シーンの固定ライトは上記の移行を行います。再生中の速度・粒子・時計・接触履歴などは保存しません。
 
 新規・読込・終了などで未保存の変更があれば確認を表示します。シーン保存とParticleプリセット書出しは別の操作です。Sceneメニューの「開く...」（Ctrl+O）と「名前を付けて保存...」（Ctrl+Shift+S）で、resources内の複数シーンを切り替えられます。ProjectのScene Assetはダブルクリック、または右クリック→「Sceneを開く」で開きます。
 
@@ -256,9 +256,8 @@ project/
       math/            行列・投影・選択用の計算
     resources/         モデル・画像・シェーダー・保存データ
   externals/           外部ライブラリ
-tests/                 CPU・UI操作・実GPU・起動の検証
 docs/                  操作と設計の詳細
-generated/             ビルド結果・テスト生成物（Git管理外）
+generated/             ビルド結果（Git管理外）
 ```
 
 オブジェクトの保存用データは`world/objects/WorldObjectData.h`にまとめ、実行・保存処理は`IWorldObjects`を窓口にします。Editorは、その操作を継承してカメラ・プレビュー操作を加えた`IEditableWorld`を使います。保存用データと実行中の状態を分け、UIはシーン所有の参照をフレームをまたいで保持しない方針です。
@@ -309,7 +308,7 @@ Editor経由の移動では、編集中の配置、保存済みScene・Prefab・
 
 安全に調査できない操作は理由を表示して止めます。FBXの再配置や、依存を調べられないFBXが存在する場合の画像・フォルダ操作、未対応のMTLオプション、壊れた参照文書、リンク・Junctionを含む構成などが対象です。組込モデル・標準画像・シェーダー・既定保存先はコードから直接参照するため、移動・削除を禁止しています。独自のC++コードや未対応形式に書かれたパスの自動更新は行いません。
 
-走査は操作要求時と確定直前だけで、通常の毎フレーム描画には追加しません。上限は10000ファイル、参照文書1件64 MiB・合計128 MiB、移動後の各パス240 UTF-8バイトです。通常のScene保存形式は14、Particleエフェクトは2です。従来のParticleプリセット形式2も読み込みます。参照を更新した旧Sceneは、従来の固定ライト相当を引き継いで形式14へ保存します。
+走査は操作要求時と確定直前だけで、通常の毎フレーム描画には追加しません。上限は10000ファイル、参照文書1件64 MiB・合計128 MiB、移動後の各パス240 UTF-8バイトです。通常のScene保存形式は14、Particleエフェクトは3です。従来のParticleプリセット形式2とParticle Effect 1/2も読み込みます。参照を更新した旧Sceneは、従来の固定ライト相当を引き継いで形式14へ保存します。
 
 ## GameSceneとTitleScene
 
@@ -324,26 +323,6 @@ Editor経由の移動では、編集中の配置、保存済みScene・Prefab・
 `engine/world/runtime/WorldScene`は実際の場面を作るための共通基底です。カメラ・WorldMotion/WorldPhysics/WorldCollisionの実行、モデル・Particle描画、Asset準備・モデルプレビューを担当し、`application/GameScene`と`application/TitleScene`が各場面の初期配置や遷移先を決めます。サンプルSpriteとその設定UI、既定シーン・Particleプリセットの読込はGameSceneに残しています。
 
 `IScene::RequestSceneChange`は未初期化の次シーンを所有権付きで要求します。SceneManagerが更新中に要求を取り出し、EngineがPostDrawのGPU完了後に切り替えます。シーン遷移専用のGPU待機や、毎フレームの配置データ複製は追加していません。
-
-## 検証方法
-
-Developer PowerShellで、リポジトリのルートから実行します。
-
-```powershell
-# CPU：保存・互換性・履歴・親子関係・配置計算・物理・Particle設定など
-MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1 /nr:false
-./generated/scene-file-tests/bin/SceneFileTests.exe
-
-# UI操作と実GPU：ギズモ、リサイズ、描画、Particle合成・寿命変化・Soft Particlesなど
-./tests/RunEditorGraphicsTests.ps1
-
-# 通常のWinMainから起動（構成ごとに全体を再ビルドし、90フレームで終了）
-./tests/RunEditorStartupTests.ps1 -Configuration Debug
-./tests/RunEditorStartupTests.ps1 -Configuration Development
-./tests/RunEditorStartupTests.ps1 -Configuration Release
-```
-
-GraphicsTests / StartupTestsの実行時リソースは`generated`以下へコピーして使い、制作中のシーンやプリセットを上書きしません。GraphicsTestsはDirectX 12を使うため、実行可能なGPU環境が必要です。
 
 ## 現在の制限
 

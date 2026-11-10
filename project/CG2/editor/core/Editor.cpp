@@ -17,46 +17,63 @@
 // 実装内補助定義
 
 namespace {
-	enum class PlaybackIcon { Play, Stop, Pause, Step };
+	enum class PlaybackIcon {
+		Play,
+		Stop,
+		Pause,
+		Step
+	};
 
 	// フォントの収録文字や画像ファイルに依存しない図形アイコンを描く。
 	bool DrawPlaybackButton (const char* identifier, PlaybackIcon icon, const char* hint, bool isActive) {
 		// 再生状態に応じた図形アイコンと操作ヒントを表示する。
 		if (isActive) {
+			// 表示色を適用。
 			ImGui::PushStyleColor (ImGuiCol_Button, { 0.045f,0.10f,0.17f,1 });
 		}
 
+		// ボタン押下を受け取る。
 		const bool wasClicked = ImGui::Button (identifier, { 30,22 });
 
 		if (isActive) {
+			// 表示色を戻す。
 			ImGui::PopStyleColor ();
 		}
 
+		// 項目の左上位置を取得。
 		const ImVec2 minimum = ImGui::GetItemRectMin ();
 		const ImVec2 center = { minimum.x + 15, minimum.y + 11 };
 
+		// 描画色を取得。
 		const ImU32 color = ImGui::GetColorU32 (ImGuiCol_Text);
-
+		// 描画リストを取得。
 		ImDrawList* drawList = ImGui::GetWindowDrawList ();
 
 		if (icon == PlaybackIcon::Play || icon == PlaybackIcon::Step) {
+			// 塗りつぶし三角形を描画。
 			drawList->AddTriangleFilled ({ center.x - 5,center.y - 7 }, { center.x - 5,center.y + 7 }, { center.x + 6,center.y }, color);
 		}
 
 		if (icon == PlaybackIcon::Stop) {
+			// 塗りつぶし矩形を描画。
 			drawList->AddRectFilled ({ center.x - 6,center.y - 6 }, { center.x + 6,center.y + 6 }, color);
 		}
 
 		if (icon == PlaybackIcon::Pause) {
+			// 塗りつぶし矩形を描画。
 			drawList->AddRectFilled ({ center.x - 6,center.y - 7 }, { center.x - 2,center.y + 7 }, color);
+			// 塗りつぶし矩形を描画。
 			drawList->AddRectFilled ({ center.x + 2,center.y - 7 }, { center.x + 6,center.y + 7 }, color);
 		}
 
 		if (icon == PlaybackIcon::Step) {
+			// 塗りつぶし矩形を描画。
 			drawList->AddRectFilled ({ center.x + 7,center.y - 7 }, { center.x + 10,center.y + 7 }, color);
 		}
 
+		// ホバー状態を確認。
 		if (ImGui::IsItemHovered (ImGuiHoveredFlags_AllowWhenDisabled)) {
+			// 補足説明を表示。
 			ImGui::SetTooltip ("%s", hint);
 		}
 
@@ -73,6 +90,7 @@ namespace {
 void Editor::InitializeUi() {
 #ifdef USE_IMGUI
 	// 最初のフレームでEditor用の配置を読み込めるよう、保存先と操作方法を先に設定する。
+	// 入力状態を取得。
 	ImGuiIO& inputOutput = ImGui::GetIO();
 
 	inputOutput.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -87,6 +105,8 @@ void Editor::InitializeUi() {
 void Editor::Initialize(IEditableWorld* scene, const std::string& initialPath) {
 	// 編集対象を切り替え、選択・履歴・保存確認を初期状態へ戻す。
 	scene_ = scene;
+
+	hasParticleEditorBeenOpened_ = false;
 
 	playOrigin_ = nullptr;
 
@@ -191,10 +211,12 @@ void Editor::Update(IEditableWorld* scene) {
 #ifdef USE_IMGUI
 
 	// UI操作を確定してからショートカットを処理し、その結果も同じフレームで履歴へ記録する。
+	// UI操作中か確認。
 	session_.Update(GetEditWorld(*scene), ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
 
 	HandleShortcuts(*scene);
 
+	// UI操作中か確認。
 	session_.Update(GetEditWorld(*scene), ImGui::IsAnyItemActive() || sceneView_.IsManipulating());
 
 #endif
@@ -267,9 +289,12 @@ void Editor::Draw(IEditableWorld* scene) {
 	HierarchyPanel::Draw(scene, selection_);
 
 	if (toolVisibility_.isParticleEditorVisible) {
+		hasParticleEditorBeenOpened_ = true;
 		particleEditor_.Draw(*scene, session_.IsPlaying(), selection_.GetPrimarySelectedObjectId(), &toolVisibility_.isParticleEditorVisible);
 	} else {
-		particleEditor_.StopPreview(*scene, session_.IsPlaying());
+		if (hasParticleEditorBeenOpened_) {
+			particleEditor_.StopPreview(*scene, session_.IsPlaying());
+		}
 	}
 
 	if (particleEditor_.ConsumeFocusRequest()) {
@@ -617,19 +642,23 @@ void Editor::DrawToolbar (IEditableWorld& scene) {
 
 	// シーン管理はメニューへ分離し、中央には再生操作だけを置く。
 	// この行だけ縦の項目間隔を詰め、下の作業領域を広く保つ。
+	// スタイル値を適用。
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {ImGui::GetStyle().ItemSpacing.x, 2});
 
 	// ボタン3個とその間の隙間2つを含めた幅で、操作列を中央に置く。
+	// 表示スタイルを取得。
 	const float controlsWidth = 3 * 30.0f + 2 * ImGui::GetStyle ().ItemSpacing.x;
+	// 残り表示領域を取得。
 	const float availableWidth = ImGui::GetContentRegionAvail ().x;
+	// 横位置を取得。
 	const float toolbarStart = ImGui::GetCursorPosX();
-
+	// 画面位置を取得。
 	const ImVec2 toolbarOrigin = ImGui::GetCursorScreenPos();
-
+	// 描画リストを取得。
 	ImGui::GetWindowDrawList()->AddRectFilled(toolbarOrigin,{toolbarOrigin.x+availableWidth,toolbarOrigin.y+24},ImGui::GetColorU32(ImGuiCol_MenuBarBg));
-
+	// 横位置を設定。
 	ImGui::SetCursorPosX(toolbarStart+10);
-
+	// テキストを中央揃え。
 	ImGui::AlignTextToFramePadding();
 
 	std::string displayName = document_.GetName();
@@ -641,17 +670,21 @@ void Editor::DrawToolbar (IEditableWorld& scene) {
 		}
 	}
 
+	// 「Scene  /  %s」補助テキストを表示。
 	ImGui::TextDisabled("Scene  /  %s", displayName.c_str());
-
+	// ホバー状態を確認。
 	if (ImGui::IsItemHovered()) {
 		if (document_.HasPath()) {
+			// 補足説明を表示。
 			ImGui::SetTooltip("%s", AssetPathChange::Text(document_.GetPath()).c_str());
 		}
 	}
 
+	// 横並びに配置。
 	ImGui::SameLine();
 
 	if (availableWidth > controlsWidth) {
+		// 横位置を設定。
 		ImGui::SetCursorPosX (toolbarStart + (availableWidth - controlsWidth) * 0.5f);
 	}
 
@@ -669,30 +702,35 @@ void Editor::DrawToolbar (IEditableWorld& scene) {
 		TogglePlay (scene);
 	}
 
+	// 横並びに配置。
 	ImGui::SameLine ();
-
+	// 操作無効化を開始。
 	ImGui::BeginDisabled (!session_.IsPlaying ());
 
 	if (DrawPlaybackButton ("##Pause", PlaybackIcon::Pause, "一時停止 / 再開", session_.IsPaused ())) {
 		session_.TogglePause ();
 	}
 
+	// 操作無効化を終了。
 	ImGui::EndDisabled ();
-
+	// 横並びに配置。
 	ImGui::SameLine ();
 
 	// ステップは一時停止中の再生に対してだけ予約できる。
+	// 操作無効化を開始。
 	ImGui::BeginDisabled (!session_.IsPlaying () || !session_.IsPaused ());
 
 	if (DrawPlaybackButton ("##Step", PlaybackIcon::Step, "1フレーム進める", false)) {
 		session_.RequestStep ();
 	}
 
+	// 操作無効化を終了。
 	ImGui::EndDisabled ();
 
 	if (availableWidth > 440) {
+		// 横並びに配置。
 		ImGui::SameLine();
-
+		// 横位置を設定。
 		ImGui::SetCursorPosX(toolbarStart+availableWidth-90);
 
 		const char* mode = "EDIT MODE";
@@ -705,9 +743,11 @@ void Editor::DrawToolbar (IEditableWorld& scene) {
 			}
 		}
 
+		// 補助テキストを表示。
 		ImGui::TextDisabled("%s",mode);
 	}
 
+	// スタイル値を戻す。
 	ImGui::PopStyleVar();
 
 #else
@@ -721,20 +761,25 @@ void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 	// 保留中の操作に対して、保存・破棄・取消の選択を受け取る。
 #ifdef USE_IMGUI
 	if (shouldOpenDiscardPrompt_) {
+		// 「Unsaved Scene」ポップアップを開く。
 		ImGui::OpenPopup ("Unsaved Scene");
 
 		shouldOpenDiscardPrompt_ = false;
 	}
 
+	// 「Unsaved Scene」モーダルを開始。
 	if (ImGui::BeginPopupModal ("Unsaved Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		// 「未保存の変更を保存してから続行しますか？」テキストを表示。
 		ImGui::TextUnformatted ("未保存の変更を保存してから続行しますか？");
 
 		if (pendingAction_ == SceneAction::Exit) {
 			if (IsParticlePresetDirty(scene)) {
+				// 「Particleプリセットの変更も保存対象です。」テキストを表示。
 				ImGui::TextUnformatted("Particleプリセットの変更も保存対象です。");
 			}
 		}
 
+		// 「Save and Continue」ボタン押下を受け取る。
 		if (ImGui::Button ("Save and Continue")) {
 			bool wasSaved = SaveScene (scene);
 
@@ -750,6 +795,7 @@ void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 
 			if (!wasSaved) {
 				if (fileDialogAction_ == FileDialogAction::SaveBeforeAction) {
+					// 現在のポップアップを閉じる。
 					ImGui::CloseCurrentPopup();
 				}
 			}
@@ -757,32 +803,39 @@ void Editor::DrawDiscardPrompt (IEditableWorld& scene) {
 			if (wasSaved) {
 				PerformSceneAction (scene);
 
+				// 現在のポップアップを閉じる。
 				ImGui::CloseCurrentPopup ();
 			}
 		}
 
+		// 横並びに配置。
 		ImGui::SameLine ();
-
+		// 「Discard and Continue」ボタン押下を受け取る。
 		if (ImGui::Button ("Discard and Continue")) {
 			PerformSceneAction (scene);
 
+			// 現在のポップアップを閉じる。
 			ImGui::CloseCurrentPopup ();
 		}
 
+		// 横並びに配置。
 		ImGui::SameLine ();
-
+		// 「Cancel」ボタン押下を受け取る。
 		if (ImGui::Button ("Cancel")) {
 			pendingAction_ = SceneAction::None;
 
 			pendingScenePath_.clear();
 
+			// 現在のポップアップを閉じる。
 			ImGui::CloseCurrentPopup ();
 		}
 
 		if (!fileStatus_.empty ()) {
+			// 折り返しテキストを表示。
 			ImGui::TextWrapped ("%s", fileStatus_.c_str ());
 		}
 
+		// ポップアップを終了。
 		ImGui::EndPopup ();
 	}
 
@@ -860,10 +913,12 @@ void Editor::HandleShortcuts(IEditableWorld& scene) {
 #ifdef USE_IMGUI
 
 	// 文字入力・ウィジェット操作・Scene操作・ダイアログはそれぞれ独立して確認する。
+	// 入力状態を取得。
 	if (ImGui::GetIO().WantTextInput) {
 		return;
 	}
 
+	// UI操作中か確認。
 	if (ImGui::IsAnyItemActive()) {
 		return;
 	}
@@ -872,11 +927,14 @@ void Editor::HandleShortcuts(IEditableWorld& scene) {
 		return;
 	}
 
+	// ポップアップ状態を確認。
 	if (ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId)) {
 		return;
 	}
 
+	// 入力状態を取得。
 	if (ImGui::GetIO().KeyCtrl) {
+		// キー入力を確認。
 		if (ImGui::IsKeyPressed(ImGuiKey_P, false)) {
 			TogglePlay(scene);
 		}
@@ -887,16 +945,21 @@ void Editor::HandleShortcuts(IEditableWorld& scene) {
 	}
 
 	// 修飾キーを先に判定し、その内側で操作するキーを分類する。
+	// 入力状態を取得。
 	if (ImGui::GetIO().KeyCtrl) {
+		// キー入力を確認。
 		if (ImGui::IsKeyPressed(ImGuiKey_N, false)) {
 			RequestSceneAction(SceneAction::NewScene, scene);
 		}
 
+		// キー入力を確認。
 		if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
 			OpenSceneDialog();
 		}
 
+		// キー入力を確認。
 		if (ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+			// 入力状態を取得。
 			if (ImGui::GetIO().KeyShift) {
 				OpenSaveDialog(false);
 			} else {
@@ -904,7 +967,9 @@ void Editor::HandleShortcuts(IEditableWorld& scene) {
 			}
 		}
 
+		// キー入力を確認。
 		if (ImGui::IsKeyPressed(ImGuiKey_Z, false)) {
+			// 入力状態を取得。
 			if (ImGui::GetIO().KeyShift) {
 				session_.Redo(scene, fileStatus_);
 			}
@@ -913,15 +978,18 @@ void Editor::HandleShortcuts(IEditableWorld& scene) {
 			}
 		}
 
+		// キー入力を確認。
 		if (ImGui::IsKeyPressed(ImGuiKey_Y, false)) {
 			session_.Redo(scene, fileStatus_);
 		}
 
+		// キー入力を確認。
 		if (ImGui::IsKeyPressed(ImGuiKey_D, false)) {
 			selection_.Duplicate(scene, fileStatus_);
 		}
 	}
 
+	// キー入力を確認。
 	if (ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
 		selection_.Remove(scene, fileStatus_);
 	}

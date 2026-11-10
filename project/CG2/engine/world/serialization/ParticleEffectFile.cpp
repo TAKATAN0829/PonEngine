@@ -34,7 +34,7 @@ namespace {
 			<< settings.shapeRadius << ' ' << settings.coneAngle << ' ' << settings.isGroundCollisionEnabled << ' '
 			<< settings.collisionHeight << ' ' << settings.collisionRestitution << ' ' << settings.isTrailEnabled << ' '
 			<< settings.trailInterval << ' ' << settings.trailLifetime << ' ' << settings.trailWidth << '\n';
-		for (const auto& key : settings.lifetimeCurve) {
+		for (const ParticleLifetimeKey& key : settings.lifetimeCurve) {
 			output << key.time << ' ' << key.size << ' ' << key.color.x << ' ' << key.color.y << ' ' << key.color.z << ' ' << key.color.w << '\n';
 		}
 	}
@@ -52,7 +52,7 @@ namespace {
 		settings.isGroundCollisionEnabled = collision != 0;
 		settings.isTrailEnabled = trail != 0;
 		// 寿命曲線の各点は、時刻・大きさ・RGBAの組として並ぶ。
-		for (auto& key : settings.lifetimeCurve) input >> key.time >> key.size >> key.color.x >> key.color.y >> key.color.z >> key.color.w;
+		for (ParticleLifetimeKey& key : settings.lifetimeCurve) input >> key.time >> key.size >> key.color.x >> key.color.y >> key.color.z >> key.color.w;
 		return static_cast<bool>(input);
 	}
 }
@@ -125,7 +125,7 @@ bool ParticleEffectFile::Load(ParticleEffectDocument& document, const std::files
 		loaded = MakeParticleEffectDocument(legacySettings);
 	} else if (identifier == "PON_PARTICLE_EFFECT") {
 		// Effect v1には追加項目がないため、ParticleSettingsの既定値を使う。
-		if (version < 1 || version > 2 || !ReadDocument(input, loaded, static_cast<unsigned>(version))) {
+		if (version < 1 || version > 3 || !ReadDocument(input, loaded, static_cast<unsigned>(version))) {
 			error = "Invalid particle effect document.";
 			return false;
 		}
@@ -185,13 +185,17 @@ bool ParticleEffectFile::LoadSingleEmitter(ParticleSettings& settings, const std
 }
 
 void ParticleEffectFile::WriteDocument(std::ostream& output, const ParticleEffectDocument& document) {
-	// 各Emitterは旧形式の基礎設定に続けてv2拡張値を持つ。Groupには設定行がない。
-	output << "PON_PARTICLE_EFFECT 2\n" << std::quoted(document.name) << '\n' << document.nodes.size() << '\n';
+	// v3ではノードの配置位置も保存し、各Emitterは設定と拡張値を続けて持つ。
+	output << "PON_PARTICLE_EFFECT 3\n" << std::quoted(document.name) << '\n' << document.nodes.size() << '\n';
 	for (const ParticleEffectNode& node : document.nodes) {
 		output << node.id << ' ' << node.parentId << ' ' << static_cast<uint32_t>(node.type) << ' ' << node.isEnabled << ' '
 			<< std::quoted(node.name) << '\n';
 		WriteTransform(output, node.transform);
-		output << '\n';
+		int hasEditorPosition = 0;
+		if (node.hasEditorPosition) {
+			hasEditorPosition = 1;
+		}
+		output << hasEditorPosition << ' ' << node.editorPosition.x << ' ' << node.editorPosition.y << '\n';
 		if (node.type == ParticleNodeType::Emitter) {
 			ParticlePresetFile::WriteSettings(output, node.emitter);
 			WriteExtensions(output, node.emitter);
@@ -201,7 +205,7 @@ void ParticleEffectFile::WriteDocument(std::ostream& output, const ParticleEffec
 
 bool ParticleEffectFile::ReadDocument(std::istream& input, ParticleEffectDocument& document, unsigned version) {
 	// ノード数を上限内に制限し、全レコードが読めてから呼出元の文書を置き換える。
-	if (version < 1 || version > 2) {
+	if (version < 1 || version > 3) {
 		return false;
 	}
 	ParticleEffectDocument loaded;
@@ -229,8 +233,19 @@ bool ParticleEffectFile::ReadDocument(std::istream& input, ParticleEffectDocumen
 
 		// 0/1で保存された値を、ノードの有効状態に変換する。
 		node.isEnabled = enabled != 0;
+		if (version >= 3) {
+			int hasEditorPosition = 0;
+			input >> hasEditorPosition >> node.editorPosition.x >> node.editorPosition.y;
+			if (!input) {
+				return false;
+			}
+			if (hasEditorPosition != 0 && hasEditorPosition != 1) {
+				return false;
+			}
+			node.hasEditorPosition = hasEditorPosition != 0;
+		}
 		if (node.type == ParticleNodeType::Emitter) {
-			// v1は基礎設定だけ、v2は基礎設定と拡張設定を読み取る。
+			// v1は基礎設定、v2以降は拡張設定も読み取る。
 			if (!ParticlePresetFile::ReadSettings(input, node.emitter, 2) || (version >= 2 && !ReadExtensions(input, node.emitter))) return false;
 		}
 		// このノードの全項目が読めてから、一時文書に追加する。

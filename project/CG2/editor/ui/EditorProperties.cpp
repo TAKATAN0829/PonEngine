@@ -10,20 +10,25 @@
 // 描画処理 / セクション・プロパティ表
 
 
+// 説明付きの折りたたみ見出しを描き、開閉状態を呼出元へ返す。
 bool EditorProperties::Header(const char* title, const char* help) {
 #ifdef USE_IMGUI
+	// 余白を追加。
 	ImGui::Spacing();
-
+	// 開閉見出しを表示。
 	const bool isExpanded = ImGui::CollapsingHeader(title,ImGuiTreeNodeFlags_DefaultOpen);
 
 	if (help != nullptr) {
 		// DrawListへの描画だけを行い、見出しの右クリック対象を変えない。
+		// 項目の右下位置を取得。
 		const ImVec2 maximum = ImGui::GetItemRectMax();
+		// 項目の左上位置を取得。
 		const ImVec2 minimum = ImGui::GetItemRectMin();
-
+		// 「?」描画リストを取得。
 		ImGui::GetWindowDrawList()->AddText({maximum.x-16,minimum.y+ImGui::GetStyle().FramePadding.y},ImGui::GetColorU32(ImGuiCol_TextDisabled),"?");
-
+		// ホバー状態を確認。
 		if (ImGui::IsItemHovered()) {
+			// 補足説明を表示。
 			ImGui::SetTooltip("%s",help);
 		}
 	}
@@ -45,19 +50,22 @@ bool EditorProperties::Begin(const char* identifier) {
 	// プロパティを名前と編集欄の二列で表示する準備をする。
 #ifdef USE_IMGUI
 	// 内部で使う表名が同じでも、セクションごとに識別できるようにする。
+	// 項目IDを追加。
 	ImGui::PushID(identifier);
-
+	// 表を開始。
 	if (!ImGui::BeginTable("##Properties",2,ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings)) {
+		// 項目IDを戻す。
 		ImGui::PopID();
 
 		return false;
 	}
 
 	// ラベル列は表示幅の3割を基準に75〜120ピクセルへ収め、残りを入力欄に使う。
+	// 残り表示領域を取得。
 	const float labelWidth = (std::clamp)(ImGui::GetContentRegionAvail().x * 0.30f,75.0f,120.0f);
-
+	// 「Property」表の列を設定。
 	ImGui::TableSetupColumn("Property",ImGuiTableColumnFlags_WidthFixed,labelWidth);
-
+	// 「Value」表の列を設定。
 	ImGui::TableSetupColumn("Value",ImGuiTableColumnFlags_WidthStretch);
 
 	return true;
@@ -73,17 +81,19 @@ bool EditorProperties::Begin(const char* identifier) {
 void EditorProperties::Row(const char* label) {
 	// プロパティ名と編集欄を別の列へ配置する。
 #ifdef USE_IMGUI
+	// 表の次行へ移動。
 	ImGui::TableNextRow();
-
+	// 表の列を選択。
 	ImGui::TableSetColumnIndex(0);
-
+	// テキストを中央揃え。
 	ImGui::AlignTextToFramePadding();
-
+	// テキストを表示。
 	ImGui::TextUnformatted(label);
-
+	// 表の列を選択。
 	ImGui::TableSetColumnIndex(1);
 
 	// 次の入力欄は、値の列の右端近くまで広げる。
+	// 次項目の幅を設定。
 	ImGui::SetNextItemWidth(-FLT_MIN);
 
 #else
@@ -95,8 +105,9 @@ void EditorProperties::Row(const char* label) {
 void EditorProperties::End() {
 	// 開始したプロパティの表とスタイル設定を終了する。
 #ifdef USE_IMGUI
+	// 表を終了。
 	ImGui::EndTable();
-
+	// 項目IDを戻す。
 	ImGui::PopID();
 
 #endif
@@ -111,10 +122,11 @@ bool EditorProperties::Float(const char* label, float* value, float speed, float
 #ifdef USE_IMGUI
 	Row(label);
 
+	// 項目IDを追加。
 	ImGui::PushID(label);
-
+	// 数値をドラッグ編集。
 	const bool hasChanged = ImGui::DragFloat("##Value",value,speed,minimum,maximum,format,ImGuiSliderFlags_AlwaysClamp);
-
+	// 項目IDを戻す。
 	ImGui::PopID();
 
 	return hasChanged;
@@ -138,9 +150,11 @@ bool EditorProperties::Vector(const char* label, Vector3* value, float speed, fl
 	Row(label);
 
 	// 項目名でIDを分け、PositionとScaleなどで同じ軸の入力欄が衝突しないようにする。
+	// 項目IDを追加。
 	ImGui::PushID(label);
 
 	// 軸ラベルと余白の見込み分を引いて3等分し、各入力欄は最低16ピクセル確保する。
+	// 残り表示領域を取得。
 	const float width = (std::max)(16.0f,(ImGui::GetContentRegionAvail().x-3*12-5*4)/3);
 
 	// 入力欄の横に表示する軸名。以下の配列もX、Y、Zの順に揃える。
@@ -164,26 +178,30 @@ bool EditorProperties::Vector(const char* label, Vector3* value, float speed, fl
 
 	for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {
 		if (axisIndex != 0) {
+			// 横並びに配置。
 			ImGui::SameLine(0,4);
 		}
 
 		// 項目内でも軸番号でIDを分け、各軸を個別に操作できるようにする。
+		// 項目IDを追加。
 		ImGui::PushID(static_cast<int>(axisIndex));
-
+		// テキストを中央揃え。
 		ImGui::AlignTextToFramePadding();
-
+		// 色付きテキストを表示。
 		ImGui::TextColored(colors[axisIndex],"%s",axes[axisIndex]);
-
+		// 横並びに配置。
 		ImGui::SameLine(0,2);
-
+		// 次項目の幅を設定。
 		ImGui::SetNextItemWidth(width);
 
 		// この軸の変更結果を、ここまでの変更結果に足し合わせる。
+		// 数値をドラッグ編集。
 		hasChanged |= ImGui::DragFloat("##Axis",components[axisIndex],speed,minimum,maximum,"%.2f",flags);
-
+		// 項目IDを戻す。
 		ImGui::PopID();
 	}
 
+	// 項目IDを戻す。
 	ImGui::PopID();
 
 	return hasChanged;
@@ -205,10 +223,11 @@ bool EditorProperties::Toggle(const char* label, bool* isChecked) {
 #ifdef USE_IMGUI
 	Row(label);
 
+	// 項目IDを追加。
 	ImGui::PushID(label);
-
+	// チェック状態を編集。
 	const bool hasChanged = ImGui::Checkbox("##Value",isChecked);
-
+	// 項目IDを戻す。
 	ImGui::PopID();
 
 	return hasChanged;
@@ -227,10 +246,11 @@ bool EditorProperties::Combo(const char* label, int* value, const char* choices)
 #ifdef USE_IMGUI
 	Row(label);
 
+	// 項目IDを追加。
 	ImGui::PushID(label);
-
+	// 選択肢を表示。
 	const bool hasChanged = ImGui::Combo("##Value",value,choices);
-
+	// 項目IDを戻す。
 	ImGui::PopID();
 
 	return hasChanged;
@@ -250,10 +270,11 @@ bool EditorProperties::Color(const char* label, Vector4* value) {
 #ifdef USE_IMGUI
 	Row(label);
 
+	// 項目IDを追加。
 	ImGui::PushID(label);
-
+	// RGBA色を編集。
 	const bool hasChanged = ImGui::ColorEdit4("##Value",&value->x);
-
+	// 項目IDを戻す。
 	ImGui::PopID();
 
 	return hasChanged;

@@ -105,11 +105,21 @@ EditableObjectView WorldObjects::GetEditableObject(size_t index) {
 
 	WorldObjectData& object = objects_[index];
 
-	// 旧ParticleSettings参照と、複数Emitterを含むEffect文書参照を同じViewで渡す。
+	ParticleSettings* particleSettings = &object.particle;
+	if (object.type == WorldObjectType::Particle) {
+		for (ParticleEffectNode& node : object.particleEffect.nodes) {
+			if (node.type == ParticleNodeType::Emitter) {
+				particleSettings = &node.emitter;
+				break;
+			}
+		}
+	}
+
+	// 旧設定APIもParticle Effectの先頭Emitterを編集する。
 	return {object.id, object.name.c_str(), &object.transform, &object.color, &object.isLightingEnabled,
 		&object.shininess, &object.model, &object.isRootNodeMatrixUsed, &object.name,
 		&object.isActive, &object.hasMeshRenderer, object.type, &object.lightIntensity,
-		&object.lightRadius, &object.lightDecay, &object.particle, &object.particleEffect, object.parentId, &object.camera, object.isMainCamera,
+		&object.lightRadius, &object.lightDecay, particleSettings, &object.particleEffect, object.parentId, &object.camera, object.isMainCamera,
 		&object.materials, &object.animation, &object.body, &object.collider, &object.motion, &object.light};
 }
 
@@ -139,8 +149,21 @@ const std::vector<WorldObjectData>& WorldObjects::GetObjects() const {
 }
 
 std::vector<WorldObjectData> WorldObjects::CaptureObjects() const {
-	// 保存や履歴に使うため、設定一覧を値として返す。
-	return objects_;
+	// 保存や履歴用の旧Particle設定を、Effectの先頭Emitterへ揃えて返す。
+	std::vector<WorldObjectData> snapshot = objects_;
+	for (WorldObjectData& object : snapshot) {
+		if (object.type != WorldObjectType::Particle) {
+			continue;
+		}
+
+		for (const ParticleEffectNode& node : object.particleEffect.nodes) {
+			if (node.type == ParticleNodeType::Emitter) {
+				object.particle = node.emitter;
+				break;
+			}
+		}
+	}
+	return snapshot;
 }
 
 bool WorldObjects::HasObjectCollectionSupport() const {

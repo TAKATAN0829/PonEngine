@@ -174,7 +174,8 @@ private:
 
 	PerformancePanel performancePanel_; // 計測履歴の選択とCSV出力の表示。
 
-	EditorToolVisibility toolVisibility_{}; // 補助画面は初期状態ではすべて閉じる。
+	EditorToolVisibility toolVisibility_{}; // 補助画面は必要なときだけ開く。
+	bool hasParticleEditorBeenOpened_ = false; // 起動時プレビューを、パネルを閉じた操作と区別する。
 
 	EditorLayout layout_; // メニュー・初期ドッキング・通知欄。
 

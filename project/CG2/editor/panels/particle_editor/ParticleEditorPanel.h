@@ -1,9 +1,10 @@
 #pragma once
 
 #include "IEditableWorld.h"
+#include "../node_editor/NodePanel.h"
 
 // 発生設定とプレビュー操作を管理する。粒子の実行データはWorldSceneが所有する。
-class ParticleEditorPanel {
+class ParticleEditorPanel : public NodePanel {
 public:
 
 	//=============================================================================================//
@@ -89,7 +90,7 @@ private:
 
 	WorldObjectId targetId_ = kInvalidWorldObjectId; // 0なら共通プリセット。
 	uint64_t selectedNodeId_ = 0;
-	ParticleEffectDocument commonDocument_; // 共通プリセットの編集文書。現状はEmitter 1個。
+	ParticleEffectDocument commonDocument_; // 共通Effectプリセットの編集文書。
 
 	Vector3 focusPosition_{}; // Sceneカメラへ渡す発生位置。
 

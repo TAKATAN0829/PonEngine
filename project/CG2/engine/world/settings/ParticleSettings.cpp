@@ -49,6 +49,7 @@ ParticleSettings::ParticleSettings()
 
 ParticlePreviewState::ParticlePreviewState()
 	: targetObject(0),
+	cameraTarget{},
 	isEnabled(false),
 	isPaused(false),
 	isStepRequested(false),
@@ -98,7 +99,10 @@ ParticleAppearance EvaluateParticleAppearance(const ParticleSettings& settings, 
 				const auto& first = keys[index - 1];
 				const auto& second = keys[index];
 				const float span = second.time - first.time;
-				const float weight = span > 0 ? (age - first.time) / span : 1.0f;
+				float weight = 1.0f;
+				if (span > 0) {
+					weight = (age - first.time) / span;
+				}
 				return {std::lerp(first.size, second.size, weight),
 					{std::lerp(first.color.x, second.color.x, weight), std::lerp(first.color.y, second.color.y, weight),
 					 std::lerp(first.color.z, second.color.z, weight), std::lerp(first.color.w, second.color.w, weight)}};

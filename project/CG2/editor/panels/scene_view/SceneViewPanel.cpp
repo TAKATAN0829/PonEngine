@@ -68,6 +68,7 @@ namespace {
 		const Vector3& origin, float radius, size_t axisIndex, ImU32 color, float thickness) {
 		// 回転ギズモの円周を線分に分けて描く。
 		for (int segment = 0; segment < 48; ++segment) {
+			// 描画リストを取得。
 			SceneViewDrawing::DrawWorldLine(*ImGui::GetWindowDrawList(),viewInfo,viewportOrigin,
 				GetRotationRingPoint(origin,radius,axisIndex,segment),
 				GetRotationRingPoint(origin,radius,axisIndex,segment+1),color,thickness);
@@ -180,12 +181,13 @@ namespace {
 				markerName = "Camera";
 			}
 
+			// AddCircleを処理。
 			drawList.AddCircle(position, 7, markerColor, 12, 2);
-
+			// 線を描画。
 			drawList.AddLine({position.x-10,position.y}, {position.x+10,position.y}, markerColor);
-
+			// 線を描画。
 			drawList.AddLine({position.x,position.y-10}, {position.x,position.y+10}, markerColor);
-
+			// 文字列を描画。
 			drawList.AddText({position.x+12,position.y-7}, markerColor, markerName);
 		}
 	}
@@ -208,6 +210,7 @@ namespace {
 			return;
 		}
 
+		// 描画リストを取得。
 		ImGui::GetWindowDrawList()->AddLine({origin.x+firstScreen.x,origin.y+firstScreen.y},{origin.x+secondScreen.x,origin.y+secondScreen.y},color,2);
 	}
 
@@ -257,6 +260,7 @@ namespace {
 		const Vector3 right = MathUtility::Normalize(CrossDirections(hint,direction));
 		const Vector3 up = CrossDirections(direction,right);
 
+		// 描画リストを取得。
 		ImDrawList& drawList = *ImGui::GetWindowDrawList();
 
 		const ImU32 color = IM_COL32(255,210,100,220);
@@ -327,6 +331,7 @@ namespace {
 				const size_t other = cornerIndex ^ (size_t{1} << axisIndex);
 
 				if (cornerIndex < other) {
+					// 描画リストを取得。
 					SceneViewDrawing::DrawWorldLine(*ImGui::GetWindowDrawList(),view,origin,corners[cornerIndex],corners[other],IM_COL32(165,225,180,220),1.5f);
 				}
 			}
@@ -381,14 +386,18 @@ void SceneViewPanel::Draw(IEditableWorld& scene, EditorSelection& selection) {
 #ifdef USE_IMGUI
 	scene.SetEditorCameraInput(false);
 
+	// 「Scene Viewport」ウィンドウを開始。
 	if (!ImGui::Begin("Scene Viewport", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
 		ResetInteraction();
 
+		// ウィンドウを終了。
 		ImGui::End();
 
 		return;
 	}
 
+	// 表示タブを切り替え、Scene編集とGame実行画面を同じ領域で使う。
+	// 「SceneViewTabs」タブ一覧を開始。
 	if (ImGui::BeginTabBar("SceneViewTabs")) {
 		ImGuiTabItemFlags sceneFlags = ImGuiTabItemFlags_None;
 
@@ -396,18 +405,23 @@ void SceneViewPanel::Draw(IEditableWorld& scene, EditorSelection& selection) {
 			sceneFlags = ImGuiTabItemFlags_SetSelected;
 		}
 
+		// 「SceneView」タブ項目を開始。
 		if (ImGui::BeginTabItem("SceneView", nullptr, sceneFlags)) {
 			isGameView_ = false;
 
+			// タブ項目を終了。
 			ImGui::EndTabItem();
 		}
 
+		// 「GameView」タブ項目を開始。
 		if (ImGui::BeginTabItem("GameView")) {
 			isGameView_ = true;
 
+			// タブ項目を終了。
 			ImGui::EndTabItem();
 		}
 
+		// タブ一覧を終了。
 		ImGui::EndTabBar();
 
 		shouldShowScene_ = false;
@@ -423,6 +437,7 @@ void SceneViewPanel::Draw(IEditableWorld& scene, EditorSelection& selection) {
 		DrawScene(scene,selection);
 	}
 
+	// ウィンドウを終了。
 	ImGui::End();
 
 #else
@@ -497,6 +512,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 		return;
 	}
 
+	// キー入力を確認。
 	if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
 		CancelDrag(scene);
 
@@ -522,6 +538,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 				}
 			}
 
+			// 入力状態を取得。
 			if (isSnapEnabled_ || ImGui::GetIO().KeyCtrl) {
 				// 設定された度数をラジアンに換算し、最も近い刻みへ丸める。
 				const float increment = snapAngle_ * 0.0174532925f;
@@ -547,6 +564,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 			ApplyDragTransform(scene, delta);
 		}
 
+		// マウス押下を確認。
 		if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
 			ResetInteraction();
 		}
@@ -566,6 +584,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 			float movement = axisDistance - dragStartDistance_;
 
 			if (tool_ == TransformTool::Move) {
+				// 入力状態を取得。
 				if (isSnapEnabled_ || ImGui::GetIO().KeyCtrl) {
 					movement = std::round(movement / snapDistance_) * snapDistance_;
 				}
@@ -575,6 +594,7 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 				// ギズモの軸の長さを基準に、移動量を拡縮の倍率に変換する。
 				float factor = 1.0f + movement / dragAxisLength_;
 
+				// 入力状態を取得。
 				if (isSnapEnabled_ || ImGui::GetIO().KeyCtrl) {
 					factor = 1.0f + std::round((factor-1.0f)/snapScale_)*snapScale_;
 				}
@@ -629,10 +649,12 @@ void SceneViewPanel::Update(IEditableWorld& scene, const EditorViewInfo& viewInf
 		}
 	}
 
+	// マウス押下を確認。
 	if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
 		ResetInteraction();
 	} else {
 		// ギズモ操作中のUndoなどで、編集中の対象が切り替わることを防ぐ。
+		// キーボード入力を捕捉。
 		ImGui::SetNextFrameWantCaptureKeyboard(true);
 	}
 
@@ -712,79 +734,101 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 #ifdef USE_IMGUI
 	EditableObjectView selectedObject = FindObject(scene, selection.GetPrimarySelectedObjectId());
 
+	// 移動・回転・拡縮の切替と、表示・スナップ設定を行う。
 	int selectedTool = static_cast<int>(tool_);
 
+	// 次項目の幅を設定。
 	ImGui::SetNextItemWidth(100);
-
+	// 選択肢を表示。
 	if (ImGui::Combo("##TransformTool", &selectedTool, "Move\0Rotate\0Scale\0")) {
 		CancelDrag(scene);
 
 		tool_ = static_cast<TransformTool>(selectedTool);
 	}
 
+	// ホバー状態を確認。
 	if (ImGui::IsItemHovered()) {
+		// 補足説明を表示。
 		ImGui::SetTooltip("軸をドラッグして操作 / Ctrl: スナップ / Esc: 操作を戻す");
 	}
 
+	// 横並びに配置。
 	ImGui::SameLine();
-
+	// 「View / 表示」ボタン押下を受け取る。
 	if (ImGui::Button("View / 表示")) {
+		// 「SceneViewOptions」ポップアップを開く。
 		ImGui::OpenPopup("SceneViewOptions");
 	}
 
+	// 「SceneViewOptions」ポップアップを開始。
 	if (ImGui::BeginPopup("SceneViewOptions")) {
+		// 「Grid」メニュー選択を受け取る。
 		ImGui::MenuItem("Grid",nullptr,&shouldShowGrid_);
-
+		// 「Camera / Light Guides」メニュー選択を受け取る。
 		ImGui::MenuItem("Camera / Light Guides",nullptr,&shouldShowGuides_);
-
+		// 区切り線を表示。
 		ImGui::Separator();
-
+		// 「Snap / 常時スナップ」メニュー選択を受け取る。
 		ImGui::MenuItem("Snap / 常時スナップ",nullptr,&isSnapEnabled_);
-
+		// 次項目の幅を設定。
 		ImGui::SetNextItemWidth(100);
-
+		// 「Move」数値をドラッグ編集。
 		ImGui::DragFloat("Move",&snapDistance_,0.1f,0.01f,100,"%.2f",ImGuiSliderFlags_AlwaysClamp);
-
+		// 次項目の幅を設定。
 		ImGui::SetNextItemWidth(100);
-
+		// 「Rotate (deg)」数値をドラッグ編集。
 		ImGui::DragFloat("Rotate (deg)",&snapAngle_,1,1,180,"%.0f",ImGuiSliderFlags_AlwaysClamp);
-
+		// 次項目の幅を設定。
 		ImGui::SetNextItemWidth(100);
-
+		// 「Scale (ratio)」数値をドラッグ編集。
 		ImGui::DragFloat("Scale (ratio)",&snapScale_,0.01f,0.01f,1,"%.2f",ImGuiSliderFlags_AlwaysClamp);
-
+		// 「Ctrlでも一時的に有効 / Escで操作を戻す」補助テキストを表示。
 		ImGui::TextDisabled("Ctrlでも一時的に有効 / Escで操作を戻す");
-
+		// 区切り線を表示。
 		ImGui::Separator();
 
-		if (ImGui::MenuItem("選択対象を注視",nullptr,false,selectedObject.transform != nullptr && !isDragging_)) {
+		// 選択中にギズモを操作していない場合だけ、カメラを対象へ移動できる。
+		bool canFocusSelectedObject = selectedObject.transform != nullptr;
+		if (isDragging_) {
+			canFocusSelectedObject = false;
+		}
+		// 「選択対象を注視」メニュー選択を受け取る。
+		if (ImGui::MenuItem("選択対象を注視",nullptr,false,canFocusSelectedObject)) {
 			scene.FocusEditorCamera(scene.GetObjectWorldPosition(selectedObject.id));
 		}
 
+		// ポップアップを終了。
 		ImGui::EndPopup();
 	}
 
+	// 横並びに配置。
 	ImGui::SameLine();
-
+	// テキストを中央揃え。
 	ImGui::AlignTextToFramePadding();
 
 	if (isSnapEnabled_) {
+		// 「Snap ON」補助テキストを表示。
 		ImGui::TextDisabled("Snap ON");
 	} else {
+		// 「Scene Camera」補助テキストを表示。
 		ImGui::TextDisabled("Scene Camera");
 	}
 
 	if (!placementStatus_.empty()) {
+		// 折り返しテキストを表示。
 		ImGui::TextWrapped("%s", placementStatus_.c_str());
 	}
 
+	// 残り表示領域を取得。
 	if (!ResizeViewport(scene, ImGui::GetContentRegionAvail())) {
 		return;
 	}
 
+	// 画面位置を取得。
 	const ImVec2 viewportOrigin = ImGui::GetCursorScreenPos();
 
 	// 画像・クリック・ギズモはすべて同じ矩形を使う。
+	// 画像を表示。
 	ImGui::Image(ImTextureRef(static_cast<ImTextureID>(textureHandle_)),
 		{static_cast<float>(width_), static_cast<float>(height_)});
 
@@ -794,6 +838,7 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 		return; // 借用した選択データは配列の再配置後に使わない。
 	}
 
+	// ホバー状態を確認。
 	const bool isImageHovered = ImGui::IsItemHovered() && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId);
 
 	EditorViewInfo viewInfo{};
@@ -804,14 +849,16 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 		return;
 	}
 
+	// 入力状態を取得。
 	const Vector2 mousePosition = {ImGui::GetIO().MousePos.x - viewportOrigin.x, ImGui::GetIO().MousePos.y - viewportOrigin.y};
 
 	if (isDragging_) {
 		Update(scene, viewInfo, mousePosition);
 	}
 
+	// 描画リストを取得。
 	ImDrawList& drawList = *ImGui::GetWindowDrawList();
-
+	// 描画範囲を制限。
 	drawList.PushClipRect(viewportOrigin, {viewportOrigin.x + viewInfo.viewportWidth, viewportOrigin.y + viewInfo.viewportHeight}, true);
 
 	DrawOverlay(scene,viewInfo,viewportOrigin);
@@ -822,16 +869,19 @@ void SceneViewPanel::DrawScene(IEditableWorld& scene, EditorSelection& selection
 
 	const bool wasGizmoClicked = DrawGizmo(scene, selection, viewInfo, viewportOrigin, mousePosition, isImageHovered);
 
+	// 描画範囲制限を解除。
 	drawList.PopClipRect();
 
 	if (!isDragging_ && !wasGizmoClicked) {
 		if (isImageHovered) {
+			// マウスクリックを確認。
 			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 				PickObject(scene, selection, viewInfo, mousePosition);
 			}
 		}
 	}
 
+	// UI操作中か確認。
 	scene.SetEditorCameraInput(isImageHovered && !isDragging_ && !ImGui::IsAnyItemActive());
 
 #else
@@ -888,6 +938,7 @@ bool SceneViewPanel::ResizeViewport(IEditableWorld& scene, const ImVec2& availab
 // グリッドとメッシュを持たない対象のマーカーを重ねる。
 void SceneViewPanel::DrawOverlay(IEditableWorld& scene, const EditorViewInfo& viewInfo, const ImVec2& origin) {
 	// SceneView上へ操作状態などの補助情報を重ねる。
+	// 描画リストを取得。
 	ImDrawList& drawList = *ImGui::GetWindowDrawList();
 
 	if (shouldShowGrid_) {
@@ -1002,6 +1053,7 @@ void SceneViewPanel::DrawGuides(IEditableWorld& scene, const EditorSelection& se
 
 			for (size_t axisIndex = 0; axisIndex < 3; ++axisIndex) {
 				for (size_t segment = 0; segment < 64; ++segment) {
+					// 描画リストを取得。
 					SceneViewDrawing::DrawWorldLine(*ImGui::GetWindowDrawList(),view,origin,LightCirclePoint(center,*object.lightRadius,axisIndex,segment),
 						LightCirclePoint(center,*object.lightRadius,axisIndex,segment+1),IM_COL32(255,220,100,200),1.5f);
 				}
@@ -1094,6 +1146,7 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 		return false;
 	}
 
+	// 描画リストを取得。
 	ImDrawList& drawList = *ImGui::GetWindowDrawList();
 
 	// 操作できない種類・ツールの組合せでも、選択枠は維持する。
@@ -1222,19 +1275,23 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 		const ImVec2 start = SceneViewDrawing::ToDrawPosition(screenOrigin,viewportOrigin);
 		const ImVec2 end = SceneViewDrawing::ToDrawPosition(handles[axisIndex].end,viewportOrigin);
 
+		// 線を描画。
 		drawList.AddLine(start,end,color,thickness);
 
 		if (tool_ == TransformTool::Scale) {
+			// 塗りつぶし矩形を描画。
 			drawList.AddRectFilled({end.x-5,end.y-5},{end.x+5,end.y+5},color);
 		} else {
 			const float length = std::hypot(end.x-start.x,end.y-start.y);
 
 			const ImVec2 direction = {(end.x-start.x)/length,(end.y-start.y)/length};
 
+			// 塗りつぶし三角形を描画。
 			drawList.AddTriangleFilled(end,{end.x-direction.x*13-direction.y*5,end.y-direction.y*13+direction.x*5},
 				{end.x-direction.x*13+direction.y*5,end.y-direction.y*13-direction.x*5},color);
 		}
 
+		// 文字列を描画。
 		drawList.AddText({end.x+7,end.y-7},color,kAxisNames[axisIndex]);
 	}
 
@@ -1242,8 +1299,9 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 		return false;
 	}
 
+	// マウスカーソルを設定。
 	ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
-
+	// マウスクリックを確認。
 	if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 		return false;
 	}
@@ -1261,15 +1319,18 @@ bool SceneViewPanel::DrawGizmo(IEditableWorld& scene, EditorSelection& selection
 #ifdef USE_IMGUI
 bool SceneViewPanel::AcceptModelDrop(IEditableWorld& scene, EditorSelection& selection, const ImVec2& viewportOrigin) {
 	// ドロップされたAssetを検証し、シーンへの配置要求へ変換する。
+	// ドロップ受け入れを開始。
 	if (!ImGui::BeginDragDropTarget()) {
 		return false;
 	}
 
+	// ドロップデータを取得。
 	const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kType);
 
 	bool isPrefab = false;
 
 	if (payload == nullptr) {
+		// ドロップデータを取得。
 		payload = ImGui::AcceptDragDropPayload(ModelAssetPayload::kPrefabType);
 
 		isPrefab = payload != nullptr;
@@ -1281,6 +1342,7 @@ bool SceneViewPanel::AcceptModelDrop(IEditableWorld& scene, EditorSelection& sel
 		ModelAssetPayload::Read(payload->Data, payload->DataSize, model);
 	}
 
+	// ドロップ受け入れを終了。
 	ImGui::EndDragDropTarget();
 
 	if (model.empty()) {
@@ -1298,6 +1360,7 @@ bool SceneViewPanel::AcceptModelDrop(IEditableWorld& scene, EditorSelection& sel
 
 	float rayLength = 0;
 
+	// 入力状態を取得。
 	const Vector2 mouse = {ImGui::GetIO().MousePos.x - viewportOrigin.x, ImGui::GetIO().MousePos.y - viewportOrigin.y};
 
 	if (!SceneViewMath::CreateRay(mouse, view.viewProjection, view.viewportWidth, view.viewportHeight, origin, direction, &rayLength)) {
@@ -1388,6 +1451,7 @@ void SceneViewPanel::PickObject(IEditableWorld& scene, EditorSelection& selectio
 			}
 		}
 
+		// 入力状態を取得。
 		if (ImGui::GetIO().KeyCtrl) {
 			selection.Toggle(closestObject);
 		} else {

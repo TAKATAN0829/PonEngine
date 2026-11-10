@@ -53,6 +53,8 @@ void WorldAssetReferences::Remap(std::vector<WorldObjectData>& objects, const As
 		for (ParticleEffectNode& node : object.particleEffect.nodes) {
 			if (node.type == ParticleNodeType::Emitter) {
 				node.emitter.texture = change.RemapResource(node.emitter.texture);
+				object.particle = node.emitter;
+				break;
 			}
 		}
 	}

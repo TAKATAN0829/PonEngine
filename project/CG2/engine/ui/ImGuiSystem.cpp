@@ -19,6 +19,7 @@
 //=============================================================================================//
 // 実装内補助定義
 
+// Win32入力イベントを処理。
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace {
@@ -66,12 +67,14 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 	//===========================================//
 	// ImGui初期化
 #ifdef USE_IMGUI
+	// コンテキストと日本語フォントを用意し、Win32・DirectX 12へ接続する。
 	IMGUI_CHECKVERSION();
 
+	// ImGuiコンテキストを作成。
 	ImGui::CreateContext();
-
+	// 入力状態を取得。
 	ImGuiIO& inputOutput = ImGui::GetIO();
-
+	// 暗色スタイルを適用。
 	ImGui::StyleColorsDark();
 
     wchar_t windowsDirectory[MAX_PATH]{};
@@ -99,6 +102,7 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 	//===========================================//
 	// Win32初期化
 
+	// Win32入力連携を初期化。
 	ImGui_ImplWin32_Init(winApp->GetHwnd());
 
 	//===========================================//
@@ -124,6 +128,7 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 
 	initInfo.SrvDescriptorFreeFn = FreeGuiDescriptor;
 
+	// DX12描画を初期化。
 	ImGui_ImplDX12_Init(&initInfo);
 
 	isInitialized_ = true;
@@ -145,10 +150,12 @@ void ImGuiSystem::Begin() {
 	//===========================================//
 	// ImGuiフレーム開始
 #ifdef USE_IMGUI
+	// Win32入力とDX12状態を更新してから、新しいUIフレームを開始する。
+	// DX12描画フレームを準備。
 	ImGui_ImplDX12_NewFrame();
-
+	// Win32入力状態を更新。
 	ImGui_ImplWin32_NewFrame();
-
+	// UIフレームを開始。
 	ImGui::NewFrame();
 
 #endif
@@ -168,6 +175,8 @@ void ImGuiSystem::End() {
 	//===========================================//
 	// 描画データ確定
 #ifdef USE_IMGUI
+	// このフレームのWidget描画を確定し、後段の描画処理へ渡す。
+	// UI描画データを確定。
 	ImGui::Render();
 
 #endif
@@ -187,6 +196,7 @@ void ImGuiSystem::Draw() {
 	//=============================================
 	// ImGui描画
 #ifdef USE_IMGUI
+	// UI用Descriptorを設定し、表示領域に残る描画命令だけを集計して描画する。
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
 	ID3D12DescriptorHeap* ppHeaps[] = { srvManager_->GetDescriptorHeap() };
@@ -194,6 +204,7 @@ void ImGuiSystem::Draw() {
 	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
 	// バックエンドが発行する有効なUI描画命令を別カウンターへ記録する。
+	// UI描画データを取得。
 	const ImDrawData* drawData = ImGui::GetDrawData();
 
 	for (int listIndex = 0; listIndex < drawData->CmdListsCount; ++listIndex) {
@@ -216,6 +227,7 @@ void ImGuiSystem::Draw() {
 		}
 	}
 
+	// UIをDX12で描画。
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
 #endif
@@ -235,10 +247,12 @@ void ImGuiSystem::Finalize() {
 	//===========================================//
 	// ImGui終了
 #ifdef USE_IMGUI
+	// DX12・Win32バックエンドを停止し、ImGuiコンテキストを破棄する。
+	// DX12描画連携を終了。
 	ImGui_ImplDX12_Shutdown();
-
+	// Win32入力連携を終了。
 	ImGui_ImplWin32_Shutdown();
-
+	// ImGuiコンテキストを破棄。
 	ImGui::DestroyContext();
 
 	isInitialized_ = false;
