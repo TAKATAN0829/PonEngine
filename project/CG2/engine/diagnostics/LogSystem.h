@@ -30,8 +30,6 @@ public:
 	//=============================================================================================//
 	// Getter
 
-	static std::ofstream& GetLogStream();
-
 	static const std::deque<std::string>& GetRecentMessages();
 
 private:

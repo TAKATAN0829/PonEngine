@@ -1,24 +1,26 @@
 #pragma once
 
-#include "IEditableWorld.h"
+#include "../EditorPanel.h"
+#include "IWorldObjects.h"
 #include <string>
 #include <unordered_map>
 
 class EditorSelection;
 
 // 親子ツリーの表示と追加・複製・削除・親の変更を担当する。
-class HierarchyPanel {
+class HierarchyPanel : public EditorPanel {
 public:
+	HierarchyPanel() : EditorPanel("Hierarchy") {}
 
 	//=============================================================================================//
 	// 初期化処理
 
-	static void Initialize ();
+	void Initialize ();
 
 	//=============================================================================================//
 	// 描画処理
 
-	static void Draw (IEditableWorld* scene, EditorSelection& selection);
+	void Draw (IWorldObjects* scene, EditorSelection& selection);
 
 private:
 
@@ -40,25 +42,25 @@ private:
 	//=============================================================================================//
 	// 操作UI・ツリー
 
-	static void DrawCreateMenu (IEditableWorld& scene, EditorSelection& selection);
+	void DrawCreateMenu (IWorldObjects& scene, EditorSelection& selection);
 
-	static void DrawContextMenu (IEditableWorld& scene, EditorSelection& selection);
+	void DrawContextMenu (IWorldObjects& scene, EditorSelection& selection);
 
-	static void DrawPrefabSaveMenu (IEditableWorld& scene);
+	void DrawPrefabSaveMenu (IWorldObjects& scene);
 
-	static void DrawBranch (IEditableWorld& scene, EditorSelection& selection, const ChildIndices& children, WorldObjectId parentId, HierarchyRequest& request);
+	void DrawBranch (IWorldObjects& scene, EditorSelection& selection, const ChildIndices& children, WorldObjectId parentId, HierarchyRequest& request);
 
 	// 描画中は参照を無効化しないよう、ドロップ結果だけを記録する。
-	static void AcceptParentDrop (WorldObjectId parentId, HierarchyRequest& request);
+	void AcceptParentDrop (WorldObjectId parentId, HierarchyRequest& request);
 
 private:
 
 	//=============================================================================================//
 	// 操作結果
 
-	inline static WorldObjectId contextTarget_ = kInvalidWorldObjectId; // 右クリックした対象。
+	WorldObjectId contextTarget_ = kInvalidWorldObjectId; // 右クリックした対象。
 
-	inline static std::string status_; // シーン切替時に初期化する。
+	std::string status_; // シーン切替時に初期化する。
 
-	inline static char prefabName_[128] = "Prefab"; // 保存先のファイル名だけを入力する。
+	char prefabName_[128] = "Prefab"; // 保存先のファイル名だけを入力する。
 };

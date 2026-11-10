@@ -143,7 +143,8 @@ const std::vector<AssetReference>& AssetFileOperations::GetUsages() const {
 // ファイル操作
 
 bool AssetFileOperations::Move(const std::filesystem::path& source, const std::filesystem::path& destination,
-	IEditableWorld& world, const std::vector<AssetReference>& liveReferences, std::string& error) try {
+	IWorldObjects& objects, IParticlePreviewWorld& particles, IAssetReferenceRemapper& assetReferences,
+	const std::vector<AssetReference>& liveReferences, std::string& error) try {
 	if (!Review(source, liveReferences, error)) {
 		return false;
 	}
@@ -241,7 +242,7 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 	}
 
 	// 保存可能な長さ・Component設定を、ファイルを触る前に確認する。
-	std::vector<WorldObjectData> candidate = world.CaptureObjects();
+	std::vector<WorldObjectData> candidate = objects.CaptureObjects();
 
 	WorldAssetReferences::Remap(candidate, change);
 
@@ -253,8 +254,8 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 		return false;
 	}
 
-	if (world.GetParticleSettings() != nullptr) {
-		ParticleSettings particle = *world.GetParticleSettings();
+	if (particles.GetParticleSettings() != nullptr) {
+		ParticleSettings particle = *particles.GetParticleSettings();
 
 		particle.texture = change.RemapResource(particle.texture);
 
@@ -384,7 +385,7 @@ bool AssetFileOperations::Move(const std::filesystem::path& source, const std::f
 	}
 
 	// GPUリソースを作り直さず、既存キャッシュと編集データの参照名だけを切り替える。
-	world.RemapAssetPaths(change);
+	assetReferences.RemapAssetPaths(change);
 
 	return true;
 } catch (const std::filesystem::filesystem_error& failure) {

@@ -126,10 +126,8 @@ void Engine::Initialize(IScene* firstScene) {
 // 実行処理
 
 
-void Engine::Run(uint32_t frameLimit) {
+void Engine::Run() {
 	FrameProfiler::Initialize();
-
-	uint32_t renderedFrames = 0;
 
 #ifdef USE_IMGUI
 	bool wasPlaying = false;
@@ -286,11 +284,6 @@ void Engine::Run(uint32_t frameLimit) {
 
 		FrameProfiler::EndFrame();
 
-		++renderedFrames;
-
-		if (frameLimit != 0 && renderedFrames >= frameLimit) {
-			break;
-		}
 	}
 }
 
@@ -390,9 +383,5 @@ void Engine::Finalize() {
 
 bool Engine::HasGraphicsErrors() const {
 	// 描画機能が記録したGPU検証エラーの有無を確認する。
-	if (dxCommon_->HasValidationErrors()) {
-		return true;
-	}
-
-	return false;
+	return dxCommon_->HasValidationErrors();
 }

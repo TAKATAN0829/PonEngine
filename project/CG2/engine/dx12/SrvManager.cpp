@@ -90,11 +90,7 @@ void SrvManager::Free(uint32_t srvIndex) {
 
 bool SrvManager::IsFull() const {
 	// 再利用できる番号と新規割当の上限から、SRVの空きを調べる。
-	if (freeIndices_.empty () && useIndex_ >= kMaxSRVCount) {
-		return true;
-	}
-
-	return false;
+	return freeIndices_.empty() && useIndex_ >= kMaxSRVCount;
 }
 
 //=============================================================================================//

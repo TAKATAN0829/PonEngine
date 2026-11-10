@@ -331,7 +331,13 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <ItemGroup>
+    <ClCompile Include="editor\panels\EditorPanel.cpp" />
+    <ClInclude Include="editor\panels\EditorPanel.h" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="editor\core\Editor.cpp" />
+    <ClCompile Include="editor\core\EditorPlayback.cpp" />
+    <ClCompile Include="editor\core\EditorSceneWorkflow.cpp" />
     <ClCompile Include="editor\panels\hierarchy\HierarchyPanel.cpp" />
     <ClCompile Include="editor\panels\inspector\InspectorPanel.cpp" />
     <ClInclude Include="editor\core\Editor.h" /><ClInclude Include="editor\assets\AssetDragPayload.h" />
@@ -346,6 +352,9 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\objects\WorldObjects.cpp" />
+    <ClCompile Include="engine\world\objects\WorldObjectsCamera.cpp" />
+    <ClCompile Include="engine\world\objects\WorldObjectsOperations.cpp" />
+    <ClCompile Include="engine\world\objects\WorldObjectsValidation.cpp" />
     <ClInclude Include="engine\world\objects\WorldObjects.h" />
   </ItemGroup>
   <ItemGroup>
@@ -440,8 +449,6 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="editor\panels\performance\PerformancePanel.h" />
-    <ClCompile Include="editor\panels\game_view\GameViewPanel.cpp" />
-    <ClInclude Include="editor\panels\game_view\GameViewPanel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="application\TitleScene.cpp" />

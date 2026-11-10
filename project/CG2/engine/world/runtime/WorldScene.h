@@ -161,15 +161,6 @@ private:
 	void UpdateEmitter(const WorldObjectData& data, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
 
 	//=============================================================================================//
-	// Getter / Particle更新条件
-
-	bool IsParticlePreviewTarget(WorldObjectId objectId) const;
-
-	bool ShouldSimulateEmitter(WorldObjectId objectId, bool isGameEmissionEnabled) const;
-
-	bool ShouldEmitEmitter(WorldObjectId objectId, bool isGameEmissionEnabled) const;
-
-	//=============================================================================================//
 	// 型 / モデル描画データ
 
 	struct RuntimeObject {

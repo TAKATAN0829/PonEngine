@@ -248,7 +248,7 @@ uint32_t DirectXCommon::GetDepthHeight() const {
 	return activeDepth_->GetDesc().Height;
 }
 
-// 起動試験で実デバイスの検証結果を調べ、描画エラーをビルド成功だけで見逃さない。
+// 実デバイスの検証結果を調べ、描画エラーを終了コードへ反映する。
 bool DirectXCommon::HasValidationErrors() const {
 	// GPU検証のメッセージを確認し、問題のあるものを検出する。
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> information;

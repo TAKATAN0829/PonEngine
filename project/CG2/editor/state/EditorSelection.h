@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IEditableWorld.h"
+#include "IWorldObjects.h"
 #include <algorithm>
 #include <unordered_set>
 
@@ -19,7 +19,7 @@ public:
 	bool DoesContain(WorldObjectId identifier) const;
 
 	// 親も選択されている子を除き、二重移動・二重複製を防ぐ。
-	std::vector<WorldObjectId> GetRoots(const IEditableWorld& scene) const;
+	std::vector<WorldObjectId> GetRoots(const IWorldObjects& objects) const;
 
 	//=============================================================================================//
 	// Setter / 単体選択・追加選択・解除
@@ -31,15 +31,15 @@ public:
 	void Clear();
 
 	// Undo・削除後は、消えたIDだけを選択一覧から除く。
-	void Prune(const IEditableWorld& scene);
+	void Prune(const IWorldObjects& objects);
 
 	//=============================================================================================//
 	// 一括複製・削除
 
 	// 一時シーンで上限を検証してから反映し、途中失敗で部分変更しない。
-	bool Duplicate(IEditableWorld& scene, std::string& error);
+	bool Duplicate(IWorldObjects& objects, std::string& error);
 
-	bool Remove(IEditableWorld& scene, std::string& error);
+	bool Remove(IWorldObjects& objects, std::string& error);
 
 private:
 

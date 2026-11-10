@@ -112,9 +112,8 @@ void PerformancePanel::Draw(bool& isVisible) {
 
 	ImGui::SetNextWindowSize({590, 650}, ImGuiCond_FirstUseEver);
 
-	if (!ImGui::Begin("Performance", &isVisible)) {
-		ImGui::End();
-
+	Window window(*this, &isVisible);
+	if (!window.IsVisible()) {
 		return;
 	}
 
@@ -128,8 +127,6 @@ void PerformancePanel::Draw(bool& isVisible) {
 
 	if (FrameProfiler::GetCount() == 0) {
 		ImGui::TextUnformatted("計測開始待ち");
-
-		ImGui::End();
 
 		return;
 	}
@@ -176,8 +173,6 @@ void PerformancePanel::Draw(bool& isVisible) {
 	}
 
 	ImGui::TextWrapped("%s", exportStatus_.c_str());
-
-	ImGui::End();
 
 #else
 	(void)isVisible;

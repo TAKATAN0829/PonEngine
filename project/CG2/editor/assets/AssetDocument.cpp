@@ -4,6 +4,7 @@
 #include "serialization/ParticleEffectFile.h"
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
@@ -73,9 +74,9 @@ namespace {
 		// 文字列全体を数値として読み取れるか確認する。
 		char* end = nullptr;
 
-		std::strtof(token.c_str(), &end);
+		const float value = std::strtof(token.c_str(), &end);
 
-		return end != token.c_str() && *end == '\0';
+		return end != token.c_str() && *end == '\0' && std::isfinite(value);
 	}
 
 	bool SkipTextureOptions(std::istringstream& input, std::string& error) {
@@ -492,11 +493,7 @@ const std::vector<AssetReference>& AssetDocument::GetReferences() const {
 
 bool AssetDocument::IsOpaque() const {
 	// FBXの内部参照を安全に解析できないことを呼出側へ伝える。
-	if (extension_ == ".fbx") {
-		return true;
-	}
-
-	return false;
+	return extension_ == ".fbx";
 }
 
 bool AssetDocument::HasChanges(const AssetPathChange& change) const {

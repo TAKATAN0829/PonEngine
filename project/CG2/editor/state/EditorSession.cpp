@@ -6,7 +6,7 @@
 
 
 // 読込後のシーンを基準に、履歴・保存状態・再生状態を初期化する。
-void EditorSession::Initialize(IEditableWorld& scene) {
+void EditorSession::Initialize(IWorldObjects& scene) {
 	// 以前の履歴を破棄する。
 	history_.clear();
 
@@ -36,7 +36,7 @@ void EditorSession::Initialize(IEditableWorld& scene) {
 
 
 // ドラッグや文字入力の途中は記録せず、完了した操作を履歴一件にまとめる。
-void EditorSession::Update(IEditableWorld& scene, bool isInteractionActive) {
+void EditorSession::Update(IWorldObjects& scene, bool isInteractionActive) {
 	// 再生中の変更は編集履歴へ入れない。
 	if (isPlaying_) {
 		return;
@@ -85,56 +85,23 @@ void EditorSession::Update(IEditableWorld& scene, bool isInteractionActive) {
 
 // 再生中の一時変更は編集履歴の対象外とし、巻き戻しを禁止する。
 bool EditorSession::CanUndo() const {
-	// 再生中は巻き戻さない。
-	if (isPlaying_) {
-		return false;
-	}
-
-	// 履歴がなければ戻れない。
-	if (history_.empty()) {
-		return false;
-	}
-
-	// 現在位置より前に履歴があるか確認する。
-	if (historyIndex_ > 0) {
-		return true;
-	}
-
-	return false;
+	return !isPlaying_ && !history_.empty() && historyIndex_ > 0;
 }
 
 // 現在位置より先に履歴が残っている場合だけ、やり直しを許可する。
 bool EditorSession::CanRedo() const {
-	// 再生中は編集履歴を進めない。
-	if (isPlaying_) {
-		return false;
-	}
-
-	// 現在位置の次に履歴が残っているか確認する。
-	if (historyIndex_ + 1 < history_.size()) {
-		return true;
-	}
-
-	return false;
+	return !isPlaying_ && historyIndex_ + 1 < history_.size();
 }
 
 // 再生中は開始前の編集状態を比較し、実行中の変更を未保存扱いにしない。
-bool EditorSession::IsDirty(const IEditableWorld& scene) const {
+bool EditorSession::IsDirty(const IWorldObjects& scene) const {
 	// 再生中は、再生開始前の配置で判定する。
 	if (isPlaying_) {
-		if (!AreScenesEqual(playSnapshot_, savedState_)) {
-			return true;
-		}
-
-		return false;
+		return !AreScenesEqual(playSnapshot_, savedState_);
 	}
 
 	// 編集中の配置と保存済みの配置を比較する。
-	if (!DoesMatchSnapshot(scene, savedState_)) {
-		return true;
-	}
-
-	return false;
+	return !DoesMatchSnapshot(scene, savedState_);
 }
 
 //=============================================================================================//
@@ -142,20 +109,12 @@ bool EditorSession::IsDirty(const IEditableWorld& scene) const {
 
 bool EditorSession::IsPlaying() const {
 	// ゲーム更新が有効な状態か返す。
-	if (isPlaying_) {
-		return true;
-	}
-
-	return false;
+	return isPlaying_;
 }
 
 bool EditorSession::IsPaused() const {
 	// 一時停止の状態を返す。
-	if (isPaused_) {
-		return true;
-	}
-
-	return false;
+	return isPaused_;
 }
 
 // ステップ要求をここで消費し、次のフレームへ持ち越さない。
@@ -166,17 +125,8 @@ bool EditorSession::ShouldSimulate() {
 	// 同じ要求で次のフレームも更新しない。
 	isStepRequested_ = false;
 
-	// 編集モードではゲームを更新しない。
-	if (!isPlaying_) {
-		return false;
-	}
-
-	// 通常再生か、一回分のステップなら更新する。
-	if (!isPaused_ || isStepRequested) {
-		return true;
-	}
-
-	return false;
+	// 再生中の通常更新、または一時停止中の一回分だけ進める。
+	return isPlaying_ && (!isPaused_ || isStepRequested);
 }
 
 //=============================================================================================//
@@ -184,7 +134,7 @@ bool EditorSession::ShouldSimulate() {
 
 
 // 保存成功時の編集データを、未保存判定の新しい基準にする。
-void EditorSession::MarkSaved(const IEditableWorld& scene) {
+void EditorSession::MarkSaved(const IWorldObjects& scene) {
 	// 再生中の一時的な配置を保存基準にしない。
 	if (!isPlaying_) {
 		savedState_ = scene.CaptureObjects();
@@ -223,7 +173,7 @@ void EditorSession::RemapAssetPaths(const AssetPathChange& change) {
 
 
 // 未確定の編集を記録してから、一つ前の設定を復元する。
-bool EditorSession::Undo(IEditableWorld& scene, std::string& error) {
+bool EditorSession::Undo(IWorldObjects& scene, std::string& error) {
 	// 前回の失敗理由を消す。
 	error.clear();
 
@@ -249,7 +199,7 @@ bool EditorSession::Undo(IEditableWorld& scene, std::string& error) {
 }
 
 // 復元に成功した場合だけ履歴位置を進め、失敗時の状態を保つ。
-bool EditorSession::Redo(IEditableWorld& scene, std::string& error) {
+bool EditorSession::Redo(IWorldObjects& scene, std::string& error) {
 	// 前回の失敗理由を消す。
 	error.clear();
 
@@ -279,7 +229,7 @@ bool EditorSession::Redo(IEditableWorld& scene, std::string& error) {
 
 
 // 復元できる有効なデータであることを確認し、編集状態を退避して再生する。
-bool EditorSession::BeginPlay(IEditableWorld& scene, std::string& error) {
+bool EditorSession::BeginPlay(IWorldObjects& scene, std::string& error) {
 	// 今回の再生要求の結果だけを返す。
 	error.clear();
 
@@ -333,7 +283,7 @@ bool EditorSession::BeginPlay(IEditableWorld& scene, std::string& error) {
 }
 
 // 退避した設定の復元に成功してから、編集モードへ戻す。
-bool EditorSession::Stop(IEditableWorld& scene, std::string& error) {
+bool EditorSession::Stop(IWorldObjects& scene, std::string& error) {
 	// 今回の停止要求の結果だけを返す。
 	error.clear();
 
@@ -386,7 +336,7 @@ void EditorSession::RequestStep() {
 
 
 // 編集がないフレームは、参照だけで履歴や保存済み設定と比較する。
-bool EditorSession::DoesMatchSnapshot(const IEditableWorld& scene, const std::vector<WorldObjectData>& snapshot) {
+bool EditorSession::DoesMatchSnapshot(const IWorldObjects& scene, const std::vector<WorldObjectData>& snapshot) {
 	// 個数が違えば設定全体も異なる。
 	if (scene.GetEditableObjectCount() != snapshot.size()) {
 		return false;

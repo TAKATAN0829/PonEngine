@@ -23,7 +23,8 @@ public:
 	// ファイル操作
 
 	bool Move(const std::filesystem::path& source, const std::filesystem::path& destination,
-		IEditableWorld& world, const std::vector<AssetReference>& liveReferences, std::string& error);
+		IWorldObjects& objects, IParticlePreviewWorld& particles, IAssetReferenceRemapper& assetReferences,
+		const std::vector<AssetReference>& liveReferences, std::string& error);
 
 	// 使用中なら拒否する。物理削除せず、resources内の非表示ゴミ箱へ移す。
 	bool MoveToTrash(const std::filesystem::path& source, const std::vector<AssetReference>& liveReferences,

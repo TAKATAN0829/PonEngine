@@ -336,14 +336,9 @@ MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1
 
 # UI操作と実GPU：ギズモ、リサイズ、描画、Particle合成・寿命変化・Soft Particlesなど
 ./tests/RunEditorGraphicsTests.ps1
-
-# 通常のWinMainから起動（構成ごとに全体を再ビルドし、90フレームで終了）
-./tests/RunEditorStartupTests.ps1 -Configuration Debug
-./tests/RunEditorStartupTests.ps1 -Configuration Development
-./tests/RunEditorStartupTests.ps1 -Configuration Release
 ```
 
-GraphicsTests / StartupTestsの実行時リソースは`generated`以下へコピーして使い、制作中のシーンやプリセットを上書きしません。GraphicsTestsはDirectX 12を使うため、実行可能なGPU環境が必要です。
+GraphicsTestsの実行時リソースは`generated`以下へコピーして使い、制作中のシーンやプリセットを上書きしません。DirectX 12を使うため、実行可能なGPU環境が必要です。
 
 ## 現在の制限
 

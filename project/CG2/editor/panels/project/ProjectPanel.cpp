@@ -102,7 +102,9 @@ void ProjectPanel::Update() {
 // 描画処理
 
 // Projectの描画単位で更新とプレビューの読込上限を管理する。
-void ProjectPanel::Draw(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
+void ProjectPanel::Draw(IWorldObjects& objects, IParticlePreviewWorld& particleWorld, IModelAssetAccess& models,
+	IAssetReferenceRemapper& assetReferences,
+	const EditorSelection& selection, EditorToolVisibility& visibility,
 	EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
 	// 一覧の更新と読込上限を管理し、ファイル操作の結果を受け取る。
 	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Project);
@@ -118,7 +120,7 @@ void ProjectPanel::Draw(IEditableWorld& scene, const EditorSelection& selection,
 
 	areFileOperationsAllowed_ = !history.IsPlaying();
 
-	DrawContents(scene, selection, visibility, history, particles, activeScenePath);
+	DrawContents(objects, particleWorld, models, assetReferences, selection, visibility, history, particles, activeScenePath);
 
 	AssetPathChange change;
 
@@ -300,11 +302,14 @@ void ProjectPanel::CacheFolders(const std::filesystem::path& directory, size_t d
 // 画面構成
 
 // Projectのパンくず・検索・フォルダツリー・Asset一覧の配置を担当する。
-void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
+void ProjectPanel::DrawContents(IWorldObjects& objects, IParticlePreviewWorld& particleWorld, IModelAssetAccess& models,
+	IAssetReferenceRemapper& assetReferences,
+	const EditorSelection& selection, EditorToolVisibility& visibility,
 	EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
 	// Projectの検索・フォルダツリー・Asset一覧を配置する。
 #ifdef USE_IMGUI
-	if (ImGui::Begin("Project",nullptr,ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+	Window window(*this, nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+	if (window.IsVisible()) {
 		const ImVec2 headerOrigin = ImGui::GetCursorScreenPos();
 
 		// 検索欄は右側に置き、幅を200ピクセルまたはパネル幅の4割までに抑える。
@@ -346,8 +351,6 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 		const float bodyHeight = (std::max)(1.0f,ImGui::GetContentRegionAvail().y-2*ImGui::GetStyle().CellPadding.y);
 
 		if (!ImGui::BeginTable("ProjectSplit",2,ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp,{0,0})) {
-			ImGui::End();
-
 			return;
 		}
 
@@ -384,7 +387,7 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 				}
 			}
 
-			DrawAsset(entry, scene, selection, visibility);
+			DrawAsset(entry, objects, models, selection, visibility);
 
 			// 表示した項目だけを数え、1行分を描いたら次の行へ移る。
 			if (++column < columns) {
@@ -409,13 +412,14 @@ void ProjectPanel::DrawContents(IEditableWorld& scene, const EditorSelection& se
 
 		ImGui::EndTable();
 	}
+	window.Close();
 
-	fileActions_.Draw(scene, history, particles, activeScenePath);
-
-	ImGui::End();
+	fileActions_.Draw(objects, particleWorld, assetReferences, history, particles, activeScenePath);
 
 #else
-	(void)scene;
+	(void)objects;
+	(void)particleWorld;
+	(void)assets;
 	(void)selection;
 	(void)visibility;
 	(void)activeScenePath;
@@ -552,7 +556,8 @@ void ProjectPanel::DrawDirectoryActions() {
 //=============================================================================================//
 // Asset操作・プレビュー
 
-void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility) {
+void ProjectPanel::DrawAsset(const AssetEntry& entry, IWorldObjects& objects, IModelAssetAccess& models,
+	const EditorSelection& selection, EditorToolVisibility& visibility) {
 	// Assetのプレビューと名前を描き、選択やドロップを処理する。
 #ifdef USE_IMGUI
 	ImGui::PushID(entry.name.c_str());
@@ -620,7 +625,7 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 	if (ImGui::BeginPopupContextItem("AssetContext")) {
 		selected_ = entry.path;
 
-		DrawAssetActions(entry, scene, selection, visibility);
+		DrawAssetActions(entry, objects, models, selection, visibility);
 
 		ImGui::EndPopup();
 	}
@@ -639,7 +644,7 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 
 	// ファイルは共通窓口に画像を頼み、フォルダには専用アイコンを描く。
 	if (!entry.isDirectory) {
-		preview = thumbnails_.GetThumbnail(entry.path, root_, entry.extension, scene, status_);
+		preview = thumbnails_.GetThumbnail(entry.path, root_, entry.extension, models, status_);
 	}
 
 	if (preview.handle != 0) {
@@ -694,14 +699,16 @@ void ProjectPanel::DrawAsset(const AssetEntry& entry, IEditableWorld& scene, con
 
 #else
 	(void)entry;
-	(void)scene;
+	(void)objects;
+	(void)models;
 	(void)selection;
 	(void)visibility;
 
 #endif
 }
 
-void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility) {
+void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IWorldObjects& objects, IModelAssetAccess& models,
+	const EditorSelection& selection, EditorToolVisibility& visibility) {
 	// Assetの種類に応じた配置・適用・読込のメニューを表示する。
 #ifdef USE_IMGUI
 	fileActions_.DrawMenu(entry.path, entry.isDirectory, areFileOperationsAllowed_);
@@ -726,7 +733,7 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 
 	if (entry.extension == ".ponprefab") {
 		if (ImGui::MenuItem("Prefabをシーンに配置")) {
-			PrefabOperations::Place(scene, relative, 0, {}, status_);
+			PrefabOperations::Place(objects, relative, 0, {}, status_);
 		}
 
 		return;
@@ -734,18 +741,18 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 
 	if (WorldObjects::IsSupportedModel(relative)) {
 		if (ImGui::MenuItem("シーンに配置")) {
-			if (scene.PrepareModel(relative, status_)) {
-				scene.AddObject(relative);
+			if (models.PrepareModel(relative, status_)) {
+				objects.AddObject(relative);
 			}
 		}
 
 		if (ImGui::MenuItem("選択中のMesh Rendererへ適用")) {
-			for (size_t objectIndex = 0; objectIndex < scene.GetEditableObjectCount(); ++objectIndex) {
-				const EditableObjectView object = scene.GetEditableObject(objectIndex);
+			for (size_t objectIndex = 0; objectIndex < objects.GetEditableObjectCount(); ++objectIndex) {
+				const EditableObjectView object = objects.GetEditableObject(objectIndex);
 
 				if (object.id == selection.GetPrimarySelectedObjectId()) {
 					if (object.type == WorldObjectType::Model || object.type == WorldObjectType::Empty) {
-						if (scene.PrepareModel(relative, status_)) {
+					if (models.PrepareModel(relative, status_)) {
 							*object.model = relative;
 
 							*object.hasMeshRenderer = true;
@@ -774,7 +781,8 @@ void ProjectPanel::DrawAssetActions(const AssetEntry& entry, IEditableWorld& sce
 
 #else
 	(void)entry;
-	(void)scene;
+	(void)objects;
+	(void)models;
 	(void)selection;
 	(void)visibility;
 

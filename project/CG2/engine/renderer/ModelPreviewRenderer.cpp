@@ -75,11 +75,7 @@ uint64_t ModelPreviewRenderer::GetTextureHandle(const std::string& path) const {
 
 bool ModelPreviewRenderer::CanCreatePreview() const {
 	// 描画先の作成数を制限して、Projectを巡回しても確保量が増え続けないようにする。
-	if (previews_.size() < kMaxPreviews) {
-		return true;
-	}
-
-	return false;
+	return previews_.size() < kMaxPreviews;
 }
 
 //=============================================================================================//

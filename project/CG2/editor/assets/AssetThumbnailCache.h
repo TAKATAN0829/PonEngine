@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 
-class IEditableWorld;
+class IModelAssetAccess;
 
 // 描画先が所有するサムネイルを借りるための情報。ハンドルが0なら代替アイコンを使う。
 struct AssetThumbnail {
@@ -36,7 +36,7 @@ public:
 
 	// 一覧で取得した小文字の拡張子を使う。未対応の形式や準備待ちの場合は空の情報を返す。
 	AssetThumbnail GetThumbnail(const std::filesystem::path& path, const std::filesystem::path& resourcesRoot,
-		const std::string& extension, IEditableWorld& scene, std::string& error);
+		const std::string& extension, IModelAssetAccess& models, std::string& error);
 
 private:
 

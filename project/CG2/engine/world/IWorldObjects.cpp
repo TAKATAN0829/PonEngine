@@ -136,11 +136,6 @@ bool IWorldObjects::GetCameraView(WorldObjectId, float, CameraView&) const {
 	return false;
 }
 
-bool IWorldObjects::GetGameCameraView(float, CameraView&) const {
-	// 既定実装はこの機能を持たないため、利用できる対象や値がないことを返す。
-	return false;
-}
-
 //=============================================================================================//
 // Getter / 一覧の保存・復元
 

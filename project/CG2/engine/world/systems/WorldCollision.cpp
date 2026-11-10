@@ -426,11 +426,7 @@ size_t WorldCollision::GetContactCount() const {
 
 bool WorldCollision::IsTouching(WorldObjectId identifier) const {
 	// 接触中のID一覧に対象が含まれるか確認する。
-	if (touching_.contains(identifier)) {
-		return true;
-	}
-
-	return false;
+	return touching_.contains(identifier);
 }
 
 bool WorldCollision::BuildWorld(const ColliderSettings& settings, const Matrix4x4& world, WorldCollider& result) {

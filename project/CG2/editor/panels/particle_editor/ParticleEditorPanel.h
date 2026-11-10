@@ -1,38 +1,41 @@
 #pragma once
 
+#include "../EditorPanel.h"
 #include "IEditableWorld.h"
 
 // 発生設定とプレビュー操作を管理する。粒子の実行データはWorldSceneが所有する。
-class ParticleEditorPanel {
+class ParticleEditorPanel : public EditorPanel {
 public:
+	ParticleEditorPanel() : EditorPanel("Particle Editor") {}
 
 	//=============================================================================================//
 	// 初期化処理
 
 	// 共通プリセットの保存基準と、パネル操作の状態を初期化する。
-	void Initialize(IEditableWorld& scene);
+	void Initialize(IWorldObjects& objects, IParticlePreviewWorld& particles);
 
 	// 共通プリセットの保存基準は保持し、Scene固有の対象と操作だけを解除する。
-	void ResetScenePreview(IEditableWorld& scene);
+	void ResetScenePreview(IWorldObjects& objects, IParticlePreviewWorld& particles);
 
 	//=============================================================================================//
 	// 更新処理
 
 	// 選択IDから編集対象と注視位置を取得する。借用参照は持ち越さない。
-	void Update(IEditableWorld& scene, bool isGamePlaying, WorldObjectId selectedId);
+	void Update(IWorldObjects& objects, IParticlePreviewWorld& particles, bool isGamePlaying, WorldObjectId selectedId);
 
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw(IEditableWorld& scene, bool isGamePlaying, WorldObjectId selectedId, bool* isOpen = nullptr);
+	void Draw(IWorldObjects& objects, IParticlePreviewWorld& particles, ITextureAssetAccess& textures,
+		bool isGamePlaying, WorldObjectId selectedId, bool* isOpen = nullptr);
 
 	// パネルを閉じたときは編集プレビューだけを終了する。
-	void StopPreview(IEditableWorld& scene, bool isGamePlaying);
+	void StopPreview(IParticlePreviewWorld& particles, bool isGamePlaying);
 
 	//=============================================================================================//
 	// Getter / 設定・注視位置
 
-	bool IsDirty(IEditableWorld& scene) const;
+	bool IsDirty(IWorldObjects& objects) const;
 
 	Vector3 GetFocusPosition() const;
 
@@ -45,7 +48,7 @@ public:
 	//=============================================================================================//
 	// 保存・注視要求
 
-	bool Save(IEditableWorld& scene); // 共通プリセットの保存。
+	bool Save(IParticlePreviewWorld& particles); // 共通プリセットの保存。
 
 	bool ConsumeFocusRequest(); // 一度だけ注視要求を取り出す。
 
@@ -63,29 +66,21 @@ private:
 		Sparks 
 	};
 
-	//=============================================================================================//
-	// Getter / 編集設定
-
-	// 返すポインタはこのフレームだけ借用する。
-	ParticleSettings* GetEditingSettings(IEditableWorld& scene) const;
-
-	ParticleEffectDocument* GetEditingDocument(IEditableWorld& scene) const;
-
-	TransformData* GetEditingTransform(IEditableWorld& scene) const;
+	ParticleEffectDocument* GetEditingDocument(IWorldObjects& objects);
 
 	//=============================================================================================//
 	// プリセット反映
 
-	void ApplyPendingAction(IEditableWorld& scene);
+	void ApplyPendingAction(IWorldObjects& objects, IParticlePreviewWorld& particles);
 
-	bool SaveEditingPreset(IEditableWorld& scene);
+	bool SaveEditingPreset(IWorldObjects& objects, IParticlePreviewWorld& particles);
 
 private:
 
 	//=============================================================================================//
 	// 編集対象
 
-	IEditableWorld* scene_ = nullptr; // シーン切替検出用。所有権は持たない。
+	IWorldObjects* sceneObjects_ = nullptr; // シーン切替検出用。所有権は持たない。
 
 	WorldObjectId targetId_ = kInvalidWorldObjectId; // 0なら共通プリセット。
 	uint64_t selectedNodeId_ = 0;

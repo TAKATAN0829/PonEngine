@@ -23,27 +23,40 @@ void Mesh::Initialize(DirectXCommon* dxCommon, MeshType meshType) {
 
 	switch (meshType) {
 	case MeshType::kSphere:
-
-		InitializeSphere();
-
+		vertexCount_ = (kSubdivision + 1) * (kSubdivision + 1);
+		indexCount_ = kSubdivision * kSubdivision * 6;
 		break;
 
 	case MeshType::kPlane:
-
-		InitializePlane();
-
-		break;
-
 	case MeshType::kSprite:
-
-		InitializeSprite();
-
+		vertexCount_ = 4;
+		indexCount_ = 6;
 		break;
 
 	case MeshType::kTriangle:
+		vertexCount_ = 3;
+		indexCount_ = 6;
+		break;
+	}
 
-		InitializeTriangle();
+	CreateVertexResource();
+	CreateIndexResource();
 
+	switch (meshType) {
+	case MeshType::kSphere:
+		CreateSphere();
+		break;
+
+	case MeshType::kPlane:
+		CreatePlane();
+		break;
+
+	case MeshType::kSprite:
+		CreateSprite();
+		break;
+
+	case MeshType::kTriangle:
+		CreateTriangle();
 		break;
 	}
 }
@@ -133,134 +146,6 @@ void Mesh::DrawRange(uint32_t firstIndex, uint32_t indexCount) {
 	FrameProfiler::RecordDraw(indexCount, 1);
 
 	commandList->DrawIndexedInstanced(indexCount, 1, firstIndex, 0, 0);
-}
-
-//=============================================================================================//
-// Sphere初期化
-
-
-void Mesh::InitializeSphere() {
-
-	//=============================================================================================//
-	// Vertex数設定
-
-	vertexCount_ = (kSubdivision + 1) * (kSubdivision + 1);
-
-	//=============================================================================================//
-	// Index数設定
-
-	indexCount_ = kSubdivision * kSubdivision * 6;
-
-	//=============================================================================================//
-	// VertexResource生成
-
-	CreateVertexResource();
-
-	//=============================================================================================//
-	// IndexResource生成
-
-	CreateIndexResource();
-
-	//=============================================================================================//
-	// Sphere生成
-
-	CreateSphere();
-}
-
-//=============================================================================================//
-// Plane初期化
-
-
-void Mesh::InitializePlane() {
-
-	//=============================================================================================//
-	// Vertex数設定
-
-	vertexCount_ = 4;
-
-	//=============================================================================================//
-	// Index数設定
-
-	indexCount_ = 6;
-
-	//=============================================================================================//
-	// VertexResource生成
-
-	CreateVertexResource();
-
-	//=============================================================================================//
-	// IndexResource生成
-
-	CreateIndexResource();
-
-	//=============================================================================================//
-	// Plane生成
-
-	CreatePlane();
-}
-
-//=============================================================================================//
-// Sprite初期化
-
-
-void Mesh::InitializeSprite() {
-
-	//=============================================================================================//
-	// Vertex数設定
-
-	vertexCount_ = 4;
-
-	//=============================================================================================//
-	// Index数設定
-
-	indexCount_ = 6;
-
-	//=============================================================================================//
-	// VertexResource生成
-
-	CreateVertexResource();
-
-	//=============================================================================================//
-	// IndexResource生成
-
-	CreateIndexResource();
-
-	//=============================================================================================//
-	// Sprite生成
-
-	CreateSprite();
-}
-
-//=============================================================================================//
-// Triangle初期化
-
-
-void Mesh::InitializeTriangle() {
-
-	//=============================================================================================//
-	// Vertex数設定
-
-	vertexCount_ = 3;
-
-	//=============================================================================================//
-	// Index数設定
-
-	indexCount_ = 6;
-
-	//=============================================================================================//
-	// VertexResource生成
-
-	CreateVertexResource();
-
-	//=============================================================================================//
-	// IndexResource生成
-
-	CreateIndexResource();
-
-	//=============================================================================================//
-	// Triangle生成
-
-	CreateTriangle();
 }
 
 //=============================================================================================//

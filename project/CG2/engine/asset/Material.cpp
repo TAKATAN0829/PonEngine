@@ -89,11 +89,7 @@ uint32_t Material::GetTextureIndex() const {
 
 bool Material::IsLightingEnabled() const {
 	// ライティングの有効状態を取得する。
-	if (materialData_->enableLighting != 0) {
-		return true;
-	}
-
-	return false;
+	return materialData_->enableLighting != 0;
 }
 
 float Material::GetShininess() const {

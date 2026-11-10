@@ -31,7 +31,7 @@ void AssetThumbnailCache::Clear() {
 // Getter / サムネイル
 
 AssetThumbnail AssetThumbnailCache::GetThumbnail(const std::filesystem::path& path, const std::filesystem::path& resourcesRoot,
-	const std::string& extension, IEditableWorld& scene, std::string& error) {
+	const std::string& extension, IModelAssetAccess& models, std::string& error) {
 	// 取得済みのサムネイルは、フレーム内の準備上限に関係なく返す。
 	const std::string key = AssetPathChange::Text(path);
 
@@ -68,7 +68,7 @@ AssetThumbnail AssetThumbnailCache::GetThumbnail(const std::filesystem::path& pa
 
 	if (isModel) {
 		// モデルはWorldが準備する128ピクセル四方の描画先を借りる。
-		thumbnail.handle = scene.GetModelPreview(relativePath, error);
+		thumbnail.handle = models.GetModelPreview(relativePath, error);
 
 		thumbnail.width = 128;
 		thumbnail.height = 128;

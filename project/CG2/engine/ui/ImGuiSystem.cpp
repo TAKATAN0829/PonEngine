@@ -75,24 +75,23 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 	ImGui::StyleColorsDark();
 
     wchar_t windowsDirectory[MAX_PATH]{};
+    const UINT directoryLength = GetWindowsDirectoryW(windowsDirectory, MAX_PATH);
+    bool fontLoaded = false;
 
-    // Windows のインストール先を取得し、ドライブ文字に依存せずフォントを探す。
-    GetWindowsDirectoryW(windowsDirectory, MAX_PATH);
+    // WindowsのFontsフォルダから日本語フォントを読み込む。
+    if (directoryLength > 0 && directoryLength < MAX_PATH) {
+        const std::filesystem::path fontPath = std::filesystem::path(windowsDirectory) / "Fonts" / "meiryo.ttc";
+        std::error_code fontError;
 
-    // OS の Fonts フォルダにあるメイリオのファイルを指定する。
-    const std::filesystem::path fontPath = std::filesystem::path(windowsDirectory) / "Fonts" / "meiryo.ttc";
+        if (std::filesystem::exists(fontPath, fontError) && !fontError) {
+            ImFontConfig fontConfiguration;
+            fontConfiguration.SizePixels = 18;
+            fontLoaded = inputOutput.Fonts->AddFontFromFileTTF(fontPath.string().c_str(), 18, &fontConfiguration) != nullptr;
+        }
+    }
 
-    std::error_code fontError;
-
-    // 日本語フォントのファイルがあるときだけ読み込み、ない環境では既定フォントを使う。
-    if (std::filesystem::exists(fontPath, fontError)) {
-        ImFontConfig fontConfiguration;
-
-        fontConfiguration.SizePixels = 18;
-
-        // ImGui にフォントファイルを読み込ませ、文字を描画するためのアトラスに登録する。
-        inputOutput.Fonts->AddFontFromFileTTF(fontPath.string().c_str(), 18, &fontConfiguration);
-    } else {
+    // OS設定やフォント読み込みに失敗した場合は既定フォントを使う。
+    if (!fontLoaded) {
         inputOutput.Fonts->AddFontDefault();
     }
 

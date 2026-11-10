@@ -110,11 +110,7 @@ void WinApp::Finalize() {
 
 bool WinApp::IsCloseRequested() const {
 	// 保存確認を待っているウィンドウ終了要求があるか確認する。
-	if (isCloseRequested_) {
-		return true;
-	}
-
-	return false;
+	return isCloseRequested_;
 }
 
 HWND WinApp::GetHwnd() const {

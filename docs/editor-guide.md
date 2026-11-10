@@ -83,12 +83,9 @@ ProjectはフォルダツリーとAssetプレビューを表示する。モデ�
 MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1 /nr:false
 ./generated/scene-file-tests/bin/SceneFileTests.exe
 ./tests/RunEditorGraphicsTests.ps1
-./tests/RunEditorStartupTests.ps1 -Configuration Debug
 ```
 
 GraphicsTestsは本番と同じソースを試験用の起動コードでビルドし、実GPUで90フレーム描画する。Scene描画先の連続リサイズ、記述子ハンドルの維持、D3D12検証エラー、パネルのドッキング、日本語字形、Particleの上限・Pause・Burst・Resetを確認する。設定ファイルはgenerated配下のコピーのみを使い、制作中のシーンやプリセットは保存しない。
-
-StartupTestsはソリューション全体を再ビルドし、本番のWinMainからGameSceneを生成して90フレーム動作させる。DevelopmentとReleaseも指定できる。クラスの定義を変えた後、古い中間ファイルや壊れたヘッダー依存記録が残っていると、新旧のクラス配置が混在して起動時にアクセス違反になる場合がある。その場合はデバッグを停止して再ビルドする。コンパイラがC1902などで失敗した後も、依存記録を再生成するため全体を再ビルドしてから確認する。
 
 ## オブジェクトの追加
 
@@ -274,7 +271,7 @@ EditorとReleaseで旧Scene 1〜12を読み込むと、以前の固定ライト3
 
 通常起動のGameSceneで再生し、GameViewを選んでEscapeを押すと、青いCubeが回転するTitleSceneへ移る。そこでEnterを押すとGameSceneへ戻る。Debug/Developmentの編集・Pause中、文字入力中、メニュー操作中はキーボードで場面を変えない。ReleaseはEditorなしで同じ遷移を行う。
 
-タイトルから始めたい場合は、Visual Studioのデバッグ設定のコマンド引数へ`--title`を指定する。起動試験は`--title --smoke-test`で90フレーム後に終了できる。場面名は中央ツールバー左側に表示する。
+タイトルから始めたい場合は、Visual Studioのデバッグ設定のコマンド引数へ`--title`を指定する。場面名は中央ツールバー左側に表示する。
 
 Editorで停止すると最初に再生した編集シーンへ戻り、配置も再生前へ復元する。再生中の場面遷移はSceneメニューのファイル読込とは別の操作で、保存先は既定のGameScene.ponsceneのまま。TitleSceneは共通の更新・描画基盤を検証する最小サンプルで、本番用タイトルUIではない。
 
