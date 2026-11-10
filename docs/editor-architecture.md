@@ -87,17 +87,6 @@ Sceneパネルは、専用レンダーターゲットの画像に選択枠とワ
 
 SceneViewMathは画面投影、レイ生成、交差判定、範囲の変換、軸上の移動量を担当し、GPUやImGuiから独立してテストする。SceneViewPanelは描画と入力だけを担当する。表示領域はSceneパネルの画像サイズに追従する。SceneRenderTargetが専用RTV/DSV/SRVを所有し、描画後にバックバッファを復元してImGuiへ画像を渡す。SRV番号はリサイズしても維持する。バックバッファもウィンドウサイズに追従する。
 
-### 検証
-
-Visual StudioのDeveloper PowerShellでリポジトリのルートから実行する。
-
-```powershell
-MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1 /nr:false
-./generated/scene-file-tests/bin/SceneFileTests.exe
-```
-
-追加・削除・複製、IDの維持と採番、モデル種類・個数の保存・復元、空のシーン、旧形式の移行、不正ファイルでのデータ保持、Undo/Redo、再生前データの復元、Pause/Stepを検証する。SceneViewMathでは画面投影とレイの一致、描画奥行の制限、平行なレイや平面モデルとの交差、負の拡縮・回転後の範囲、軸ドラッグの計算を検証する。
-
 ## レイアウト・Particle Editorの追加
 
 操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。ImGuiSystemが日本語フォントを読み込み、起動後にEditorがドッキングと配置の保存先を設定する。EditorThemeが配色と倍率を適用し、EditorLayoutが初期ドッキングを構築する。ParticleSettings・ParticleEffectDocument・各Particleファイル形式はUI・GPUに依存しない。ParticleEditorPanelは文書の編集とプレビューを扱い、共通キャンバスの表示・移動・親子接続はNodePanel、実行時のParticle適用はWorldSceneが担当する。
@@ -233,9 +222,6 @@ AssetSettingsはGPUに依存しないスロット上書きと再生設定を定�
 Editorからresources相対パスで配置するときは`PrefabOperations::Place(scene, "prefabs/Enemy.ponprefab", parentId, position, error)`を使う。Placeがパスを検証してInstantiateへ接続する。IWorldObjectsとWorldObjectsはPrefabの読込を担当せず、serializationもPrefab操作を参照しない。保存形式はScene13のまま維持する。
 
 Modelは共有する元頂点・マテリアル情報・描画範囲・ModelAnimationを所有する。Object3dはスロットごとのMaterial、再生時計、変形用Meshを個別に所有する。ModelAnimationはAssimpのノード階層・キー・ボーンと逆バインド行列を保持し、位置・回転・拡縮を補間してCPUスキニングする。頂点と法線を変形し、描画時と選択時で同じ範囲を使う。プレビューの再生時計は履歴に含めず、開始・停止時にリセットする。共有のModelの頂点は更新しない。
-
-AssetWorkflowTestsは保存・履歴・Prefabの再配置と失敗時の非変更を検証する。EditorGraphicsTestsは自作glTFで複数スロット、ボーンの移動・回転・拡縮、ループ・終端、独立した再生速度とPauseを確認する。
-
 
 ## 複数選択・表面スナップ・Prefab接続
 

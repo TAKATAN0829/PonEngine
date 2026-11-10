@@ -17,7 +17,12 @@
 // 実装内補助定義
 
 namespace {
-	enum class PlaybackIcon { Play, Stop, Pause, Step };
+	enum class PlaybackIcon { 
+		Play,
+		Stop,
+		Pause,
+		Step 
+	};
 
 	// フォントの収録文字や画像ファイルに依存しない図形アイコンを描く。
 	bool DrawPlaybackButton (const char* identifier, PlaybackIcon icon, const char* hint, bool isActive) {

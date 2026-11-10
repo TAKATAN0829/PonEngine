@@ -11,9 +11,7 @@ class IEditableWorld;
 // 描画先が所有するサムネイルを借りるための情報。ハンドルが0なら代替アイコンを使う。
 struct AssetThumbnail {
 	AssetThumbnail();
-
 	uint64_t handle;
-
 	float width;
 	float height;
 };

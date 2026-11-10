@@ -256,9 +256,8 @@ project/
       math/            行列・投影・選択用の計算
     resources/         モデル・画像・シェーダー・保存データ
   externals/           外部ライブラリ
-tests/                 CPU・UI操作・実GPU・起動の検証
 docs/                  操作と設計の詳細
-generated/             ビルド結果・テスト生成物（Git管理外）
+generated/             ビルド結果（Git管理外）
 ```
 
 オブジェクトの保存用データは`world/objects/WorldObjectData.h`にまとめ、実行・保存処理は`IWorldObjects`を窓口にします。Editorは、その操作を継承してカメラ・プレビュー操作を加えた`IEditableWorld`を使います。保存用データと実行中の状態を分け、UIはシーン所有の参照をフレームをまたいで保持しない方針です。
@@ -324,26 +323,6 @@ Editor経由の移動では、編集中の配置、保存済みScene・Prefab・
 `engine/world/runtime/WorldScene`は実際の場面を作るための共通基底です。カメラ・WorldMotion/WorldPhysics/WorldCollisionの実行、モデル・Particle描画、Asset準備・モデルプレビューを担当し、`application/GameScene`と`application/TitleScene`が各場面の初期配置や遷移先を決めます。サンプルSpriteとその設定UI、既定シーン・Particleプリセットの読込はGameSceneに残しています。
 
 `IScene::RequestSceneChange`は未初期化の次シーンを所有権付きで要求します。SceneManagerが更新中に要求を取り出し、EngineがPostDrawのGPU完了後に切り替えます。シーン遷移専用のGPU待機や、毎フレームの配置データ複製は追加していません。
-
-## 検証方法
-
-Developer PowerShellで、リポジトリのルートから実行します。
-
-```powershell
-# CPU：保存・互換性・履歴・親子関係・配置計算・物理・Particle設定など
-MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1 /nr:false
-./generated/scene-file-tests/bin/SceneFileTests.exe
-
-# UI操作と実GPU：ギズモ、リサイズ、描画、Particle合成・寿命変化・Soft Particlesなど
-./tests/RunEditorGraphicsTests.ps1
-
-# 通常のWinMainから起動（構成ごとに全体を再ビルドし、90フレームで終了）
-./tests/RunEditorStartupTests.ps1 -Configuration Debug
-./tests/RunEditorStartupTests.ps1 -Configuration Development
-./tests/RunEditorStartupTests.ps1 -Configuration Release
-```
-
-GraphicsTests / StartupTestsの実行時リソースは`generated`以下へコピーして使い、制作中のシーンやプリセットを上書きしません。GraphicsTestsはDirectX 12を使うため、実行可能なGPU環境が必要です。
 
 ## 現在の制限
 

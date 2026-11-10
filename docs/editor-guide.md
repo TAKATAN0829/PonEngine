@@ -77,18 +77,9 @@ SphereとConeは形状の半径／高さから範囲内に発生する。衝突�
 
 ProjectはフォルダツリーとAssetプレビューを表示する。モデルは右クリックからシーン配置・選択中のMesh Rendererへの適用を選び、SceneViewやHierarchyへのドラッグでも配置できる。独自のモデルはresources以下へ関連ファイルを置き、Projectの「更新」で一覧へ反映する。自動監視・再インポートは未対応。Consoleには実ログを表示し、検索・全文確認・コピーができる。永続的なログの全履歴検索には未対応。
 
-## 開発者向け検証
+## 再ビルドが必要な場合
 
-```powershell
-MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1 /nr:false
-./generated/scene-file-tests/bin/SceneFileTests.exe
-./tests/RunEditorGraphicsTests.ps1
-./tests/RunEditorStartupTests.ps1 -Configuration Debug
-```
-
-GraphicsTestsは本番と同じソースを試験用の起動コードでビルドし、実GPUで90フレーム描画する。Scene描画先の連続リサイズ、記述子ハンドルの維持、D3D12検証エラー、パネルのドッキング、日本語字形、Particleの上限・Pause・Burst・Resetを確認する。設定ファイルはgenerated配下のコピーのみを使い、制作中のシーンやプリセットは保存しない。
-
-StartupTestsはソリューション全体を再ビルドし、本番のWinMainからGameSceneを生成して90フレーム動作させる。DevelopmentとReleaseも指定できる。クラスの定義を変えた後、古い中間ファイルや壊れたヘッダー依存記録が残っていると、新旧のクラス配置が混在して起動時にアクセス違反になる場合がある。その場合はデバッグを停止して再ビルドする。コンパイラがC1902などで失敗した後も、依存記録を再生成するため全体を再ビルドしてから確認する。
+クラスの定義を変えた後、古い中間ファイルや壊れたヘッダー依存記録が残っていると、新旧のクラス配置が混在して起動時にアクセス違反になる場合がある。その場合はデバッグを停止して再ビルドする。コンパイラがC1902などで失敗した後も、依存記録を再生成するため全体を再ビルドしてから確認する。
 
 ## オブジェクトの追加
 
