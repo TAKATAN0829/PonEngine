@@ -74,12 +74,31 @@ void IEditableWorld::SetParticlePreview(const ParticlePreviewState& state) {
 	(void)state;
 }
 
+void IEditableWorld::SetParticlePreviewViewport(uint32_t, uint32_t) {
+	// Particle描画先を持たないWorldではサイズ要求を無視する。
+}
+
+uint64_t IEditableWorld::GetParticlePreviewTexture() const {
+	// 専用描画先を持たないWorldでは画像なしを返す。
+	return 0;
+}
+
+void IEditableWorld::SetParticlePreviewEffect(const ParticleEffectDocument& document) {
+	// 既定実装では値を変更せず、対応する派生クラスの処理に任せる。
+	(void)document;
+}
+
 void IEditableWorld::ResetParticlePreview() {
 	// この機能に対応する派生クラスで処理を定義する。
 }
 
 void IEditableWorld::BurstParticles() {
 	// この機能に対応する派生クラスで処理を定義する。
+}
+
+bool IEditableWorld::BurstParticleEffect(WorldObjectId) {
+	// Particle実行を持たないWorldでは発生要求を受け付けない。
+	return false;
 }
 
 //=============================================================================================//

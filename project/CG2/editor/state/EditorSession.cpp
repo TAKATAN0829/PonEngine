@@ -431,6 +431,11 @@ bool EditorSession::AreObjectsEqual(const WorldObjectData& firstObject, const Wo
 	if (!AreAnimationSettingsEqual(firstObject.animation, secondObject.animation)) {
 		return false;
 	}
+	// ParticleはEffect文書を正として比較し、旧互換設定の差でUndo履歴を増やさない。
+	if (firstObject.type != WorldObjectType::Particle &&
+		!AreParticleSettingsEqual(firstObject.particle, secondObject.particle)) {
+		return false;
+	}
 
 	// Materialの個数と、各スロットの設定を比較する。
 	if (firstObject.materials.size() != secondObject.materials.size()) {
@@ -447,7 +452,7 @@ bool EditorSession::AreObjectsEqual(const WorldObjectData& firstObject, const Wo
 	const TransformData& firstTransform = firstObject.transform;
 	const TransformData& secondTransform = secondObject.transform;
 
-	// ノード名・階層・有効状態もScene Undoと未保存差分に含める。
+	// ノード名・階層・有効状態・編集画面上の配置もScene Undoと未保存差分に含める。
 	// 識別情報・描画設定・Transformの残りの項目を比較する。
 	return firstObject.prefabSource == secondObject.prefabSource && firstObject.id == secondObject.id && firstObject.parentId == secondObject.parentId && firstObject.name == secondObject.name &&
 		firstObject.model == secondObject.model && firstObject.isActive == secondObject.isActive &&
@@ -456,7 +461,6 @@ bool EditorSession::AreObjectsEqual(const WorldObjectData& firstObject, const Wo
 		firstObject.lightRadius == secondObject.lightRadius && firstObject.lightDecay == secondObject.lightDecay &&
 		firstObject.isMainCamera == secondObject.isMainCamera && firstObject.camera.fieldOfView == secondObject.camera.fieldOfView &&
 		firstObject.camera.nearClip == secondObject.camera.nearClip && firstObject.camera.farClip == secondObject.camera.farClip &&
-		AreParticleSettingsEqual(firstObject.particle, secondObject.particle) &&
 		AreParticleEffectDocumentsEqual(firstObject.particleEffect, secondObject.particleEffect) &&
 		firstObject.isLightingEnabled == secondObject.isLightingEnabled && firstObject.shininess == secondObject.shininess &&
 		firstObject.isRootNodeMatrixUsed == secondObject.isRootNodeMatrixUsed &&

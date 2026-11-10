@@ -2,6 +2,7 @@
 
 #include "IWorldObjects.h"
 #include "ModelImportInfo.h"
+#include "settings/ParticleEffect.h"
 
 // 描画中のカメラと表示領域。Editorは描画クラスを直接参照せず、この情報で画面操作を行う。
 struct EditorViewInfo {
@@ -71,9 +72,19 @@ public:
 
 	virtual void SetParticlePreview(const ParticlePreviewState& state);
 
+	// ParticleEditor専用描画先の大きさを設定し、その画像をImGuiへ渡す。
+	virtual void SetParticlePreviewViewport(uint32_t width, uint32_t height);
+
+	virtual uint64_t GetParticlePreviewTexture() const;
+
+	virtual void SetParticlePreviewEffect(const ParticleEffectDocument& document);
+
 	virtual void ResetParticlePreview();
 
 	virtual void BurstParticles();
+
+	// 指定したParticleオブジェクトの有効なEmitterを一度発生させる。
+	virtual bool BurstParticleEffect(WorldObjectId objectId);
 
 	//=============================================================================================//
 	// Asset参照の更新

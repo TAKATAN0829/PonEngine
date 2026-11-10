@@ -101,6 +101,8 @@ void Editor::Initialize(IEditableWorld* scene, const std::string& initialPath) {
 	// 編集対象を切り替え、選択・履歴・保存確認を初期状態へ戻す。
 	scene_ = scene;
 
+	hasParticleEditorBeenOpened_ = false;
+
 	playOrigin_ = nullptr;
 
 	editParticleEditor_.reset();
@@ -282,9 +284,12 @@ void Editor::Draw(IEditableWorld* scene) {
 	HierarchyPanel::Draw(scene, selection_);
 
 	if (toolVisibility_.isParticleEditorVisible) {
+		hasParticleEditorBeenOpened_ = true;
 		particleEditor_.Draw(*scene, session_.IsPlaying(), selection_.GetPrimarySelectedObjectId(), &toolVisibility_.isParticleEditorVisible);
 	} else {
-		particleEditor_.StopPreview(*scene, session_.IsPlaying());
+		if (hasParticleEditorBeenOpened_) {
+			particleEditor_.StopPreview(*scene, session_.IsPlaying());
+		}
 	}
 
 	if (particleEditor_.ConsumeFocusRequest()) {

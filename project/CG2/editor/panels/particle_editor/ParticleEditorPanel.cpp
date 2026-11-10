@@ -39,6 +39,30 @@ namespace {
 		return selectedNode;
 	}
 
+	// 選択中のGroupを親にして、新しいEmitterまたはGroupを文書へ追加する。
+	void AddParticleNode(ParticleEffectDocument& document, uint64_t& selectedNodeId, ParticleNodeType nodeType) {
+		const uint64_t newNodeId = GetNextParticleEffectNodeId(document);
+		if (newNodeId == 0) {
+			return;
+		}
+
+		ParticleEffectNode newNode;
+		newNode.id = newNodeId;
+		newNode.type = nodeType;
+		if (nodeType == ParticleNodeType::Group) {
+			newNode.name = "Group " + std::to_string(newNodeId);
+		} else {
+			newNode.name = "Emitter " + std::to_string(newNodeId);
+		}
+
+		ParticleEffectNode* selectedGroup = FindSelectedGroup(document, selectedNodeId);
+		if (selectedGroup != nullptr) {
+			newNode.parentId = selectedGroup->id;
+		}
+		document.nodes.push_back(newNode);
+		selectedNodeId = newNodeId;
+	}
+
 	// SphereとConeで共通する半径・高さの入力欄を描く。
 	void DrawEmissionShapeSize(ParticleSettings& settings) {
 		// 「形状半径 / 高さ」数値をドラッグ編集。
@@ -60,6 +84,52 @@ namespace {
 		return const_cast<ParticleEffectNode*>(FindFirstEmitter(static_cast<const ParticleEffectDocument&>(document)));
 	}
 
+	// 選択ノードと子孫を削除し、文書に必要なEmitterを残す。
+	void DeleteParticleNode(ParticleEffectDocument& document, uint64_t& selectedNodeId) {
+		if (document.nodes.size() <= 1) {
+			return;
+		}
+		if (FindParticleNode(document, selectedNodeId) == nullptr) {
+			return;
+		}
+
+		std::vector<uint64_t> deletedNodeIds{selectedNodeId};
+		for (size_t nodeIndex = 0; nodeIndex < deletedNodeIds.size(); ++nodeIndex) {
+			for (const ParticleEffectNode& node : document.nodes) {
+				if (node.parentId == deletedNodeIds[nodeIndex]) {
+					deletedNodeIds.push_back(node.id);
+				}
+			}
+		}
+
+		std::vector<ParticleEffectNode>::iterator nodeIterator = document.nodes.begin();
+		while (nodeIterator != document.nodes.end()) {
+			bool shouldDeleteNode = false;
+			for (const uint64_t deletedNodeId : deletedNodeIds) {
+				if (nodeIterator->id == deletedNodeId) {
+					shouldDeleteNode = true;
+					break;
+				}
+			}
+			if (shouldDeleteNode) {
+				nodeIterator = document.nodes.erase(nodeIterator);
+			} else {
+				++nodeIterator;
+			}
+		}
+
+		const ParticleEffectNode* firstEmitter = FindFirstEmitter(document);
+		if (firstEmitter != nullptr) {
+			selectedNodeId = firstEmitter->id;
+			return;
+		}
+
+		ParticleEffectNode emitter;
+		emitter.id = GetNextParticleEffectNodeId(document);
+		document.nodes.push_back(emitter);
+		selectedNodeId = emitter.id;
+	}
+
 	void DrawNodeChildren(ParticleEffectDocument& document, uint64_t parentId, uint64_t& selectedNodeId, bool canEditStructure) {
 		// 親IDが一致するノードだけを描き、Groupを再帰的に展開する。
 		for (ParticleEffectNode& node : document.nodes) {
@@ -69,9 +139,13 @@ namespace {
 
 			// 項目IDを追加。
 			ImGui::PushID(static_cast<int>(node.id & 0x7fffffff));
-			const bool hasChildren = std::any_of(document.nodes.begin(), document.nodes.end(), [&node](const ParticleEffectNode& candidate) {
-				return candidate.parentId == node.id;
-			});
+			bool hasChildren = false;
+			for (const ParticleEffectNode& candidate : document.nodes) {
+				if (candidate.parentId == node.id) {
+					hasChildren = true;
+					break;
+				}
+			}
 			ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 			if (node.id == selectedNodeId) {
 				flags |= ImGuiTreeNodeFlags_Selected;
@@ -91,14 +165,26 @@ namespace {
 				// 選択状態はノードIDで保ち、vectorの再配置に影響されないようにする。
 				selectedNodeId = node.id;
 			}
-			// 横並びに配置。
-			ImGui::SameLine(ImGui::GetContentRegionAvail().x - 18);
+			// ツリー行の表示範囲を取得する。
+			const ImVec2 nodeRowMinimum = ImGui::GetItemRectMin();
+			// ツリー行の右端を取得する。
+			const ImVec2 nodeRowMaximum = ImGui::GetItemRectMax();
+			// ツリー項目と同じ行にチェックボックスを置く。
+			ImGui::SameLine();
+			// チェックボックスを文字と同じ高さにする。
+			const float checkboxSize = ImGui::GetFontSize();
+			// チェックボックス用に余白をなくす。
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
+			// 行の右端へ縦中央揃えで配置する。
+			ImGui::SetCursorScreenPos({nodeRowMaximum.x - checkboxSize, nodeRowMinimum.y + (nodeRowMaximum.y - nodeRowMinimum.y - checkboxSize) * 0.5f});
 			// 操作無効化を開始。
 			ImGui::BeginDisabled(!canEditStructure);
 			// チェック状態を編集。
 			ImGui::Checkbox("##enabled", &node.isEnabled);
 			// 操作無効化を終了。
 			ImGui::EndDisabled();
+			// チェックボックスの表示設定を戻す。
+			ImGui::PopStyleVar();
 			if (hasChildren) {
 				if (isOpen) {
 					DrawNodeChildren(document, node.id, selectedNodeId, canEditStructure);
@@ -136,36 +222,11 @@ namespace {
 		ImGui::BeginDisabled(document.nodes.size() >= kMaxParticleEffectNodes);
 		// 「+ Emitter」ボタン押下を受け取る。
 		if (ImGui::Button("+ Emitter", {-1, 0})) {
-			const uint64_t id = GetNextParticleEffectNodeId(document);
-			if (id != 0) {
-				// Groupを選んでいる場合はその子として追加する。
-				ParticleEffectNode node;
-				node.id = id;
-				node.name = "Emitter " + std::to_string(id);
-				ParticleEffectNode* selectedGroup = FindSelectedGroup(document, selectedNodeId);
-				if (selectedGroup != nullptr) {
-					node.parentId = selectedGroup->id;
-				}
-				document.nodes.push_back(node);
-				selectedNodeId = id;
-			}
+			AddParticleNode(document, selectedNodeId, ParticleNodeType::Emitter);
 		}
 		// 「+ Group」ボタン押下を受け取る。
 		if (ImGui::Button("+ Group", {-1, 0})) {
-			const uint64_t id = GetNextParticleEffectNodeId(document);
-			if (id != 0) {
-				// 新しいGroupも選択中のGroupへ入れ、階層をその場で構成できるようにする。
-				ParticleEffectNode node;
-				node.id = id;
-				node.type = ParticleNodeType::Group;
-				node.name = "Group " + std::to_string(id);
-				ParticleEffectNode* selectedGroup = FindSelectedGroup(document, selectedNodeId);
-				if (selectedGroup != nullptr) {
-					node.parentId = selectedGroup->id;
-				}
-				document.nodes.push_back(node);
-				selectedNodeId = id;
-			}
+			AddParticleNode(document, selectedNodeId, ParticleNodeType::Group);
 		}
 		// 操作無効化を終了。
 		ImGui::EndDisabled();
@@ -185,28 +246,7 @@ namespace {
 		// 選択したGroupとその子孫をまとめて削除する。
 		// 「選択ノードを削除」ボタン押下を受け取る。
 		if (ImGui::Button("選択ノードを削除", {-1, 0})) {
-			// Group削除では子孫もまとめて除き、参照切れのparentIdを残さない。
-			const uint64_t deletedId = selectedNodeId;
-			std::vector<uint64_t> deleted{deletedId};
-			for (size_t index = 0; index < deleted.size(); ++index) {
-				for (const ParticleEffectNode& node : document.nodes) {
-					if (node.parentId == deleted[index]) {
-						deleted.push_back(node.id);
-					}
-				}
-			}
-			std::erase_if(document.nodes, [&deleted](const ParticleEffectNode& node) {
-				return std::find(deleted.begin(), deleted.end(), node.id) != deleted.end();
-			});
-			if (FindFirstEmitter(document) == nullptr) {
-				// 文書には最低一つEmitterが必要なので、最後のEmitterが消えたら初期ノードを戻す。
-				ParticleEffectNode emitter;
-				emitter.id = GetNextParticleEffectNodeId(document);
-				document.nodes.push_back(emitter);
-				selectedNodeId = emitter.id;
-			} else {
-				selectedNodeId = FindFirstEmitter(document)->id;
-			}
+			DeleteParticleNode(document, selectedNodeId);
 		}
 		// 操作無効化を終了。
 		ImGui::EndDisabled();
@@ -412,10 +452,10 @@ namespace {
 		// 塗りつぶし矩形を描画。
 		drawList->AddRectFilled(curveOrigin, {curveOrigin.x + curveWidth, curveOrigin.y + 42.0f}, IM_COL32(32, 38, 48, 255), 3.0f);
 		for (size_t index = 0; index < settings.lifetimeCurve.size(); ++index) {
-			const auto& key = settings.lifetimeCurve[index];
+			const ParticleLifetimeKey& key = settings.lifetimeCurve[index];
 			const ImVec2 point{curveOrigin.x + key.time * curveWidth, curveOrigin.y + 38.0f - (std::clamp)(key.size / 4.0f, 0.0f, 1.0f) * 32.0f};
 			if (index > 0) {
-				const auto& previous = settings.lifetimeCurve[index - 1];
+				const ParticleLifetimeKey& previous = settings.lifetimeCurve[index - 1];
 				const ImVec2 previousPoint{curveOrigin.x + previous.time * curveWidth, curveOrigin.y + 38.0f - (std::clamp)(previous.size / 4.0f, 0.0f, 1.0f) * 32.0f};
 				// 線を描画。
 				drawList->AddLine(previousPoint, point, IM_COL32(92, 190, 255, 255), 2.0f);
@@ -426,7 +466,7 @@ namespace {
 		// 空白領域を確保。
 		ImGui::Dummy({curveWidth, 44.0f});
 		for (size_t index = 0; index < settings.lifetimeCurve.size(); ++index) {
-			auto& key = settings.lifetimeCurve[index];
+			ParticleLifetimeKey& key = settings.lifetimeCurve[index];
 			// 項目IDを追加。
 			ImGui::PushID(static_cast<int>(index));
 			// 「Key %zu」テキストを表示。
@@ -499,18 +539,32 @@ void ParticleEditorPanel::Initialize(IEditableWorld& scene) {
 	scene_ = &scene;
 
 	if (scene.GetParticleSettings() != nullptr) {
-		savedSettings_ = *scene.GetParticleSettings();
-		commonDocument_ = MakeParticleEffectDocument(savedSettings_, "Default");
+		ParticleSettings* sharedSettings = scene.GetParticleSettings();
+		savedSettings_ = *sharedSettings;
+		std::string loadError;
+		if (!ParticleEffectFile::Load(commonDocument_, ParticleEffectFile::kDefaultPath, loadError)) {
+			commonDocument_ = MakeParticleEffectDocument(savedSettings_, "Default");
+		}
+		ParticleEffectNode* firstEmitter = FindFirstEmitter(commonDocument_);
+		if (firstEmitter != nullptr) {
+			*sharedSettings = firstEmitter->emitter;
+			savedSettings_ = firstEmitter->emitter;
+		}
 		savedDocument_ = commonDocument_;
 	}
 
 	preview_ = {};
+	preview_.isEnabled = true;
+	preview_.shouldIsolateParticles = false;
 
 	targetId_ = kInvalidWorldObjectId;
 	selectedNodeId_ = 0;
 	if (!commonDocument_.nodes.empty()) {
 		selectedNodeId_ = commonDocument_.nodes.front().id;
 	}
+
+	scene.SetParticlePreviewEffect(commonDocument_);
+	scene.SetParticlePreview(preview_);
 
 	focusPosition_ = {};
 
@@ -540,6 +594,7 @@ void ParticleEditorPanel::ResetScenePreview(IEditableWorld& scene) {
 	isFocusRequested_ = false;
 
 	scene.SetParticlePreview(preview_);
+	scene.SetParticlePreviewViewport(0, 0);
 
 	scene.ResetParticlePreview();
 }
@@ -583,6 +638,18 @@ void ParticleEditorPanel::Update(IEditableWorld& scene, bool isGamePlaying, Worl
 
 	preview_.targetObject = targetId_;
 
+	if (targetId_ == kInvalidWorldObjectId) {
+		ParticleSettings* sharedSettings = scene.GetParticleSettings();
+		ParticleEffectNode* firstEmitter = FindFirstEmitter(commonDocument_);
+		if (sharedSettings != nullptr && firstEmitter != nullptr) {
+			const bool isDocumentSettingsUnchanged = AreParticleSettingsEqual(firstEmitter->emitter, savedSettings_);
+			const bool areSharedSettingsChanged = !AreParticleSettingsEqual(*sharedSettings, savedSettings_);
+			if (isDocumentSettingsUnchanged && areSharedSettingsChanged) {
+				firstEmitter->emitter = *sharedSettings;
+			}
+		}
+	}
+
 	ParticleEffectDocument* document = GetEditingDocument(scene);
 	if (document != nullptr) {
 		ParticleEffectNode* selectedNode = FindParticleNode(*document, selectedNodeId_);
@@ -623,6 +690,8 @@ void ParticleEditorPanel::Update(IEditableWorld& scene, bool isGamePlaying, Worl
 			}
 		}
 	}
+
+	preview_.cameraTarget = focusPosition_;
 }
 
 //=============================================================================================//
@@ -638,25 +707,171 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 	// 次のウィンドウサイズを設定。
 	ImGui::SetNextWindowSize({900, 650}, ImGuiCond_FirstUseEver);
 	// 「Particle Editor」ウィンドウを開始。
-	if (ImGui::Begin("Particle Editor", isOpen)) {
+	const bool isWindowVisible = ImGui::Begin("Particle Editor", isOpen);
+	if (isWindowVisible) {
 		if (document == nullptr) {
 			// 「このシーンにはParticleがありません。」テキストを表示。
 			ImGui::TextUnformatted("このシーンにはParticleがありません。");
 		} else {
-			// 「ParticleNodeTree」子領域を開始。
-			ImGui::BeginChild("ParticleNodeTree", {220, 0}, ImGuiChildFlags_Borders);
-			// 左側は構造、右側は選択ノードの設定に分けて、Emitter数が増えても操作を保つ。
-			bool canEditParticleStructure = targetId_ != kInvalidWorldObjectId;
+			// ノード編集領域を開始。
+			ImGui::BeginChild("ParticleNodeEditor", {420, 0}, ImGuiChildFlags_Borders);
+			// 共通プリセットとParticle文書のどちらも、停止中は構造を編集できる。
+			bool canEditParticleStructure = true;
 			if (isGamePlaying) {
 				canEditParticleStructure = false;
 			}
-			DrawNodeTree(*document, selectedNodeId_, canEditParticleStructure);
+			// GraphとStructureの表示を切り替える。
+			// ノード編集タブを開始する。
+			if (ImGui::BeginTabBar("ParticleNodeEditorTabs")) {
+				// ノードの配置と選択を行うタブを開始する。
+				if (ImGui::BeginTabItem("ノード配置")) {
+					bool canAddNode = true;
+					if (isGamePlaying) {
+						canAddNode = false;
+					}
+					if (document->nodes.size() >= kMaxParticleEffectNodes) {
+						canAddNode = false;
+					}
+					// 再生中またはノード上限では追加操作を無効にする。
+					ImGui::BeginDisabled(!canAddNode);
+					// Emitter追加ボタンを表示する。
+					if (ImGui::Button("+ Emitter")) {
+						AddParticleNode(*document, selectedNodeId_, ParticleNodeType::Emitter);
+					}
+					// Groupボタンを同じ行へ配置する。
+					ImGui::SameLine();
+					// Group追加ボタンを表示する。
+					if (ImGui::Button("+ Group")) {
+						AddParticleNode(*document, selectedNodeId_, ParticleNodeType::Group);
+					}
+					// 追加操作の無効化を終了する。
+					ImGui::EndDisabled();
+					// 削除可能かを条件ごとに確認する。
+					bool canDeleteNode = true;
+					if (isGamePlaying) {
+						canDeleteNode = false;
+					}
+					if (document->nodes.size() <= 1) {
+						canDeleteNode = false;
+					}
+					if (FindParticleNode(*document, selectedNodeId_) == nullptr) {
+						canDeleteNode = false;
+					}
+					// 削除ボタンを同じ行へ配置する。
+					ImGui::SameLine();
+					// 削除できないときはボタンを無効にする。
+					ImGui::BeginDisabled(!canDeleteNode);
+					// 選択ノード削除ボタンを表示する。
+					if (ImGui::Button("選択ノードを削除")) {
+						DeleteParticleNode(*document, selectedNodeId_);
+					}
+					// 削除ボタンの無効化を終了する。
+					ImGui::EndDisabled();
+					// 自動整列できる配置があるか確認する。
+					bool hasSavedNodePositions = false;
+					for (const ParticleEffectNode& node : document->nodes) {
+						if (node.hasEditorPosition) {
+							hasSavedNodePositions = true;
+							break;
+						}
+					}
+					// 実行中または配置未変更なら自動整列を無効にする。
+					bool canResetNodeLayout = hasSavedNodePositions;
+					if (isGamePlaying) {
+						canResetNodeLayout = false;
+					}
+					// 自動整列ボタンを同じ行へ配置する。
+					ImGui::SameLine();
+					// 自動整列できないときはボタンを無効にする。
+					ImGui::BeginDisabled(!canResetNodeLayout);
+					// ノード配置を自動レイアウトへ戻す。
+					if (ImGui::Button("自動整列")) {
+						for (ParticleEffectNode& node : document->nodes) {
+							node.editorPosition = {};
+							node.hasEditorPosition = false;
+						}
+						ResetNodeCanvasView(static_cast<uint64_t>(targetId_));
+					}
+					// 自動整列ボタンの無効化を終了する。
+					ImGui::EndDisabled();
+					// キャンバスの基本操作を案内する。
+					ImGui::TextWrapped("ノードをクリックして選択、ドラッグして配置します。カード下部の有効・無効をクリックして切り替えます。Group右端の丸から子ノードへドラッグすると接続できます。子ノード左端の丸を空白へドラッグすると接続を外せます。Group選択中に追加したノードも子になります。中ボタンドラッグで画面移動、ホイールで拡大・縮小。設定は右側に表示されます。");
+					// 操作説明とキャンバスを区切る。
+					ImGui::Separator();
+					std::vector<NodePanelNode> canvasNodes;
+					for (const ParticleEffectNode& node : document->nodes) {
+						std::string nodeCategory = "発生器 (Emitter)";
+						if (node.type == ParticleNodeType::Group) {
+							nodeCategory = "グループ (Group)";
+						}
+						const bool canHaveChildren = node.type == ParticleNodeType::Group;
+						canvasNodes.emplace_back(node.id, node.parentId, nodeCategory, node.name, node.isEnabled, canHaveChildren,
+							node.editorPosition, node.hasEditorPosition);
+					}
+					DrawNodeCanvas(static_cast<uint64_t>(targetId_), canvasNodes, selectedNodeId_, isGamePlaying);
+					for (size_t nodeIndex = 0; nodeIndex < document->nodes.size(); ++nodeIndex) {
+						document->nodes[nodeIndex].parentId = canvasNodes[nodeIndex].parentId;
+						document->nodes[nodeIndex].isEnabled = canvasNodes[nodeIndex].isEnabled;
+						document->nodes[nodeIndex].editorPosition = canvasNodes[nodeIndex].position;
+						document->nodes[nodeIndex].hasEditorPosition = canvasNodes[nodeIndex].hasPosition;
+					}
+					// タブを終了。
+					ImGui::EndTabItem();
+				}
+				// ノードの追加と階層操作を行うタブを開始する。
+				if (ImGui::BeginTabItem("構造・追加")) {
+					// 追加・削除とGroupの親子関係を案内する。
+					ImGui::TextWrapped("EmitterやGroupを追加・削除し、有効状態を切り替えます。Groupを選んで追加すると、その子ノードになります。");
+					// 操作説明と構造一覧を区切る。
+					ImGui::Separator();
+					DrawNodeTree(*document, selectedNodeId_, canEditParticleStructure);
+					// タブを終了。
+					ImGui::EndTabItem();
+				}
+				// タブ一覧を終了。
+				ImGui::EndTabBar();
+			}
 			// 子領域を終了。
 			ImGui::EndChild();
 			// 横並びに配置。
 			ImGui::SameLine();
 			// 「ParticleNodeInspector」子領域を開始。
 			ImGui::BeginChild("ParticleNodeInspector", {0, 0}, ImGuiChildFlags_Borders);
+			// Sceneとは独立したParticle専用の表示領域を作る。
+			ImGui::BeginChild("ParticlePreviewViewport", {0, 300}, ImGuiChildFlags_Borders);
+			// プレビュー領域の見出しを表示。
+			ImGui::TextUnformatted("プレビュー");
+			// 画像に使える表示幅と高さを取得。
+			ImVec2 previewImageSize = ImGui::GetContentRegionAvail();
+			// 十分な領域がある場合だけ描画先を用意。
+			if (previewImageSize.x >= 64 && previewImageSize.y >= 64) {
+				// 描画先の大きさをGPU上限までに制限。
+				const float longestSide = (std::max)(previewImageSize.x, previewImageSize.y);
+				float renderScale = 1.0f;
+				if (longestSide > 2048.0f) {
+					renderScale = 2048.0f / longestSide;
+				}
+				const uint32_t previewWidth = static_cast<uint32_t>(previewImageSize.x * renderScale);
+				const uint32_t previewHeight = static_cast<uint32_t>(previewImageSize.y * renderScale);
+				// 表示領域に合うParticle専用画像を要求。
+				scene.SetParticlePreviewViewport(previewWidth, previewHeight);
+				// Sceneから専用画像のハンドルを取得。
+				const uint64_t previewTexture = scene.GetParticlePreviewTexture();
+				// 描画先が用意できたら画像を表示。
+				if (previewTexture != 0) {
+					ImGui::Image(ImTextureRef(static_cast<ImTextureID>(previewTexture)),
+						{static_cast<float>(previewWidth), static_cast<float>(previewHeight)});
+				}
+			} else {
+				// 領域を縮める間はPreview描画を止める。
+				scene.SetParticlePreviewViewport(0, 0);
+				// 必要な表示領域を案内。
+				ImGui::TextDisabled("プレビュー領域を広げてください。");
+			}
+			// プレビュー領域を終了。
+			ImGui::EndChild();
+			// Inspector設定と区切る。
+			ImGui::Separator();
 			// 選択ノードに対応するEmitter設定とTransformをInspectorへ渡す。
 			ParticleEffectNode* selectedNode = FindParticleNode(*document, selectedNodeId_);
 			ParticleSettings* settings = nullptr;
@@ -729,7 +944,7 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 			}
 
 			// 折り返しテキストを表示。
-			ImGui::TextWrapped("Scene内でプレビューします。ゲーム停止中にも調整できます。");
+			ImGui::TextWrapped("Sceneと専用プレビューの両方に表示します。ゲーム停止中に調整できます。");
 
 			// ゲーム再生中の粒子には、Editorからプレビュー操作を送らない。
 			// 操作無効化を開始。
@@ -794,8 +1009,12 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 			ImGui::EndDisabled();
 			// 操作無効化を終了。
 			ImGui::EndDisabled();
+			// Scene上へParticleを表示しない場合は分離表示を無効にする。
+			ImGui::BeginDisabled(isGamePlaying);
 			// 「Particleだけを表示」チェック状態を編集。
 			ImGui::Checkbox("Particleだけを表示", &preview_.shouldIsolateParticles);
+			// 分離表示の操作を終了。
+			ImGui::EndDisabled();
 			// 「発生位置へカメラを移動」ボタン押下を受け取る。
 			if (ImGui::Button("発生位置へカメラを移動")) {
 				isFocusRequested_ = true;
@@ -809,9 +1028,6 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 			}
 
 			size_t particleLimit = emitterCount * 100;
-			if (targetId_ == kInvalidWorldObjectId) {
-				particleLimit = 100;
-			}
 			// 「粒子数: %zu / %zu」テキストを表示。
 			ImGui::Text("粒子数: %zu / %zu", scene.GetParticleCount(), particleLimit);
 			// 区切り線を表示。
@@ -969,9 +1185,12 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 
 	// ウィンドウを終了。
 	ImGui::End();
+	if (!isWindowVisible) {
+		scene.SetParticlePreviewViewport(0, 0);
+	}
 
 	if (targetId_ == kInvalidWorldObjectId) {
-		// 共通プリセットの編集結果を、既存の単一Emitterプレビュー経路へ反映する。
+		// 共通プリセットの編集結果を、共通Particle設定へ反映する。
 		const ParticleEffectNode* emitter = FindFirstEmitter(commonDocument_);
 		ParticleSettings* sharedSettings = scene.GetParticleSettings();
 		if (emitter != nullptr) {
@@ -979,6 +1198,14 @@ void ParticleEditorPanel::Draw(IEditableWorld& scene, bool isGamePlaying, WorldO
 				*sharedSettings = emitter->emitter;
 			}
 		}
+		scene.SetParticlePreviewEffect(commonDocument_);
+	} else {
+		// シーンParticleを選択中は、共通Effectのプレビューを切り離す。
+		const ParticleEffectDocument emptyDocument;
+		scene.SetParticlePreviewEffect(emptyDocument);
+	}
+	if (document == nullptr) {
+		scene.SetParticlePreviewViewport(0, 0);
 	}
 
 #else
@@ -1005,6 +1232,10 @@ void ParticleEditorPanel::StopPreview(IEditableWorld& scene, bool isGamePlaying)
 	}
 
 	scene.SetParticlePreview(preview_);
+	scene.SetParticlePreviewViewport(0, 0);
+
+	const ParticleEffectDocument emptyDocument;
+	scene.SetParticlePreviewEffect(emptyDocument);
 }
 
 //=============================================================================================//
@@ -1012,10 +1243,17 @@ void ParticleEditorPanel::StopPreview(IEditableWorld& scene, bool isGamePlaying)
 
 // 実行中の粒子数ではなく、保存対象の設定だけで未保存状態を判定する。
 bool ParticleEditorPanel::IsDirty(IEditableWorld& scene) const {
-	// 共通Effect文書全体を保存基準と比較し、ノード変更も検出する。
+	// Effect文書の変更と、旧API経由の共通設定変更を検出する。
 
 	if (scene_ != &scene) {
 		return false;
+	}
+
+	const ParticleSettings* sharedSettings = scene.GetParticleSettings();
+	if (sharedSettings != nullptr) {
+		if (!AreParticleSettingsEqual(*sharedSettings, savedSettings_)) {
+			return true;
+		}
 	}
 
 	return !AreParticleEffectDocumentsEqual(commonDocument_, savedDocument_);
@@ -1050,8 +1288,18 @@ void ParticleEditorPanel::RemapAssetPaths(const AssetPathChange& change) {
 // 保存成功時だけ比較基準を更新し、失敗した設定を保存済み扱いにしない。
 bool ParticleEditorPanel::Save(IEditableWorld& scene) {
 	// プリセットの保存に成功した場合だけ、未保存判定の基準を更新する。
-	if (scene.GetParticleSettings() == nullptr) {
+	ParticleSettings* sharedSettings = scene.GetParticleSettings();
+	if (sharedSettings == nullptr) {
 		return true;
+	}
+
+	ParticleEffectNode* firstEmitter = FindFirstEmitter(commonDocument_);
+	if (firstEmitter != nullptr) {
+		const bool isDocumentSettingsUnchanged = AreParticleSettingsEqual(firstEmitter->emitter, savedSettings_);
+		const bool areSharedSettingsChanged = !AreParticleSettingsEqual(*sharedSettings, savedSettings_);
+		if (isDocumentSettingsUnchanged && areSharedSettingsChanged) {
+			firstEmitter->emitter = *sharedSettings;
+		}
 	}
 
 	commonDocument_.name = std::filesystem::path(ParticleEffectFile::kDefaultPath).stem().string();
@@ -1142,44 +1390,47 @@ TransformData* ParticleEditorPanel::GetEditingTransform(IEditableWorld& scene) c
 void ParticleEditorPanel::ApplyPendingAction(IEditableWorld& scene) {
 	ParticleSettings* settings = GetEditingSettings(scene);
 	ParticleEffectDocument* document = GetEditingDocument(scene);
-
-	if (settings == nullptr) {
-		return;
-	}
-
 	if (document == nullptr) {
 		return;
 	}
 
 	if (pendingAction_ == PresetAction::Load) {
-		if (targetId_ == kInvalidWorldObjectId) {
-			if (ParticleEffectFile::LoadSingleEmitter(*settings, ParticleEffectFile::kDefaultPath, status_)) {
-				commonDocument_ = MakeParticleEffectDocument(*settings, "Default");
-				savedSettings_ = *settings;
+		ParticleEffectDocument loaded;
+		if (ParticleEffectFile::Load(loaded, ParticleEffectFile::kDefaultPath, status_)) {
+			*document = std::move(loaded);
+			const ParticleEffectNode* firstEmitter = FindFirstEmitter(*document);
+			selectedNodeId_ = 0;
+			if (firstEmitter != nullptr) {
+				selectedNodeId_ = firstEmitter->id;
+			}
+			if (targetId_ == kInvalidWorldObjectId) {
 				savedDocument_ = commonDocument_;
-				status_ = "プリセットを読み込みました。";
-				scene.ResetParticlePreview();
-			}
-		} else {
-			ParticleEffectDocument loaded;
-			if (ParticleEffectFile::Load(loaded, ParticleEffectFile::kDefaultPath, status_)) {
-				*document = std::move(loaded);
-				const ParticleEffectNode* firstEmitter = FindFirstEmitter(*document);
-				selectedNodeId_ = 0;
 				if (firstEmitter != nullptr) {
-					selectedNodeId_ = firstEmitter->id;
+					savedSettings_ = firstEmitter->emitter;
 				}
+				status_ = "共通Effect文書を読み込みました。";
+			} else {
 				status_ = "エフェクト文書を読み込みました。";
-				scene.ResetParticlePreview();
 			}
+			scene.ResetParticlePreview();
 		}
 	} else if (pendingAction_ == PresetAction::Defaults) {
+		if (settings == nullptr) {
+			pendingAction_ = PresetAction::None;
+			return;
+		}
+
 		*settings = ParticleSettings{};
 
 		scene.ResetParticlePreview();
 
 		status_ = "既定値に戻しました。保存すると次回も使用できます。";
 	} else {
+		if (settings == nullptr) {
+			pendingAction_ = PresetAction::None;
+			return;
+		}
+
 		ParticlePresetKind kind = ParticlePresetKind::Fire;
 
 		if (pendingAction_ == PresetAction::Smoke) {

@@ -64,6 +64,8 @@ void WorldScene::Initialize(const SceneContext& context) {
 
 	particle_->SetTexture("resources/circle.png");
 
+	commonParticleEffect_ = MakeParticleEffectDocument(particleSettings_);
+
 }
 
 //=============================================================================================//
@@ -176,6 +178,14 @@ void WorldScene::Finalize() {
 
 	// シーン切替はGPUの完了後に行われるため、ここでサムネイルの描画先を解放できる。
 	modelPreviewRenderer_.Finalize();
+	if (isParticleEditorPreviewTargetInitialized_) {
+		particleEditorPreviewTarget_.Finalize();
+		isParticleEditorPreviewTargetInitialized_ = false;
+	}
+	for (RuntimeParticleEmitter& emitter : particleEditorPreviewEmitters_) {
+		emitter.particle->Finalize();
+	}
+	particleEditorPreviewEmitters_.clear();
 
 	//=============================================================================================//
 	// Particle解放
@@ -578,6 +588,16 @@ void WorldScene::RemapAssetPaths(const AssetPathChange& change) {
 	WorldObjects::RemapAssetPaths(change);
 
 	particleSettings_.texture = change.RemapResource(particleSettings_.texture);
+	for (ParticleEffectNode& node : commonParticleEffect_.nodes) {
+		if (node.type == ParticleNodeType::Emitter) {
+			node.emitter.texture = change.RemapResource(node.emitter.texture);
+		}
+	}
+	for (ParticleEffectNode& node : particlePreviewEffect_.nodes) {
+		if (node.type == ParticleNodeType::Emitter) {
+			node.emitter.texture = change.RemapResource(node.emitter.texture);
+		}
+	}
 
 	for (std::pair<const WorldObjectId, RuntimeObject>& entry : runtimeObjects_) {
 		entry.second.model = change.RemapRelative(entry.second.model);
@@ -657,7 +677,9 @@ ParticleSettings* WorldScene::GetParticleSettings() {
 // 表示上限だけではなく、実際に管理している粒子数をEditorへ通知する。
 size_t WorldScene::GetParticleCount() const {
 	// 現在生存しているParticleの合計数を取得する。
-	if (particlePreview_.targetObject != kInvalidWorldObjectId) {
+	if (particlePreview_.targetObject != kInvalidWorldObjectId ||
+		runtimeParticles_.contains(kInvalidWorldObjectId) ||
+		(IsParticlePreviewTarget(kInvalidWorldObjectId) && !particlePreviewEffect_.nodes.empty())) {
 		const std::unordered_map<WorldObjectId, std::vector<RuntimeParticleEmitter>>::const_iterator emitter = runtimeParticles_.find(particlePreview_.targetObject);
 
 		if (emitter != runtimeParticles_.end()) {
@@ -683,9 +705,43 @@ void WorldScene::SetParticlePreview(const ParticlePreviewState& state) {
 	particlePreview_ = state;
 }
 
+void WorldScene::SetParticlePreviewViewport(uint32_t width, uint32_t height) {
+	// 表示中のParticleEditorにだけ専用描画先を確保し、閉じたら描画を止める。
+	particleEditorPreviewWidth_ = width;
+	particleEditorPreviewHeight_ = height;
+	if (width == 0 || height == 0) {
+		return;
+	}
+
+	if (!isParticleEditorPreviewTargetInitialized_) {
+		particleEditorPreviewTarget_.Initialize(object3dCommon_->GetDxCommon(), object3dCommon_->GetSrvManager());
+		isParticleEditorPreviewTargetInitialized_ = true;
+	}
+
+	particleEditorPreviewTarget_.Resize(width, height);
+}
+
+uint64_t WorldScene::GetParticlePreviewTexture() const {
+	// まだPreview領域が要求されていない場合は、空ハンドルを返す。
+	if (!isParticleEditorPreviewTargetInitialized_) {
+		return 0;
+	}
+	return particleEditorPreviewTarget_.GetTextureHandle();
+}
+
+void WorldScene::SetParticlePreviewEffect(const ParticleEffectDocument& document) {
+	// 共通プリセットのEffect文書をSceneの再生処理へ渡す。
+	if (!AreParticleEffectDocumentsEqual(particlePreviewEffect_, document)) {
+		particlePreviewEffect_ = document;
+	}
+}
+
 // プレビューの再開や設定読込時は、古い粒子を残さず作り直す。
 void WorldScene::ResetParticlePreview() {
 	// 生存中の粒子と発生タイマーを初期状態へ戻す。
+	isParticleBurstRequested_ = false;
+	pendingParticleBurstCounts_.clear();
+
 	particle_->ResetSimulation();
 
 	for (std::pair<const WorldObjectId, std::vector<RuntimeParticleEmitter>>& entry : runtimeParticles_) {
@@ -693,11 +749,28 @@ void WorldScene::ResetParticlePreview() {
 			emitter.particle->ResetSimulation();
 		}
 	}
+	for (RuntimeParticleEmitter& emitter : particleEditorPreviewEmitters_) {
+		emitter.particle->ResetSimulation();
+	}
 }
 
 void WorldScene::BurstParticles() {
 	// 次回の更新で一度だけ粒子を発生させる要求を立てる。
 	isParticleBurstRequested_ = true;
+}
+
+bool WorldScene::BurstParticleEffect(WorldObjectId objectId) {
+	// 有効なParticleオブジェクトだけを対象にし、同Frame内の複数要求も数える。
+	const WorldObjectData* object = GetObjectDataById(objectId);
+	if (object == nullptr || object->type != WorldObjectType::Particle || !IsObjectActive(objectId)) {
+		return false;
+	}
+
+	uint32_t& burstCount = pendingParticleBurstCounts_[objectId];
+	if (burstCount < (std::numeric_limits<uint32_t>::max)()) {
+		++burstCount;
+	}
+	return true;
 }
 
 // 再生開始・停止時に粒子と発生タイマーを消し、毎回同じ状態から確認できるようにする。
@@ -791,6 +864,33 @@ bool WorldScene::IsPlaying() const {
 void WorldScene::SetCommonParticleEmission(bool isEnabled) {
 	// 共通Emitterの連続発生の可否を切り替える。
 	isCommonParticleEmissionEnabled_ = isEnabled;
+}
+
+void WorldScene::SetCommonParticleEffect(const ParticleEffectDocument* document) {
+	// 不正なEffectで実行時のEmitterを壊さず、有効な文書だけを取り込む。
+	if (document == nullptr || !IsParticleEffectDocumentValid(*document)) {
+		return;
+	}
+	if (AreParticleEffectDocumentsEqual(commonParticleEffect_, *document)) {
+		return;
+	}
+
+	std::unordered_map<WorldObjectId, std::vector<RuntimeParticleEmitter>>::iterator runtime = runtimeParticles_.find(kInvalidWorldObjectId);
+	if (runtime != runtimeParticles_.end()) {
+		for (RuntimeParticleEmitter& emitter : runtime->second) {
+			emitter.particle->Finalize();
+		}
+		runtimeParticles_.erase(runtime);
+	}
+
+	commonParticleEffect_ = *document;
+	for (const ParticleEffectNode& node : commonParticleEffect_.nodes) {
+		if (node.type == ParticleNodeType::Emitter) {
+			particleSettings_ = node.emitter;
+			break;
+		}
+	}
+	particle_->ResetSimulation();
 }
 
 //=============================================================================================//
@@ -896,6 +996,74 @@ void WorldScene::UpdateObject() {
 
 		UpdateParticles(viewProjection, cameraMatrix);
 	}
+
+	DrawParticleEditorPreview();
+}
+
+void WorldScene::DrawParticleEditorPreview() {
+	// 編集用の小窓が要求されているときだけ、独立したParticle実行状態を描く。
+	if (!isParticleEditorPreviewTargetInitialized_ || particleEditorPreviewWidth_ == 0 ||
+		particleEditorPreviewHeight_ == 0) {
+		return;
+	}
+
+	particleEditorPreviewTarget_.Begin();
+	particleRenderer_->BeginPass();
+	if (!isPlaying_ && particlePreview_.isEnabled) {
+		for (RuntimeParticleEmitter& emitter : particleEditorPreviewEmitters_) {
+			emitter.particle->Draw();
+		}
+	}
+	particleRenderer_->EndPass();
+	particleEditorPreviewTarget_.End();
+}
+
+void WorldScene::UpdateParticleEditorPreview() {
+	// Scene用とは別のEmitterを専用カメラで更新し、両方の画像を同時に保つ。
+	if (!isParticleEditorPreviewTargetInitialized_ || particleEditorPreviewWidth_ == 0 ||
+		particleEditorPreviewHeight_ == 0 || isPlaying_) {
+		return;
+	}
+
+	const Matrix4x4 cameraWorld = MathUtility::MakeAffineMatrix(
+		{1, 1, 1}, {}, {particlePreview_.cameraTarget.x, particlePreview_.cameraTarget.y, particlePreview_.cameraTarget.z - 10.0f});
+	const Matrix4x4 view = MathUtility::Inverse(cameraWorld);
+	const float aspectRatio = static_cast<float>(particleEditorPreviewWidth_) / static_cast<float>(particleEditorPreviewHeight_);
+	const Matrix4x4 projection = MathUtility::MakePerspectiveFovMatrix(0.785398163f, aspectRatio, 0.1f, 100.0f);
+	const Matrix4x4 previewViewProjection = MathUtility::Multiply(view, projection);
+	const Matrix4x4 identity = MathUtility::MakeIdentity4x4();
+
+	if (!particlePreview_.isEnabled) {
+		for (RuntimeParticleEmitter& emitter : particleEditorPreviewEmitters_) {
+			emitter.particle->ResetSimulation();
+		}
+		return;
+	}
+
+	if (particlePreview_.targetObject == kInvalidWorldObjectId) {
+		if (!particlePreviewEffect_.nodes.empty()) {
+			UpdateParticleEffect(particlePreviewEffect_, kInvalidWorldObjectId, identity,
+				particleEditorPreviewEmitters_, previewViewProjection, cameraWorld);
+		}
+		return;
+	}
+
+	const WorldObjectData* target = GetObjectDataById(particlePreview_.targetObject);
+	if (target == nullptr || target->type != WorldObjectType::Particle || !IsObjectActive(target->id)) {
+		for (RuntimeParticleEmitter& emitter : particleEditorPreviewEmitters_) {
+			emitter.particle->Finalize();
+		}
+		particleEditorPreviewEmitters_.clear();
+		return;
+	}
+
+	Matrix4x4 objectWorldMatrix{};
+	if (!GetObjectWorldMatrix(target->id, objectWorldMatrix)) {
+		return;
+	}
+
+	UpdateParticleEffect(target->particleEffect, target->id, objectWorldMatrix,
+		particleEditorPreviewEmitters_, previewViewProjection, cameraWorld);
 }
 
 void WorldScene::UpdateModels(const Matrix4x4& viewProjection) {
@@ -993,8 +1161,28 @@ void WorldScene::UpdateParticles(const Matrix4x4& viewProjection, const Matrix4x
 
 		particleIds.insert(data.id);
 
-		UpdateEmitter(data, viewProjection, cameraMatrix);
+		UpdateEmitter(data, runtimeParticles_[data.id], viewProjection, cameraMatrix);
 	}
+
+	bool isCommonEffectPreview = false;
+	if (IsParticlePreviewTarget(kInvalidWorldObjectId) && !particlePreviewEffect_.nodes.empty()) {
+		isCommonEffectPreview = true;
+		particleIds.insert(kInvalidWorldObjectId);
+		const Matrix4x4 commonWorldMatrix = MathUtility::MakeIdentity4x4();
+		UpdateParticleEffect(particlePreviewEffect_, kInvalidWorldObjectId, commonWorldMatrix,
+			runtimeParticles_[kInvalidWorldObjectId], viewProjection, cameraMatrix);
+	}
+
+	bool isCommonParticleEffectEnabled = false;
+	if (isCommonParticleEmissionEnabled_ && particleIds.empty() && !isCommonEffectPreview && !commonParticleEffect_.nodes.empty()) {
+		isCommonParticleEffectEnabled = true;
+		particleIds.insert(kInvalidWorldObjectId);
+		const Matrix4x4 commonWorldMatrix = MathUtility::MakeIdentity4x4();
+		UpdateParticleEffect(commonParticleEffect_, kInvalidWorldObjectId, commonWorldMatrix,
+			runtimeParticles_[kInvalidWorldObjectId], viewProjection, cameraMatrix);
+	}
+
+	UpdateParticleEditorPreview();
 
 	std::unordered_map<WorldObjectId, std::vector<RuntimeParticleEmitter>>::iterator emitterIterator = runtimeParticles_.begin();
 
@@ -1015,37 +1203,52 @@ void WorldScene::UpdateParticles(const Matrix4x4& viewProjection, const Matrix4x
 	particle_->ApplySettings(particleSettings_);
 
 	if (isParticleBurstRequested_) {
-		if (particlePreview_.targetObject == kInvalidWorldObjectId) {
+		if (particlePreview_.targetObject == kInvalidWorldObjectId && !isCommonEffectPreview && !isCommonParticleEffectEnabled) {
 			particle_->AddParticles();
 		}
 	}
 
 	isParticleBurstRequested_ = false;
+	pendingParticleBurstCounts_.clear();
 
+	if (isCommonEffectPreview || isCommonParticleEffectEnabled) {
+		particle_->ResetSimulation();
+	}
 	if (isPlaying_) {
 		if (!runtimeParticles_.empty()) {
 			particle_->ResetSimulation();
 		}
 	}
 
+	const bool isCommonParticleEnabled = isCommonParticleEmissionEnabled_ && particleIds.empty() && !isCommonEffectPreview && !isCommonParticleEffectEnabled;
 	particle_->Update(viewProjection, cameraMatrix,
-		ShouldSimulateEmitter(kInvalidWorldObjectId, isCommonParticleEmissionEnabled_ && runtimeParticles_.empty()),
-		ShouldEmitEmitter(kInvalidWorldObjectId, isCommonParticleEmissionEnabled_ && runtimeParticles_.empty()));
+		ShouldSimulateEmitter(kInvalidWorldObjectId, isCommonParticleEnabled),
+		ShouldEmitEmitter(kInvalidWorldObjectId, isCommonParticleEnabled));
 
 	particlePreview_.isStepRequested = false;
 }
 
-void WorldScene::UpdateEmitter(const WorldObjectData& data, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix) {
+void WorldScene::UpdateEmitter(const WorldObjectData& data, std::vector<RuntimeParticleEmitter>& emitters,
+	const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix) {
+	Matrix4x4 objectWorldMatrix{};
+	if (!GetObjectWorldMatrix(data.id, objectWorldMatrix)) {
+		return;
+	}
+
+	UpdateParticleEffect(data.particleEffect, data.id, objectWorldMatrix, emitters, viewProjection, cameraMatrix);
+}
+
+void WorldScene::UpdateParticleEffect(const ParticleEffectDocument& document, WorldObjectId objectId, const Matrix4x4& objectWorldMatrix,
+	std::vector<RuntimeParticleEmitter>& runtimeEmitters, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix) {
 	// 各Emitterノードに専用の実行状態を割り当て、ノードツリーの設定を反映する。
 	std::vector<const ParticleEffectNode*> emitterNodes;
 	// Group数ではなくEmitterノードだけを実行対象にする。
-	for (const ParticleEffectNode& node : data.particleEffect.nodes) {
+	for (const ParticleEffectNode& node : document.nodes) {
 		if (node.type == ParticleNodeType::Emitter) {
 			emitterNodes.push_back(&node);
 		}
 	}
 
-	std::vector<RuntimeParticleEmitter>& runtimeEmitters = runtimeParticles_[data.id];
 	// ノードの追加・削除・並び替えがあった場合だけGPUリソースを作り直す。
 	bool hasSameNodes = runtimeEmitters.size() == emitterNodes.size();
 	if (hasSameNodes) {
@@ -1070,11 +1273,6 @@ void WorldScene::UpdateEmitter(const WorldObjectData& data, const Matrix4x4& vie
 		}
 	}
 
-	Matrix4x4 objectWorldMatrix{};
-	if (!GetObjectWorldMatrix(data.id, objectWorldMatrix)) {
-		return;
-	}
-
 	for (size_t index = 0; index < emitterNodes.size(); ++index) {
 		const ParticleEffectNode& node = *emitterNodes[index];
 		Particle& emitter = *runtimeEmitters[index].particle;
@@ -1089,7 +1287,7 @@ void WorldScene::UpdateEmitter(const WorldObjectData& data, const Matrix4x4& vie
 				break;
 			}
 			pathNode = nullptr;
-			for (const ParticleEffectNode& candidate : data.particleEffect.nodes) {
+			for (const ParticleEffectNode& candidate : document.nodes) {
 				if (candidate.id == nodePath.back()->parentId) {
 					pathNode = &candidate;
 					break;
@@ -1112,13 +1310,23 @@ void WorldScene::UpdateEmitter(const WorldObjectData& data, const Matrix4x4& vie
 		emitter.SetEmitterWorldTransform(emitterWorld);
 		emitter.SetEmitterPosition(MathUtility::Transform(node.emitter.emitterPosition, emitterWorld));
 
-		if (isParticleBurstRequested_ && particlePreview_.targetObject == data.id && areParentsEnabled && node.isEnabled) {
-			// Burstも有効な階層に限定し、無効ノードから粒子が突然出ないようにする。
-			emitter.AddParticles();
+		uint64_t burstCount = 0;
+		if (isParticleBurstRequested_ && particlePreview_.targetObject == objectId) {
+			++burstCount;
+		}
+		const std::unordered_map<WorldObjectId, uint32_t>::const_iterator queuedBursts = pendingParticleBurstCounts_.find(objectId);
+		if (queuedBursts != pendingParticleBurstCounts_.end()) {
+			burstCount += queuedBursts->second;
+		}
+		if (burstCount > 0 && areParentsEnabled && node.isEnabled) {
+			// 有効なGroupとEmitterだけ、要求された回数だけ発生させる。
+			for (uint64_t burstIndex = 0; burstIndex < burstCount; ++burstIndex) {
+				emitter.AddParticles();
+			}
 		}
 
-		const bool shouldSimulate = areParentsEnabled && ShouldSimulateEmitter(data.id, true);
-		const bool shouldEmit = areParentsEnabled && node.isEnabled && ShouldEmitEmitter(data.id, true);
+		const bool shouldSimulate = areParentsEnabled && ShouldSimulateEmitter(objectId, true);
+		const bool shouldEmit = areParentsEnabled && node.isEnabled && ShouldEmitEmitter(objectId, true);
 		emitter.Update(viewProjection, cameraMatrix, shouldSimulate, shouldEmit);
 	}
 }

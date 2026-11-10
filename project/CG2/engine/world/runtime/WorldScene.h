@@ -111,9 +111,17 @@ public:
 
 	void SetParticlePreview(const ParticlePreviewState& state) override;
 
+	void SetParticlePreviewViewport(uint32_t width, uint32_t height) override;
+
+	uint64_t GetParticlePreviewTexture() const override;
+
+	void SetParticlePreviewEffect(const ParticleEffectDocument& document) override;
+
 	void ResetParticlePreview() override;
 
 	void BurstParticles() override;
+
+	bool BurstParticleEffect(WorldObjectId objectId) override;
 
 	void OnPlayStateChanged(bool isPlaying) override;
 
@@ -136,6 +144,9 @@ protected:
 	// 個別Emitterとは別のサンプル発生。必要な場面だけが明示的に有効にする。
 	void SetCommonParticleEmission(bool isEnabled);
 
+	// 共通Effect文書を実行用へ反映する。
+	void SetCommonParticleEffect(const ParticleEffectDocument* document);
+
 	//=============================================================================================//
 	// 実行状態の初期化
 
@@ -143,6 +154,10 @@ protected:
 	void InitializeSimulation();
 
 private:
+	struct RuntimeParticleEmitter {
+		uint64_t nodeId;
+		std::unique_ptr<Particle> particle;
+	};
 
 	//=============================================================================================//
 	// 更新
@@ -158,7 +173,15 @@ private:
 
 	void UpdateParticles(const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
 
-	void UpdateEmitter(const WorldObjectData& data, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
+	void UpdateParticleEditorPreview();
+
+	void DrawParticleEditorPreview();
+
+	void UpdateEmitter(const WorldObjectData& data, std::vector<RuntimeParticleEmitter>& emitters,
+		const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
+
+	void UpdateParticleEffect(const ParticleEffectDocument& document, WorldObjectId objectId, const Matrix4x4& objectWorldMatrix,
+		std::vector<RuntimeParticleEmitter>& emitters, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix);
 
 	//=============================================================================================//
 	// Getter / Particle更新条件
@@ -199,12 +222,8 @@ private:
 
 	ParticleRenderer* particleRenderer_ = nullptr; // SceneContextが所有し、Sceneより長く生存する。
 
-	struct RuntimeParticleEmitter {
-		uint64_t nodeId;
-		std::unique_ptr<Particle> particle;
-	};
-
 	std::unordered_map<WorldObjectId, std::vector<RuntimeParticleEmitter>> runtimeParticles_;
+	std::vector<RuntimeParticleEmitter> particleEditorPreviewEmitters_;
 
 	//=============================================================================================//
 	// DebugCamera
@@ -223,6 +242,10 @@ private:
 	std::unordered_map<WorldObjectId, RuntimeObject> runtimeObjects_;
 
 	ModelPreviewRenderer modelPreviewRenderer_; // このシーンの3Dサムネイルを描画・保持する。
+	SceneRenderTarget particleEditorPreviewTarget_; // ParticleEditor内だけに表示するParticle描画先。
+	bool isParticleEditorPreviewTargetInitialized_ = false;
+	uint32_t particleEditorPreviewWidth_ = 0;
+	uint32_t particleEditorPreviewHeight_ = 0;
 
 	//=============================================================================================//
 	// 再生状態
@@ -243,9 +266,14 @@ private:
 
 	ParticleSettings particleSettings_; // 共通プリセットの編集データ。
 
+	ParticleEffectDocument commonParticleEffect_; // ゲーム再生時に使う共通Effect文書。
+
 	ParticlePreviewState particlePreview_;
 
+	ParticleEffectDocument particlePreviewEffect_;
+
 	bool isParticleBurstRequested_ = false;
+	std::unordered_map<WorldObjectId, uint32_t> pendingParticleBurstCounts_;
 	bool isCommonParticleEmissionEnabled_ = false; // タイトルなど、Emitterを置かない場面の意図しない発生を防ぐ。
 
 	//=============================================================================================//

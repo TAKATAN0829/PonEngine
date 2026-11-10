@@ -373,6 +373,8 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="editor\ui\EditorLayout.h" />
     <ClCompile Include="editor\panels\particle_editor\ParticleEditorPanel.cpp" />
     <ClInclude Include="editor\panels\particle_editor\ParticleEditorPanel.h" />
+    <ClCompile Include="editor\panels\node_editor\NodePanel.cpp" />
+    <ClInclude Include="editor\panels\node_editor\NodePanel.h" />
 
     <ClCompile Include="editor\panels\project\ProjectPanel.cpp" />
     <ClCompile Include="editor\panels\console\ConsolePanel.cpp" />

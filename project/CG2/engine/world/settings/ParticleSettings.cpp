@@ -49,6 +49,7 @@ ParticleSettings::ParticleSettings()
 
 ParticlePreviewState::ParticlePreviewState()
 	: targetObject(0),
+	cameraTarget{},
 	isEnabled(false),
 	isPaused(false),
 	isStepRequested(false),

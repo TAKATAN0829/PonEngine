@@ -11,6 +11,8 @@ ParticleEffectNode::ParticleEffectNode()
 	name("Emitter"),
 	type(ParticleNodeType::Emitter),
 	isEnabled(true),
+	editorPosition{},
+	hasEditorPosition(false),
 	transform{{1,1,1},{},{}} {
 	// 単一Emitterから始められる初期ノード値を用意する。
 }
@@ -56,6 +58,7 @@ bool IsParticleEffectDocumentValid(const ParticleEffectDocument& document) {
 		if (node.id == 0 || node.name.empty() || node.name.size() > 256 ||
 			(static_cast<uint32_t>(node.type) != static_cast<uint32_t>(ParticleNodeType::Group) &&
 			 static_cast<uint32_t>(node.type) != static_cast<uint32_t>(ParticleNodeType::Emitter)) ||
+			!std::isfinite(node.editorPosition.x) || !std::isfinite(node.editorPosition.y) ||
 			!std::isfinite(node.transform.scale.x) || !std::isfinite(node.transform.scale.y) || !std::isfinite(node.transform.scale.z) ||
 			!std::isfinite(node.transform.rotate.x) || !std::isfinite(node.transform.rotate.y) || !std::isfinite(node.transform.rotate.z) ||
 			!std::isfinite(node.transform.translate.x) || !std::isfinite(node.transform.translate.y) || !std::isfinite(node.transform.translate.z) ||
@@ -87,7 +90,7 @@ bool IsParticleEffectDocumentValid(const ParticleEffectDocument& document) {
 			if (!ancestors.insert(parentId).second) {
 				return false;
 			}
-			const auto parent = nodesById.find(parentId);
+			std::unordered_map<uint64_t, const ParticleEffectNode*>::const_iterator parent = nodesById.find(parentId);
 			if (parent == nodesById.end()) {
 				return false;
 			}
@@ -107,6 +110,7 @@ bool AreParticleEffectDocumentsEqual(const ParticleEffectDocument& first, const 
 		const ParticleEffectNode& a = first.nodes[index];
 		const ParticleEffectNode& b = second.nodes[index];
 		if (a.id != b.id || a.parentId != b.parentId || a.name != b.name || a.type != b.type || a.isEnabled != b.isEnabled ||
+			a.hasEditorPosition != b.hasEditorPosition || a.editorPosition.x != b.editorPosition.x || a.editorPosition.y != b.editorPosition.y ||
 			a.transform.scale.x != b.transform.scale.x || a.transform.scale.y != b.transform.scale.y || a.transform.scale.z != b.transform.scale.z ||
 			a.transform.rotate.x != b.transform.rotate.x || a.transform.rotate.y != b.transform.rotate.y || a.transform.rotate.z != b.transform.rotate.z ||
 			a.transform.translate.x != b.transform.translate.x || a.transform.translate.y != b.transform.translate.y || a.transform.translate.z != b.transform.translate.z) {

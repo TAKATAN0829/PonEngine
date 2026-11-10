@@ -44,12 +44,14 @@ void GameScene::Initialize(const SceneContext& context) {
 
 	std::error_code presetError;
 
-	// 共通設定は単一Emitterで動かすため、Effectファイルから対応可能な文書だけを読み込む。
+	// 共通Effect文書を読み込み、複数Emitterの構成もゲーム実行へ渡す。
 	if (std::filesystem::exists(ParticleEffectFile::kDefaultPath, presetError)) {
 		std::string presetMessage;
-
-		if (!ParticleEffectFile::LoadSingleEmitter(*GetParticleSettings(), ParticleEffectFile::kDefaultPath, presetMessage)) {
+		ParticleEffectDocument commonEffect;
+		if (!ParticleEffectFile::Load(commonEffect, ParticleEffectFile::kDefaultPath, presetMessage)) {
 			LogSystem::Log("Particle preset: " + presetMessage + "\n");
+		} else {
+			SetCommonParticleEffect(&commonEffect);
 		}
 	}
 

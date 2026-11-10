@@ -115,6 +115,7 @@ struct ParticlePreviewState {
 	// 対象・再生状態
 
 	uint64_t targetObject; // 0は共通プリセット、それ以外はシーン内EmitterのID。
+	Vector3 cameraTarget; // ParticleEditor専用プレビューの注視位置。
 
 	bool isEnabled;
 	bool isPaused;

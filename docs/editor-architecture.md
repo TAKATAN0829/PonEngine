@@ -51,7 +51,7 @@ SceneDocumentが編集中のresources内`.ponscene`と保存先を所有する�
 
 保存済みファイルがあればGameSceneの初期化時に自動読込する。Releaseでも読込できる。ファイルがない場合は既定値で開始し、壊れたファイルは値を反映せずログにエラーを出す。保存はメニューまたはショートカットから明示的に行う。
 
-SceneFileはEditorに依存せず、IEditableWorldを引数に受け取る。コレクション対応シーンはテキスト形式 `PON_SCENE 14` で、個数、ID、Transform・色・光沢・ライティング、名前、モデル種類、RootNode行列の適用、Active、Mesh Rendererの有無、オブジェクトの種類、光源値、Emitter設定とParticle Effect文書を記録する。浮動小数点は往復可能な桁数を使う。
+SceneFileはEditorに依存せず、IEditableWorldを引数に受け取る。コレクション対応シーンはテキスト形式 `PON_SCENE 14` で、個数、ID、Transform・色・光沢・ライティング、名前、モデル種類、RootNode行列の適用、Active、Mesh Rendererの有無、オブジェクトの種類、光源値、Emitter設定とParticle Effect文書を記録する。Particle Effect 3文書にはノードの編集画面上の配置位置も含む。浮動小数点は往復可能な桁数を使う。
 
 読込ではバージョン、件数、IDの重複、モデル種類、プロパティ、有限値、光沢の範囲、末尾の余分なデータを確認してから一覧を一括置換する。0体の保存ファイルもそのまま復元する。保存は隣接する一時ファイルに書き終えてからWindowsのファイル置換APIで置き換える。
 
@@ -100,9 +100,9 @@ MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1
 
 ## レイアウト・Particle Editorの追加
 
-操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。ImGuiSystemが日本語フォントを読み込み、起動後にEditorがドッキングと配置の保存先を設定する。EditorThemeが配色と倍率を適用し、EditorLayoutが初期ドッキングを構築する。ParticleSettings・ParticleEffectDocument・各Particleファイル形式はUI・GPUに依存しない。ParticleEditorPanelは設定への借用参照とプレビュー操作だけを持ち、WorldSceneがParticleへの適用と実行を担当する。
+操作と検証手順は[Editorの使い方](editor-guide.md)を参照する。ImGuiSystemが日本語フォントを読み込み、起動後にEditorがドッキングと配置の保存先を設定する。EditorThemeが配色と倍率を適用し、EditorLayoutが初期ドッキングを構築する。ParticleSettings・ParticleEffectDocument・各Particleファイル形式はUI・GPUに依存しない。ParticleEditorPanelは文書の編集とプレビューを扱い、共通キャンバスの表示・移動・親子接続はNodePanel、実行時のParticle適用はWorldSceneが担当する。
 
-ParticleEffectDocumentはID・親ID・型・Transformを持つノード階層を保持し、EmitterノードはParticleSettingsを所有する。ParticleEffectFileは新形式`PON_PARTICLE_EFFECT 1`と旧単一Emitter形式`PON_PARTICLE 1/2`を読み込み、保存時はエフェクト文書形式を使う。旧SceneのParticleSettingsやParticlePresetFileの読書き形式は維持する。GameSceneの既存ランタイムへ適用する間はEmitterが1つの文書だけを読み込み、複数Emitterは明示的に拒否する。Scene内Particleの複数ノード実行とツリー編集UIは次段階。
+ParticleEffectDocumentはID・親ID・型・Transform・編集画面上の配置位置を持つノード階層を保持し、EmitterノードはParticleSettingsを所有する。ParticleEffectFileは新形式`PON_PARTICLE_EFFECT 1/2/3`と旧単一Emitter形式`PON_PARTICLE 1/2`を読み込み、保存時は形式3を使う。旧SceneのParticleSettingsやParticlePresetFileの読書き形式は維持する。ParticleEditorPanelはNodePanelを継承し、ノードの表示・選択・移動とEmitter設定の編集を行う。
 
 
 ### 種類別オブジェクトと保存形式4

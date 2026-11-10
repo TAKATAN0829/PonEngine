@@ -344,7 +344,7 @@
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
-  <ItemGroup><Filter Include="editor" /><Filter Include="editor\panels" /></ItemGroup>
+  <ItemGroup><Filter Include="editor" /><Filter Include="editor\panels" /><Filter Include="editor\panels\node_editor" /></ItemGroup>
   <ItemGroup>
     <ClCompile Include="editor\core\Editor.cpp"><Filter>editor\core</Filter></ClCompile>
     <ClCompile Include="editor\panels\hierarchy\HierarchyPanel.cpp"><Filter>editor\panels\hierarchy</Filter></ClCompile>
@@ -388,6 +388,8 @@
     <ClInclude Include="editor\ui\EditorLayout.h"><Filter>editor\ui</Filter></ClInclude>
     <ClCompile Include="editor\panels\particle_editor\ParticleEditorPanel.cpp"><Filter>editor\panels\particle_editor</Filter></ClCompile>
     <ClInclude Include="editor\panels\particle_editor\ParticleEditorPanel.h"><Filter>editor\panels\particle_editor</Filter></ClInclude>
+    <ClCompile Include="editor\panels\node_editor\NodePanel.cpp"><Filter>editor\panels\node_editor</Filter></ClCompile>
+    <ClInclude Include="editor\panels\node_editor\NodePanel.h"><Filter>editor\panels\node_editor</Filter></ClInclude>
 
     <ClCompile Include="editor\panels\project\ProjectPanel.cpp"><Filter>editor\panels\project</Filter></ClCompile>
 
