@@ -66,21 +66,17 @@ const std::vector<WorldObjectId>& EditorSelection::GetIds() const {
 
 bool EditorSelection::DoesContain(WorldObjectId identifier) const {
 	// 検索用の集合で選択状態を確認する。
-	if (selectedIds_.contains(identifier)) {
-		return true;
-	}
-
-	return false;
+	return selectedIds_.contains(identifier);
 }
 
 // 親も選択されている子を除き、二重移動・二重複製を防ぐ。
-std::vector<WorldObjectId> EditorSelection::GetRoots(const IEditableWorld& scene) const {
+std::vector<WorldObjectId> EditorSelection::GetRoots(const IWorldObjects& objects) const {
 	// 親も選択されている子は結果へ含めない。
 	std::vector<WorldObjectId> roots;
 
 	for (WorldObjectId identifier : selected_) {
 		// すでに削除された選択は飛ばす。
-		const WorldObjectData* object = scene.GetObjectDataById(identifier);
+		const WorldObjectData* object = objects.GetObjectDataById(identifier);
 
 		if (object == nullptr) {
 			continue;
@@ -94,7 +90,7 @@ std::vector<WorldObjectId> EditorSelection::GetRoots(const IEditableWorld& scene
 				break;
 			}
 
-			const WorldObjectData* parent = scene.GetObjectDataById(ancestor);
+			const WorldObjectData* parent = objects.GetObjectDataById(ancestor);
 
 			if (parent == nullptr) {
 				break;
@@ -157,11 +153,11 @@ void EditorSelection::Clear() {
 }
 
 // Undo・削除後は、消えたIDだけを選択一覧から除く。
-void EditorSelection::Prune(const IEditableWorld& scene) {
+void EditorSelection::Prune(const IWorldObjects& objects) {
 	// 削除で添字がずれないよう、末尾から確認する。
 	for (size_t selectionIndex = selected_.size(); selectionIndex > 0; --selectionIndex) {
 		// 実体がないIDは両方の一覧から取り除く。
-		if (scene.GetObjectDataById(selected_[selectionIndex - 1]) == nullptr) {
+		if (objects.GetObjectDataById(selected_[selectionIndex - 1]) == nullptr) {
 			selectedIds_.erase(selected_[selectionIndex - 1]);
 
 			selected_.erase(selected_.begin() + selectionIndex - 1);
@@ -174,12 +170,12 @@ void EditorSelection::Prune(const IEditableWorld& scene) {
 
 
 // 選択数分のシーン全体コピーを避け、採番・親の付け替え・検証を一回で行う。
-bool EditorSelection::Duplicate(IEditableWorld& scene, std::string& error) {
+bool EditorSelection::Duplicate(IWorldObjects& objects, std::string& error) {
 	// 今回の複製処理の結果だけを返す。
 	error.clear();
 
 	// 二重複製を避けるため、選択のルートを求める。
-	const std::vector<WorldObjectId> roots = GetRoots(scene);
+	const std::vector<WorldObjectId> roots = GetRoots(objects);
 
 	// 対象がなければ配置を変更しない。
 	if (roots.empty()) {
@@ -187,7 +183,7 @@ bool EditorSelection::Duplicate(IEditableWorld& scene, std::string& error) {
 	}
 
 	// 元の配置を保持したまま、複製対象の子孫を集める。
-	const std::vector<WorldObjectData> original = scene.CaptureObjects();
+	const std::vector<WorldObjectData> original = objects.CaptureObjects();
 
 	const std::unordered_set<WorldObjectId> included = CollectSubtrees(original, roots);
 
@@ -199,7 +195,7 @@ bool EditorSelection::Duplicate(IEditableWorld& scene, std::string& error) {
 	}
 
 	// 未使用のIDから、複製分の採番を始める。
-	WorldObjectId nextIdentifier = scene.GetNextObjectId();
+	WorldObjectId nextIdentifier = objects.GetNextObjectId();
 
 	// IDの上限を超える複製を防ぐ。
 	if (included.size() > (std::numeric_limits<WorldObjectId>::max)() - nextIdentifier) {
@@ -252,7 +248,7 @@ bool EditorSelection::Duplicate(IEditableWorld& scene, std::string& error) {
 	}
 
 	// 全件の検証に成功した場合だけ配置を置き換える。
-	if (!scene.ReplaceObjects(std::move(candidate), error)) {
+	if (!objects.ReplaceObjects(std::move(candidate), error)) {
 		return false;
 	}
 
@@ -268,12 +264,12 @@ bool EditorSelection::Duplicate(IEditableWorld& scene, std::string& error) {
 	return true;
 }
 
-bool EditorSelection::Remove(IEditableWorld& scene, std::string& error) {
+bool EditorSelection::Remove(IWorldObjects& objects, std::string& error) {
 	// 今回の削除処理の結果だけを返す。
 	error.clear();
 
 	// 親子の重複を除いた削除ルートを求める。
-	const std::vector<WorldObjectId> roots = GetRoots(scene);
+	const std::vector<WorldObjectId> roots = GetRoots(objects);
 
 	// 対象がなければ配置を変更しない。
 	if (roots.empty()) {
@@ -281,7 +277,7 @@ bool EditorSelection::Remove(IEditableWorld& scene, std::string& error) {
 	}
 
 	// 元の配置から削除対象の子孫を集める。
-	std::vector<WorldObjectData> original = scene.CaptureObjects();
+	std::vector<WorldObjectData> original = objects.CaptureObjects();
 
 	const std::unordered_set<WorldObjectId> included = CollectSubtrees(original, roots);
 
@@ -297,7 +293,7 @@ bool EditorSelection::Remove(IEditableWorld& scene, std::string& error) {
 	}
 
 	// 検証に失敗した場合は元の配置を維持する。
-	if (!scene.ReplaceObjects(std::move(remaining), error)) {
+	if (!objects.ReplaceObjects(std::move(remaining), error)) {
 		return false;
 	}
 

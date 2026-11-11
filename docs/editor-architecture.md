@@ -19,13 +19,13 @@ Engine → SceneManager → IScene
 - Editor: 選択状態とパネル呼び出しの調整。Engineが値として所有する。
 - HierarchyPanel: 編集対象一覧の表示と選択。
 - InspectorPanel: 渡されたデータの表示と編集。
-- IEditableWorld: ImGuiを含まない編集対象の列挙・操作契約。
+- IEditableWorld: Editor本体が使う機能集合。各Panelには必要な機能だけを渡す。
 - WorldObjects: 設定データの一覧、ID採番、追加・削除・複製、全件置換と検証。描画機能には依存しない。
 - WorldScene: WorldObjectsの設定を使い、IDごとのObject3d・Particle・プレビューと物理の実行状態を所有する。
 - GameScene: 既定配置・保存ファイル・共通Particleプリセットの読込とサンプルHUDを定義する。
 - TitleScene: ゲーム配置を読み込まず、専用のCubeとカメラを作り、Enterでゲームへ進む。
 
-GameSceneはEditorの具体クラスを知らない。EditorもGameSceneを知らず、IEditableWorldを受け取る。この引数渡しが依存性の注入に当たる。最初は複雑なイベント機構や汎用リフレクションを導入せず、小さなインターフェースで境界を設けている。
+GameSceneはEditorの具体クラスを知らない。EditorはSceneManagerからIEditableWorldを受け取る。各PanelはIEditableWorld全体を受け取らず、IWorldObjectsやSceneView・Particle・Assetの機能契約のうち必要なものだけを使う。
 
 ## 所有権と更新順
 
@@ -133,7 +133,7 @@ includeは`objects/WorldObjects.h`や`serialization/SceneFile.h`のように、�
 
 `types/WorldObjectTypes.h`はIDと種類を定義し、シーンの実装に依存しない。`WorldObjectData.h`はその共通型を使い、カメラ設定・保存用データと、フレーム内だけ借用する`EditableObjectView`を定義する。操作のインターフェースをincludeせず、UI・GPUリソースの所有権も持たない。
 
-`IWorldObjects`は一覧・親子関係・Transform・作成・置換・ゲームカメラの共通操作を定義する。Motion・Collision・Physics・Lightingの実行処理、Scene・Prefabの保存処理、基本形状作成はこの型を受け取る。`IEditableWorld`は`IWorldObjects`を継承し、Editorの表示領域・カメラ入力・Asset／Particleプレビューなどを追加する。インターフェースに不要なInitialize／Update／Drawの空実装は増やさない。
+`IWorldObjects`は一覧・親子関係・Transform・作成・置換・ゲームカメラの共通操作を定義する。Motion・Collision・Physics・Lightingの実行処理、Scene・Prefabの保存処理、基本形状作成はこの型を受け取る。Editor機能はSceneView、Particleプレビュー、Asset参照更新、モデル、テクスチャ、Scene lifecycle、補助画面描画の契約へ分ける。`IEditableWorld`はSceneManagerからEditorへ渡すため各契約をまとめる。各Panelや選択・履歴・SceneDocumentへは必要な契約だけを渡す。
 
 `WorldObjects`は既存の`IEditableWorld`実装を維持し、既存のEditorとGameSceneは同じオブジェクトを共通窓口として渡す。変換用オブジェクト・追加の所有権・毎フレームの一覧コピーは導入しない。保存時の`ReplaceObjects`は従来どおり仮想呼出となり、WorldScene側のモデル・テクスチャ準備と失敗時の一括取消を保持する。保存形式は13のまま。
 
@@ -211,7 +211,7 @@ Hierarchyの操作ボタンは右クリックメニューへまとめる。行�
 
 ## SceneカメラとProjectブラウザ
 
-形式6にCameraSettingsとmainCameraを追加する。SetMainCameraで一意に指定し、複製先はメイン指定を引き継がない。GetGameCameraViewは親子変換から位置・向きを解決し、カメラ基底を正規化して拡縮を視野に持ち込まない。GameViewとReleaseで同じ計算を共有する。
+形式6にCameraSettingsとmainCameraを追加する。SetMainCameraで一意に指定し、複製先はメイン指定を引き継がない。Game Viewと実行時の描画は、どちらもメインカメラのIDをGetCameraViewに渡す。GetCameraViewは親子変換から位置・向きを解決し、カメラ基底を正規化して拡縮を視野に持ち込まない。
 
 ProjectPanelはInitialize/Update/Drawでフォルダ一覧を管理する。ファイル走査は初期化・フォルダ変更・明示更新時に限り、毎フレームはキャッシュ済み一覧を描く。resources外への移動とシンボリックリンクの追跡は行わない。画像は可視タイルから一フレーム一件だけ読み込み、TextureManager所有のSRVを借用する。TryLoadは画像デコード失敗を返し、不完全なTextureDataをキャッシュへ登録しない。
 
@@ -279,7 +279,7 @@ PhysicsTestsはBox/Sphereの着地、壁、質量比、反発、摩擦、Trigger
 
 ## Editorパネルの責務と実装ファイル
 
-`editor/panels`はタブ単位のフォルダへ分類し、各クラスの宣言は同名の.h、実装は同名の.cppへまとめる。複数cppへ同じクラスを分散せず、機能ごとの区切りコメントで分類する。型・定数・宣言だけの.hは許可し、関数の処理は置かない。空のcppや形式だけのヘッダーは増やさない。起動入口のmain.cppは同名ヘッダーを必要としない。
+`editor/panels`はタブ単位のフォルダへ分類し、各クラスの宣言は同名の.h、実装は原則同名の.cppへまとめる。ファイルは500行程度を目安にし、超える場合は責務のまとまりで同じクラスの実装を分けてよい。分割だけの転送関数や細切れの補助ファイルは作らない。型・定数・宣言だけの.hは許可し、関数の処理は置かない。空のcppや形式だけのヘッダーは増やさない。起動入口のmain.cppは同名ヘッダーを必要としない。
 
 GameScene・Editor・Asset・描画・入力・物理など、自作コード全体でcppの分類名と関数の並びをhの宣言に合わせる。関数区分は「メンバ関数 / Motion」ではなく「Motion」のように内容だけを書く。コンストラクタとデストラクタは生成・破棄として分類する。補助関数・内部データの定義はcpp内の実装用の枠へ分ける。Getter／Setterもcppに実装し、型・変数の宣言だけのカテゴリにはcppへ空の見出しを作らない。namespaceや通常の関数も、宣言側の分類と並びに合わせる。
 
@@ -290,13 +290,13 @@ GameScene・Editor・Asset・描画・入力・物理など、自作コード全
 | Project | project | ProjectPanel | フォルダ走査・一覧・プレビュー・Asset操作 |
 | Console | console | ConsolePanel | ログの検索・一覧・全文確認・コピー |
 | SceneView | scene_view | SceneViewPanel | 共通タブ・編集カメラ・選択・配置・ギズモ・補助表示 |
-| GameView | game_view | GameViewPanel | ゲームカメラの状態と画像表示 |
+| GameView | scene_view | SceneViewPanel | SceneView内タブとしてゲームカメラの画像を表示 |
 | Particle Editor | particle_editor | ParticleEditorPanel | Emitter設定・プリセット・編集プレビュー |
 | Performance | performance | PerformancePanel | 計測履歴・ピーク表示・CSV出力結果 |
 
-Editorは選択と履歴を所有し、InspectorPanel::DrawSelectionへ選択を借用させる。InspectorPanelが単体と複数選択の表示を切り替え、Editorのメンバー関数を別名cppへ実装する形は使わない。
+Editorは選択と履歴を所有し、InspectorPanel::DrawSelectionへ選択を借用させる。InspectorPanelが単体と複数選択の表示を切り替える。Editorはファイルを500行程度に保つため、基本処理、シーン操作、再生操作を責務別のcppへ分ける。メンバー関数の処理を転送だけの関数で包まない。
 
-SceneViewPanelは選択・ドラッグ・スナップ・共通タブの状態を所有し、その全実装をSceneViewPanel.cppへまとめる。GameViewPanelは状態を重複所有しない関数群として、共通の画像ハンドルと寸法を借用する。SceneViewDrawing.hは画面位置への変換と線分描画の宣言を持ち、その実装は同名のSceneViewDrawing.cppへ置く。
+すべての独立したPanelは`EditorPanel`を継承し、各Panelクラスだけが必要な表示状態を持つ。SceneViewPanelはScene/Gameのタブ、画像寸法、編集操作を所有し、GameViewの表示処理も同じクラス内に置く。SceneViewPanelにはオブジェクト操作とSceneView機能を別々に渡す。SceneViewDrawing.hは画面位置への変換と線分描画の宣言を持ち、その実装は同名のSceneViewDrawing.cppへ置く。
 
 ProjectPanelはディレクトリ・選択・プレビューの状態を所有し、画面構成とAsset操作もProjectPanel.cppへ置く。Consoleはログを描画中だけ借用し、Projectのキャッシュや更新処理には依存しない。PerformancePanelは履歴の選択とCSV出力結果を自身のメンバーで保持する。
 
@@ -316,7 +316,7 @@ CPU試験は描画完了前に破棄しないこと、Pause、連続遷移、停
 
 ProjectPanelはAssetActionDialogへ操作要求を渡す。AssetActionDialogが使用箇所と確認画面を表示し、AssetFileOperationsが検証・ステージング・確定・失敗時の復元を担当する。AssetDocumentはScene/Prefab/Particleの既存シリアライズと、OBJ/MTL/glTF/GLBの外部参照を扱う。ファイル操作とパネル描画を一つのクラスへ集めない。
 
-AssetPathChangeはresourcesのルートと変更前後の相対パスだけを保持する。フォルダの要素単位で比較し、Windowsの序数比較で大文字・小文字を扱う。WorldAssetReferencesが保存データの参照を共通規則で列挙・更新する。移動の成功後、IEditableWorld::RemapAssetPathsを通じて実行側へ通知し、EditorSessionが履歴・保存基準を、ParticleEditorPanelが共通プリセットの保存基準を更新する。EditorからModelManagerやTextureManagerを直接操作しない。
+AssetPathChangeはresourcesのルートと変更前後の相対パスだけを保持する。フォルダの要素単位で比較し、Windowsの序数比較で大文字・小文字を扱う。WorldAssetReferencesが保存データの参照を共通規則で列挙・更新する。移動の成功後、IAssetReferenceRemapperを通じて実行側へ通知し、EditorSessionが履歴・保存基準を、ParticleEditorPanelが共通プリセットの保存基準を更新する。EditorからModelManagerやTextureManagerを直接操作しない。
 
 WorldSceneはモデル・テクスチャ・モデルプレビューのキャッシュキーを変更し、既存のGPUリソース・モデルへのポインタ・画像ハンドルを保つ。移動先に過去のキャッシュが残っている場合、その古いリソースは受付済みの描画を壊さないよう終了時まで保持する。追加のGPU待機や全モデルの再インポートは行わない。Projectの表示キャッシュは成功通知で更新する。
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../EditorPanel.h"
 #include "IEditableWorld.h"
 #include "../../assets/AssetActionDialog.h"
 #include "../../assets/AssetThumbnailCache.h"
@@ -12,8 +13,9 @@ class EditorSession;
 class ParticleEditorPanel;
 
 // Projectの一覧と操作を管理し、取得したサムネイルをタイルへ表示する。
-class ProjectPanel {
+class ProjectPanel : public EditorPanel {
 public:
+	ProjectPanel() : EditorPanel("Project") {}
 
 	//=============================================================================================//
 	// 初期化処理
@@ -30,7 +32,9 @@ public:
 	// 描画処理
 
 	// 初回の初期化と一覧更新も含め、Project一画面の処理をまとめる。
-	void Draw(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
+	void Draw(IWorldObjects& objects, IParticlePreviewWorld& particleWorld, IModelAssetAccess& models,
+		IAssetReferenceRemapper& assetReferences,
+		const EditorSelection& selection, EditorToolVisibility& visibility,
 		EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath = {});
 
 	//=============================================================================================//
@@ -76,7 +80,9 @@ private:
 	//=============================================================================================//
 	// 画面構成
 
-	void DrawContents(IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility,
+	void DrawContents(IWorldObjects& objects, IParticlePreviewWorld& particleWorld, IModelAssetAccess& models,
+		IAssetReferenceRemapper& assetReferences,
+		const EditorSelection& selection, EditorToolVisibility& visibility,
 		EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath);
 
 	void DrawFolders();
@@ -86,9 +92,11 @@ private:
 	//=============================================================================================//
 	// Asset操作・プレビュー
 
-	void DrawAsset(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
+	void DrawAsset(const AssetEntry& entry, IWorldObjects& objects, IModelAssetAccess& models,
+		const EditorSelection& selection, EditorToolVisibility& visibility);
 
-	void DrawAssetActions(const AssetEntry& entry, IEditableWorld& scene, const EditorSelection& selection, EditorToolVisibility& visibility);
+	void DrawAssetActions(const AssetEntry& entry, IWorldObjects& objects, IModelAssetAccess& models,
+		const EditorSelection& selection, EditorToolVisibility& visibility);
 
 private:
 

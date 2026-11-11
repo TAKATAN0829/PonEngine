@@ -95,11 +95,6 @@ void LogSystem::Log (std::ostream& os, const std::string& message) {
 //=============================================================================================//
 // Getter
 
-std::ofstream& LogSystem::GetLogStream () {
-	// ログの書込先を取得する。
-	return logStream_;
-}
-
 const std::deque<std::string>& LogSystem::GetRecentMessages() {
 	// Consoleへ表示する最近のログを取得する。
 	return recentMessages_;

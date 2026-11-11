@@ -1,26 +1,32 @@
 ﻿#pragma once
 
+#include "../EditorPanel.h"
 #include "IEditableWorld.h"
 #include <string>
 
 class EditorSelection;
 
 // 選択対象の設定を借用して編集する。オブジェクトは所有しない。
-class InspectorPanel {
+class InspectorPanel : public EditorPanel {
 public:
+	InspectorPanel() : EditorPanel("Inspector") {}
 
 	//=============================================================================================//
 	// 初期化処理
 
-	static void Initialize();
+	void Initialize();
 
 	//=============================================================================================//
 	// 描画処理
 
-	static void Draw(const EditableObjectView& object, bool* isParticleEditorOpen = nullptr, IEditableWorld* scene = nullptr);
+	void Draw(const EditableObjectView& object, IWorldObjects* objects = nullptr,
+		IModelAssetAccess* models = nullptr, ITextureAssetAccess* textures = nullptr,
+		bool* isParticleEditorOpen = nullptr);
 
 	// 選択はEditorから借用し、単体と複数選択の表示を同じクラスで切り替える。
-	static void DrawSelection(IEditableWorld& scene, EditorSelection& selection, bool* isParticleEditorOpen = nullptr);
+	void DrawSelection(IWorldObjects& objects, IModelAssetAccess& models, ITextureAssetAccess& textures,
+		EditorSelection& selection,
+		bool* isParticleEditorOpen = nullptr);
 
 private:
 
@@ -28,15 +34,15 @@ private:
 	// 複数選択
 
 	// 共通Transformは差分、Activeと色は選択全体へ明示した値を反映する。
-	static void DrawMultipleSelection(IEditableWorld& scene, const EditorSelection& selection);
+	void DrawMultipleSelection(IWorldObjects& objects, const EditorSelection& selection);
 
 	//=============================================================================================//
 	// Material・Animation
 
 	// モデル既定値と、シーンに保存する上書き設定を区別して編集する。
-	static void DrawMaterials(const EditableObjectView& object, IEditableWorld& scene);
+	void DrawMaterials(const EditableObjectView& object, IModelAssetAccess& models, ITextureAssetAccess& textures);
 
-	static void DrawAnimation(const EditableObjectView& object, IEditableWorld& scene);
+	static void DrawAnimation(const EditableObjectView& object, IModelAssetAccess& models);
 
 	//=============================================================================================//
 	// Rigidbody
@@ -60,12 +66,12 @@ private:
 	// Motion
 
 	// 回転・往復移動の設定と、右クリックによるComponentの追加を扱う。
-	static void DrawMotionComponents(const EditableObjectView& object, IEditableWorld* scene);
+	static void DrawMotionComponents(const EditableObjectView& object, IWorldObjects* objects);
 
 private:
 
 	//=============================================================================================//
 	// 編集結果
 
-	inline static std::string status_; // 読み込めない画像の理由。シーン切替時に消す。
+	std::string status_; // 読み込めない画像の理由。シーン切替時に消す。
 };

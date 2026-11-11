@@ -251,9 +251,6 @@ bool ParticleEffectFile::ReadDocument(std::istream& input, ParticleEffectDocumen
 		// このノードの全項目が読めてから、一時文書に追加する。
 		loaded.nodes.push_back(std::move(node));
 	}
-	if (!IsParticleEffectDocumentValid(loaded)) {
-		return false;
-	}
 	document = std::move(loaded);
 	return true;
 }

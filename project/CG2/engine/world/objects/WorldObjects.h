@@ -56,8 +56,6 @@ public:
 
 	WorldObjectId GetMainCameraId() const override;
 
-	bool GetGameCameraView(float aspectRatio, CameraView& view) const override;
-
 	// 選択中カメラの補助線にも、実描画と同じ拡縮除去を適用する。
 	bool GetCameraView(WorldObjectId cameraId, float aspectRatio, CameraView& view) const override;
 
@@ -101,6 +99,7 @@ private:
 
 	//=============================================================================================//
 	// Getter / 検索・追加可否
+	static constexpr size_t kMaxHierarchyDepth = 64;
 
 	bool CanCreateType(WorldObjectType type) const;
 

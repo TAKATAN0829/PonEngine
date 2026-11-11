@@ -167,11 +167,7 @@ void Sprite::SetAnchorPoint(const Vector2& anchorPoint) {
 
 bool Sprite::IsFlippedHorizontally() const {
 	// 画像の左右反転の状態を取得する。
-	if (isFlipX_) {
-		return true;
-	}
-
-	return false;
+	return isFlipX_;
 }
 
 void Sprite::SetIsFlipX(bool isFlipX) {
@@ -181,11 +177,7 @@ void Sprite::SetIsFlipX(bool isFlipX) {
 
 bool Sprite::IsFlippedVertically() const {
 	// 画像の上下反転の状態を取得する。
-	if (isFlipY_) {
-		return true;
-	}
-
-	return false;
+	return isFlipY_;
 }
 
 void Sprite::SetIsFlipY(bool isFlipY) {

@@ -121,12 +121,13 @@ void AssetActionDialog::AcceptMoveDrop(const std::filesystem::path& directory, b
 #endif
 }
 
-void AssetActionDialog::Draw(IEditableWorld& scene, EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
+void AssetActionDialog::Draw(IWorldObjects& objects, IParticlePreviewWorld& particleWorld, IAssetReferenceRemapper& assetReferences,
+	EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath) {
 	// 保留中の要求を開き、使用箇所と実行前の確認を表示する。
 	activeScenePath_ = activeScenePath;
 #ifdef USE_IMGUI
 	if (isOpenRequested_) {
-		references_ = CollectReferences(scene, history);
+		references_ = CollectReferences(objects, particleWorld, history);
 
 		isInspected_ = true;
 
@@ -217,7 +218,7 @@ void AssetActionDialog::Draw(IEditableWorld& scene, EditorSession& history, Part
 		ImGui::BeginDisabled(!isAllowed);
 		// 「実行」ボタン押下を受け取る。
 		if (ImGui::Button("実行")) {
-			if (Execute(scene, history, particles)) {
+			if (Execute(objects, particleWorld, assetReferences, history, particles)) {
 				action_ = Action::None;
 
 				// 現在のポップアップを閉じる。
@@ -242,7 +243,9 @@ void AssetActionDialog::Draw(IEditableWorld& scene, EditorSession& history, Part
 	// ポップアップを終了。
 	ImGui::EndPopup();
 #else
-	(void)scene;
+	(void)objects;
+	(void)particleWorld;
+	(void)assetReferences;
 	(void)history;
 	(void)particles;
 #endif
@@ -303,11 +306,12 @@ void AssetActionDialog::Request(Action action, const std::filesystem::path& sour
 	isOpenRequested_ = true;
 }
 
-std::vector<AssetReference> AssetActionDialog::CollectReferences(IEditableWorld& scene, const EditorSession& history) const {
+std::vector<AssetReference> AssetActionDialog::CollectReferences(IWorldObjects& objects,
+	IParticlePreviewWorld& particleWorld, const EditorSession& history) const {
 	// 編集中の配置と履歴が参照するAssetを集める。
 	std::vector<AssetReference> references;
 
-	WorldAssetReferences::Collect(scene.CaptureObjects(), "Current scene", references);
+	WorldAssetReferences::Collect(objects.CaptureObjects(), "Current scene", references);
 
 	history.CollectAssetReferences(references);
 
@@ -315,16 +319,17 @@ std::vector<AssetReference> AssetActionDialog::CollectReferences(IEditableWorld&
 		references.push_back({AssetPathChange::Text(activeScenePath_.lexically_relative(root_)), "Editor / open scene document"});
 	}
 
-	if (scene.GetParticleSettings() != nullptr) {
-		references.push_back({AssetPathChange::Text(AssetPathChange::Path(scene.GetParticleSettings()->texture).lexically_relative("resources")), "Current scene / shared Particle preset"});
+	if (particleWorld.GetParticleSettings() != nullptr) {
+		references.push_back({AssetPathChange::Text(AssetPathChange::Path(particleWorld.GetParticleSettings()->texture).lexically_relative("resources")), "Current scene / shared Particle preset"});
 	}
 
 	return references;
 }
 
-bool AssetActionDialog::Execute(IEditableWorld& scene, EditorSession& history, ParticleEditorPanel& particles) {
+bool AssetActionDialog::Execute(IWorldObjects& objects, IParticlePreviewWorld& particleWorld, IAssetReferenceRemapper& assetReferences,
+	EditorSession& history, ParticleEditorPanel& particles) {
 	// 確認画面を開いた後の変更も含め、実行直前に使用箇所を調べ直す。
-	references_ = CollectReferences(scene, history);
+	references_ = CollectReferences(objects, particleWorld, history);
 
 	if (action_ == Action::Delete) {
 		std::filesystem::path trash;
@@ -357,7 +362,7 @@ bool AssetActionDialog::Execute(IEditableWorld& scene, EditorSession& history, P
 				destination = root_ / entered / source_.filename();
 			}
 
-			if (!operations_.Move(source_, destination, scene, references_, status_)) {
+			if (!operations_.Move(source_, destination, objects, particleWorld, assetReferences, references_, status_)) {
 				return false;
 			}
 

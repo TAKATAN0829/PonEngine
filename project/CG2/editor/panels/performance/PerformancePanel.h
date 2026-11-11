@@ -1,10 +1,12 @@
 ﻿#pragma once
 
+#include "../EditorPanel.h"
 #include <string>
 
 // 履歴の選択とCSV出力の状態を所有する。計測データはFrameProfilerから借用する。
-class PerformancePanel {
+class PerformancePanel : public EditorPanel {
 public:
+	PerformancePanel() : EditorPanel("Performance") {}
 
 	//=============================================================================================//
 	// 描画処理

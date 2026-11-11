@@ -63,8 +63,6 @@ public:
 	// メイン指定に関係なく、指定Cameraの実描画と同じ視野を取得する。
 	virtual bool GetCameraView(WorldObjectId, float, CameraView&) const;
 
-	virtual bool GetGameCameraView(float, CameraView&) const;
-
 	//=============================================================================================//
 	// Getter / 一覧の保存・復元
 

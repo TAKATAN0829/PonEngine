@@ -26,24 +26,18 @@ void HierarchyPanel::Initialize() {
 // 描画処理
 
 
-// Scene内のオブジェクトを階層表示し、選択・親子付け・作成操作を受け付ける。
-void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
+void HierarchyPanel::Draw(IWorldObjects* scene, EditorSelection& selection) {
 	FrameProfiler::Scope sectionTime(FrameProfiler::Section::Hierarchy);
 
 #ifdef USE_IMGUI
-	// 「Hierarchy」ウィンドウを開始。
-	if (!ImGui::Begin("Hierarchy")) {
-		// ウィンドウを終了。
-		ImGui::End();
-
+	Window window(*this);
+	if (!window.IsVisible()) {
 		return;
 	}
 
 	if (scene == nullptr) {
 		// 「No editable scene」テキストを表示。
 		ImGui::TextUnformatted("No editable scene");
-		// ウィンドウを終了。
-		ImGui::End();
 
 		return;
 	}
@@ -51,8 +45,6 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 	if (!scene->HasObjectCollectionSupport()) {
 		// テキストを表示。
 		ImGui::TextUnformatted("Object editing is unavailable");
-		// ウィンドウを終了。
-		ImGui::End();
 
 		return;
 	}
@@ -157,9 +149,6 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 
 	DrawContextMenu(*scene, selection);
 
-	// ウィンドウを終了。
-	ImGui::End();
-
 #else
 	(void)scene;
 	(void)selection;
@@ -172,7 +161,7 @@ void HierarchyPanel::Draw(IEditableWorld* scene, EditorSelection& selection) {
 
 
 // 種類別の上限を確認し、新規作成サブメニューを描く。
-void HierarchyPanel::DrawCreateMenu(IEditableWorld& scene, EditorSelection& selection) {
+void HierarchyPanel::DrawCreateMenu(IWorldObjects& scene, EditorSelection& selection) {
 	// 作成できるオブジェクトの種類をメニューへ並べる。
 #ifdef USE_IMGUI
 	// 「新規作成」メニューを開始。
@@ -304,7 +293,7 @@ void HierarchyPanel::DrawCreateMenu(IEditableWorld& scene, EditorSelection& sele
 }
 
 // ツリーの描画後に操作するため、削除・追加で描画中の参照を無効化しない。
-void HierarchyPanel::DrawContextMenu(IEditableWorld& scene, EditorSelection& selection) {
+void HierarchyPanel::DrawContextMenu(IWorldObjects& scene, EditorSelection& selection) {
 	// 右クリックした対象に応じて操作メニューを組み立てる。
 #ifdef USE_IMGUI
 	// 「HierarchyContext」ポップアップを開始。
@@ -415,7 +404,7 @@ void HierarchyPanel::DrawContextMenu(IEditableWorld& scene, EditorSelection& sel
 }
 
 // 子孫をまとめて保存する。入力にディレクトリを許さず、resources/prefabs内へ置く。
-void HierarchyPanel::DrawPrefabSaveMenu(IEditableWorld& scene) {
+void HierarchyPanel::DrawPrefabSaveMenu(IWorldObjects& scene) {
 	// 保存名を受け取り、対象の階層をPrefabへ書き出す。
 #ifdef USE_IMGUI
 	// 「Prefabとして保存」メニューを開始。
@@ -466,7 +455,7 @@ void HierarchyPanel::DrawPrefabSaveMenu(IEditableWorld& scene) {
 #endif
 }
 
-void HierarchyPanel::DrawBranch(IEditableWorld& scene, EditorSelection& selection, const ChildIndices& children,
+void HierarchyPanel::DrawBranch(IWorldObjects& scene, EditorSelection& selection, const ChildIndices& children,
 	WorldObjectId parentId, HierarchyRequest& request) {
 #ifdef USE_IMGUI
 	// 親IDから直下の子だけを取り出し、子がなければ描画を終える。

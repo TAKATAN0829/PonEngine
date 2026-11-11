@@ -23,15 +23,10 @@ struct EditorToolVisibility {
 
 struct AssetPathChange;
 
-// 共通のオブジェクト操作へ、Editorの表示・入力・プレビュー操作を加えた窓口。
-// 実行・保存処理はIWorldObjectsを使い、Editorのパネル型を参照しない。
-class IEditableWorld : public IWorldObjects {
+// SceneViewだけに渡すカメラ・表示領域・スナップ機能。
+class ISceneViewWorld {
 public:
-
-	//=============================================================================================//
-	// 終了処理
-
-	~IEditableWorld() override = default;
+	virtual ~ISceneViewWorld() = default;
 
 	//=============================================================================================//
 	// Getter / Sceneカメラ・選択範囲
@@ -44,14 +39,6 @@ public:
 	// 表面スナップはメッシュを持つ対象だけを調べる。距離はワールド単位。
 	virtual bool IntersectObjectSurface(size_t, const Vector3&, const Vector3&, float&) const;
 
-	//=============================================================================================//
-	// 描画処理 / 任意の補助画面
-
-	virtual void DrawEditorTools(EditorToolVisibility& visibility);
-
-	//=============================================================================================//
-	// Setter / Scene表示・入力
-
 	virtual void SetEditorViewport(uint32_t width, uint32_t height);
 
 	virtual void SetEditorCameraInput(bool isEnabled);
@@ -59,6 +46,12 @@ public:
 	virtual void SetEditorGameView(bool isEnabled);
 
 	virtual void FocusEditorCamera(const Vector3& position);
+};
+
+// ParticleEditorだけに渡す発生設定とプレビュー操作。
+class IParticlePreviewWorld {
+public:
+	virtual ~IParticlePreviewWorld() = default;
 
 	//=============================================================================================//
 	// Getter / Particle
@@ -85,18 +78,21 @@ public:
 
 	// 指定したParticleオブジェクトの有効なEmitterを一度発生させる。
 	virtual bool BurstParticleEffect(WorldObjectId objectId);
+};
 
-	//=============================================================================================//
-	// Asset参照の更新
+// Asset一覧とInspectorだけに渡すモデル・画像・アニメーション機能。
+class IAssetReferenceRemapper {
+public:
+	virtual ~IAssetReferenceRemapper() = default;
 
 	// ディスク上の移動が成功した後に呼ぶ。GPUリソースの所有権は変更しない。
 	virtual void RemapAssetPaths(const AssetPathChange& change);
+};
 
-	// 新規作成・Sceneファイル読込後に、保存対象外の実行状態だけを初期化する。
-	virtual void OnSceneContentsChanged();
-
-	//=============================================================================================//
-	// オブジェクト操作
+// ProjectとInspectorへモデル情報とモデルプレビュー機能を渡す。
+class IModelAssetAccess {
+public:
+	virtual ~IModelAssetAccess() = default;
 
 	// 3Dプレビュー用の画像ハンドルを返す。描画を持たないシーンは0を返す。
 	virtual uint64_t GetModelPreview(const std::string&, std::string&);
@@ -109,11 +105,38 @@ public:
 
 	virtual std::vector<ModelAnimationInfo> GetModelAnimations(const std::string&) const;
 
-	virtual bool PrepareTexture(const std::string&, std::string& error);
-
 	virtual void SetAnimationPreview(WorldObjectId, bool, bool);
 
 	virtual float GetAnimationTime(WorldObjectId) const;
 
 	virtual bool IsAnimationPreviewPlaying(WorldObjectId) const;
+};
+
+// InspectorとParticleEditorへテクスチャの準備機能だけを渡す。
+class ITextureAssetAccess {
+public:
+	virtual ~ITextureAssetAccess() = default;
+	virtual bool PrepareTexture(const std::string&, std::string& error);
+};
+
+// 新規Sceneや読込後の一時状態を初期化する。
+class IEditorSceneLifecycle {
+public:
+	virtual ~IEditorSceneLifecycle() = default;
+	virtual void OnSceneContentsChanged();
+};
+
+// Editorに任意の補助画面を描画するシーン機能。
+class IEditorToolsWorld {
+public:
+	virtual ~IEditorToolsWorld() = default;
+	virtual void DrawEditorTools(EditorToolVisibility& visibility);
+};
+
+// Editor本体だけが使うシーン操作の集合。各Panelには個別の機能を渡す。
+class IEditableWorld : public IWorldObjects, public ISceneViewWorld, public IParticlePreviewWorld,
+	public IAssetReferenceRemapper, public IModelAssetAccess, public ITextureAssetAccess,
+	public IEditorSceneLifecycle, public IEditorToolsWorld {
+public:
+	~IEditableWorld() override = default;
 };

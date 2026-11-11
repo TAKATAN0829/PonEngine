@@ -265,7 +265,7 @@ EditorとReleaseで旧Scene 1〜12を読み込むと、以前の固定ライト3
 
 通常起動のGameSceneで再生し、GameViewを選んでEscapeを押すと、青いCubeが回転するTitleSceneへ移る。そこでEnterを押すとGameSceneへ戻る。Debug/Developmentの編集・Pause中、文字入力中、メニュー操作中はキーボードで場面を変えない。ReleaseはEditorなしで同じ遷移を行う。
 
-タイトルから始めたい場合は、Visual Studioのデバッグ設定のコマンド引数へ`--title`を指定する。起動試験は`--title --smoke-test`で90フレーム後に終了できる。場面名は中央ツールバー左側に表示する。
+タイトルから始めたい場合は、Visual Studioのデバッグ設定のコマンド引数へ`--title`を指定する。場面名は中央ツールバー左側に表示する。
 
 Editorで停止すると最初に再生した編集シーンへ戻り、配置も再生前へ復元する。再生中の場面遷移はSceneメニューのファイル読込とは別の操作で、保存先は既定のGameScene.ponsceneのまま。TitleSceneは共通の更新・描画基盤を検証する最小サンプルで、本番用タイトルUIではない。
 

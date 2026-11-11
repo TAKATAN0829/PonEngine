@@ -125,11 +125,9 @@ void PerformancePanel::Draw(bool& isVisible) {
 
 	// 次のウィンドウサイズを設定。
 	ImGui::SetNextWindowSize({590, 650}, ImGuiCond_FirstUseEver);
-	// 「Performance」ウィンドウを開始。
-	if (!ImGui::Begin("Performance", &isVisible)) {
-		// ウィンドウを終了。
-		ImGui::End();
 
+	Window window(*this, &isVisible);
+	if (!window.IsVisible()) {
 		return;
 	}
 
@@ -145,8 +143,6 @@ void PerformancePanel::Draw(bool& isVisible) {
 	if (FrameProfiler::GetCount() == 0) {
 		// 「計測開始待ち」テキストを表示。
 		ImGui::TextUnformatted("計測開始待ち");
-		// ウィンドウを終了。
-		ImGui::End();
 
 		return;
 	}
@@ -198,8 +194,6 @@ void PerformancePanel::Draw(bool& isVisible) {
 
 	// 折り返しテキストを表示。
 	ImGui::TextWrapped("%s", exportStatus_.c_str());
-	// ウィンドウを終了。
-	ImGui::End();
 
 #else
 	(void)isVisible;

@@ -22,7 +22,8 @@ public:
 
 	void AcceptMoveDrop(const std::filesystem::path& directory, bool areChangesAllowed);
 
-	void Draw(IEditableWorld& scene, EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath = {});
+	void Draw(IWorldObjects& objects, IParticlePreviewWorld& particleWorld, IAssetReferenceRemapper& assetReferences,
+		EditorSession& history, ParticleEditorPanel& particles, const std::filesystem::path& activeScenePath = {});
 
 	//=============================================================================================//
 	// Getter / 操作結果
@@ -51,9 +52,11 @@ private:
 
 	void Request(Action action, const std::filesystem::path& source);
 
-	std::vector<AssetReference> CollectReferences(IEditableWorld& scene, const EditorSession& history) const;
+	std::vector<AssetReference> CollectReferences(IWorldObjects& objects, IParticlePreviewWorld& particleWorld,
+		const EditorSession& history) const;
 
-	bool Execute(IEditableWorld& scene, EditorSession& history, ParticleEditorPanel& particles);
+	bool Execute(IWorldObjects& objects, IParticlePreviewWorld& particleWorld, IAssetReferenceRemapper& assetReferences,
+		EditorSession& history, ParticleEditorPanel& particles);
 
 	//=============================================================================================//
 	// 確認待ちの操作

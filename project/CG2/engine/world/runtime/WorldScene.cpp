@@ -221,11 +221,7 @@ void WorldScene::Finalize() {
 // 接触色は保存対象外の最新ゲーム更新結果から取得する。
 bool WorldScene::IsColliderTouching(WorldObjectId identifier) const {
 	// 指定したオブジェクトが他のColliderと接触しているか確認する。
-	if (collision_.IsTouching(identifier)) {
-		return true;
-	}
-
-	return false;
+	return collision_.IsTouching(identifier);
 }
 
 uint64_t WorldScene::GetModelPreview(const std::string& model, std::string& error) {
@@ -850,11 +846,7 @@ bool WorldScene::CanHandleGameInput() const {
 
 bool WorldScene::IsPlaying() const {
 	// 編集モードとゲームの再生状態を区別する。
-	if (isPlaying_) {
-		return true;
-	}
-
-	return false;
+	return isPlaying_;
 }
 
 //=============================================================================================//
@@ -968,8 +960,10 @@ void WorldScene::UpdateObject() {
 		viewProjection = camera_->GetViewProjectionMatrix();
 
 		CameraView cameraView{};
+		const WorldObjectId mainCameraId = GetMainCameraId();
 
-		if (GetGameCameraView(static_cast<float>(viewportWidth_) / static_cast<float>(viewportHeight_), cameraView)) {
+		if (mainCameraId != kInvalidWorldObjectId && GetCameraView(mainCameraId,
+			static_cast<float>(viewportWidth_) / static_cast<float>(viewportHeight_), cameraView)) {
 			cameraMatrix = cameraView.cameraWorld;
 
 			viewProjection = cameraView.viewProjection;
@@ -1330,9 +1324,6 @@ void WorldScene::UpdateParticleEffect(const ParticleEffectDocument& document, Wo
 		emitter.Update(viewProjection, cameraMatrix, shouldSimulate, shouldEmit);
 	}
 }
-
-//=============================================================================================//
-// Getter / Particle更新条件
 
 bool WorldScene::IsParticlePreviewTarget(WorldObjectId objectId) const {
 	// 現在のプレビューが指定したEmitterを対象にしているか確認する。

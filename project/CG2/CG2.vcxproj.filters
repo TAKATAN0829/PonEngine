@@ -89,9 +89,6 @@
     <Filter Include="editor\panels\scene_view">
       <UniqueIdentifier>{bfbaaf8f-7dbc-4941-9458-67345263e7dc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="editor\panels\game_view">
-      <UniqueIdentifier>{2e97d6f5-12f0-4b1a-8ef5-51a322255491}</UniqueIdentifier>
-    </Filter>
     <Filter Include="editor\panels\particle_editor">
       <UniqueIdentifier>{6f7bcf4e-4261-4473-84f0-063138e6c875}</UniqueIdentifier>
     </Filter>
@@ -346,7 +343,13 @@
   </ItemGroup>
   <ItemGroup><Filter Include="editor" /><Filter Include="editor\panels" /><Filter Include="editor\panels\node_editor" /></ItemGroup>
   <ItemGroup>
+    <ClCompile Include="editor\panels\EditorPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
+    <ClInclude Include="editor\panels\EditorPanel.h"><Filter>editor\panels</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="editor\core\Editor.cpp"><Filter>editor\core</Filter></ClCompile>
+    <ClCompile Include="editor\core\EditorPlayback.cpp"><Filter>editor\core</Filter></ClCompile>
+    <ClCompile Include="editor\core\EditorSceneWorkflow.cpp"><Filter>editor\core</Filter></ClCompile>
     <ClCompile Include="editor\panels\hierarchy\HierarchyPanel.cpp"><Filter>editor\panels\hierarchy</Filter></ClCompile>
     <ClCompile Include="editor\panels\inspector\InspectorPanel.cpp"><Filter>editor\panels\inspector</Filter></ClCompile>
     <ClInclude Include="editor\core\Editor.h"><Filter>editor\core</Filter></ClInclude>
@@ -361,6 +364,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\objects\WorldObjects.cpp"><Filter>engine\world\objects</Filter></ClCompile>
+    <ClCompile Include="engine\world\objects\WorldObjectsCamera.cpp"><Filter>engine\world\objects</Filter></ClCompile>
+    <ClCompile Include="engine\world\objects\WorldObjectsOperations.cpp"><Filter>engine\world\objects</Filter></ClCompile>
+    <ClCompile Include="engine\world\objects\WorldObjectsValidation.cpp"><Filter>engine\world\objects</Filter></ClCompile>
     <ClInclude Include="engine\world\objects\WorldObjects.h"><Filter>engine\world\objects</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -464,8 +470,6 @@
 
     <ClInclude Include="editor\panels\performance\PerformancePanel.h"><Filter>editor\panels\performance</Filter></ClInclude>
 
-    <ClCompile Include="editor\panels\game_view\GameViewPanel.cpp"><Filter>editor\panels\game_view</Filter></ClCompile>
-    <ClInclude Include="editor\panels\game_view\GameViewPanel.h"><Filter>editor\panels\game_view</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="application\TitleScene.cpp"><Filter>application</Filter></ClCompile>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IEditableWorld.h"
+#include "IWorldObjects.h"
 #include "objects/WorldAssetReferences.h"
 
 // 履歴と再生前の設定を所有する。描画はEditorが担当し、このクラスは編集データを管理する。
@@ -11,13 +11,13 @@ public:
 	// 初期化処理
 
 	// 読込後の設定を履歴と保存済み状態の基準へ戻す。
-	void Initialize(IEditableWorld& scene);
+	void Initialize(IWorldObjects& objects);
 
 	//=============================================================================================//
 	// 更新処理
 
 	// ドラッグ・文字入力が終わった時点で履歴を一件記録する。
-	void Update(IEditableWorld& scene, bool isInteractionActive);
+	void Update(IWorldObjects& objects, bool isInteractionActive);
 
 	//=============================================================================================//
 	// Getter / 履歴・保存状態
@@ -26,7 +26,7 @@ public:
 
 	bool CanRedo() const;
 
-	bool IsDirty(const IEditableWorld& scene) const;
+	bool IsDirty(const IWorldObjects& objects) const;
 
 	//=============================================================================================//
 	// Getter / 再生状態
@@ -40,7 +40,7 @@ public:
 	//=============================================================================================//
 	// Setter / 保存基準
 
-	void MarkSaved(const IEditableWorld& scene);
+	void MarkSaved(const IWorldObjects& objects);
 
 	//=============================================================================================//
 	// Asset参照
@@ -54,16 +54,16 @@ public:
 	// 履歴操作
 
 	// 復元が失敗した場合は現在の設定と履歴位置を保持する。
-	bool Undo(IEditableWorld& scene, std::string& error);
+	bool Undo(IWorldObjects& objects, std::string& error);
 
-	bool Redo(IEditableWorld& scene, std::string& error);
+	bool Redo(IWorldObjects& objects, std::string& error);
 
 	//=============================================================================================//
 	// 再生操作
 
-	bool BeginPlay(IEditableWorld& scene, std::string& error);
+	bool BeginPlay(IWorldObjects& objects, std::string& error);
 
-	bool Stop(IEditableWorld& scene, std::string& error);
+	bool Stop(IWorldObjects& objects, std::string& error);
 
 	void TogglePause();
 
@@ -75,7 +75,7 @@ private:
 	// 設定比較
 
 	// 読取専用参照で比較し、変更がある場合にだけ履歴用のコピーを作る。
-	static bool DoesMatchSnapshot(const IEditableWorld& scene, const std::vector<WorldObjectData>& snapshot);
+	static bool DoesMatchSnapshot(const IWorldObjects& objects, const std::vector<WorldObjectData>& snapshot);
 
 	static bool AreObjectsEqual(const WorldObjectData& firstObject, const WorldObjectData& secondObject);
 

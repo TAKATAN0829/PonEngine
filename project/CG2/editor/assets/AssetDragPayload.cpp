@@ -26,9 +26,5 @@ bool ModelAssetPayload::Read(const void* data, size_t size, std::string& result)
 	result = payload.model;
 
 	// 空のパスは配置や移動の対象として使えない。
-	if (!result.empty()) {
-		return true;
-	}
-
-	return false;
+	return !result.empty();
 }

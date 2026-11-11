@@ -1,4 +1,5 @@
 #include "SceneDocument.h"
+#include "IEditableWorld.h"
 #include "serialization/SceneFile.h"
 #include <Windows.h>
 #include <cctype>
@@ -46,11 +47,7 @@ const std::filesystem::path& SceneDocument::GetPath() const {
 
 bool SceneDocument::HasPath() const {
 	// 編集中のシーンに保存先が設定されているか確認する。
-	if (!path_.empty()) {
-		return true;
-	}
-
-	return false;
+	return !path_.empty();
 }
 
 std::string SceneDocument::GetName() const {
@@ -65,20 +62,21 @@ std::string SceneDocument::GetName() const {
 //=============================================================================================//
 // 新規・読込・保存
 
-bool SceneDocument::New(IEditableWorld& world, std::string& error) {
+bool SceneDocument::New(IWorldObjects& objects, IEditorSceneLifecycle& lifecycle, std::string& error) {
 	// 空の配置への置換に成功してから、以前の保存先を外す。
-	if (!world.ReplaceObjects({}, error)) {
+	if (!objects.ReplaceObjects({}, error)) {
 		return false;
 	}
 
 	path_.clear();
 
-	world.OnSceneContentsChanged();
+	lifecycle.OnSceneContentsChanged();
 
 	return true;
 }
 
-bool SceneDocument::Open(IEditableWorld& world, const std::filesystem::path& path, std::string& error) {
+bool SceneDocument::Open(IWorldObjects& objects, IEditorSceneLifecycle& lifecycle,
+	const std::filesystem::path& path, std::string& error) {
 	// パスと保存内容を検証し、成功時だけ編集中のファイルを切り替える。
 	// 入力されたパスと、検証後に使うパスを分けて持つ。
 	std::filesystem::path resolved;
@@ -91,7 +89,7 @@ bool SceneDocument::Open(IEditableWorld& world, const std::filesystem::path& pat
 
 	// 検証済みのパスを、ファイルを開いて内容を解析する SceneFile に渡す。
 	// 最後の true は、旧形式のライト設定を現在の形式に移行する指定。
-	if (!SceneFile::Load(world, resolved, error, true)) {
+	if (!SceneFile::Load(objects, resolved, error, true)) {
 		// SceneFileが書いた失敗理由をそのまま呼び出し元へ返す。
 		return false;
 	}
@@ -100,12 +98,12 @@ bool SceneDocument::Open(IEditableWorld& world, const std::filesystem::path& pat
 	path_ = resolved;
 
 	// 前の配置の速度やプレビューを初期化する。
-	world.OnSceneContentsChanged();
+	lifecycle.OnSceneContentsChanged();
 
 	return true;
 }
 
-bool SceneDocument::Save(IEditableWorld& world, std::string& error) {
+bool SceneDocument::Save(IWorldObjects& objects, std::string& error) {
 	// 保存先が決まっていることを確認し、現在のファイルへ保存する。
 	if (!HasPath()) {
 		error = "Choose a scene filename before saving.";
@@ -113,10 +111,10 @@ bool SceneDocument::Save(IEditableWorld& world, std::string& error) {
 		return false;
 	}
 
-	return SaveAs(world, path_, true, error);
+	return SaveAs(objects, path_, true, error);
 }
 
-bool SceneDocument::SaveAs(IEditableWorld& world, const std::filesystem::path& path, bool isOverwriteConfirmed, std::string& error) {
+bool SceneDocument::SaveAs(IWorldObjects& objects, const std::filesystem::path& path, bool isOverwriteConfirmed, std::string& error) {
 	// 保存先と上書き可否を確認し、書込成功後に現在のパスを更新する。
 	std::filesystem::path resolved;
 
@@ -158,7 +156,7 @@ bool SceneDocument::SaveAs(IEditableWorld& world, const std::filesystem::path& p
 		return false;
 	}
 
-	if (!SceneFile::Save(world, resolved, error)) {
+	if (!SceneFile::Save(objects, resolved, error)) {
 		return false;
 	}
 

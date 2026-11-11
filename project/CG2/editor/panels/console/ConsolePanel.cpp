@@ -14,8 +14,8 @@
 void ConsolePanel::Draw() {
 	// ログの検索条件を受け取り、一致したメッセージを表示する。
 #ifdef USE_IMGUI
-	// 「Console」ウィンドウを開始。
-	if (ImGui::Begin("Console")) {
+	Window window(*this);
+	if (window.IsVisible()) {
 		// 検索欄がパネル幅を占めすぎないようにして、右に全件数を表示する。
 		// 次項目の幅を設定。
 		ImGui::SetNextItemWidth((std::min)(250.0f,ImGui::GetContentRegionAvail().x*0.6f));
@@ -101,9 +101,6 @@ void ConsolePanel::Draw() {
 		// 子領域を終了。
 		ImGui::EndChild();
 	}
-
-	// ウィンドウを終了。
-	ImGui::End();
 
 #endif
 }

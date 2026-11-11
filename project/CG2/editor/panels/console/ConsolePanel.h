@@ -1,8 +1,11 @@
 #pragma once
 
+#include "../EditorPanel.h"
+
 // ログの所有者はLogSystem。Consoleは検索条件だけを保持し、描画時に一覧を借用する。
-class ConsolePanel {
+class ConsolePanel : public EditorPanel {
 public:
+	ConsolePanel() : EditorPanel("Console") {}
 
 	//=============================================================================================//
 	// 描画処理

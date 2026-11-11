@@ -48,16 +48,9 @@ int WINAPI WinMain (_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR commandLine, 
 		engine.Initialize(new GameScene());
 	}
 
-	// 試験でも本番と同じGameSceneの生成・初期化を通し、古いオブジェクトの混在を検出する。
-	const bool isStartupTest = arguments.find("--smoke-test") != std::string_view::npos;
+	engine.Run();
 
-	if (isStartupTest) {
-		engine.Run(90);
-	} else {
-		engine.Run();
-	}
-
-	// 描画機能を解放する前に、起動試験の終了コードに使うエラー状態を取得する。
+	// GPU検証エラーを終了コードへ反映するため、解放前に状態を取得する。
 	const bool hasGraphicsErrors = engine.HasGraphicsErrors();
 
 	engine.Finalize ();

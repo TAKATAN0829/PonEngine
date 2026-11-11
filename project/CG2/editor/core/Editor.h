@@ -8,6 +8,8 @@
 #include "../panels/project/ProjectPanel.h"
 #include "../panels/console/ConsolePanel.h"
 #include "../panels/performance/PerformancePanel.h"
+#include "../panels/hierarchy/HierarchyPanel.h"
+#include "../panels/inspector/InspectorPanel.h"
 #include "../ui/EditorLayout.h"
 #include "../scene/SceneDocument.h"
 #include "../scene/SceneAssetDialog.h"
@@ -52,8 +54,6 @@ public:
 	bool ShouldSimulate(); // Step要求を一度だけ消費して更新可否を返す。
 
 	bool ShouldExit() const;
-
-	const std::filesystem::path& GetScenePath() const;
 
 	//=============================================================================================//
 	// Getter / Scene表示サイズ
@@ -113,11 +113,6 @@ private:
 
 	bool IsSaveConfirmationNeeded(SceneAction action, IEditableWorld& scene) const;
 
-	// 遷移前のParticleプリセットも、元の保存基準と組にして確認・保存する。
-	bool IsParticlePresetDirty(IEditableWorld& scene) const;
-
-	bool SaveParticlePreset(IEditableWorld& scene);
-
 	//=============================================================================================//
 	// パネル描画
 
@@ -161,6 +156,8 @@ private:
 
 	//=============================================================================================//
 	// パネル
+	HierarchyPanel hierarchyPanel_;
+	InspectorPanel inspectorPanel_;
 
 	SceneViewPanel sceneView_; // 画像上の選択と移動操作。
 

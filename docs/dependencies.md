@@ -67,18 +67,18 @@ world/settingsには保存・編集する設定値と検証・比較を置く。
 
 `editor/core`はEditor本体、`editor/state`は選択と履歴、`editor/ui`はレイアウト・配色・共通の入力欄を担当する。パネル間で運ぶドラッグ情報は`editor/assets`の`AssetDragPayload`に置く。`core/Editor`が状態とパネルをつなぐ。
 
-panelsはhierarchy・inspector・project・console・scene_view・game_view・particle_editor・performanceに分類した。各タブのヘッダーとcppを同じフォルダへ集め、includeはその場所を明記する。全タブのフォルダをinclude検索先へ追加することはしない。各クラスは同名の.h/.cpp一組へまとめ、宣言だけで完結する補助は.hのみとする。
+Hierarchy・Inspector・Project・Console・SceneView・ParticleEditor・Performanceを、それぞれ`EditorPanel`の派生クラスとして扱う。GameViewはSceneView内のタブで、独立したPanelクラスにはしない。Panelは自分の表示状態だけを持ち、描画時には必要な機能の参照を受け取る。
 
-Editorは選択・履歴・表示要求を所有し、InspectorPanel::DrawSelectionが借用した選択から単体／複数Inspectorへ接続する。PerformancePanelは履歴の選択やCSV出力の表示状態を所有し、Editorは開閉状態だけを渡す。SceneViewPanelは共有のタブ切替・画像寸法と編集操作の状態を維持し、SceneViewPanel.cppとGameViewPanel.cppが各タブの内容を描く。GameViewPanelは状態を重複所有せず、選択・ギズモ・編集カメラ入力を扱わない。
+`IEditableWorld`はSceneManagerとEditor本体をつなぐ機能集合だが、各Panelには渡さない。Hierarchyと選択・履歴は`IWorldObjects`、SceneViewは`ISceneViewWorld`、ParticleEditorは`IParticlePreviewWorld`と`ITextureAssetAccess`、Inspectorは`IModelAssetAccess`と`ITextureAssetAccess`、Projectは`IModelAssetAccess`と`IAssetReferenceRemapper`など、必要な機能だけを受け取る。InspectorPanel::DrawSelectionは選択一覧から単体／複数表示を切り替え、PerformancePanelは履歴の表示状態を所有する。
 
 ## worldの内部
 
 | 参照元 | 参照先 | 用途 |
 | --- | --- | --- |
-| `IEditableWorld.h` | `IWorldObjects.h` | 共通操作を継承し、Editor用の操作を追加 |
+| `IEditableWorld.h` | `IWorldObjects.h`・SceneView／Particle／Assetの機能契約 | Editor用の集合を構成し、各Panelは必要な契約だけを受け取る |
 | `IWorldObjects.h` | `objects/WorldObjectData.h` | 一覧・親子関係・Transform・作成・置換の共通操作 |
 | `objects/WorldObjectData.h` | `settings` | 保存・履歴・実行で共有する値と借用ビュー |
-| `objects/WorldObjects.h` | `IEditableWorld` | オブジェクト一覧の実装 |
+| `objects/WorldObjects.h` | `IEditableWorld` | オブジェクト一覧とEditor機能の実装 |
 | `objects/WorldPrimitives.h` | `IWorldObjects` | 基本形状の作成 |
 | `prefab/PrefabOperations.cpp` | `objects/WorldObjects.h`・`serialization/SceneFile.h` | Prefab操作の組立・仮データの検証・ファイル読書きの委譲 |
 | `serialization` | `objects` | 読込結果の検証・旧形式の移行 |
@@ -110,11 +110,11 @@ Prefab操作を`prefab/PrefabOperations`へ移し、`objects ↔ serialization`�
 
 `WorldObjectData`・`EditableObjectView`などのデータ型を`objects/WorldObjectData.h`へ移し、共通のオブジェクト操作を`IWorldObjects.h`へ分離した。実行処理・保存処理は`IWorldObjects`を受け取り、`IEditableWorld`固有のカメラ入力・補助画面・プレビュー操作を必要としない。
 
-`IEditableWorld.h`への直接includeは現在14個ある。ただし、`WorldObjectData`に全Componentの設定値を持たせる構造は維持している。また、`WorldObjects`は既存Editorとの接続を維持し、ライト移行などからこの具体実装を使う経路も残る。全ComponentやEditorへの間接的なinclude依存を解消したわけではない。
+`IEditableWorld`はEditor本体向けの集合にし、Panelや履歴・選択・SceneDocumentには`IWorldObjects`や個別のEditor機能だけを渡す。`WorldObjectData`に全Componentの設定値を持たせる構造と、`WorldObjects`を通じたSceneとEditorの接続は維持する。
 
 ### 基礎データとAssetの型の置き場所
 
-`types/ModelImportInfo.h`はモデルから読み取ったマテリアルの既定値とアニメーションクリップ情報を定義する。モデルの読込側と`IEditableWorld`が同じ型を参照する。`world/settings/AssetSettings.h`はオブジェクトごとのマテリアル上書きとアニメーション再生設定を定義し、`Object3d.cpp`が実際の描画と再生に適用する。
+`types/ModelImportInfo.h`はモデルから読み取ったマテリアルの既定値とアニメーションクリップ情報を定義する。モデルの読込側と`IModelAssetAccess`が同じ型を参照する。`world/settings/AssetSettings.h`はオブジェクトごとのマテリアル上書きとアニメーション再生設定を定義し、`Object3d.cpp`が実際の描画と再生に適用する。
 
 `types/BlendMode.h`は合成方法を定義する。`ParticleSettings`と`PipelineManager`が同じ型を参照し、実際のDirectX用ブレンド設定は`PipelineManager`で組み立てる。
 
@@ -126,7 +126,7 @@ WorldSceneは描画・プレビュー・シミュレーションの呼出順を�
 
 ### Editorと描画基盤の接続
 
-`ProjectPanel`はモデルと画像の両方を`editor/assets/AssetThumbnailCache`へ依頼する。キャッシュは準備を1フレーム1件に抑え、モデルなら`IEditableWorld`、画像なら`TextureManager`から描画用ハンドルを借りる。パネルは返された寸法を使って縦横比を保ったまま描く。
+`ProjectPanel`はモデルと画像の両方を`editor/assets/AssetThumbnailCache`へ依頼する。キャッシュは準備を1フレーム1件に抑え、モデルは`IModelAssetAccess`、画像は`TextureManager`から描画用ハンドルを借りる。パネルは返された寸法を使って縦横比を保ったまま描く。
 
 `WorldScene::GetModelPreview`は必要なモデルを検証・読込し、`renderer/ModelPreviewRenderer`へ渡す。Rendererは専用カメラと描画先を持ち、画像を一度描いてキャッシュする。Asset移動ではキーだけを替え、シーンを破棄するときはGPUの完了後に描画先を解放する。
 
@@ -153,10 +153,10 @@ ProjectPanelはeditor/assets/AssetActionDialogへ操作を委譲し、AssetFileO
 
 engine/asset/AssetPathChangeはパスの変換と使用箇所の文字列だけを持ち、ModelManagerなどのGPU型やWorld型を参照しない。world/objects/WorldAssetReferencesがWorldObjectDataの参照を列挙・更新する。WorldObjectsからassetへの新しい参照は、このパス値だけを使うためのものになる。
 
-実行側への通知はIEditableWorld::RemapAssetPathsで行い、WorldSceneが既存GPUキャッシュを更新する。EditorSessionとParticleEditorPanelはそれぞれ自分が所有する保存基準を更新する。Asset操作サービスからEditor本体やWorldSceneの具体型を参照する経路は作っていない。ファイル単位のinclude循環は引き続き検出していない。
+実行側への通知はIAssetReferenceRemapperで行い、WorldSceneが既存GPUキャッシュを更新する。EditorSessionとParticleEditorPanelはそれぞれ自分が所有する保存基準を更新する。Asset操作サービスからEditor本体やWorldSceneの具体型を参照する経路は作っていない。ファイル単位のinclude循環は引き続き検出していない。
 
 ## 複数Scene Assetの編集
 
 `editor/scene/SceneDocument`が現在の配置ファイルを所有し、保存・検証・読込を`world/serialization/SceneFile`へ委譲する。`SceneAssetDialog`は選択結果を返し、Editorが未保存確認と履歴・選択の初期化を行う。ProjectPanelは開く要求とAsset改名通知を返すだけで、SceneDocumentやEditor本体を参照しない。
 
-起動時の保存先はIScene→SceneManager→Engine経由のメタデータとして一度だけ渡し、編集中の保存先をゲーム側へ逆参照させない。配置切替後の一時状態の解除はIEditableWorld::OnSceneContentsChangedを使う。WorldからEditorへのincludeは追加していない。
+起動時の保存先はIScene→SceneManager→Engine経由のメタデータとして一度だけ渡し、編集中の保存先をゲーム側へ逆参照させない。配置切替後の一時状態の解除はIEditorSceneLifecycleを使う。WorldからEditorへのincludeは追加していない。

@@ -26,7 +26,7 @@ void FrameProfiler::Initialize() {
 	peak_ = {};
 
 	// リングバッファに残った履歴を消す。
-	history_ = {};
+	history_.fill({});
 
 	// 記録件数と次の書込位置を戻す。
 	count_ = 0;

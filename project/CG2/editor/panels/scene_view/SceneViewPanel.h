@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../EditorPanel.h"
 #include "IEditableWorld.h"
 
 class EditorSelection;
@@ -7,8 +8,9 @@ class EditorSelection;
 struct ImVec2;
 
 // Scene画像へ選択枠と移動・回転・拡縮ギズモを重ねる。描画リソースは借用する。
-class SceneViewPanel {
+class SceneViewPanel : public EditorPanel {
 public:
+	SceneViewPanel() : EditorPanel("Scene Viewport") {}
 
 	//=============================================================================================//
 	// 初期化処理
@@ -19,7 +21,7 @@ public:
 	//=============================================================================================//
 	// 描画処理
 
-	void Draw(IEditableWorld& scene, EditorSelection& selection);
+	void Draw(IWorldObjects& objects, ISceneViewWorld& view, EditorSelection& selection);
 
 	//=============================================================================================//
 	// Getter / 操作状態・画像サイズ
@@ -65,59 +67,59 @@ private:
 	// 更新処理 / ドラッグ
 
 	// パネル内の座標を使い、開始位置からの移動量を求める。
-	void Update(IEditableWorld& scene, const EditorViewInfo& viewInfo, const Vector2& mousePosition);
+	void Update(IWorldObjects& objects, const EditorViewInfo& viewInfo, const Vector2& mousePosition);
 
 	//=============================================================================================//
 	// Transform更新・復元
 
 	// 位置を戻してからドラッグを解除する。
-	void CancelDrag(IEditableWorld& scene);
+	void CancelDrag(IWorldObjects& objects);
 
 	// 一括変換に失敗した場合は全対象を開始値へ戻し、部分的な操作を残さない。
-	bool ApplyDragTransform(IEditableWorld& scene, const Matrix4x4& delta);
+	bool ApplyDragTransform(IWorldObjects& objects, const Matrix4x4& delta);
 
 	//=============================================================================================//
 	// ID検索・選択・Asset配置
 
-	static EditableObjectView FindObject(IEditableWorld& scene, WorldObjectId objectId);
+	static EditableObjectView FindObject(IWorldObjects& objects, WorldObjectId objectId);
 
 	//=============================================================================================//
 	// 表示領域
 
 	// 編集タブの内容だけを描き、GameViewの処理を混在させない。
-	void DrawScene(IEditableWorld& scene, EditorSelection& selection);
+	void DrawScene(IWorldObjects& objects, ISceneViewWorld& view, EditorSelection& selection);
 
 #ifdef USE_IMGUI
-	bool ResizeViewport(IEditableWorld& scene, const ImVec2& availableSize);
+	bool ResizeViewport(IWorldObjects& objects, ISceneViewWorld& view, const ImVec2& availableSize);
 
 	//=============================================================================================//
 	// 補助表示
 
-	void DrawOverlay(IEditableWorld& scene, const EditorViewInfo& viewInfo, const ImVec2& origin);
+	void DrawOverlay(IWorldObjects& objects, const EditorViewInfo& viewInfo, const ImVec2& origin);
 
 	// 選択中のColliderだけを描き、GameViewへは表示しない。
-	void DrawColliders(IEditableWorld& scene, const EditorSelection& selection, const EditorViewInfo& viewInfo, const ImVec2& origin);
+	void DrawColliders(IWorldObjects& objects, const EditorSelection& selection, const EditorViewInfo& viewInfo, const ImVec2& origin);
 
 	// カメラの近・遠平面と光源の影響球は、選択中だけSceneViewへ描く。
-	void DrawGuides(IEditableWorld& scene, const EditorSelection& selection, const EditorViewInfo& viewInfo, const ImVec2& origin);
+	void DrawGuides(IWorldObjects& objects, const EditorSelection& selection, const EditorViewInfo& viewInfo, const ImVec2& origin);
 
 	//=============================================================================================//
 	// ギズモ描画・操作開始
 
 	// 最も近い一軸を確定してから、全選択ルートの開始値を保存する。
-	bool BeginDrag(IEditableWorld& scene, EditorSelection& selection, const EditorViewInfo& viewInfo,
+	bool BeginDrag(IWorldObjects& objects, EditorSelection& selection, const EditorViewInfo& viewInfo,
 		const Vector2& mousePosition, const Vector2& screenOrigin, const Vector3& axisOrigin,
 		const Vector3& axisDirection, float axisLength, size_t axisIndex);
 
-	bool DrawGizmo(IEditableWorld& scene, EditorSelection& selection, const EditorViewInfo& viewInfo,
+	bool DrawGizmo(IWorldObjects& objects, ISceneViewWorld& view, EditorSelection& selection, const EditorViewInfo& viewInfo,
 		const ImVec2& viewportOrigin, const Vector2& mousePosition, bool isImageHovered);
 
 	//=============================================================================================//
 	// 選択・配置
 
-	bool AcceptModelDrop(IEditableWorld& scene, EditorSelection& selection, const ImVec2& viewportOrigin);
+	bool AcceptModelDrop(IWorldObjects& objects, ISceneViewWorld& view, EditorSelection& selection, const ImVec2& viewportOrigin);
 
-	void PickObject(IEditableWorld& scene, EditorSelection& selection, const EditorViewInfo& viewInfo, const Vector2& mousePosition);
+	void PickObject(IWorldObjects& objects, ISceneViewWorld& view, EditorSelection& selection, const EditorViewInfo& viewInfo, const Vector2& mousePosition);
 
 #endif
 
