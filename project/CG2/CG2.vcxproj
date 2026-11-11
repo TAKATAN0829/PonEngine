@@ -449,6 +449,10 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="editor\Editor.h" />
+    <ClInclude Include="editor\EditorScene.h" />
+    <ClInclude Include="editor\EditorPanels.h" />
     <ClCompile Include="editor\Editor.cpp" />
+    <ClCompile Include="editor\EditorScene.cpp" />
+    <ClCompile Include="editor\EditorPanels.cpp" />
   </ItemGroup>
 </Project>

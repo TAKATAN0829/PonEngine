@@ -448,6 +448,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="editor\Editor.h"><Filter>editor</Filter></ClInclude>
+    <ClInclude Include="editor\EditorScene.h"><Filter>editor</Filter></ClInclude>
+    <ClInclude Include="editor\EditorPanels.h"><Filter>editor</Filter></ClInclude>
     <ClCompile Include="editor\Editor.cpp"><Filter>editor</Filter></ClCompile>
+    <ClCompile Include="editor\EditorScene.cpp"><Filter>editor</Filter></ClCompile>
+    <ClCompile Include="editor\EditorPanels.cpp"><Filter>editor</Filter></ClCompile>
   </ItemGroup>
 </Project>
