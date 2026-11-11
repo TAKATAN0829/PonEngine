@@ -109,24 +109,6 @@ public:
 
 	void SetUseRootNodeMatrix (bool isRootNodeMatrixUsed);
 
-	//=============================================================================================//
-	// DirectionalLight設定
-
-	void SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity);
-
-	//=============================================================================================//
-	// PointLight設定
-
-	void SetPointLight (const PointLight& pointLight);
-
-	// 最大数は呼出元と保存時にも検証するが、GPU転送時にも配列境界を守る。
-	void SetPointLights(const std::vector<PointLight>& lights);
-
-	//=============================================================================================//
-	// SpotLight設定
-
-	void SetSpotLight (const SpotLight& spotLight);
-
 	// Sceneが一度だけ収集した固定長配列を反映する。隠れた既定光源を追加しない。
 	void SetSceneLights(const WorldLightCollection& lights);
 
@@ -139,11 +121,6 @@ public:
 	// BlendMode設定
 
 	void SetBlendMode (BlendMode blendMode);
-
-	//=============================================================================================//
-	// BlendMode取得
-
-	BlendMode GetBlendMode () const;
 
 private:
 

@@ -11,7 +11,6 @@ public:
 
 	static bool Save(const ParticleEffectDocument& document, const std::filesystem::path& path, std::string& error);
 	static bool Load(ParticleEffectDocument& document, const std::filesystem::path& path, std::string& error);
-	static bool LoadSingleEmitter(ParticleSettings& settings, const std::filesystem::path& path, std::string& error);
 	static bool ReadFromStream(std::istream& input, ParticleEffectDocument& document);
 
 	static void WriteDocument(std::ostream& output, const ParticleEffectDocument& document);

@@ -249,9 +249,3 @@ uint64_t SceneRenderTarget::GetTextureHandle() const {
 	// Scene画像をUIへ表示するためのハンドルを取得する。
 	return descriptors_->GetGPUDescriptorHandle(descriptorIndex_).ptr;
 }
-
-// GPU完了後の画像読出し用。End後の状態はPIXEL_SHADER_RESOURCE、所有権は移さない。
-ID3D12Resource* SceneRenderTarget::GetColorResource() const {
-	// Scene画像のGPUリソースを取得する。
-	return color_.Get();
-}

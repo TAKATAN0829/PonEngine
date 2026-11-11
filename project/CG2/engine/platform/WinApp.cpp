@@ -23,6 +23,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
 
 
 void WinApp::Initialize() {
+	hasQuitMessage_ = false;
 
 	// システムタイマーの分解能を上げる
 	timeBeginPeriod(1);
@@ -76,7 +77,7 @@ void WinApp::Update() {
 // メッセージの処理
 
 
-bool WinApp::ProcessMessage() {
+void WinApp::ProcessMessage() {
 
 	MSG message{};
 
@@ -84,15 +85,14 @@ bool WinApp::ProcessMessage() {
 	// メッセージが来るまで待たず、今ある分だけ処理してゲームの更新へ戻る。
 	while (PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
 		if (message.message == WM_QUIT) {
-			return true;
+			hasQuitMessage_ = true;
+			return;
 		}
 
 		TranslateMessage(&message);
 
 		DispatchMessage(&message);
 	}
-
-	return false;
 }
 
 //=============================================================================================//
@@ -112,6 +112,10 @@ void WinApp::Finalize() {
 bool WinApp::IsCloseRequested() const {
 	// 保存確認を待っているウィンドウ終了要求があるか確認する。
 	return isCloseRequested_;
+}
+
+bool WinApp::HasQuitMessage() const {
+	return hasQuitMessage_;
 }
 
 HWND WinApp::GetHwnd() const {

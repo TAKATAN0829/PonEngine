@@ -401,12 +401,6 @@ ID3D12CommandQueue* DirectXCommon::GetCommandQueue() {
 	return commandQueue_.Get();
 }
 
-// PostDraw完了後・次のPreDraw前だけ参照可能。所有権は移さない。
-ID3D12Resource* DirectXCommon::GetPresentedBuffer() const {
-	// 直前に描画したバックバッファを取得する。
-	return swapChainResources_[backBufferIndex_].Get();
-}
-
 //=============================================================================================//
 // GPU実行時間
 

@@ -279,24 +279,24 @@ PhysicsTestsはBox/Sphereの着地、壁、質量比、反発、摩擦、Trigger
 
 ## Editorパネルの責務と実装ファイル
 
-`editor/panels`はタブ単位のフォルダへ分類し、各クラスの宣言は同名の.h、実装は原則同名の.cppへまとめる。ファイルは500行程度を目安にし、超える場合は責務のまとまりで同じクラスの実装を分けてよい。分割だけの転送関数や細切れの補助ファイルは作らない。型・定数・宣言だけの.hは許可し、関数の処理は置かない。空のcppや形式だけのヘッダーは増やさない。起動入口のmain.cppは同名ヘッダーを必要としない。
+Editor側の処理と状態はEditor一クラスへ集約する。宣言は `editor/Editor.h`、実装は `editor/Editor.cpp` の一組にまとめ、機能ごとの分類コメントで区切る。複数件必要な文書やParticleの退避状態は、処理を持たない構造体で保持する。
 
 GameScene・Editor・Asset・描画・入力・物理など、自作コード全体でcppの分類名と関数の並びをhの宣言に合わせる。関数区分は「メンバ関数 / Motion」ではなく「Motion」のように内容だけを書く。コンストラクタとデストラクタは生成・破棄として分類する。補助関数・内部データの定義はcpp内の実装用の枠へ分ける。Getter／Setterもcppに実装し、型・変数の宣言だけのカテゴリにはcppへ空の見出しを作らない。namespaceや通常の関数も、宣言側の分類と並びに合わせる。
 
-| タブ | フォルダ | .h / .cppの名前 | 担当 |
-| --- | --- | --- | --- |
-| Hierarchy | hierarchy | HierarchyPanel | 親子ツリー・作成・削除・複製・右クリック |
-| Inspector | inspector | InspectorPanel | 単体／複数選択・各Componentの編集 |
-| Project | project | ProjectPanel | フォルダ走査・一覧・プレビュー・Asset操作 |
-| Console | console | ConsolePanel | ログの検索・一覧・全文確認・コピー |
-| SceneView | scene_view | SceneViewPanel | 共通タブ・編集カメラ・選択・配置・ギズモ・補助表示 |
-| GameView | scene_view | SceneViewPanel | SceneView内タブとしてゲームカメラの画像を表示 |
-| Particle Editor | particle_editor | ParticleEditorPanel | Emitter設定・プリセット・編集プレビュー |
-| Performance | performance | PerformancePanel | 計測履歴・ピーク表示・CSV出力結果 |
+| タブ | Editorの描画関数 | 担当 |
+| --- | --- | --- |
+| Hierarchy | DrawHierarchy | 親子ツリー・作成・削除・複製・右クリック |
+| Inspector | DrawInspectorSelection | 単体／複数選択・各Componentの編集 |
+| Project | DrawProject | フォルダ走査・一覧・プレビュー・Asset操作 |
+| Console | DrawConsole | ログの検索・一覧・全文確認・コピー |
+| SceneView | DrawSceneView | 共通タブ・編集カメラ・選択・配置・ギズモ・補助表示 |
+| GameView | DrawSceneView | SceneView内タブとしてゲームカメラの画像を表示 |
+| Particle Editor | DrawParticleEditor | Emitter設定・プリセット・編集プレビュー |
+| Performance | DrawPerformance | 計測履歴・ピーク表示・CSV出力結果 |
 
-Editorは選択と履歴を所有し、InspectorPanel::DrawSelectionへ選択を借用させる。InspectorPanelが単体と複数選択の表示を切り替える。Editorはファイルを500行程度に保つため、基本処理、シーン操作、再生操作を責務別のcppへ分ける。メンバー関数の処理を転送だけの関数で包まない。
+Editorは選択と履歴を所有し、InspectorPanel::DrawSelectionへ選択を借用させる。InspectorPanelが単体と複数選択の表示を切り替える。基本処理、シーン操作、再生操作はEditor.cpp内で分類する。メンバー関数の処理を転送だけの関数で包まない。
 
-すべての独立したPanelは`EditorPanel`を継承し、各Panelクラスだけが必要な表示状態を持つ。SceneViewPanelはScene/Gameのタブ、画像寸法、編集操作を所有し、GameViewの表示処理も同じクラス内に置く。SceneViewPanelにはオブジェクト操作とSceneView機能を別々に渡す。SceneViewDrawing.hは画面位置への変換と線分描画の宣言を持ち、その実装は同名のSceneViewDrawing.cppへ置く。
+各パネルの表示と操作はEditorのメンバー関数が担当する。ImGuiのBeginとEndは描画関数内で対応させ、早期returnでもウィンドウを閉じる。Scene/Gameタブ、画像寸法、ギズモ、一覧キャッシュ、確認ダイアログ、計測履歴の選択もEditorが保持する。
 
 ProjectPanelはディレクトリ・選択・プレビューの状態を所有し、画面構成とAsset操作もProjectPanel.cppへ置く。Consoleはログを描画中だけ借用し、Projectのキャッシュや更新処理には依存しない。PerformancePanelは履歴の選択とCSV出力結果を自身のメンバーで保持する。
 

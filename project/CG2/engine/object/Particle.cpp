@@ -125,7 +125,7 @@ void Particle::Update(const Matrix4x4& viewProjectionMatrix, const Matrix4x4& ca
 		if (shouldSimulate) {
 			if (isAccelerationFieldEnabled_) {
 
-				particleIterator->velocity = MathUtility::Add(particleIterator->velocity, MathUtility::Multiply(kDeltaTime, accelerationField_.acceleration));
+				particleIterator->velocity = MathUtility::Add(particleIterator->velocity, MathUtility::Multiply(kDeltaTime, acceleration_));
 			}
 
 			particleIterator->transform.translate = MathUtility::Add(particleIterator->transform.translate, MathUtility::Multiply(kDeltaTime, particleIterator->velocity));
@@ -237,17 +237,17 @@ void Particle::Finalize() {
 // Particle追加
 
 // 不正な編集中の値は実行へ反映せず、直前の正常な設定でプレビューを続ける。
-bool Particle::ApplySettings(const ParticleSettings& settings) {
+void Particle::ApplySettings(const ParticleSettings& settings) {
 	// 設定値を検証してから、Particleの実行設定へ反映する。
 	if (!AreParticleSettingsValid(settings)) {
-		return false;
+		return;
 	}
 
 	if (settings.texture != appliedTexture_) {
 		std::string textureError;
 
 		if (!TextureManager::GetInstance()->TryLoad(settings.texture, textureError)) {
-			return false;
+			return;
 		}
 
 		SetTexture(settings.texture);
@@ -261,7 +261,7 @@ bool Particle::ApplySettings(const ParticleSettings& settings) {
 
 	emitter_.frequency = settings.interval;
 
-	accelerationField_.acceleration = settings.acceleration;
+	acceleration_ = settings.acceleration;
 
 	isAccelerationFieldEnabled_ = settings.isAccelerationEnabled;
 
@@ -270,8 +270,6 @@ bool Particle::ApplySettings(const ParticleSettings& settings) {
 	blendMode_ = settings.blendMode;
 
 	material_->SetColor({1,1,1,1});
-
-	return true;
 }
 
 // 描画用リソースを残したまま、実行中の粒子と発生タイマーだけを初期化する。
@@ -302,11 +300,6 @@ void Particle::AddParticles() {
 
 //=============================================================================================//
 // EmitterのTransform
-
-TransformData& Particle::GetEmitterTransform() {
-	// Particleの発生源のTransformを取得する。
-	return emitter_.transform;
-}
 
 // 設定のコピーを作らず、シーン側で解決した発生位置だけを反映する。
 void Particle::SetEmitterPosition(const Vector3& position) {
@@ -348,18 +341,6 @@ void Particle::SetBlendMode(BlendMode blendMode) {
 	// 描画時の合成方法を更新する。
 
 	blendMode_ = blendMode;
-}
-
-// ビルボード
-void Particle::SetUseBillboard(bool isBillboardEnabled) {
-	// 粒子をカメラへ向ける描画を使うか切り替える。
-	isBillboardEnabled_ = isBillboardEnabled;
-}
-
-// 加速度Field
-void Particle::SetUseAccelerationField(bool isAccelerationFieldEnabled) {
-	// 加速度Fieldを粒子へ適用するか切り替える。
-	isAccelerationFieldEnabled_ = isAccelerationFieldEnabled;
 }
 
 //=============================================================================================//

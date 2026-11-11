@@ -19,7 +19,7 @@ public:
 	//=============================================================================================//
 	// メッセージの処理
 
-	bool ProcessMessage();
+	void ProcessMessage();
 
 	//=============================================================================================//
 	// 終了処理
@@ -30,6 +30,7 @@ public:
 	// Getter
 
 	bool IsCloseRequested() const;
+	bool HasQuitMessage() const;
 
 	HWND GetHwnd() const;
 
@@ -67,6 +68,7 @@ private:
 	HWND hwnd_ = nullptr;
 
 	bool isCloseRequested_ = false;
+	bool hasQuitMessage_ = false;
 
 	//=============================================================================================//
 	// WindowClass

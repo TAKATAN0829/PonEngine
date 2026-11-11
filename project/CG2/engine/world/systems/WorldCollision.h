@@ -51,8 +51,6 @@ public:
 
 	const std::vector<CollisionEvent>& GetEvents() const;
 
-	size_t GetContactCount() const;
-
 	bool IsTouching(WorldObjectId identifier) const;
 
 	static bool BuildWorld(const ColliderSettings& settings, const Matrix4x4& world, WorldCollider& result);

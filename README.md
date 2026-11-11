@@ -222,20 +222,8 @@ project/
   CG2/
     application/       GameScene・TitleSceneの初期配置、HUD、場面遷移
     editor/            Editorの実装
-      core/            Editor本体・各機能の接続
-      state/           選択・編集履歴・再生前の状態
-      ui/              レイアウト・配色・共通の入力欄
-      assets/          Asset操作・パネル間のドラッグ情報
-      scene/           シーンの保存先・ファイル選択
-      panels/          タブごとに実装を分類
-        hierarchy/     Hierarchyのツリーと右クリック操作
-        inspector/     InspectorのComponent編集・複数選択
-        project/       Projectのフォルダ・Asset表示
-        console/       Consoleの検索とログ表示
-        scene_view/    SceneViewの操作・ギズモ・共通のタブ管理
-        game_view/     GameViewのカメラ画像表示
-        particle_editor/ Particle Editorの設定・プレビュー操作
-        performance/   Performanceの履歴表示・CSV出力
+      Editor.h         Editor・各パネル・選択・履歴・Asset操作の宣言
+      Editor.cpp       Editor側の実装全体
     engine/
       core/            Engineの起動・実行ループ・終了の組み立て
       types/           共有する構造体・ID・種類・上限定数
@@ -268,7 +256,7 @@ Prefab操作は`world/prefab/PrefabOperations.h/.cpp`にまとめています。
 
 現在の参照方向、所有関係、相互依存と整理の優先順位は[依存関係の調査](docs/dependencies.md)にまとめています。
 
-各パネルはタブごとのフォルダへ置き、各クラスの.h/.cpp一組へ実装をまとめています。ProjectPanelは表示・フォルダ管理・プレビューを担当し、確認画面はeditor/assets/AssetActionDialog、参照文書はAssetDocument、ファイル操作はAssetFileOperationsへ分けます。SceneViewのギズモ・選択・配置などは、同じcpp内で分類コメントにより区切ります。担当ファイルはヘッダーの分類コメントと[設計資料](docs/editor-architecture.md#editorパネルの責務と実装ファイル)から確認できます。
+Editor側の状態と関数は editor/Editor.h のEditor一クラスに集約し、実装を editor/Editor.cpp にまとめています。選択・履歴・パネル・ファイル操作はEditorのメンバー関数です。アセット文書や退避するParticle設定など、複数件必要なデータは処理を持たない構造体で保持します。
 
 追加・修正するコードは以下を基準にします。
 

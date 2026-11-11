@@ -366,50 +366,6 @@ void Object3d::SetUseRootNodeMatrix(bool isRootNodeMatrixUsed) {
 	isRootNodeMatrixUsed_ = isRootNodeMatrixUsed;
 }
 
-//=============================================================================================//
-// DirectionalLight設定
-
-void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& direction, float intensity) {
-	// Directional Lightの色・方向・強度をGPU用データへ反映する。
-	directionalLightData_->count = 1;
-
-	directionalLightData_->lights[0].color = color;
-
-	directionalLightData_->lights[0].direction = MathUtility::Normalize (direction);
-
-	directionalLightData_->lights[0].intensity = intensity;
-}
-
-//=============================================================================================//
-// PointLight設定
-
-void Object3d::SetPointLight(const PointLight& pointLight) {
-	// 一つのPoint Light設定を描画用データへ反映する。
-	pointLightData_->count = 1;
-
-	pointLightData_->lights[0] = pointLight;
-}
-
-// 最大数は呼出元と保存時にも検証するが、GPU転送時にも配列境界を守る。
-void Object3d::SetPointLights(const std::vector<PointLight>& lights) {
-	// 配列の上限を守り、使用するPoint Lightを転送する。
-	pointLightData_->count = static_cast<uint32_t>((std::min)(lights.size(), static_cast<size_t>(kMaxPointLights)));
-
-	for (uint32_t lightIndex = 0; lightIndex < pointLightData_->count; ++lightIndex) {
-		pointLightData_->lights[lightIndex] = lights[lightIndex];
-	}
-}
-
-//=============================================================================================//
-// SpotLight設定
-
-void Object3d::SetSpotLight(const SpotLight& spotLight) {
-	// Spot Lightの設定を描画用データへ反映する。
-	spotLightData_->count = 1;
-
-	spotLightData_->lights[0] = spotLight;
-}
-
 // Sceneが一度だけ収集した固定長配列を反映する。隠れた既定光源を追加しない。
 void Object3d::SetSceneLights(const WorldLightCollection& lights) {
 	// 今回のシーンから収集したライト一覧をGPU用データへ反映する。
@@ -438,15 +394,6 @@ void Object3d::SetBlendMode (BlendMode blendMode) {
 	// 描画時の合成方法を更新する。
 
 	blendMode_ = blendMode;
-}
-
-//=============================================================================================//
-// BlendMode取得
-
-BlendMode Object3d::GetBlendMode () const {
-	// 描画時の合成方法を取得する。
-
-	return blendMode_;
 }
 
 //=============================================================================================//

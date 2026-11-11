@@ -42,9 +42,6 @@ public:
 
 	uint64_t GetTextureHandle() const;
 
-	// GPU完了後の画像読出し用。End後の状態はPIXEL_SHADER_RESOURCE、所有権は移さない。
-	ID3D12Resource* GetColorResource() const;
-
 private:
 
 	//=============================================================================================//

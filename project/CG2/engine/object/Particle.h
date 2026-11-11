@@ -51,7 +51,7 @@ public:
 	// Particle追加
 
 	// 保存データの設定を検証してから適用し、実行中の粒子は保持する。
-	bool ApplySettings(const ParticleSettings& settings);
+	void ApplySettings(const ParticleSettings& settings);
 
 	// 設定は保持したまま、粒子と発生タイマーを初期状態へ戻す。
 	void ResetSimulation();
@@ -69,8 +69,6 @@ public:
 	//=============================================================================================//
 	// EmitterのTransform
 
-	TransformData& GetEmitterTransform();
-
 	// 親子変換で求めたワールド位置。プリセットのローカル設定とは分けて適用する。
 	void SetEmitterPosition(const Vector3& position);
 	void SetEmitterWorldTransform(const Matrix4x4& transform);
@@ -86,12 +84,6 @@ public:
 
 	// ブレンドモード
 	void SetBlendMode (BlendMode blendMode);
-
-	// ビルボード
-	void SetUseBillboard(bool isBillboardEnabled);
-
-	// 加速度Field
-	void SetUseAccelerationField(bool isAccelerationFieldEnabled);
 
 private:
 
@@ -131,15 +123,6 @@ private:
 
 		float frequency;
 		float frequencyTime;
-	};
-
-	//=============================================================================================//
-	// 加速度Field
-
-	struct AccelerationField {
-		Vector3 acceleration;
-
-		AABB area;
 	};
 
 	//=============================================================================================//
@@ -203,10 +186,7 @@ private:
 	//=============================================================================================//
 	// 加速度Field
 
-	AccelerationField accelerationField_ = {
-		{ 15.0f,0.0f,0.0f },
-		{ { -1.0f,-1.0f,-1.0f },{ 1.0f,1.0f,1.0f } }
-	};
+	Vector3 acceleration_ = {15.0f, 0.0f, 0.0f};
 
 	bool isAccelerationFieldEnabled_ = false;
 

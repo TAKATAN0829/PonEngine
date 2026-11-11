@@ -79,9 +79,6 @@ public:
 
 	ID3D12CommandQueue* GetCommandQueue();
 
-	// PostDraw完了後・次のPreDraw前だけ参照可能。所有権は移さない。
-	ID3D12Resource* GetPresentedBuffer() const;
-
 private:
 
 	//=============================================================================================//

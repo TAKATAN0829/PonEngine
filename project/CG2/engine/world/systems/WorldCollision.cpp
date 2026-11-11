@@ -419,11 +419,6 @@ const std::vector<CollisionEvent>& WorldCollision::GetEvents() const {
 	return events_;
 }
 
-size_t WorldCollision::GetContactCount() const {
-	// 現在の接触件数を取得する。
-	return contacts_.size();
-}
-
 bool WorldCollision::IsTouching(WorldObjectId identifier) const {
 	// 接触中のID一覧に対象が含まれるか確認する。
 	return touching_.contains(identifier);

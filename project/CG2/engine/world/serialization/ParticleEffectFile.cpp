@@ -161,29 +161,6 @@ bool ParticleEffectFile::ReadFromStream(std::istream& input, ParticleEffectDocum
 	return IsParticleEffectDocumentValid(document);
 }
 
-bool ParticleEffectFile::LoadSingleEmitter(ParticleSettings& settings, const std::filesystem::path& path, std::string& error) {
-	// GameSceneの共通Particle用に、単一で平行移動だけのEffectを設定へ畳み込む。
-	ParticleEffectDocument document;
-	if (!Load(document, path, error)) {
-		return false;
-	}
-	if (document.nodes.size() != 1 || document.nodes.front().type != ParticleNodeType::Emitter ||
-		document.nodes.front().parentId != 0 || !document.nodes.front().isEnabled) {
-		error = "This runtime can only load one enabled root emitter.";
-		return false;
-	}
-	const TransformData& transform = document.nodes.front().transform;
-	if (transform.scale.x != 1 || transform.scale.y != 1 || transform.scale.z != 1 ||
-		transform.rotate.x != 0 || transform.rotate.y != 0 || transform.rotate.z != 0) {
-		error = "The default runtime preset supports translation only.";
-		return false;
-	}
-	settings = document.nodes.front().emitter;
-	settings.emitterPosition = {settings.emitterPosition.x + transform.translate.x,
-		settings.emitterPosition.y + transform.translate.y, settings.emitterPosition.z + transform.translate.z};
-	return true;
-}
-
 void ParticleEffectFile::WriteDocument(std::ostream& output, const ParticleEffectDocument& document) {
 	// v3ではノードの配置位置も保存し、各Emitterは設定と拡張値を続けて持つ。
 	output << "PON_PARTICLE_EFFECT 3\n" << std::quoted(document.name) << '\n' << document.nodes.size() << '\n';

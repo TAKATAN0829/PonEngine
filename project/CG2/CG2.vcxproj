@@ -331,19 +331,8 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <ItemGroup>
-    <ClCompile Include="editor\panels\EditorPanel.cpp" />
-    <ClInclude Include="editor\panels\EditorPanel.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\core\Editor.cpp" />
-    <ClCompile Include="editor\core\EditorPlayback.cpp" />
-    <ClCompile Include="editor\core\EditorSceneWorkflow.cpp" />
-    <ClCompile Include="editor\panels\hierarchy\HierarchyPanel.cpp" />
-    <ClCompile Include="editor\panels\inspector\InspectorPanel.cpp" />
-    <ClInclude Include="editor\core\Editor.h" /><ClInclude Include="editor\assets\AssetDragPayload.h" />
-    <ClInclude Include="editor\state\EditorSelection.h" />
-    <ClInclude Include="editor\panels\hierarchy\HierarchyPanel.h" />
-    <ClInclude Include="editor\panels\inspector\InspectorPanel.h" />
     <ClInclude Include="engine\world\IEditableWorld.h" />
   </ItemGroup>
   <ItemGroup>
@@ -358,14 +347,10 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\world\objects\WorldObjects.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\state\EditorSession.cpp" />
-    <ClInclude Include="editor\state\EditorSession.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\math\SceneViewMath.cpp" />
     <ClInclude Include="engine\math\SceneViewMath.h" />
-    <ClCompile Include="editor\panels\scene_view\SceneViewPanel.cpp" />
-    <ClInclude Include="editor\panels\scene_view\SceneViewPanel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\dx12\SceneRenderTarget.cpp" />
@@ -378,19 +363,8 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\world\serialization\ParticlePresetFile.h" />
     <ClCompile Include="engine\world\serialization\ParticleEffectFile.cpp" />
     <ClInclude Include="engine\world\serialization\ParticleEffectFile.h" />
-    <ClCompile Include="editor\ui\EditorLayout.cpp" />
-    <ClInclude Include="editor\ui\EditorLayout.h" />
-    <ClCompile Include="editor\panels\particle_editor\ParticleEditorPanel.cpp" />
-    <ClInclude Include="editor\panels\particle_editor\ParticleEditorPanel.h" />
-    <ClCompile Include="editor\panels\node_editor\NodePanel.cpp" />
-    <ClInclude Include="editor\panels\node_editor\NodePanel.h" />
 
-    <ClCompile Include="editor\panels\project\ProjectPanel.cpp" />
-    <ClCompile Include="editor\panels\console\ConsolePanel.cpp" />
 
-    <ClInclude Include="editor\panels\project\ProjectPanel.h" />
-    <ClInclude Include="editor\panels\console\ConsolePanel.h" />
-    <ClInclude Include="editor\panels\scene_view\SceneViewDrawing.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\asset\ModelAnimation.cpp" />
@@ -400,8 +374,6 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\world\settings\AssetSettings.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\panels\performance\PerformancePanel.cpp" />
-    <ClCompile Include="editor\state\EditorSelection.cpp" />
     <ClInclude Include="engine\diagnostics\FrameProfiler.h" />
   </ItemGroup>
   <ItemGroup>
@@ -420,10 +392,6 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\world\settings\RigidBodySettings.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\ui\EditorTheme.cpp" />
-    <ClCompile Include="editor\ui\EditorProperties.cpp" />
-    <ClInclude Include="editor\ui\EditorTheme.h" />
-    <ClInclude Include="editor\ui\EditorProperties.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\systems\WorldLighting.cpp" />
@@ -450,7 +418,6 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\world\serialization\LegacyLightMigration.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="editor\panels\performance\PerformancePanel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="application\TitleScene.cpp" />
@@ -463,27 +430,13 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\asset\AssetPathChange.cpp" />
     <ClInclude Include="engine\world\objects\WorldAssetReferences.h" />
     <ClCompile Include="engine\world\objects\WorldAssetReferences.cpp" />
-    <ClInclude Include="editor\assets\AssetDocument.h" />
-    <ClCompile Include="editor\assets\AssetDocument.cpp" />
-    <ClInclude Include="editor\assets\AssetFileOperations.h" />
-    <ClCompile Include="editor\assets\AssetFileOperations.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="editor\assets\AssetActionDialog.h" />
-    <ClCompile Include="editor\assets\AssetActionDialog.cpp" />
-    <ClInclude Include="editor\assets\AssetThumbnailCache.h" />
-    <ClCompile Include="editor\assets\AssetThumbnailCache.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="editor\scene\SceneDocument.h" />
-    <ClCompile Include="editor\scene\SceneDocument.cpp" />
-    <ClInclude Include="editor\scene\SceneAssetDialog.h" />
-    <ClCompile Include="editor\scene\SceneAssetDialog.cpp" />
   </ItemGroup>
   <ItemGroup><ClCompile Include="engine\diagnostics\FrameProfiler.cpp" /></ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\assets\AssetDragPayload.cpp" />
-    <ClCompile Include="editor\panels\scene_view\SceneViewDrawing.cpp" />
     <ClCompile Include="engine\math\MathUtility.cpp" />
     <ClCompile Include="engine\world\IEditableWorld.cpp" />
     <ClCompile Include="engine\world\IScene.cpp" />
@@ -493,5 +446,9 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\world\settings\ColliderSettings.cpp" />
     <ClCompile Include="engine\world\settings\MotionSettings.cpp" />
     <ClCompile Include="engine\world\settings\RigidBodySettings.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="editor\Editor.h" />
+    <ClCompile Include="editor\Editor.cpp" />
   </ItemGroup>
 </Project>

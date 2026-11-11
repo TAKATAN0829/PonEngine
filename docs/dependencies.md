@@ -63,11 +63,11 @@ Engineは組み立て役なので、各機能とEditorを参照する。typesに
 
 world/settingsには保存・編集する設定値と検証・比較を置く。Entityへ付け外しするComponentの実装とは区別し、実際の更新処理はsystemsへ置く。
 
-## Editorのフォルダと責務
+## Editorのファイルと責務
 
-`editor/core`はEditor本体、`editor/state`は選択と履歴、`editor/ui`はレイアウト・配色・共通の入力欄を担当する。パネル間で運ぶドラッグ情報は`editor/assets`の`AssetDragPayload`に置く。`core/Editor`が状態とパネルをつなぐ。
+Editor側の選択・履歴・各パネル・Asset操作は、すべてEditorのメンバー変数とメンバー関数に集約している。宣言は `editor/Editor.h`、実装は `editor/Editor.cpp` に置く。複数件必要なアセット文書とParticleの退避状態などは処理を持たない構造体で保持する。
 
-Hierarchy・Inspector・Project・Console・SceneView・ParticleEditor・Performanceを、それぞれ`EditorPanel`の派生クラスとして扱う。GameViewはSceneView内のタブで、独立したPanelクラスにはしない。Panelは自分の表示状態だけを持ち、描画時には必要な機能の参照を受け取る。
+Hierarchy・Inspector・Project・Console・SceneView・ParticleEditor・Performanceは、Editor内の描画関数として扱う。GameViewはDrawSceneView内のタブとして表示する。
 
 `IEditableWorld`はSceneManagerとEditor本体をつなぐ機能集合だが、各Panelには渡さない。Hierarchyと選択・履歴は`IWorldObjects`、SceneViewは`ISceneViewWorld`、ParticleEditorは`IParticlePreviewWorld`と`ITextureAssetAccess`、Inspectorは`IModelAssetAccess`と`ITextureAssetAccess`、Projectは`IModelAssetAccess`と`IAssetReferenceRemapper`など、必要な機能だけを受け取る。InspectorPanel::DrawSelectionは選択一覧から単体／複数表示を切り替え、PerformancePanelは履歴の表示状態を所有する。
 
@@ -126,7 +126,7 @@ WorldSceneは描画・プレビュー・シミュレーションの呼出順を�
 
 ### Editorと描画基盤の接続
 
-`ProjectPanel`はモデルと画像の両方を`editor/assets/AssetThumbnailCache`へ依頼する。キャッシュは準備を1フレーム1件に抑え、モデルは`IModelAssetAccess`、画像は`TextureManager`から描画用ハンドルを借りる。パネルは返された寸法を使って縦横比を保ったまま描く。
+`ProjectPanel`はモデルと画像の両方を`AssetThumbnailCache`へ依頼する。キャッシュは準備を1フレーム1件に抑え、モデルは`IModelAssetAccess`、画像は`TextureManager`から描画用ハンドルを借りる。パネルは返された寸法を使って縦横比を保ったまま描く。
 
 `WorldScene::GetModelPreview`は必要なモデルを検証・読込し、`renderer/ModelPreviewRenderer`へ渡す。Rendererは専用カメラと描画先を持ち、画像を一度描いてキャッシュする。Asset移動ではキーだけを替え、シーンを破棄するときはGPUの完了後に描画先を解放する。
 
@@ -149,7 +149,7 @@ WorldSceneは描画・プレビュー・シミュレーションの呼出順を�
 
 ## Projectのファイル操作
 
-ProjectPanelはeditor/assets/AssetActionDialogへ操作を委譲し、AssetFileOperationsがファイル操作、AssetDocumentが各形式の参照を担当する。これらは一つのクラスを複数cppへ分けたものではなく、各責務を同名の.h/.cppにまとめた独立したクラスである。
+ProjectPanelはAssetActionDialogへ操作を委譲し、AssetFileOperationsがファイル操作、AssetDocumentが各形式の参照を担当する。各クラスの宣言と実装はEditor.hとEditor.cpp内にまとめている。
 
 engine/asset/AssetPathChangeはパスの変換と使用箇所の文字列だけを持ち、ModelManagerなどのGPU型やWorld型を参照しない。world/objects/WorldAssetReferencesがWorldObjectDataの参照を列挙・更新する。WorldObjectsからassetへの新しい参照は、このパス値だけを使うためのものになる。
 
@@ -157,6 +157,6 @@ engine/asset/AssetPathChangeはパスの変換と使用箇所の文字列だけ�
 
 ## 複数Scene Assetの編集
 
-`editor/scene/SceneDocument`が現在の配置ファイルを所有し、保存・検証・読込を`world/serialization/SceneFile`へ委譲する。`SceneAssetDialog`は選択結果を返し、Editorが未保存確認と履歴・選択の初期化を行う。ProjectPanelは開く要求とAsset改名通知を返すだけで、SceneDocumentやEditor本体を参照しない。
+`SceneDocument`が現在の配置ファイルを所有し、保存・検証・読込を`world/serialization/SceneFile`へ委譲する。`SceneAssetDialog`は選択結果を返し、Editorが未保存確認と履歴・選択の初期化を行う。ProjectPanelは開く要求とAsset改名通知を返すだけで、SceneDocumentやEditor本体を参照しない。
 
 起動時の保存先はIScene→SceneManager→Engine経由のメタデータとして一度だけ渡し、編集中の保存先をゲーム側へ逆参照させない。配置切替後の一時状態の解除はIEditorSceneLifecycleを使う。WorldからEditorへのincludeは追加していない。

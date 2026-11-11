@@ -14,7 +14,7 @@
 #include "SceneManager.h"
 
 #ifdef USE_IMGUI
-#include "../../editor/core/Editor.h"
+#include "../../editor/Editor.h"
 #include "SceneRenderTarget.h"
 #endif
 
@@ -43,6 +43,10 @@ public:
 	bool HasGraphicsErrors() const;
 
 private:
+	void PreFrame();
+	void UpdateFrame(bool& wasPlaying);
+	void DrawFrame();
+	void PostFrame();
 
 	//=============================================================================================//
 	// Window

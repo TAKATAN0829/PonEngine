@@ -1215,9 +1215,13 @@ void WorldScene::UpdateParticles(const Matrix4x4& viewProjection, const Matrix4x
 	}
 
 	const bool isCommonParticleEnabled = isCommonParticleEmissionEnabled_ && particleIds.empty() && !isCommonEffectPreview && !isCommonParticleEffectEnabled;
-	particle_->Update(viewProjection, cameraMatrix,
-		ShouldSimulateEmitter(kInvalidWorldObjectId, isCommonParticleEnabled),
-		ShouldEmitEmitter(kInvalidWorldObjectId, isCommonParticleEnabled));
+	const bool isCommonGameEmitterRunning = isSimulationEnabled_ && isCommonParticleEnabled;
+	const bool isCommonPreviewTarget = IsParticlePreviewTarget(kInvalidWorldObjectId);
+	const bool shouldSimulate = isCommonGameEmitterRunning ||
+		(isCommonPreviewTarget && (!particlePreview_.isPaused || particlePreview_.isStepRequested));
+	const bool shouldEmit = isCommonGameEmitterRunning ||
+		(isCommonPreviewTarget && particlePreview_.isAutomaticEmissionEnabled);
+	particle_->Update(viewProjection, cameraMatrix, shouldSimulate, shouldEmit);
 
 	particlePreview_.isStepRequested = false;
 }
@@ -1234,6 +1238,12 @@ void WorldScene::UpdateEmitter(const WorldObjectData& data, std::vector<RuntimeP
 
 void WorldScene::UpdateParticleEffect(const ParticleEffectDocument& document, WorldObjectId objectId, const Matrix4x4& objectWorldMatrix,
 	std::vector<RuntimeParticleEmitter>& runtimeEmitters, const Matrix4x4& viewProjection, const Matrix4x4& cameraMatrix) {
+	const bool isPreviewTarget = IsParticlePreviewTarget(objectId);
+	const bool shouldSimulate = isSimulationEnabled_ ||
+		(isPreviewTarget && (!particlePreview_.isPaused || particlePreview_.isStepRequested));
+	const bool shouldEmit = isSimulationEnabled_ ||
+		(isPreviewTarget && particlePreview_.isAutomaticEmissionEnabled);
+
 	// 各Emitterノードに専用の実行状態を割り当て、ノードツリーの設定を反映する。
 	std::vector<const ParticleEffectNode*> emitterNodes;
 	// Group数ではなくEmitterノードだけを実行対象にする。
@@ -1319,51 +1329,11 @@ void WorldScene::UpdateParticleEffect(const ParticleEffectDocument& document, Wo
 			}
 		}
 
-		const bool shouldSimulate = areParentsEnabled && ShouldSimulateEmitter(objectId, true);
-		const bool shouldEmit = areParentsEnabled && node.isEnabled && ShouldEmitEmitter(objectId, true);
-		emitter.Update(viewProjection, cameraMatrix, shouldSimulate, shouldEmit);
+		emitter.Update(viewProjection, cameraMatrix, areParentsEnabled && shouldSimulate,
+			areParentsEnabled && node.isEnabled && shouldEmit);
 	}
 }
 
 bool WorldScene::IsParticlePreviewTarget(WorldObjectId objectId) const {
-	// 現在のプレビューが指定したEmitterを対象にしているか確認する。
-	if (isPlaying_) {
-		return false;
-	}
-
-	if (!particlePreview_.isEnabled) {
-		return false;
-	}
-
-	return particlePreview_.targetObject == objectId;
-}
-
-bool WorldScene::ShouldSimulateEmitter(WorldObjectId objectId, bool isGameEmissionEnabled) const {
-	// 再生とプレビューの条件から、粒子の時間を進めるか判定する。
-	if (isSimulationEnabled_) {
-		if (isGameEmissionEnabled) {
-			return true;
-		}
-	}
-
-	if (IsParticlePreviewTarget(objectId)) {
-		return !particlePreview_.isPaused || particlePreview_.isStepRequested;
-	}
-
-	return false;
-}
-
-bool WorldScene::ShouldEmitEmitter(WorldObjectId objectId, bool isGameEmissionEnabled) const {
-	// 再生とプレビューの条件から、粒子を新たに発生させるか判定する。
-	if (isSimulationEnabled_) {
-		if (isGameEmissionEnabled) {
-			return true;
-		}
-	}
-
-	if (IsParticlePreviewTarget(objectId)) {
-		return particlePreview_.isAutomaticEmissionEnabled;
-	}
-
-	return false;
+	return !isPlaying_ && particlePreview_.isEnabled && particlePreview_.targetObject == objectId;
 }

@@ -1,11 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="editor\scene" />
-    <Filter Include="editor\assets" />
-    <Filter Include="editor\core" />
-    <Filter Include="editor\state" />
-    <Filter Include="editor\ui" />
     <Filter Include="engine\world\runtime" />
     <Filter Include="engine\world\prefab" />
     <Filter Include="engine">
@@ -73,27 +68,6 @@
     </Filter>
     <Filter Include="engine\ui">
       <UniqueIdentifier>{b50ff3ef-fbe1-4bae-9846-f6407dccd9a8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="editor\panels\hierarchy">
-      <UniqueIdentifier>{61fbcef4-7956-4133-9b23-eb3c70734407}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="editor\panels\inspector">
-      <UniqueIdentifier>{b3af904d-43ef-46f9-979c-210ac630f5dd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="editor\panels\project">
-      <UniqueIdentifier>{73633770-3376-438d-9982-ebfee9630474}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="editor\panels\console">
-      <UniqueIdentifier>{7b90162b-f747-4260-a1de-0e68e5d9261e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="editor\panels\scene_view">
-      <UniqueIdentifier>{bfbaaf8f-7dbc-4941-9458-67345263e7dc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="editor\panels\particle_editor">
-      <UniqueIdentifier>{6f7bcf4e-4261-4473-84f0-063138e6c875}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="editor\panels\performance">
-      <UniqueIdentifier>{1e6b51c3-5208-49e5-bb7d-d7a9f964608f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -341,21 +315,10 @@
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
-  <ItemGroup><Filter Include="editor" /><Filter Include="editor\panels" /><Filter Include="editor\panels\node_editor" /></ItemGroup>
+  <ItemGroup><Filter Include="editor" /></ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\panels\EditorPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
-    <ClInclude Include="editor\panels\EditorPanel.h"><Filter>editor\panels</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\core\Editor.cpp"><Filter>editor\core</Filter></ClCompile>
-    <ClCompile Include="editor\core\EditorPlayback.cpp"><Filter>editor\core</Filter></ClCompile>
-    <ClCompile Include="editor\core\EditorSceneWorkflow.cpp"><Filter>editor\core</Filter></ClCompile>
-    <ClCompile Include="editor\panels\hierarchy\HierarchyPanel.cpp"><Filter>editor\panels\hierarchy</Filter></ClCompile>
-    <ClCompile Include="editor\panels\inspector\InspectorPanel.cpp"><Filter>editor\panels\inspector</Filter></ClCompile>
-    <ClInclude Include="editor\core\Editor.h"><Filter>editor\core</Filter></ClInclude>
-    <ClInclude Include="editor\state\EditorSelection.h"><Filter>editor\state</Filter></ClInclude>
-    <ClInclude Include="editor\panels\hierarchy\HierarchyPanel.h"><Filter>editor\panels\hierarchy</Filter></ClInclude>
-    <ClInclude Include="editor\panels\inspector\InspectorPanel.h"><Filter>editor\panels\inspector</Filter></ClInclude>
     <ClInclude Include="engine\world\IEditableWorld.h"><Filter>engine\world</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -370,14 +333,10 @@
     <ClInclude Include="engine\world\objects\WorldObjects.h"><Filter>engine\world\objects</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\state\EditorSession.cpp"><Filter>editor\state</Filter></ClCompile>
-    <ClInclude Include="editor\state\EditorSession.h"><Filter>editor\state</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\math\SceneViewMath.cpp"><Filter>engine\math</Filter></ClCompile>
     <ClInclude Include="engine\math\SceneViewMath.h"><Filter>engine\math</Filter></ClInclude>
-    <ClCompile Include="editor\panels\scene_view\SceneViewPanel.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
-    <ClInclude Include="editor\panels\scene_view\SceneViewPanel.h"><Filter>editor\panels\scene_view</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\dx12\SceneRenderTarget.cpp"><Filter>engine\dx12</Filter></ClCompile>
@@ -390,29 +349,16 @@
     <ClInclude Include="engine\world\serialization\ParticlePresetFile.h"><Filter>engine\world\serialization</Filter></ClInclude>
     <ClCompile Include="engine\world\serialization\ParticleEffectFile.cpp"><Filter>engine\world\serialization</Filter></ClCompile>
     <ClInclude Include="engine\world\serialization\ParticleEffectFile.h"><Filter>engine\world\serialization</Filter></ClInclude>
-    <ClCompile Include="editor\ui\EditorLayout.cpp"><Filter>editor\ui</Filter></ClCompile>
-    <ClInclude Include="editor\ui\EditorLayout.h"><Filter>editor\ui</Filter></ClInclude>
-    <ClCompile Include="editor\panels\particle_editor\ParticleEditorPanel.cpp"><Filter>editor\panels\particle_editor</Filter></ClCompile>
-    <ClInclude Include="editor\panels\particle_editor\ParticleEditorPanel.h"><Filter>editor\panels\particle_editor</Filter></ClInclude>
-    <ClCompile Include="editor\panels\node_editor\NodePanel.cpp"><Filter>editor\panels\node_editor</Filter></ClCompile>
-    <ClInclude Include="editor\panels\node_editor\NodePanel.h"><Filter>editor\panels\node_editor</Filter></ClInclude>
-
-    <ClCompile Include="editor\panels\project\ProjectPanel.cpp"><Filter>editor\panels\project</Filter></ClCompile>
-
-
-    <ClCompile Include="editor\panels\console\ConsolePanel.cpp"><Filter>editor\panels\console</Filter></ClCompile>
 
 
 
 
 
-    <ClInclude Include="editor\panels\project\ProjectPanel.h"><Filter>editor\panels\project</Filter></ClInclude>
-    <ClInclude Include="editor\panels\console\ConsolePanel.h"><Filter>editor\panels\console</Filter></ClInclude>
-    <ClInclude Include="editor\panels\scene_view\SceneViewDrawing.h"><Filter>editor\panels\scene_view</Filter></ClInclude>
+
+
+
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\state\EditorSelection.cpp"><Filter>editor\state</Filter></ClCompile>
-    <ClCompile Include="editor\panels\performance\PerformancePanel.cpp"><Filter>editor\panels\performance</Filter></ClCompile>
     <ClInclude Include="engine\diagnostics\FrameProfiler.h"><Filter>engine\diagnostics</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -436,10 +382,6 @@
     <ClInclude Include="engine\world\settings\RigidBodySettings.h"><Filter>engine\world\settings</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\ui\EditorTheme.cpp"><Filter>editor\ui</Filter></ClCompile>
-    <ClCompile Include="editor\ui\EditorProperties.cpp"><Filter>editor\ui</Filter></ClCompile>
-    <ClInclude Include="editor\ui\EditorTheme.h"><Filter>editor\ui</Filter></ClInclude>
-    <ClInclude Include="editor\ui\EditorProperties.h"><Filter>editor\ui</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\world\systems\WorldLighting.cpp"><Filter>engine\world\systems</Filter></ClCompile>
@@ -468,7 +410,6 @@
   </ItemGroup>
   <ItemGroup>
 
-    <ClInclude Include="editor\panels\performance\PerformancePanel.h"><Filter>editor\panels\performance</Filter></ClInclude>
 
   </ItemGroup>
   <ItemGroup>
@@ -484,30 +425,15 @@
     <ClCompile Include="engine\asset\AssetPathChange.cpp"><Filter>engine\asset</Filter></ClCompile>
     <ClInclude Include="engine\world\objects\WorldAssetReferences.h"><Filter>engine\world\objects</Filter></ClInclude>
     <ClCompile Include="engine\world\objects\WorldAssetReferences.cpp"><Filter>engine\world\objects</Filter></ClCompile>
-    <ClInclude Include="editor\assets\AssetDocument.h"><Filter>editor\assets</Filter></ClInclude>
-    <ClCompile Include="editor\assets\AssetDocument.cpp"><Filter>editor\assets</Filter></ClCompile>
-    <ClInclude Include="editor\assets\AssetFileOperations.h"><Filter>editor\assets</Filter></ClInclude>
-    <ClCompile Include="editor\assets\AssetFileOperations.cpp"><Filter>editor\assets</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="editor\assets\AssetActionDialog.h"><Filter>editor\assets</Filter></ClInclude>
-    <ClCompile Include="editor\assets\AssetActionDialog.cpp"><Filter>editor\assets</Filter></ClCompile>
-    <ClInclude Include="editor\assets\AssetThumbnailCache.h"><Filter>editor\assets</Filter></ClInclude>
-    <ClCompile Include="editor\assets\AssetThumbnailCache.cpp"><Filter>editor\assets</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="editor\scene\SceneDocument.h"><Filter>editor\scene</Filter></ClInclude>
-    <ClCompile Include="editor\scene\SceneDocument.cpp"><Filter>editor\scene</Filter></ClCompile>
-    <ClInclude Include="editor\scene\SceneAssetDialog.h"><Filter>editor\scene</Filter></ClInclude>
-    <ClCompile Include="editor\scene\SceneAssetDialog.cpp"><Filter>editor\scene</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\diagnostics\FrameProfiler.cpp"><Filter>engine\diagnostics</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\assets\AssetDragPayload.cpp"><Filter>editor\assets</Filter></ClCompile>
-    <ClInclude Include="editor\assets\AssetDragPayload.h"><Filter>editor\assets</Filter></ClInclude>
-    <ClCompile Include="editor\panels\scene_view\SceneViewDrawing.cpp"><Filter>editor\panels\scene_view</Filter></ClCompile>
     <ClCompile Include="engine\math\MathUtility.cpp"><Filter>engine\math</Filter></ClCompile>
     <ClCompile Include="engine\world\IEditableWorld.cpp"><Filter>engine\world</Filter></ClCompile>
     <ClCompile Include="engine\world\IScene.cpp"><Filter>engine\world</Filter></ClCompile>
@@ -519,5 +445,9 @@
     <ClCompile Include="engine\world\settings\ColliderSettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
     <ClCompile Include="engine\world\settings\MotionSettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
     <ClCompile Include="engine\world\settings\RigidBodySettings.cpp"><Filter>engine\world\settings</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="editor\Editor.h"><Filter>editor</Filter></ClInclude>
+    <ClCompile Include="editor\Editor.cpp"><Filter>editor</Filter></ClCompile>
   </ItemGroup>
 </Project>

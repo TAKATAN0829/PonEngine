@@ -128,163 +128,104 @@ void Engine::Initialize(IScene* firstScene) {
 
 void Engine::Run() {
 	FrameProfiler::Initialize();
-
-#ifdef USE_IMGUI
 	bool wasPlaying = false;
-
-#endif
 
 	while (true) {
 		FrameProfiler::BeginFrame();
-
-		//=========================================================================================//
-		// Windowsのメッセージ処理
-
-		if (winApp_->ProcessMessage()) {
+		winApp_->ProcessMessage();
+		if (winApp_->HasQuitMessage()) {
 			break;
 		}
 
-		//=========================================================================================//
-		// Window更新
-
-		winApp_->Update();
-
-		//=========================================================================================//
-		// Input更新
-
-		input_->Update();
-
-		//=========================================================================================//
-		// 描画前処理
-
-		dxCommon_->PreDraw();
-
-		//=========================================================================================//
-		// SRV描画前処理
-
-		srvManager_->PreDraw();
-
-		//=========================================================================================//
-		// ImGui開始
-
-		imGuiSystem_->Begin();
+		PreFrame();
 
 #ifdef USE_IMGUI
-
-		// 座標やマテリアルをGPUへ送る前に編集し、変更を同じフレームの描画へ反映する。
+		// 編集結果を同じフレームのシーン更新と描画へ反映する。
+		IEditableWorld* editableWorld = sceneManager_->GetEditableWorld();
 		editor_.SetSceneTexture(sceneTarget_.GetTextureHandle());
-
 		{
 			FrameProfiler::Scope editorTime(FrameProfiler::Section::Editor);
-
-			editor_.Draw(sceneManager_->GetEditableWorld());
-
-			editor_.Update(sceneManager_->GetEditableWorld());
+			editor_.Draw(editableWorld);
+			editor_.Update(editableWorld);
 		}
 
 		if (winApp_->IsCloseRequested()) {
-			editor_.RequestExit(sceneManager_->GetEditableWorld());
-
+			editor_.RequestExit(editableWorld);
 			winApp_->ClearCloseRequest();
 		}
-
-		if (editor_.ShouldExit()) {
+		const bool shouldClose = editor_.ShouldExit();
+#else
+		const bool shouldClose = winApp_->IsCloseRequested();
+#endif
+		if (shouldClose) {
 			winApp_->ConfirmClose();
-
 			break;
 		}
 
-#else
-		if (winApp_->IsCloseRequested()) {
-			winApp_->ConfirmClose();
-
-			break;
-		}
-
-#endif
-
-		//=========================================================================================//
-		// シーン更新
-
-#ifdef USE_IMGUI
-		const bool isPlaying = editor_.IsPlaying();
-
-		if (isPlaying != wasPlaying) {
-			// 開始・停止したフレームだけ通知し、粒子の初期化などを毎フレーム繰り返さない。
-			sceneManager_->SetPlayState(isPlaying);
-
-			wasPlaying = isPlaying;
-		}
-
-		{
-			FrameProfiler::Scope sceneTime(FrameProfiler::Section::SceneUpdate);
-
-			sceneManager_->Update(input_, editor_.ShouldSimulate());
-		}
-
-#else
-		{
-			FrameProfiler::Scope sceneTime(FrameProfiler::Section::SceneUpdate);
-
-			sceneManager_->Update(input_);
-		}
-
-#endif
-
-		//=========================================================================================//
-		// ImGui受付終了
-
-		imGuiSystem_->End();
-
-		//=========================================================================================//
-		// シーン描画
-
-#ifdef USE_IMGUI
-		sceneTarget_.Resize(editor_.GetSceneWidth(), editor_.GetSceneHeight());
-
-		sceneTarget_.Begin();
-
-#endif
-		{
-			FrameProfiler::Scope renderTime(FrameProfiler::Section::Render);
-
-			sceneManager_->Draw();
-		}
-
-#ifdef USE_IMGUI
-		sceneTarget_.End();
-
-#endif
-
-		//=========================================================================================//
-		// ImGui描画
-
-		{
-			FrameProfiler::Scope uiTime(FrameProfiler::Section::ImGui);
-
-			imGuiSystem_->Draw();
-		}
-
-		//=========================================================================================//
-		// 描画後処理
-
-		{
-			FrameProfiler::Scope submitTime(FrameProfiler::Section::Submit);
-
-			dxCommon_->PostDraw();
-		}
-
-		// PostDrawがGPU完了を待った後にだけ、旧シーンの描画リソースを解放する。
-		if (sceneManager_->ApplyPendingScene()) {
-#ifdef USE_IMGUI
-			editor_.OnSceneChanged(sceneManager_->GetEditableWorld(), sceneManager_->GetSceneName(), sceneManager_->GetInitialAssetPath());
-
-#endif
-		}
-
-		FrameProfiler::EndFrame();
-
+		UpdateFrame(wasPlaying);
+		DrawFrame();
+		PostFrame();
 	}
+}
+
+void Engine::PreFrame() {
+	winApp_->Update();
+	input_->Update();
+	dxCommon_->PreDraw();
+	srvManager_->PreDraw();
+	imGuiSystem_->Begin();
+}
+
+void Engine::UpdateFrame([[maybe_unused]] bool& wasPlaying) {
+#ifdef USE_IMGUI
+	const bool isPlaying = editor_.IsPlaying();
+	if (isPlaying != wasPlaying) {
+		sceneManager_->SetPlayState(isPlaying);
+		wasPlaying = isPlaying;
+	}
+
+	FrameProfiler::Scope sceneTime(FrameProfiler::Section::SceneUpdate);
+	sceneManager_->Update(input_, editor_.ShouldSimulate());
+#else
+	FrameProfiler::Scope sceneTime(FrameProfiler::Section::SceneUpdate);
+	sceneManager_->Update(input_);
+#endif
+}
+
+void Engine::DrawFrame() {
+	imGuiSystem_->End();
+
+#ifdef USE_IMGUI
+	sceneTarget_.Resize(editor_.GetSceneWidth(), editor_.GetSceneHeight());
+	sceneTarget_.Begin();
+#endif
+	{
+		FrameProfiler::Scope renderTime(FrameProfiler::Section::Render);
+		sceneManager_->Draw();
+	}
+#ifdef USE_IMGUI
+	sceneTarget_.End();
+#endif
+
+	FrameProfiler::Scope uiTime(FrameProfiler::Section::ImGui);
+	imGuiSystem_->Draw();
+}
+
+void Engine::PostFrame() {
+	{
+		FrameProfiler::Scope submitTime(FrameProfiler::Section::Submit);
+		dxCommon_->PostDraw();
+	}
+
+	// 旧シーンのGPUリソースはPostDrawの完了待ち後に解放する。
+	if (sceneManager_->ApplyPendingScene()) {
+#ifdef USE_IMGUI
+		editor_.OnSceneChanged(sceneManager_->GetEditableWorld(), sceneManager_->GetSceneName(),
+			sceneManager_->GetInitialAssetPath());
+#endif
+	}
+
+	FrameProfiler::EndFrame();
 }
 
 //=============================================================================================//
