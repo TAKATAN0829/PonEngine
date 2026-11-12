@@ -153,6 +153,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="editor\Editor.cpp" />
     <ClCompile Include="engine\audio\AudioSystem.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
     </ClCompile>
@@ -205,6 +206,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     </ClCompile>
     <ClCompile Include="engine\renderer\Object3dCommon.cpp" />
     <ClCompile Include="engine\renderer\ModelPreviewRenderer.cpp" />
+    <ClInclude Include="editor\Editor.h" />
     <ClInclude Include="engine\renderer\ModelPreviewRenderer.h" />
     <ClCompile Include="engine\renderer\SpriteCommon.cpp" />
     <ClCompile Include="engine\renderer\ParticleRenderer.cpp" />
@@ -363,8 +365,6 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\world\serialization\ParticlePresetFile.h" />
     <ClCompile Include="engine\world\serialization\ParticleEffectFile.cpp" />
     <ClInclude Include="engine\world\serialization\ParticleEffectFile.h" />
-
-
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\asset\ModelAnimation.cpp" />
@@ -435,7 +435,9 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
-  <ItemGroup><ClCompile Include="engine\diagnostics\FrameProfiler.cpp" /></ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\diagnostics\FrameProfiler.cpp" />
+  </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\math\MathUtility.cpp" />
     <ClCompile Include="engine\world\IEditableWorld.cpp" />
@@ -446,13 +448,5 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\world\settings\ColliderSettings.cpp" />
     <ClCompile Include="engine\world\settings\MotionSettings.cpp" />
     <ClCompile Include="engine\world\settings\RigidBodySettings.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="editor\Editor.h" />
-    <ClInclude Include="editor\EditorScene.h" />
-    <ClInclude Include="editor\EditorPanels.h" />
-    <ClCompile Include="editor\Editor.cpp" />
-    <ClCompile Include="editor\EditorScene.cpp" />
-    <ClCompile Include="editor\EditorPanels.cpp" />
   </ItemGroup>
 </Project>
