@@ -282,7 +282,8 @@ Prefab操作は`world/prefab/PrefabOperations.h/.cpp`にまとめています。
 - 構造体のデータメンバーは宣言だけを書き、インスタンスの生成時に初期値を指定する。型として初期化処理を持たせる場合は、コンストラクターを同名の`.cpp`へ書く。
 - 共有するstatic変数は、`.h`のinline変数として定義・初期化する。入れ子の型は、型定義が揃った後でinline定義してよい。
 - 値を取得するGetterは`Get○○`、設定するSetterは`Set○○`とする。boolのフラグ・状態確認は疑問文の形に揃え、`Get()`だけのような取得対象が不明な名前は使わない。
-- bool型のメンバー・ローカル変数・引数は、`isPlaying_`・`hasChanged`・`canContinue`・`shouldSimulate`・`wasSaved`のように真偽の意味を読める名前にする。状態確認の関数も`Is…`・`Has…`・`Can…`・`Should…`・`Does…`・`Are…`などの形にする。`Save()`・`Initialize()`など、処理を実行して成否を返す関数は動詞の処理名を維持する。
+- bool型はフラグ（状態を表す値）にのみ使用する。Setterや処理の成否を返すためにbool型を使わない。Setterの戻り値は`void`とする。
+- bool型のメンバー・ローカル変数・引数は、`isPlaying_`・`hasChanged`・`canContinue`・`shouldSimulate`・`wasSaved`のように真偽の意味を読める名前にする。状態確認の関数も`Is…`・`Has…`・`Can…`・`Should…`・`Does…`・`Are…`などの形にする。`Save()`・`Initialize()`など、処理を実行する関数は動詞の処理名を維持する。
 - 条件式の比較結果をそのままreturnせず、`if`と`return true`／`return false`で明示する。
 - if文の本体は改行し、種類の異なる判定を一つの条件へ詰め込まない。
 - 意味の通る名前と必要なローカル変数を使い、意図を日本語コメントで残す。
