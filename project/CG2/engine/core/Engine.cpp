@@ -274,7 +274,6 @@ void Engine::Run() {
 			dxCommon_->PostDraw();
 		}
 
-		// PostDrawがGPU完了を待った後にだけ、旧シーンの描画リソースを解放する。
 		if (sceneManager_->ApplyPendingScene()) {
 #ifdef USE_IMGUI
 			editor_.OnSceneChanged(sceneManager_->GetEditableWorld(), sceneManager_->GetSceneName(), sceneManager_->GetInitialAssetPath());
