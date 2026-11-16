@@ -140,6 +140,7 @@
     <ClCompile Include="engine\asset\ModelManager.cpp">
       <Filter>engine\asset</Filter>
     </ClCompile>
+    <ClCompile Include="engine\scene\Scene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\audio\AudioSystem.h">
@@ -263,6 +264,7 @@
     <ClInclude Include="engine\asset\ModelManager.h">
       <Filter>engine\asset</Filter>
     </ClInclude>
+    <ClInclude Include="engine\scene\Scene.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -291,19 +293,42 @@
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
-  <ItemGroup><Filter Include="editor" /><Filter Include="editor\panels" /></ItemGroup>
   <ItemGroup>
-    <ClCompile Include="editor\Editor.cpp"><Filter>editor</Filter></ClCompile>
-    <ClCompile Include="editor\panels\HierarchyPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
-    <ClCompile Include="editor\panels\InspectorPanel.cpp"><Filter>editor\panels</Filter></ClCompile>
-    <ClInclude Include="editor\Editor.h"><Filter>editor</Filter></ClInclude>
-    <ClInclude Include="editor\EditorSelection.h"><Filter>editor</Filter></ClInclude>
-    <ClInclude Include="editor\panels\HierarchyPanel.h"><Filter>editor\panels</Filter></ClInclude>
-    <ClInclude Include="editor\panels\InspectorPanel.h"><Filter>editor\panels</Filter></ClInclude>
-    <ClInclude Include="engine\scene\IEditableScene.h"><Filter>engine\scene</Filter></ClInclude>
+    <Filter Include="editor" />
+    <Filter Include="editor\panels" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\scene\SceneFile.cpp"><Filter>engine\scene</Filter></ClCompile>
-    <ClInclude Include="engine\scene\SceneFile.h"><Filter>engine\scene</Filter></ClInclude>
+    <ClCompile Include="editor\Editor.cpp">
+      <Filter>editor</Filter>
+    </ClCompile>
+    <ClCompile Include="editor\panels\HierarchyPanel.cpp">
+      <Filter>editor\panels</Filter>
+    </ClCompile>
+    <ClCompile Include="editor\panels\InspectorPanel.cpp">
+      <Filter>editor\panels</Filter>
+    </ClCompile>
+    <ClInclude Include="editor\Editor.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="editor\EditorSelection.h">
+      <Filter>editor</Filter>
+    </ClInclude>
+    <ClInclude Include="editor\panels\HierarchyPanel.h">
+      <Filter>editor\panels</Filter>
+    </ClInclude>
+    <ClInclude Include="editor\panels\InspectorPanel.h">
+      <Filter>editor\panels</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\IEditableScene.h">
+      <Filter>engine\scene</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="engine\scene\SceneFile.cpp">
+      <Filter>engine\scene</Filter>
+    </ClCompile>
+    <ClInclude Include="engine\scene\SceneFile.h">
+      <Filter>engine\scene</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

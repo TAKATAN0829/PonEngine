@@ -3,147 +3,142 @@
 // 自作
 #include "IScene.h"
 #include "IEditableScene.h"
+#include "Scene.h"
 #include "EngineStructs.h"
 #include "Camera.h"
 #include "Particle.h"
 #include "DebugCamera.h"
 #include "Object3dCommon.h"
-#include "Object3d.h"
 #include "Sprite.h"
 #include "SpriteCommon.h"
 
 class GameScene : public IScene, public IEditableScene {
+
 public:
 
+	//===========================================//
+	// 初期化処理
+	//===========================================//
+
 	void Initialize (const SceneContext& context) override;
+
+	//===========================================//
+	// 更新処理
+	//===========================================//
+
 	void Update (Input* input) override;
+
+	//===========================================//
+	// 描画処理
+	//===========================================//
+
 	void Draw () override;
+
+	//===========================================//
+	// 終了処理
+	//===========================================//
+
 	void Finalize () override;
 
-	IEditableScene* GetEditableScene() override { return this; }
-	size_t GetEditableObjectCount() const override { return 1; }
+	//===========================================//
+	// 編集対象の取得
+	//===========================================//
+
+	IEditableScene* GetEditableScene() override;
+	size_t GetEditableObjectCount() const override;
 	EditableObjectView GetEditableObject(size_t index) override;
 
+	//===========================================//
+	// Camera更新
+	//===========================================//
+
 	void UpdateCamera (Input* input);
+
+	//===========================================//
+	// Object更新
+	//===========================================//
+
 	void UpdateObject ();
 
 private:
 
-	Camera* camera_ = nullptr;
-	TransformData cameraTransform_{};
+	//===========================================//
+	// Scene
+	//===========================================//
 
-	//=============================================================================================//
-	// 色
+	Scene* scene_;
 
-	Vector4 color_ = { 1.0f,1.0f,1.0f,1.0f };
+	//===========================================//
+	// Camera
+	//===========================================//
 
-	//=============================================================================================//
-	// Particle
+	Camera* camera_;
+	TransformData cameraTransform_;
 
-	Particle* particle_ = nullptr;
-
-	BlendMode particleBlendMode_ = kBlendModeAdd;
-
-	//=============================================================================================//
+	//===========================================//
 	// DebugCamera
+	//===========================================//
 
-	DebugCamera* debugCamera_ = nullptr;
+	DebugCamera* debugCamera_;
 
-	//=============================================================================================//
+	//===========================================//
 	// Object3dCommon
+	//===========================================//
 
-	Object3dCommon* object3dCommon_ = nullptr;
+	Object3dCommon* object3dCommon_;
 
-	//=============================================================================================//
-	// ビルボード
-
-	bool useBillboard_ = true;
-
-	//=============================================================================================//
-	// 加速度Field
-
-	bool useAccelerationField_ = false;
-
-	//=============================================================================================//
+	//===========================================//
 	// モデル
+	//===========================================//
 
-	Object3d* model_ = nullptr;
+	//==================//
+	// メインモデル
 
-	TransformData modelTransform_ = {
-		{ 5.0f,5.0f,5.0f },
-		{ 0.0f,0.0f,0.0f },
-		{ 0.0f,0.0f,0.0f }
-	};
+	ModelId playerId_;
+	int modelIndex_; // モデルを切り替えるための番号
 
-	Vector4 modelColor_ = { 1.f,1.f,1.f,1.f };
+	//==================//
+	// サブモデル
 
-	bool enableLighting_ = true;
+	ModelId subModelId_;
 
-	float shininess_ = 40.f;
+	//===========================================//
+	// Particle
+	//===========================================//
 
-	bool useRootNodeMatrix_ = true;
+	Particle* particle_;
+	Vector4 color_;
+	BlendMode particleBlendMode_;
+	bool useBillboard_;
+	bool useAccelerationField_;
 
-	//=============================================================================================//
-	// 複数モデル描画できるか確認するためのモデル
-
-	Object3d* subModel_ = nullptr;
-	TransformData subModelTransform_ = {
-		{1.f,1.f,1.f},
-		{0.f,0.f,0.f},
-		{3.f,0.f,0.f}
-	};
-
-	Vector4 subModelColor_ = { 1.f,1.f,1.f,1.f };
-
-	int modelIndex_ = 0; // モデルを切り替えるための番号
-
-	//=============================================================================================//
-	// SpriteCommon
-
-	SpriteCommon* spriteCommon_ = nullptr;
-
-	//=============================================================================================//
+	//===========================================//
 	// Sprite
+	//===========================================//
 
-	Sprite* sprite_ = nullptr;
+	SpriteCommon* spriteCommon_;
+	Sprite* sprite_;
+	Vector2 spritePosition_;
+	float spriteRotation_;
+	Vector2 spriteSize_;
 
-	Vector2 spritePosition_ = { 100.f,100.f };
-
-	float spriteRotation_ = 0.f;
-
-	Vector2 spriteSize_ = { 256.f,256.f };
-
-	//=============================================================================================//
+	//===========================================//
 	// 平行光源
+	//===========================================//
 
-	Vector4 lightColor_ = { 1.0f,1.0f,1.0f,1.0f };
+	Vector4 lightColor_;
+	Vector3 lightDirection_;
+	float lightIntensity_;
 
-	Vector3 lightDirection_ = { 0.0f,-1.0f,0.0f };
-
-	float lightIntensity_ = 1.0f;
-
-	//=============================================================================================//
+	//===========================================//
 	// 点光源
+	//===========================================//
 
-	PointLight pointLight_ = {
-		{ 1.0f,1.0f,1.0f,1.0f },
-		{ 0.0f,2.0f,0.0f },
-		1.0f,
-		10.0f,
-		1.0f
-	};
+	PointLight pointLight_;
 
-	//=============================================================================================//
+	//===========================================//
 	// スポットライト
+	//===========================================//
 
-	SpotLight spotLight_ = {
-		{ 1.0f,1.0f,1.0f,1.0f },
-		{ 2.0f,1.25f,0.0f },
-		4.0f,
-		{ -1.0f,-1.0f,0.0f },
-		7.0f,
-		2.0f,
-		0.5f,
-		1.0f
-	};
+	SpotLight spotLight_;
 };

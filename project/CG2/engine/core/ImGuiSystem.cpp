@@ -31,6 +31,7 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 
 	//===========================================//
 	// ImGui初期化
+	//===========================================//
 #ifdef USE_IMGUI
 	IMGUI_CHECKVERSION();
 
@@ -43,11 +44,13 @@ void ImGuiSystem::Initialize([[maybe_unused]] WinApp* winApp, [[maybe_unused]] D
 
 	//===========================================//
 	// Win32初期化
+	//===========================================//
 
 	ImGui_ImplWin32_Init(winApp->GetHwnd());
 
 	//===========================================//
 	// DX12初期化
+	//===========================================//
 
 	ImGui_ImplDX12_InitInfo initInfo{};
 
@@ -94,6 +97,7 @@ void ImGuiSystem::Begin() {
 
 	//===========================================//
 	// ImGuiフレーム開始
+	//===========================================//
 #ifdef USE_IMGUI
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -115,6 +119,7 @@ void ImGuiSystem::End() {
 
 	//===========================================//
 	// 描画データ確定
+	//===========================================//
 #ifdef USE_IMGUI
 	ImGui::Render();
 #endif
@@ -155,6 +160,7 @@ void ImGuiSystem::Finalize() {
 
 	//===========================================//
 	// ImGui終了
+	//===========================================//
 #ifdef USE_IMGUI
 	ImGui_ImplDX12_Shutdown();
 

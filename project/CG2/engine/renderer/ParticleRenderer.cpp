@@ -32,8 +32,9 @@ void ParticleRenderer::Initialize(DirectXCommon* dxCommon, SrvManager* srvManage
 
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	//=============================================================================================//
+	//===========================================//
 	// Instancing用のDescriptorRange（VertexShaderのt0）
+	//===========================================//
 
 	D3D12_DESCRIPTOR_RANGE descriptorRangeForInstancing[1]{};
 
@@ -42,8 +43,9 @@ void ParticleRenderer::Initialize(DirectXCommon* dxCommon, SrvManager* srvManage
 	descriptorRangeForInstancing[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorRangeForInstancing[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	//=============================================================================================//
+	//===========================================//
 	// Texture用のDescriptorRange（PixelShaderのt0）
+	//===========================================//
 
 	D3D12_DESCRIPTOR_RANGE descriptorRange[1]{};
 

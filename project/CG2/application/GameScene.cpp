@@ -1,11 +1,10 @@
 #include "GameScene.h"
 #include "WinApp.h"
-#include "SceneFile.h"
-#include "LogSystem.h"
 #include "ModelManager.h"
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
+
 #endif
 
 //=================================================================================================//
@@ -13,75 +12,130 @@
 
 void GameScene::Initialize(const SceneContext& context) {
 
-	//=============================================================================================//
+	//===========================================//
+	// Scene取得
+	//===========================================//
+
+	scene_ = context.scene;
+
+	//===========================================//
 	// Camera初期化
+	//===========================================//
 
 	camera_ = new Camera();
-
 	camera_->Initialize(WinApp::kClientWidth, WinApp::kClientHeight);
-
 	cameraTransform_ = camera_->GetTransform();
-
 	cameraTransform_.translate = { 0.f,0.f,-30.f };
 
-	debugCamera_ = new DebugCamera();
+	//===========================================//
+	// DebugCamera初期化
+	//===========================================//
 
+	debugCamera_ = new DebugCamera();
 	debugCamera_->Initialize(WinApp::kClientWidth, WinApp::kClientHeight);
 
-	//=============================================================================================//
+	//===========================================//
 	// Object3dCommon取得
+	//===========================================//
 
 	object3dCommon_ = context.object3dCommon;
 
-	//=============================================================================================//
+	//===========================================//
 	// モデル初期化
+	//===========================================//
 
-	ModelManager::GetInstance()->LoadModel("plane.gltf");
+	//==================//
+	// メインモデル
 
-	ModelManager::GetInstance()->LoadModel("axis.obj");
+	// 設定
+	modelIndex_ = 0;
 
-	model_ = new Object3d();
+	// 生成
+	playerId_ = scene_->AddModel("Player", "plane.gltf", "resources/uvChecker.png");
 
-	model_->Initialize(object3dCommon_);
+	// 設定
+	SceneModel* player = scene_->FindModel(playerId_);
+	if (player != nullptr) {
+		player->transform.scale = {5.0f, 5.0f, 5.0f};
+	}
 
-	model_->SetModel(ModelManager::GetInstance()->FindModel("plane.gltf"));
+	//==================//
+	// サブモデル
 
-	model_->SetTexture("resources/uvChecker.png");
+	// 生成
+	subModelId_ = scene_->AddModel("Axis", "axis.obj", "");
 
-	subModel_ = new Object3d();
+	// 設定
+	SceneModel* subModel = scene_->FindModel(subModelId_);
+	if (subModel != nullptr) {
+		subModel->transform.translate = {3.0f, 0.0f, 0.0f};
+	}
 
-	subModel_->Initialize(object3dCommon_);
-
-	subModel_->SetModel(ModelManager::GetInstance()->FindModel("axis.obj"));
-
-	//=============================================================================================//
+	//===========================================//
 	// Particle初期化
+	//===========================================//
 
+	// 設定
+	color_ = { 1.0f,1.0f,1.0f,1.0f };
+	particleBlendMode_ = kBlendModeAdd;
+	useBillboard_ = true;
+	useAccelerationField_ = false;
+
+	// 生成
 	particle_ = new Particle();
-
 	particle_->Initialize(context.particleRenderer);
-
 	particle_->SetTexture("resources/circle.png");
 
-	// Restore authored data in all configurations, including Release.
-	std::error_code fileError;
-	const bool hasSavedScene = std::filesystem::exists(SceneFile::kDefaultPath, fileError);
-	if (fileError) {
-		LogSystem::Log("Scene file check failed: " + fileError.message() + "\n");
-	} else if (hasSavedScene) {
-		std::string error;
-		if (!SceneFile::Load(*this, SceneFile::kDefaultPath, error)) {
-			LogSystem::Log("Scene load failed: " + error + "\n");
-		}
-	}
-	//=============================================================================================//
+	//===========================================//
 	// Sprite初期化
+	//===========================================//
 
+	// 設定
+	spritePosition_ = { 100.f,100.f };
+	spriteRotation_ = 0.f;
+	spriteSize_ = { 256.f,256.f };
+
+	// 描画機能の取得
 	spriteCommon_ = context.spriteCommon;
 
+	// 生成
 	sprite_ = new Sprite();
-
 	sprite_->Initialize(spriteCommon_, "resources/uvChecker.png");
+
+	//===========================================//
+	// 平行光源初期化
+	//===========================================//
+
+	lightColor_ = { 1.0f,1.0f,1.0f,1.0f };
+	lightDirection_ = { 0.0f,-1.0f,0.0f };
+	lightIntensity_ = 1.0f;
+
+	//===========================================//
+	// 点光源初期化
+	//===========================================//
+
+	pointLight_ = {
+		{ 1.0f,1.0f,1.0f,1.0f },
+		{ 0.0f,2.0f,0.0f },
+		1.0f,
+		10.0f,
+		1.0f
+	};
+
+	//===========================================//
+	// スポットライト初期化
+	//===========================================//
+
+	spotLight_ = {
+		{ 1.0f,1.0f,1.0f,1.0f },
+		{ 2.0f,1.25f,0.0f },
+		4.0f,
+		{ -1.0f,-1.0f,0.0f },
+		7.0f,
+		2.0f,
+		0.5f,
+		1.0f
+	};
 }
 
 //=================================================================================================//
@@ -101,25 +155,23 @@ void GameScene::Update(Input* input) {
 
 void GameScene::Draw() {
 
-	//=============================================================================================//
+	//===========================================//
 	// モデル描画
+	//===========================================//
 
-	object3dCommon_->DrawSettingCommon();
+	scene_->Draw();
 
-	model_->Draw();
-
-	subModel_->Draw();
-
-	//=============================================================================================//
+	//===========================================//
 	// Particle描画
+	//===========================================//
 
 	particle_->Draw();
 
-	//=============================================================================================//
+	//===========================================//
 	// Sprite描画
+	//===========================================//
 
 	spriteCommon_->DrawSettingCommon();
-
 	sprite_->Draw();
 }
 
@@ -128,31 +180,30 @@ void GameScene::Draw() {
 
 void GameScene::Finalize() {
 
-	//=============================================================================================//
+	//===========================================//
 	// Particle解放
+	//===========================================//
 
 	particle_->Finalize();
-
 	delete particle_;
 
-	//=============================================================================================//
+	//===========================================//
 	// Sprite解放
+	//===========================================//
 
 	sprite_->Finalize();
-
 	delete sprite_;
 
-	//=============================================================================================//
-	// モデル解放
-
-	delete model_;
-
-	delete subModel_;
-
-	//=============================================================================================//
+	//===========================================//
 	// Camera解放
+	//===========================================//
 
 	delete camera_;
+
+	//===========================================//
+	// DebugCamera解放
+	//===========================================//
+
 	delete debugCamera_;
 }
 
@@ -161,9 +212,16 @@ void GameScene::Finalize() {
 
 void GameScene::UpdateCamera(Input* input) {
 
-	camera_->SetTransform(cameraTransform_);
+	//===========================================//
+	// Camera更新
+	//===========================================//
 
+	camera_->SetTransform(cameraTransform_);
 	camera_->Update();
+
+	//===========================================//
+	// DebugCamera更新
+	//===========================================//
 
 	debugCamera_->Update(input);
 }
@@ -173,33 +231,32 @@ void GameScene::UpdateCamera(Input* input) {
 
 void GameScene::UpdateObject() {
 
-	//=============================================================================================//
+	//===========================================//
 	// カメラ位置をObject3dCommonへ送る
+	//===========================================//
 
 	const Matrix4x4& cameraMatrix = debugCamera_->GetCameraMatrix();
-
 	object3dCommon_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
 
-	//=============================================================================================//
+	//===========================================//
 	// モデル更新
+	//===========================================//
 
-	model_->SetTransform(modelTransform_);
-	model_->SetColor(modelColor_);
-	model_->SetEnableLighting(enableLighting_);
-	model_->SetShininess(shininess_);
-	model_->SetUseRootNodeMatrix(useRootNodeMatrix_);
-	model_->SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
-	model_->SetPointLight(pointLight_);
-	spotLight_.direction = MathUtility::Normalize(spotLight_.direction);
-	model_->SetSpotLight(spotLight_);
-	model_->Update(debugCamera_->GetViewProjectionMatrix());
+	// ライト設定
+	SceneModel* player = scene_->FindModel(playerId_);
+	if (player != nullptr) {
+		player->object->SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
+		player->object->SetPointLight(pointLight_);
+		spotLight_.direction = MathUtility::Normalize(spotLight_.direction);
+		player->object->SetSpotLight(spotLight_);
+	}
 
-	subModel_->SetTransform(subModelTransform_);
-	subModel_->SetColor(subModelColor_);
-	subModel_->Update(debugCamera_->GetViewProjectionMatrix());
+	// 全モデルのデータ反映と行列更新
+	scene_->Update(debugCamera_->GetViewProjectionMatrix());
 
-	//=============================================================================================//
+	//===========================================//
 	// Particle更新
+	//===========================================//
 
 	particle_->SetColor(color_);
 	particle_->SetBlendMode(particleBlendMode_);
@@ -207,8 +264,9 @@ void GameScene::UpdateObject() {
 	particle_->SetUseAccelerationField(useAccelerationField_);
 	particle_->Update(debugCamera_->GetViewProjectionMatrix(), debugCamera_->GetCameraMatrix());
 
-	//=============================================================================================//
+	//===========================================//
 	// Sprite更新
+	//===========================================//
 
 	sprite_->SetPosition(spritePosition_);
 	sprite_->SetRotation(spriteRotation_);
@@ -217,12 +275,14 @@ void GameScene::UpdateObject() {
 
 #ifdef USE_IMGUI
 
-	//=============================================================================================//
-	// ImGui
+	//===========================================//
+	// Particle設定UI
+	//===========================================//
 
 	ImGui::Begin("Settings");
 	ImGui::ColorEdit4("color", &color_.x);
 
+	// ブレンド設定
 	static const char* kBlendModeNames[kCountOfBlendMode] = {
 		"kBlendModeNone",
 		"kBlendModeNormal",
@@ -234,40 +294,51 @@ void GameScene::UpdateObject() {
 		"kBlendModeDarken",
 		"kBlendModeInvert",
 	};
-
 	int blendMode = static_cast<int>(particleBlendMode_);
-
 	if (ImGui::Combo("Blend", &blendMode, kBlendModeNames, kCountOfBlendMode)) {
-
 		particleBlendMode_ = static_cast<BlendMode>(blendMode);
 	}
 
+	// 発生設定
 	ImGui::Checkbox("useBillboard", &useBillboard_);
-
 	ImGui::Checkbox("useAccelerationField", &useAccelerationField_);
-
 	ImGui::DragFloat3("EmitterTranslate", &particle_->GetEmitterTransform().translate.x, 0.01f, -100.0f, 100.0f);
 
+	// パーティクル追加
 	if (ImGui::Button("Add Particle")) {
-
 		particle_->AddParticles();
 	}
-
 	ImGui::End();
+
+	//===========================================//
+	// メインモデル設定UI
+	//===========================================//
 
 	ImGui::Begin("Model Asset");
 	static const char* kModelNames[] = { "plane.gltf", "axis.obj" };
 	if (ImGui::Combo("ModelData", &modelIndex_, kModelNames, IM_ARRAYSIZE(kModelNames))) {
-		model_->SetModel(ModelManager::GetInstance()->FindModel(kModelNames[modelIndex_]));
+		if (player != nullptr) {
+			player->object->SetModel(ModelManager::GetInstance()->FindModel(kModelNames[modelIndex_]));
+		}
 	}
-	ImGui::Checkbox("UseRootNodeMatrix", &useRootNodeMatrix_);
+	if (player != nullptr) {
+		ImGui::Checkbox("UseRootNodeMatrix", &player->useRootNodeMatrix);
+	}
 	ImGui::End();
+
+	//===========================================//
+	// 平行光源設定UI
+	//===========================================//
 
 	ImGui::Begin("DirectionalLight");
 	ImGui::ColorEdit4("Color", &lightColor_.x);
 	ImGui::SliderFloat3("Direction", &lightDirection_.x, -1.0f, 1.0f);
 	ImGui::DragFloat("Intensity", &lightIntensity_, 0.01f, 0.0f, 10.0f);
 	ImGui::End();
+
+	//===========================================//
+	// 点光源設定UI
+	//===========================================//
 
 	ImGui::Begin("PointLight");
 	ImGui::ColorEdit4("Color", &pointLight_.color.x);
@@ -276,6 +347,10 @@ void GameScene::UpdateObject() {
 	ImGui::DragFloat("Radius", &pointLight_.radius, 0.1f, 0.01f, 100.0f);
 	ImGui::DragFloat("Decay", &pointLight_.decay, 0.01f, 0.0f, 10.0f);
 	ImGui::End();
+
+	//===========================================//
+	// スポットライト設定UI
+	//===========================================//
 
 	ImGui::Begin("SpotLight");
 	ImGui::ColorEdit4("Color", &spotLight_.color.x);
@@ -288,6 +363,10 @@ void GameScene::UpdateObject() {
 	ImGui::SliderFloat("CosFalloffStart", &spotLight_.cosFalloffStart, 0.0f, 1.0f);
 	ImGui::End();
 
+	//===========================================//
+	// Sprite設定UI
+	//===========================================//
+
 	ImGui::Begin("Sprite");
 	ImGui::SliderFloat2("Position", &spritePosition_.x, 0.f, static_cast<float>(WinApp::kClientWidth));
 	ImGui::SliderAngle("Rotation", &spriteRotation_);
@@ -297,7 +376,34 @@ void GameScene::UpdateObject() {
 #endif
 }
 
+//=================================================================================================//
+// 編集対象の取得
+
+IEditableScene* GameScene::GetEditableScene() {
+	return this;
+}
+
+size_t GameScene::GetEditableObjectCount() const {
+	return scene_->GetModels().size();
+}
+
 EditableObjectView GameScene::GetEditableObject(size_t index) {
-	if (index != 0 || !model_) { return {}; }
-	return { 1, "Model", &modelTransform_, &modelColor_, &enableLighting_, &shininess_ };
+	const std::vector<SceneModel>& models = scene_->GetModels();
+	if (index >= models.size()) {
+		return {};
+	}
+
+	SceneModel* model = scene_->FindModel(models[index].id);
+	if (model == nullptr) {
+		return {};
+	}
+
+	return {
+		model->id,
+		model->name.c_str(),
+		&model->transform,
+		&model->color,
+		&model->enableLighting,
+		&model->shininess
+	};
 }

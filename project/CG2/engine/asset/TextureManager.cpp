@@ -49,21 +49,24 @@ void TextureManager::Finalize() {
 
 uint32_t TextureManager::Load(const std::string& filePath) {
 
-	//=============================================================================================//
+	//===========================================//
 	// 読み込み済みテクスチャを検索
+	//===========================================//
 
 	if (textureDatas_.contains(filePath)) {
 
 		return textureDatas_.at(filePath).srvIndex;
 	}
 
-	//=============================================================================================//
+	//===========================================//
 	// テクスチャ枚数上限チェック
+	//===========================================//
 
 	assert(!srvManager_->IsFull());
 
-	//=============================================================================================//
+	//===========================================//
 	// テクスチャデータを追加して書き込む
+	//===========================================//
 
 	TextureData& textureData = textureDatas_[filePath];
 
@@ -79,8 +82,9 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 		dxCommon_->GetDevice(),
 		dxCommon_->GetCommandList());
 
-	//=============================================================================================//
+	//===========================================//
 	// SRV確保
+	//===========================================//
 
 	textureData.srvIndex = srvManager_->Allocate();
 
@@ -88,8 +92,9 @@ uint32_t TextureManager::Load(const std::string& filePath) {
 
 	textureData.srvHandleGPU = srvManager_->GetGPUDescriptorHandle(textureData.srvIndex);
 
-	//=============================================================================================//
+	//===========================================//
 	// SRV生成
+	//===========================================//
 
 	srvManager_->CreateSRVforTexture2D(
 		textureData.srvIndex,
@@ -135,8 +140,9 @@ D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string& f
 
 DirectX::ScratchImage TextureManager::LoadTexture(const std::string& filePath) {
 
-	//=============================================================================================//
+	//===========================================//
 	// Textureファイルを読む
+	//===========================================//
 
 	DirectX::ScratchImage image{};
 
@@ -150,8 +156,9 @@ DirectX::ScratchImage TextureManager::LoadTexture(const std::string& filePath) {
 
 	assert(SUCCEEDED(hr));
 
-	//=============================================================================================//
+	//===========================================//
 	// MipMap作成
+	//===========================================//
 
 	DirectX::ScratchImage mipImages{};
 

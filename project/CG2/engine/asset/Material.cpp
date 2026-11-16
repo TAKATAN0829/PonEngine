@@ -21,13 +21,15 @@ void Material::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager) {
 
 	ID3D12Device* device = dxCommon_->GetDevice();
 
-	//=============================================================================================//
+	//===========================================//
 	// MaterialResource生成
+	//===========================================//
 
 	materialResource_ = ResourceManager::CreateBufferResource(device, sizeof(MaterialForGPU), "materialResource");
 
-	//=============================================================================================//
+	//===========================================//
 	// MaterialDataを書き込む
+	//===========================================//
 
 	materialResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
 
@@ -47,13 +49,15 @@ void Material::Bind() {
 
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
-	//=============================================================================================//
+	//===========================================//
 	// Material設定
+	//===========================================//
 
 	commandList->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
 
-	//=============================================================================================//
+	//===========================================//
 	// Texture設定
+	//===========================================//
 
 	srvManager_->SetGraphicsRootDescriptorTable(2, textureIndex_);
 }
@@ -82,7 +86,7 @@ void Material::SetEnableLighting(bool enableLighting) {
 	materialData_->enableLighting =	enableLighting;
 }
 
-//=============================================================================================//
+//=================================================================================================//
 // UVTransform設定
 
 void Material::SetUVTransform (const Matrix4x4& uvTransform) {

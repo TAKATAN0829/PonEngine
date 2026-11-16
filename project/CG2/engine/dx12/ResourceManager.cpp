@@ -15,15 +15,17 @@
 Microsoft::WRL::ComPtr<ID3D12Resource>
 ResourceManager::CreateBufferResource (ID3D12Device* device, size_t sizeInBytes, const char* resourceName) {
 
-	//=============================================================================================//
+	//===========================================//
 	// UploadHeap設定
+	//===========================================//
 
 	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
 
 	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
 
-	//=============================================================================================//
+	//===========================================//
 	// Resource設定
+	//===========================================//
 
 	D3D12_RESOURCE_DESC resourceDesc{};
 
@@ -35,8 +37,9 @@ ResourceManager::CreateBufferResource (ID3D12Device* device, size_t sizeInBytes,
 	resourceDesc.SampleDesc.Count = 1;
 	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-	//=============================================================================================//
+	//===========================================//
 	// Resource生成
+	//===========================================//
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
 
@@ -61,8 +64,9 @@ ResourceManager::CreateBufferResource (ID3D12Device* device, size_t sizeInBytes,
 Microsoft::WRL::ComPtr<ID3D12Resource>
 ResourceManager::CreateTextureResource (ID3D12Device* device, const DirectX::TexMetadata& metadata) {
 
-	//=============================================================================================//
+	//===========================================//
 	// Resource設定
+	//===========================================//
 
 	D3D12_RESOURCE_DESC resourceDesc{};
 
@@ -74,15 +78,17 @@ ResourceManager::CreateTextureResource (ID3D12Device* device, const DirectX::Tex
 	resourceDesc.SampleDesc.Count = 1;
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION (metadata.dimension);
 
-	//=============================================================================================//
+	//===========================================//
 	// Heap設定
+	//===========================================//
 
 	D3D12_HEAP_PROPERTIES heapProperties{};
 
 	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 
-	//=============================================================================================//
+	//===========================================//
 	// Resource生成
+	//===========================================//
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
 
@@ -110,8 +116,9 @@ ResourceManager::UploadTextureData (
 	ID3D12Device* device,
 	ID3D12GraphicsCommandList* commandList) {
 
-	//=============================================================================================//
+	//===========================================//
 	// SubResource作成
+	//===========================================//
 
 	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
 
@@ -122,18 +129,21 @@ ResourceManager::UploadTextureData (
 		mipImages.GetMetadata (),
 		subresources);
 
-	//=============================================================================================//
+	//===========================================//
 	// IntermediateResourceのサイズ取得
+	//===========================================//
 
 	uint64_t intermediateSize = GetRequiredIntermediateSize (texture.Get (), 0, UINT (subresources.size ()));
 
-	//=============================================================================================//
+	//===========================================//
 	// IntermediateResource生成
+	//===========================================//
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = CreateBufferResource (device, intermediateSize, "intermediateResource");
 
-	//=============================================================================================//
+	//===========================================//
 	// Textureに転送
+	//===========================================//
 
 	UpdateSubresources (
 		commandList,
@@ -144,8 +154,9 @@ ResourceManager::UploadTextureData (
 		UINT (subresources.size ()),
 		subresources.data ());
 
-	//=============================================================================================//
+	//===========================================//
 	// ResourceBarrier設定
+	//===========================================//
 
 	D3D12_RESOURCE_BARRIER barrier{};
 
@@ -161,8 +172,9 @@ ResourceManager::UploadTextureData (
 
 	barrier.Transition.StateAfter =	D3D12_RESOURCE_STATE_GENERIC_READ;
 
-	//=============================================================================================//
+	//===========================================//
 	// ResourceBarrierを張る
+	//===========================================//
 
 	commandList->ResourceBarrier (1, &barrier);
 

@@ -211,6 +211,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClCompile Include="engine\asset\Model.cpp" />
     <ClCompile Include="engine\asset\ModelCommon.cpp" />
     <ClCompile Include="engine\asset\ModelManager.cpp" />
+    <ClCompile Include="engine\scene\Scene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -304,6 +305,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="engine\asset\Model.h" />
     <ClInclude Include="engine\asset\ModelCommon.h" />
     <ClInclude Include="engine\asset\ModelManager.h" />
+    <ClInclude Include="engine\scene\Scene.h" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

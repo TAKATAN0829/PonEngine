@@ -7,21 +7,24 @@
 class Transform {
 public:
 
-	//=============================================================================================//
+	//===========================================//
 	// 更新処理
+	//===========================================//
 
 	void UpdateMatrix();
 
-	//=============================================================================================//
+	//===========================================//
 	// Setter
+	//===========================================//
 
 	void SetParent(Transform* parent) { parent_ = parent; }
 	void SetScale(const Vector3& scale) { local_.scale = scale; }
 	void SetRotate(const Vector3& rotate) { local_.rotate = rotate; }
 	void SetTranslate(const Vector3& translate) { local_.translate = translate; }
 
-	//=============================================================================================//
+	//===========================================//
 	// Getter
+	//===========================================//
 
 	const TransformData& GetLocalTransform() const { return local_; }
 	const Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }

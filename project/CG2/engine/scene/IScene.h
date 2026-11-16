@@ -4,6 +4,7 @@
 #include "Input.h"
 
 class IEditableScene;
+class Scene;
 class Object3dCommon;
 class SpriteCommon;
 class ParticleRenderer;
@@ -12,6 +13,8 @@ class ParticleRenderer;
 // シーンに渡す描画機能
 
 struct SceneContext {
+
+	Scene* scene;
 
 	Object3dCommon* object3dCommon = nullptr;
 
@@ -28,26 +31,29 @@ public:
 
 	virtual ~IScene() = default;
 
-	// Optional data access without depending on editor panels.
 	virtual IEditableScene* GetEditableScene() { return nullptr; }
 
-	//=============================================================================================//
+	//===========================================//
 	// 初期化処理
+	//===========================================//
 
 	virtual void Initialize(const SceneContext& context) = 0;
 
-	//=============================================================================================//
+	//===========================================//
 	// 更新処理
+	//===========================================//
 
 	virtual void Update(Input* input) = 0;
 
-	//=============================================================================================//
+	//===========================================//
 	// 描画処理
+	//===========================================//
 
 	virtual void Draw() = 0;
 
-	//=============================================================================================//
+	//===========================================//
 	// 終了処理
+	//===========================================//
 
 	virtual void Finalize() = 0;
 };

@@ -4,18 +4,19 @@
 #include <cstdint>
 #include "EngineStructs.h"
 
+// SceneObjectIDはuint64と同じ扱い
 using SceneObjectId = uint64_t;
+
 inline constexpr SceneObjectId kInvalidSceneObjectId = 0;
 
-// Borrowed views are valid only during the current editor frame.
-// The scene owns the data; this contract has no dependency on ImGui.
+// モデル1つの編集に必要な情報
 struct EditableObjectView {
-    SceneObjectId id = kInvalidSceneObjectId;
-    const char* name = "";
-    TransformData* transform = nullptr;
-    Vector4* color = nullptr;
-    bool* enableLighting = nullptr;
-    float* shininess = nullptr;
+    SceneObjectId id = kInvalidSceneObjectId; // id
+    const char* name = "";                    // 名前
+    TransformData* transform = nullptr;       // TransformData
+    Vector4* color = nullptr;                 // 色
+    bool* enableLighting = nullptr;           // ライティング
+    float* shininess = nullptr;               // 光沢の強さ
 };
 
 class IEditableScene {

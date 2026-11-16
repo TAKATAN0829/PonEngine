@@ -17,8 +17,9 @@ void SrvManager::Initialize(DirectXCommon* dxCommon) {
 
 	ID3D12Device* device = dxCommon_->GetDevice();
 
-	//=============================================================================================//
+	//===========================================//
 	// DescriptorHeap生成
+	//===========================================//
 
 	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{};
 
@@ -32,8 +33,9 @@ void SrvManager::Initialize(DirectXCommon* dxCommon) {
 
 	assert(SUCCEEDED(hr));
 
-	//=============================================================================================//
+	//===========================================//
 	// DescriptorSize取得
+	//===========================================//
 
 	descriptorSize_ = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }

@@ -48,15 +48,17 @@ void SpriteCommon::CreateRootSignature() {
 
 	ID3D12Device* device = dxCommon_->GetDevice();
 
-	//=============================================================================================//
+	//===========================================//
 	// RootSignature作成
+	//===========================================//
 
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	//=============================================================================================//
+	//===========================================//
 	// DescriptorRange作成
+	//===========================================//
 
 	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
 
@@ -68,8 +70,9 @@ void SpriteCommon::CreateRootSignature() {
 
 	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	//=============================================================================================//
+	//===========================================//
 	// RootParameter作成
+	//===========================================//
 
 	D3D12_ROOT_PARAMETER rootParameters[4] = {};
 
@@ -98,8 +101,9 @@ void SpriteCommon::CreateRootSignature() {
 
 	descriptionRootSignature.NumParameters = _countof (rootParameters);
 
-	//=============================================================================================//
+	//===========================================//
 	// Sampler作成
+	//===========================================//
 
 	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
 
@@ -123,8 +127,9 @@ void SpriteCommon::CreateRootSignature() {
 
 	descriptionRootSignature.NumStaticSamplers = 1;
 
-	//=============================================================================================//
+	//===========================================//
 	// RootSignatureシリアライズ
+	//===========================================//
 
 	Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
 
@@ -138,8 +143,9 @@ void SpriteCommon::CreateRootSignature() {
 
 	assert (SUCCEEDED (hr));
 
-	//=============================================================================================//
+	//===========================================//
 	// RootSignature生成
+	//===========================================//
 
 	hr = device->CreateRootSignature (
 		0,
@@ -160,8 +166,9 @@ void SpriteCommon::CreateGraphicsPipeline() {
 
 	ID3D12Device* device = dxCommon_->GetDevice();
 
-	//=============================================================================================//
+	//===========================================//
 	// InputLayout設定
+	//===========================================//
 
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
 
@@ -186,8 +193,9 @@ void SpriteCommon::CreateGraphicsPipeline() {
 
 	inputLayoutDesc.NumElements = _countof (inputElementDescs);
 
-	//=============================================================================================//
+	//===========================================//
 	// BlendState設定
+	//===========================================//
 
 	D3D12_BLEND_DESC blendDesc{};
 
@@ -200,8 +208,9 @@ void SpriteCommon::CreateGraphicsPipeline() {
 	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
 	blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
 
-	//=============================================================================================//
+	//===========================================//
 	// RasterizerState設定
+	//===========================================//
 
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
 
@@ -209,15 +218,17 @@ void SpriteCommon::CreateGraphicsPipeline() {
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
-	//=============================================================================================//
+	//===========================================//
 	// Shaderコンパイル
+	//===========================================//
 
 	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = shaderCompiler_->CompileShader (L"resources/shaders/Sprite.VS.hlsl", L"vs_6_0");
 
 	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = shaderCompiler_->CompileShader (L"resources/shaders/Sprite.PS.hlsl", L"ps_6_0");
 
-	//=============================================================================================//
+	//===========================================//
 	// PSO作成
+	//===========================================//
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 
@@ -256,8 +267,9 @@ void SpriteCommon::CreateGraphicsPipeline() {
 	// DSVのフォーマット
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-	//=============================================================================================//
+	//===========================================//
 	// PipelineState生成
+	//===========================================//
 
 	HRESULT hr = device->CreateGraphicsPipelineState (&graphicsPipelineStateDesc, IID_PPV_ARGS (&pipelineState_));
 

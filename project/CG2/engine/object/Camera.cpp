@@ -67,7 +67,7 @@ TransformData Camera::GetTransform () const {
 }
 
 
-//=============================================================================================//
+//=================================================================================================//
 // ViewProjectionMatrix取得
 
 const Matrix4x4& Camera::GetViewProjectionMatrix () const {

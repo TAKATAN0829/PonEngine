@@ -12,8 +12,9 @@
 Microsoft::WRL::ComPtr<ID3D12RootSignature>
 PipelineManager::CreateRootSignature (ID3D12Device* device, D3D12_ROOT_SIGNATURE_DESC& descriptionRootSignature) {
 
-	//=============================================================================================//
+	//===========================================//
 	// RootSignatureSerialize
+	//===========================================//
 
 	Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
@@ -31,8 +32,9 @@ PipelineManager::CreateRootSignature (ID3D12Device* device, D3D12_ROOT_SIGNATURE
 		assert (false);
 	}
 
-	//=============================================================================================//
+	//===========================================//
 	// RootSignature生成
+	//===========================================//
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>	rootSignature = nullptr;
 
@@ -54,32 +56,36 @@ PipelineManager::CreateRootSignature (ID3D12Device* device, D3D12_ROOT_SIGNATURE
 D3D12_INPUT_LAYOUT_DESC
 PipelineManager::CreateInputLayout () {
 
-	//=============================================================================================//
+	//===========================================//
 	// POSITION
+	//===========================================//
 
 	inputElementDescs_[0].SemanticName = "POSITION";
 	inputElementDescs_[0].SemanticIndex = 0;
 	inputElementDescs_[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	inputElementDescs_[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-	//=============================================================================================//
+	//===========================================//
 	// TEXCOORD
+	//===========================================//
 
 	inputElementDescs_[1].SemanticName = "TEXCOORD";
 	inputElementDescs_[1].SemanticIndex = 0;
 	inputElementDescs_[1].Format = DXGI_FORMAT_R32G32_FLOAT;
 	inputElementDescs_[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-	//=============================================================================================//
+	//===========================================//
 	// NORMAL
+	//===========================================//
 
 	inputElementDescs_[2].SemanticName = "NORMAL";
 	inputElementDescs_[2].SemanticIndex = 0;
 	inputElementDescs_[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
 	inputElementDescs_[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-	//=============================================================================================//
+	//===========================================//
 	// InputLayoutDesc
+	//===========================================//
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 
@@ -101,8 +107,9 @@ PipelineManager::CreateBlendState (BlendMode blendMode) {
 
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-	//=============================================================================================//
+	//===========================================//
 	// ブレンドなし
+	//===========================================//
 
 	if (blendMode == kBlendModeNone) {
 
@@ -111,8 +118,9 @@ PipelineManager::CreateBlendState (BlendMode blendMode) {
 
 	blendDesc.RenderTarget[0].BlendEnable = true;
 
-	//=============================================================================================//
+	//===========================================//
 	// α値の合成（全モード共通）
+	//===========================================//
 
 	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
 
@@ -120,8 +128,9 @@ PipelineManager::CreateBlendState (BlendMode blendMode) {
 
 	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
 
-	//=============================================================================================//
+	//===========================================//
 	// 色の合成
+	//===========================================//
 
 	switch (blendMode) {
 
@@ -247,8 +256,9 @@ PipelineManager::CreateGraphicsPipelineState (
 	IDxcBlob* vertexShaderBlob,
 	IDxcBlob* pixelShaderBlob) {
 
-	//=============================================================================================//
+	//===========================================//
 	// PSO設定
+	//===========================================//
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 
@@ -284,8 +294,9 @@ PipelineManager::CreateGraphicsPipelineState (
 
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-	//=============================================================================================//
+	//===========================================//
 	// PSO生成
+	//===========================================//
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>	graphicsPipelineState = nullptr;
 

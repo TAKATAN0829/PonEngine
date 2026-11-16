@@ -2,13 +2,16 @@
 
 #include <filesystem>
 #include <string>
+#include <ostream>
 
-class IEditableScene;
+#include "EngineStructs.h"
 
-// Versioned text format. No dependency on editor UI or a concrete game scene.
 class SceneFile {
 public:
-    static constexpr const char* kDefaultPath = "resources/scenes/GameScene.ponscene";
-    static bool Save(IEditableScene& scene, const std::filesystem::path& path, std::string& error);
-    static bool Load(IEditableScene& scene, const std::filesystem::path& path, std::string& error);
+	void Save(const std::string& fileName, const std::string& sceneName, const std::string& modelName, const TransformData& transform, std::string& error);
+
+	void Load(const std::string& fileName, const std::string& sceneName, const std::string& modelName, TransformData& transform, std::string& error);
+
+private:
+	void WriteModel(std::ostream& file, const std::string& modelNName, const TransformData& transform);
 };

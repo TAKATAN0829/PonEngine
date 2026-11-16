@@ -80,8 +80,9 @@ PixelShaderOutput main(VertexShaderOutput input)
 
         float32_t3 toEye = normalize(gCamera.worldPosition - input.worldPosition);
 
-        //=========================================================================================//
+        //=======================================//
         // 平行光源
+        //=======================================//
 
         float NdotL = dot(normal, -gDirectionalLight.direction);
         float cos = pow(NdotL * 0.5f + 0.5f, 2.0f);
@@ -93,8 +94,9 @@ PixelShaderOutput main(VertexShaderOutput input)
         float32_t3 specularDirectionalLight =
         gDirectionalLight.color.rgb * gDirectionalLight.intensity * specularPow * float32_t3(1.f, 1.f, 1.f);
 
-        //=========================================================================================//
+        //=======================================//
         // 点光源
+        //=======================================//
 
         float32_t3 pointLightDirection = normalize(input.worldPosition - gPointLight.position);
         float distance = length(gPointLight.position - input.worldPosition);
@@ -110,8 +112,9 @@ PixelShaderOutput main(VertexShaderOutput input)
         float32_t3 specularPointLight =
         gPointLight.color.rgb * gPointLight.intensity * factor * specularPowPoint * float32_t3(1.f, 1.f, 1.f);
 
-        //=========================================================================================//
+        //=======================================//
         // スポットライト
+        //=======================================//
 
         float32_t3 spotLightDirectionOnSurface = normalize(input.worldPosition - gSpotLight.position);
         float distanceSpot = length(gSpotLight.position - input.worldPosition);
@@ -129,8 +132,9 @@ PixelShaderOutput main(VertexShaderOutput input)
         float32_t3 specularSpotLight =
         gSpotLight.color.rgb * gSpotLight.intensity * factorSpot * falloffFactor * specularPowSpot * float32_t3(1.f, 1.f, 1.f);
 
-        //=========================================================================================//
+        //=======================================//
         // 合算
+        //=======================================//
 
         output.color.rgb = diffuseDirectionalLight + specularDirectionalLight + diffusePointLight + specularPointLight + diffuseSpotLight + specularSpotLight;
 

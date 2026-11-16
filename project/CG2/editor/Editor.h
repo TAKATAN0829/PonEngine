@@ -5,10 +5,18 @@
 
 class Editor {
 public:
+    void Initialize();
+
+    void Update();
+
     void Draw(IEditableScene* scene);
 
 private:
-    IEditableScene* scene_ = nullptr; // Non-owning; used only to detect scene changes.
+    IEditableScene* scene_ = nullptr;
+
     EditorSelection selection_;
+
     std::string fileStatus_;
+
+    char fileName_[128] = "scene.txt";
 };
