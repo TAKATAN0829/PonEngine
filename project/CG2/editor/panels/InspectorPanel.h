@@ -1,8 +1,13 @@
 #pragma once
 
-#include "IEditableScene.h"
+struct SceneModel;
 
 class InspectorPanel {
 public:
-    static void Draw(const EditableObjectView& object);
+
+	//===========================================//
+	// 描画処理
+	//===========================================//
+
+	static void Draw(SceneModel* model);
 };

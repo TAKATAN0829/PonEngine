@@ -332,6 +332,7 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <ItemGroup>
+    <ClCompile Include="editor\EditorSelection.cpp" />
     <ClCompile Include="editor\Editor.cpp" />
     <ClCompile Include="editor\panels\HierarchyPanel.cpp" />
     <ClCompile Include="editor\panels\InspectorPanel.cpp" />

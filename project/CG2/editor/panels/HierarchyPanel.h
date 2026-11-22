@@ -1,9 +1,14 @@
 #pragma once
 
-class IEditableScene;
+class ModelCollection;
 class EditorSelection;
 
 class HierarchyPanel {
 public:
-    static void Draw(IEditableScene* scene, EditorSelection& selection);
+
+	//===========================================//
+	// 描画処理
+	//===========================================//
+
+	static void Draw(ModelCollection* models, EditorSelection& selection);
 };

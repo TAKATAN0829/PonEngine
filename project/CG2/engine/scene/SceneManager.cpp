@@ -57,14 +57,10 @@ void SceneManager::Draw() {
 }
 
 //=================================================================================================//
-// 編集対象の取得
+// モデル一覧の取得
 
-IEditableScene* SceneManager::GetEditableScene() {
-	if (currentScene_ != nullptr) {
-		return currentScene_->GetEditableScene();
-	}
-
-	return nullptr;
+ModelCollection* SceneManager::GetModelCollection() {
+	return &modelCollection_;
 }
 
 //=================================================================================================//

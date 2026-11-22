@@ -300,6 +300,7 @@
     <Filter Include="editor\panels" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="editor\EditorSelection.cpp"><Filter>editor</Filter></ClCompile>
     <ClCompile Include="editor\Editor.cpp">
       <Filter>editor</Filter>
     </ClCompile>

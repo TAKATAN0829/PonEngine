@@ -1,14 +1,29 @@
 #pragma once
 
-#include "IEditableScene.h"
+#include "ModelCollection.h"
 
-// Selection never owns or keeps a pointer to a scene object.
+// モデルへのポインタを保持せず、選択したIDだけを覚える。
 class EditorSelection {
 public:
-    SceneObjectId Get() const { return selected_; }
-    void Select(SceneObjectId id) { selected_ = id; }
-    void Clear() { selected_ = kInvalidSceneObjectId; }
+
+	//===========================================//
+	// 選択IDの取得
+	//===========================================//
+
+	ModelId Get() const;
+
+	//===========================================//
+	// モデル選択
+	//===========================================//
+
+	void Select(ModelId id);
+
+	//===========================================//
+	// 選択解除
+	//===========================================//
+
+	void Clear();
 
 private:
-    SceneObjectId selected_ = kInvalidSceneObjectId;
+	ModelId selected_;
 };

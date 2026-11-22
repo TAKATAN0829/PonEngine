@@ -2,7 +2,6 @@
 
 // 自作
 #include "IScene.h"
-#include "IEditableScene.h"
 #include "ModelCollection.h"
 #include "ModelRenderer.h"
 #include "EngineStructs.h"
@@ -13,7 +12,7 @@
 #include "Sprite.h"
 #include "SpriteCommon.h"
 
-class GameScene : public IScene, public IEditableScene {
+class GameScene : public IScene {
 
 public:
 
@@ -40,14 +39,6 @@ public:
 	//===========================================//
 
 	void Finalize () override;
-
-	//===========================================//
-	// 編集対象の取得
-	//===========================================//
-
-	IEditableScene* GetEditableScene() override;
-	size_t GetEditableObjectCount() const override;
-	EditableObjectView GetEditableObject(size_t index) override;
 
 	//===========================================//
 	// Camera更新

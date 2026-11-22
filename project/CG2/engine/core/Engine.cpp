@@ -99,6 +99,14 @@ void Engine::Initialize(IScene* firstScene) {
 
 	imGuiSystem_->Initialize(winApp_, dxCommon_, srvManager_);
 
+#ifdef USE_IMGUI
+	//===========================================//
+	// Editor初期化
+	//===========================================//
+
+	editor_.Initialize();
+#endif
+
 	//===========================================//
 	// SceneManager初期化
 	//===========================================//
@@ -162,8 +170,8 @@ void Engine::Run() {
 		imGuiSystem_->Begin();
 
 #ifdef USE_IMGUI
-		// Edit before the scene uploads its transform and material data.
-		editor_.Draw(sceneManager_->GetEditableScene());
+		// シーンが描画用データを更新する前に編集結果を反映する。
+		editor_.Draw(sceneManager_->GetModelCollection());
 #endif
 
 		//=======================================//

@@ -1,99 +1,119 @@
 #include "Editor.h"
 #include "panels/HierarchyPanel.h"
 #include "panels/InspectorPanel.h"
+#include "ModelCollection.h"
 #include "SceneFile.h"
+
+#include <cstring>
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
 #endif
 
-void Editor::Draw(IEditableScene* scene) {
-	if (scene_ != scene) {
+//=================================================================================================//
+// 初期化処理
+
+void Editor::Initialize() {
+	modelCollection_ = nullptr;
+	selection_.Clear();
+	fileStatus_.clear();
+	strcpy_s(fileName_, sizeof(fileName_), "scene.txt");
+}
+
+//=================================================================================================//
+// 描画処理
+
+void Editor::Draw(ModelCollection* models) {
+
+	//===========================================//
+	// 対象の変更確認
+	//===========================================//
+
+	if (modelCollection_ != models) {
 		selection_.Clear();
-
 		fileStatus_.clear();
-
-		scene_ = scene;
+		modelCollection_ = models;
 	}
 
 #ifdef USE_IMGUI
+
+	//===========================================//
+	// 保存・読み込み
+	//===========================================//
+
 	if (ImGui::Begin("Scene")) {
 		ImGui::InputText("File Name", fileName_, sizeof(fileName_));
 
+		// 保存対象の取得
+		SceneModel* firstModel = nullptr;
+		if (models != nullptr) {
+			if (!models->GetModels().empty()) {
+				const ModelId id = models->GetModels().front().id;
+				firstModel = models->FindModel(id);
+			}
+		}
+
+		ImGui::BeginDisabled(firstModel == nullptr);
+
 		// シーンを保存する処理
 		if (ImGui::Button("Save Scene")) {
-			if (scene != nullptr) {
-				if (scene->GetEditableObjectCount() > 0) {
-					EditableObjectView object = scene->GetEditableObject(0);
+			if (firstModel != nullptr) {
+				SceneFile sceneFile;
+				std::string error;
+				sceneFile.Save(fileName_, "GameScene", firstModel->name, firstModel->transform, error);
 
-					if (object.transform != nullptr) {
-						SceneFile sceneFile;
-
-						std::string error;
-
-						sceneFile.Save(fileName_, "GameScene", object.name, *object.transform, error);
-
-						if (error.empty()) {
-							fileStatus_ = "Saved.";
-						} else {
-							fileStatus_ = error;
-						}
-					}
+				if (error.empty()) {
+					fileStatus_ = "Saved.";
+				} else {
+					fileStatus_ = error;
 				}
 			}
 		}
 
 		// シーンを読み込む処理
 		if (ImGui::Button("Load Scene")) {
-			if (scene != nullptr) {
-				if (scene->GetEditableObjectCount() > 0) {
-					EditableObjectView object = scene->GetEditableObject(0);
+			if (firstModel != nullptr) {
+				SceneFile sceneFile;
+				std::string error;
+				sceneFile.Load(fileName_, "GameScene", firstModel->name, firstModel->transform, error);
 
-					if (object.transform != nullptr) {
-						SceneFile sceneFile;
-
-						std::string error;
-
-						sceneFile.Load(fileName_, "GameScene", object.name, *object.transform, error);
-
-						if (error.empty()) {
-							fileStatus_ = "Loaded.";
-						} else {
-							fileStatus_ = error;
-						}
-					}
+				if (error.empty()) {
+					fileStatus_ = "Loaded.";
+				} else {
+					fileStatus_ = error;
 				}
 			}
 		}
 
+		ImGui::EndDisabled();
+
 		// 保存・読み込みの結果を画面に表示
 		ImGui::TextWrapped("%s", fileStatus_.c_str());
-
 	}
-
 	ImGui::End();
 
 #endif
 
-	HierarchyPanel::Draw(scene, selection_);
+	//===========================================//
+	// モデル一覧
+	//===========================================//
 
-	EditableObjectView selected{};
+	HierarchyPanel::Draw(models, selection_);
 
-	if (scene) {
-		for (size_t i = 0; i < scene->GetEditableObjectCount(); ++i) {
-			auto object = scene->GetEditableObject(i);
+	//===========================================//
+	// 選択モデルの編集
+	//===========================================//
 
-			if (object.id != kInvalidSceneObjectId && object.id == selection_.Get()) {
-				selected = object;
-
-				break;
-			}
-		}
+	// 選択対象の取得
+	SceneModel* selected = nullptr;
+	if (models != nullptr) {
+		selected = models->FindModel(selection_.Get());
 	}
 
-	if (selected.id == kInvalidSceneObjectId) {
+	if (selected == nullptr) {
 		selection_.Clear();
 	}
 
+	// 選択したモデルを編集
 	InspectorPanel::Draw(selected);
 }

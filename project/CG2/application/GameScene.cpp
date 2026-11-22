@@ -390,35 +390,3 @@ void GameScene::UpdateObject() {
 
 #endif
 }
-
-//=================================================================================================//
-// 編集対象の取得
-
-IEditableScene* GameScene::GetEditableScene() {
-	return this;
-}
-
-size_t GameScene::GetEditableObjectCount() const {
-	return modelCollection_->GetModels().size();
-}
-
-EditableObjectView GameScene::GetEditableObject(size_t index) {
-	const std::vector<SceneModel>& models = modelCollection_->GetModels();
-	if (index >= models.size()) {
-		return {};
-	}
-
-	SceneModel* model = modelCollection_->FindModel(models[index].id);
-	if (model == nullptr) {
-		return {};
-	}
-
-	return {
-		model->id,
-		model->name.c_str(),
-		&model->transform,
-		&model->color,
-		&model->enableLighting,
-		&model->shininess
-	};
-}

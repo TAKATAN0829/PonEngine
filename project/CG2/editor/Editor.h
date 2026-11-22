@@ -3,20 +3,42 @@
 #include "EditorSelection.h"
 #include <string>
 
+class ModelCollection;
+
 class Editor {
 public:
-    void Initialize();
 
-    void Update();
+	//===========================================//
+	// 初期化処理
+	//===========================================//
 
-    void Draw(IEditableScene* scene);
+	void Initialize();
+
+	//===========================================//
+	// 更新処理
+	//===========================================//
+
+	void Update();
+
+	//===========================================//
+	// 描画処理
+	//===========================================//
+
+	void Draw(ModelCollection* models);
 
 private:
-    IEditableScene* scene_ = nullptr;
 
-    EditorSelection selection_;
+	//===========================================//
+	// 編集対象
+	//===========================================//
 
-    std::string fileStatus_;
+	ModelCollection* modelCollection_;
+	EditorSelection selection_;
 
-    char fileName_[128] = "scene.txt";
+	//===========================================//
+	// 保存・読み込み
+	//===========================================//
+
+	std::string fileStatus_;
+	char fileName_[128];
 };

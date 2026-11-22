@@ -3,7 +3,6 @@
 // 自作
 #include "Input.h"
 
-class IEditableScene;
 class ModelCollection;
 class ModelRenderer;
 class Object3dPipeline;
@@ -32,8 +31,6 @@ class IScene {
 public:
 
 	virtual ~IScene() = default;
-
-	virtual IEditableScene* GetEditableScene() { return nullptr; }
 
 	//===========================================//
 	// 初期化処理

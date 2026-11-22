@@ -1,37 +1,50 @@
 #include "HierarchyPanel.h"
-#include <string>
 #include "../EditorSelection.h"
+#include "ModelCollection.h"
+#include <string>
 
 #ifdef USE_IMGUI
 #include "imgui/imgui.h"
 #endif
 
-void HierarchyPanel::Draw(IEditableScene* scene, EditorSelection& selection) {
+//=================================================================================================//
+// 描画処理
+
+void HierarchyPanel::Draw(ModelCollection* models, EditorSelection& selection) {
 #ifdef USE_IMGUI
-    if (ImGui::Begin("Hierarchy")) {
-        if (ImGui::Button("Clear Selection")) {
-            selection.Clear();
-        }
-        ImGui::Separator();
-        if (scene) {
-            for (size_t i = 0; i < scene->GetEditableObjectCount(); ++i) {
-                const auto object = scene->GetEditableObject(i);
-                if (object.id == kInvalidSceneObjectId) { continue; }
-                // Use the full numeric ID as text to avoid truncating 64-bit IDs.
-                const auto id = std::to_string(object.id);
-                ImGui::PushID(id.c_str());
-                if (ImGui::Selectable(object.name, selection.Get() == object.id)) {
-                    selection.Select(object.id);
-                }
-                ImGui::PopID();
-            }
-        } else {
-            ImGui::TextUnformatted("No editable scene");
-        }
-    }
-    ImGui::End();
+
+	if (ImGui::Begin("Hierarchy")) {
+		// 選択解除
+		if (ImGui::Button("Clear Selection")) {
+			selection.Clear();
+		}
+		ImGui::Separator();
+
+		// モデル一覧
+		if (models != nullptr) {
+			for (const SceneModel& model : models->GetModels()) {
+				if (model.id == 0) {
+					continue;
+				}
+
+				// 64ビットのIDを切り詰めずに扱うため、文字列として渡す。
+				const std::string id = std::to_string(model.id);
+				ImGui::PushID(id.c_str());
+				if (ImGui::Selectable(model.name.c_str(), selection.Get() == model.id)) {
+					selection.Select(model.id);
+				}
+				ImGui::PopID();
+			}
+		} else {
+			ImGui::TextUnformatted("No model collection");
+		}
+	}
+	ImGui::End();
+
 #else
-    (void)scene;
-    (void)selection;
+
+	(void)models;
+	(void)selection;
+
 #endif
 }
