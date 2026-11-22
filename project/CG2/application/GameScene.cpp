@@ -13,10 +13,16 @@
 void GameScene::Initialize(const SceneContext& context) {
 
 	//===========================================//
-	// Scene取得
+	// ModelCollection取得
 	//===========================================//
 
-	scene_ = context.scene;
+	modelCollection_ = context.modelCollection;
+
+	//===========================================//
+	// ModelRenderer取得
+	//===========================================//
+
+	modelRenderer_ = context.modelRenderer;
 
 	//===========================================//
 	// Camera初期化
@@ -35,10 +41,10 @@ void GameScene::Initialize(const SceneContext& context) {
 	debugCamera_->Initialize(WinApp::kClientWidth, WinApp::kClientHeight);
 
 	//===========================================//
-	// Object3dCommon取得
+	// Object3dPipeline取得
 	//===========================================//
 
-	object3dCommon_ = context.object3dCommon;
+	object3dPipeline_ = context.object3dPipeline;
 
 	//===========================================//
 	// モデル初期化
@@ -51,10 +57,10 @@ void GameScene::Initialize(const SceneContext& context) {
 	modelIndex_ = 0;
 
 	// 生成
-	playerId_ = scene_->AddModel("Player", "plane.gltf", "resources/uvChecker.png");
+	playerId_ = modelCollection_->AddModel("Player", "plane.gltf", "resources/uvChecker.png");
 
 	// 設定
-	SceneModel* player = scene_->FindModel(playerId_);
+	SceneModel* player = modelCollection_->FindModel(playerId_);
 	if (player != nullptr) {
 		player->transform.scale = {5.0f, 5.0f, 5.0f};
 	}
@@ -63,12 +69,19 @@ void GameScene::Initialize(const SceneContext& context) {
 	// サブモデル
 
 	// 生成
-	subModelId_ = scene_->AddModel("Axis", "axis.obj", "");
+	subModelId_ = modelCollection_->AddModel("Axis", "axis.obj", "");
 
 	// 設定
-	SceneModel* subModel = scene_->FindModel(subModelId_);
+	SceneModel* subModel = modelCollection_->FindModel(subModelId_);
 	if (subModel != nullptr) {
 		subModel->transform.translate = {3.0f, 0.0f, 0.0f};
+	}
+
+	//==================//
+	// 描画用Object3dの登録
+
+	for (const SceneModel& model : modelCollection_->GetModels()) {
+		modelRenderer_->AddModel(model);
 	}
 
 	//===========================================//
@@ -159,7 +172,7 @@ void GameScene::Draw() {
 	// モデル描画
 	//===========================================//
 
-	scene_->Draw();
+	modelRenderer_->Draw(*modelCollection_);
 
 	//===========================================//
 	// Particle描画
@@ -232,27 +245,28 @@ void GameScene::UpdateCamera(Input* input) {
 void GameScene::UpdateObject() {
 
 	//===========================================//
-	// カメラ位置をObject3dCommonへ送る
+	// カメラ位置をObject3dPipelineへ送る
 	//===========================================//
 
 	const Matrix4x4& cameraMatrix = debugCamera_->GetCameraMatrix();
-	object3dCommon_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
+	object3dPipeline_->SetCameraPosition({ cameraMatrix.m[3][0],cameraMatrix.m[3][1],cameraMatrix.m[3][2] });
 
 	//===========================================//
 	// モデル更新
 	//===========================================//
 
 	// ライト設定
-	SceneModel* player = scene_->FindModel(playerId_);
-	if (player != nullptr) {
-		player->object->SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
-		player->object->SetPointLight(pointLight_);
+	SceneModel* player = modelCollection_->FindModel(playerId_);
+	Object3d* playerObject = modelRenderer_->FindObject(playerId_);
+	if (playerObject != nullptr) {
+		playerObject->SetDirectionalLight(lightColor_, lightDirection_, lightIntensity_);
+		playerObject->SetPointLight(pointLight_);
 		spotLight_.direction = MathUtility::Normalize(spotLight_.direction);
-		player->object->SetSpotLight(spotLight_);
+		playerObject->SetSpotLight(spotLight_);
 	}
 
 	// 全モデルのデータ反映と行列更新
-	scene_->Update(debugCamera_->GetViewProjectionMatrix());
+	modelRenderer_->Update(*modelCollection_, debugCamera_->GetViewProjectionMatrix());
 
 	//===========================================//
 	// Particle更新
@@ -317,8 +331,9 @@ void GameScene::UpdateObject() {
 	ImGui::Begin("Model Asset");
 	static const char* kModelNames[] = { "plane.gltf", "axis.obj" };
 	if (ImGui::Combo("ModelData", &modelIndex_, kModelNames, IM_ARRAYSIZE(kModelNames))) {
-		if (player != nullptr) {
-			player->object->SetModel(ModelManager::GetInstance()->FindModel(kModelNames[modelIndex_]));
+		if (player != nullptr && playerObject != nullptr) {
+			player->modelFile = kModelNames[modelIndex_];
+			playerObject->SetModel(ModelManager::GetInstance()->FindModel(player->modelFile));
 		}
 	}
 	if (player != nullptr) {
@@ -384,16 +399,16 @@ IEditableScene* GameScene::GetEditableScene() {
 }
 
 size_t GameScene::GetEditableObjectCount() const {
-	return scene_->GetModels().size();
+	return modelCollection_->GetModels().size();
 }
 
 EditableObjectView GameScene::GetEditableObject(size_t index) {
-	const std::vector<SceneModel>& models = scene_->GetModels();
+	const std::vector<SceneModel>& models = modelCollection_->GetModels();
 	if (index >= models.size()) {
 		return {};
 	}
 
-	SceneModel* model = scene_->FindModel(models[index].id);
+	SceneModel* model = modelCollection_->FindModel(models[index].id);
 	if (model == nullptr) {
 		return {};
 	}

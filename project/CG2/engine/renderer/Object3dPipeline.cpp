@@ -1,4 +1,4 @@
-#include "Object3dCommon.h"
+#include "Object3dPipeline.h"
 
 // C++
 #include <cassert>
@@ -12,7 +12,7 @@
 //=================================================================================================//
 // 初期化処理
 
-void Object3dCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
+void Object3dPipeline::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager, ShaderCompiler* shaderCompiler) {
 
 	assert(dxCommon);
 
@@ -32,7 +32,7 @@ void Object3dCommon::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager,
 //=================================================================================================//
 // 共通描画設定
 
-void Object3dCommon::DrawSettingCommon() {
+void Object3dPipeline::DrawSettingCommon() {
 
 	ID3D12GraphicsCommandList* commandList = dxCommon_->GetCommandList();
 
@@ -48,7 +48,7 @@ void Object3dCommon::DrawSettingCommon() {
 //=================================================================================================//
 // BlendMode設定
 
-void Object3dCommon::SetBlendMode(BlendMode blendMode) {
+void Object3dPipeline::SetBlendMode(BlendMode blendMode) {
 
 	dxCommon_->GetCommandList()->SetPipelineState(pipelineStates_[blendMode].Get());
 }
@@ -56,7 +56,7 @@ void Object3dCommon::SetBlendMode(BlendMode blendMode) {
 //=================================================================================================//
 // RootSignatureの作成
 
-void Object3dCommon::CreateRootSignature() {
+void Object3dPipeline::CreateRootSignature() {
 
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 
@@ -127,7 +127,7 @@ void Object3dCommon::CreateRootSignature() {
 //=================================================================================================//
 // GraphicsPipelineの生成
 
-void Object3dCommon::CreateGraphicsPipeline() {
+void Object3dPipeline::CreateGraphicsPipeline() {
 
 	CreateRootSignature();
 
@@ -163,7 +163,7 @@ void Object3dCommon::CreateGraphicsPipeline() {
 //=================================================================================================//
 // カメラ用リソース生成
 
-void Object3dCommon::CreateCameraResource() {
+void Object3dPipeline::CreateCameraResource() {
 
 	cameraResource_ = ResourceManager::CreateBufferResource(dxCommon_->GetDevice(), sizeof(CameraForGPU), "cameraResource");
 

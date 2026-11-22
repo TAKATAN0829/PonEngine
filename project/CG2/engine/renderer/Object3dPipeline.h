@@ -14,7 +14,7 @@ class DirectXCommon;
 class ShaderCompiler;
 class SrvManager;
 
-class Object3dCommon {
+class Object3dPipeline {
 public:
 
 	//===========================================//

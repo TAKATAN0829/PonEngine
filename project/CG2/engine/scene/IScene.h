@@ -4,8 +4,9 @@
 #include "Input.h"
 
 class IEditableScene;
-class Scene;
-class Object3dCommon;
+class ModelCollection;
+class ModelRenderer;
+class Object3dPipeline;
 class SpriteCommon;
 class ParticleRenderer;
 
@@ -14,9 +15,10 @@ class ParticleRenderer;
 
 struct SceneContext {
 
-	Scene* scene;
+	ModelCollection* modelCollection;
+	ModelRenderer* modelRenderer;
 
-	Object3dCommon* object3dCommon = nullptr;
+	Object3dPipeline* object3dPipeline = nullptr;
 
 	SpriteCommon* spriteCommon = nullptr;
 

@@ -3,12 +3,13 @@
 // 自作
 #include "IScene.h"
 #include "IEditableScene.h"
-#include "Scene.h"
+#include "ModelCollection.h"
+#include "ModelRenderer.h"
 #include "EngineStructs.h"
 #include "Camera.h"
 #include "Particle.h"
 #include "DebugCamera.h"
-#include "Object3dCommon.h"
+#include "Object3dPipeline.h"
 #include "Sprite.h"
 #include "SpriteCommon.h"
 
@@ -63,10 +64,16 @@ public:
 private:
 
 	//===========================================//
-	// Scene
+	// ModelCollection
 	//===========================================//
 
-	Scene* scene_;
+	ModelCollection* modelCollection_;
+
+	//===========================================//
+	// ModelRenderer
+	//===========================================//
+
+	ModelRenderer* modelRenderer_;
 
 	//===========================================//
 	// Camera
@@ -82,10 +89,10 @@ private:
 	DebugCamera* debugCamera_;
 
 	//===========================================//
-	// Object3dCommon
+	// Object3dPipeline
 	//===========================================//
 
-	Object3dCommon* object3dCommon_;
+	Object3dPipeline* object3dPipeline_;
 
 	//===========================================//
 	// モデル

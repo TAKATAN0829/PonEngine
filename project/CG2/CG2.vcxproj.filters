@@ -118,7 +118,7 @@
     <ClCompile Include="engine\object\Transform.cpp">
       <Filter>engine\object</Filter>
     </ClCompile>
-    <ClCompile Include="engine\renderer\Object3dCommon.cpp">
+    <ClCompile Include="engine\renderer\Object3dPipeline.cpp">
       <Filter>engine\renderer</Filter>
     </ClCompile>
     <ClCompile Include="engine\renderer\SpriteCommon.cpp">
@@ -140,7 +140,8 @@
     <ClCompile Include="engine\asset\ModelManager.cpp">
       <Filter>engine\asset</Filter>
     </ClCompile>
-    <ClCompile Include="engine\scene\Scene.cpp" />
+    <ClCompile Include="engine\scene\ModelCollection.cpp" />
+    <ClCompile Include="engine\renderer\ModelRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\audio\AudioSystem.h">
@@ -242,7 +243,7 @@
     <ClInclude Include="engine\object\Transform.h">
       <Filter>engine\object</Filter>
     </ClInclude>
-    <ClInclude Include="engine\renderer\Object3dCommon.h">
+    <ClInclude Include="engine\renderer\Object3dPipeline.h">
       <Filter>engine\renderer</Filter>
     </ClInclude>
     <ClInclude Include="engine\renderer\SpriteCommon.h">
@@ -264,7 +265,8 @@
     <ClInclude Include="engine\asset\ModelManager.h">
       <Filter>engine\asset</Filter>
     </ClInclude>
-    <ClInclude Include="engine\scene\Scene.h" />
+    <ClInclude Include="engine\scene\ModelCollection.h" />
+    <ClInclude Include="engine\renderer\ModelRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">

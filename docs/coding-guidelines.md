@@ -36,7 +36,7 @@ void GameScene::Initialize(const SceneContext& context) {
 
 	// 生成
 	model_ = new Object3d();
-	model_->Initialize(object3dCommon_);
+	model_->Initialize(object3dPipeline_);
 
 	//==================//
 	// サブモデル

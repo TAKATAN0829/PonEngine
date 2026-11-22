@@ -6,7 +6,7 @@
 #include <numbers>
 
 // 自作
-#include "Object3dCommon.h"
+#include "Object3dPipeline.h"
 #include "DirectXCommon.h"
 #include "ResourceManager.h"
 #include "TextureManager.h"
@@ -15,11 +15,11 @@
 //=================================================================================================//
 // 初期化処理
 
-void Object3d::Initialize (Object3dCommon* object3dCommon) {
+void Object3d::Initialize (Object3dPipeline* object3dPipeline) {
 
-	assert (object3dCommon);
+	assert (object3dPipeline);
 
-	object3dCommon_ = object3dCommon;
+	object3dPipeline_ = object3dPipeline;
 
 	CreateTransformationMatrixData ();
 
@@ -36,7 +36,7 @@ void Object3d::Initialize (Object3dCommon* object3dCommon) {
 
 void Object3d::CreateTransformationMatrixData () {
 
-	wvpResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (TransformationMatrix), "wvpResource");
+	wvpResource_ = ResourceManager::CreateBufferResource (object3dPipeline_->GetDxCommon ()->GetDevice (), sizeof (TransformationMatrix), "wvpResource");
 
 	wvpResource_->Map (0, nullptr, reinterpret_cast<void**> (&wvpData_));
 
@@ -53,7 +53,7 @@ void Object3d::CreateTransformationMatrixData () {
 
 void Object3d::CreateDirectionalLightData () {
 
-	directionalLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (DirectionalLight), "directionalLightResource");
+	directionalLightResource_ = ResourceManager::CreateBufferResource (object3dPipeline_->GetDxCommon ()->GetDevice (), sizeof (DirectionalLight), "directionalLightResource");
 
 	directionalLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&directionalLightData_));
 
@@ -70,7 +70,7 @@ void Object3d::CreateDirectionalLightData () {
 
 void Object3d::CreatePointLightData () {
 
-	pointLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (PointLight), "pointLightResource");
+	pointLightResource_ = ResourceManager::CreateBufferResource (object3dPipeline_->GetDxCommon ()->GetDevice (), sizeof (PointLight), "pointLightResource");
 
 	pointLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&pointLightData_));
 
@@ -91,7 +91,7 @@ void Object3d::CreatePointLightData () {
 
 void Object3d::CreateSpotLightData () {
 
-	spotLightResource_ = ResourceManager::CreateBufferResource (object3dCommon_->GetDxCommon ()->GetDevice (), sizeof (SpotLight), "spotLightResource");
+	spotLightResource_ = ResourceManager::CreateBufferResource (object3dPipeline_->GetDxCommon ()->GetDevice (), sizeof (SpotLight), "spotLightResource");
 
 	spotLightResource_->Map (0, nullptr, reinterpret_cast<void**> (&spotLightData_));
 
@@ -146,9 +146,9 @@ void Object3d::Draw () {
 	// BlendMode設定
 	//===========================================//
 
-	object3dCommon_->SetBlendMode (blendMode_);
+	object3dPipeline_->SetBlendMode (blendMode_);
 
-	ID3D12GraphicsCommandList* commandList = object3dCommon_->GetDxCommon ()->GetCommandList ();
+	ID3D12GraphicsCommandList* commandList = object3dPipeline_->GetDxCommon ()->GetCommandList ();
 
 	//===========================================//
 	// WVP設定

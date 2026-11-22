@@ -11,16 +11,23 @@ void SceneManager::Initialize(const SceneContext& context, IScene* firstScene) {
 	assert(firstScene);
 
 	//===========================================//
-	// シーンデータ初期化
+	// モデル一覧初期化
 	//===========================================//
 
-	scene_.Initialize(context.object3dCommon);
+	modelCollection_.Initialize();
 
-	// Scene本体はコピーせず、同じ実物の場所を渡す。
+	//===========================================//
+	// モデル描画初期化
+	//===========================================//
+
+	modelRenderer_.Initialize(context.object3dPipeline);
+
+	// ModelCollection本体はコピーせず、同じ実物の場所を渡す。
 	SceneContext sceneContext = context;
-	sceneContext.scene = &scene_;
+	sceneContext.modelCollection = &modelCollection_;
+	sceneContext.modelRenderer = &modelRenderer_;
 
-	// 最初のScene設定
+	// 最初のシーン設定
 	currentScene_ = firstScene;
 	currentScene_->Initialize(sceneContext);
 }
@@ -79,8 +86,14 @@ void SceneManager::Finalize() {
 	}
 
 	//===========================================//
-	// シーンデータ解放
+	// モデル描画解放
 	//===========================================//
 
-	scene_.Finalize();
+	modelRenderer_.Finalize();
+
+	//===========================================//
+	// モデル一覧解放
+	//===========================================//
+
+	modelCollection_.Finalize();
 }

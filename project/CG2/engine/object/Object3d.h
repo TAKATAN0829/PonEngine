@@ -17,7 +17,7 @@
 #include "Transform.h"
 #include "BlendMode.h"
 
-class Object3dCommon;
+class Object3dPipeline;
 
 class Object3d {
 public:
@@ -26,7 +26,7 @@ public:
 	// 初期化処理
 	//===========================================//
 
-	void Initialize (Object3dCommon* object3dCommon);
+	void Initialize (Object3dPipeline* object3dPipeline);
 
 	//===========================================//
 	// 更新処理
@@ -163,10 +163,10 @@ private:
 private:
 
 	//===========================================//
-	// Object3dCommon
+	// Object3dPipeline
 	//===========================================//
 
-	Object3dCommon* object3dCommon_ = nullptr;
+	Object3dPipeline* object3dPipeline_ = nullptr;
 
 	//===========================================//
 	// Model

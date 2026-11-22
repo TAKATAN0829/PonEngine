@@ -7,7 +7,7 @@
 #include "Input.h"
 #include "AudioSystem.h"
 #include "ShaderCompiler.h"
-#include "Object3dCommon.h"
+#include "Object3dPipeline.h"
 #include "SpriteCommon.h"
 #include "ParticleRenderer.h"
 #include "ImGuiSystem.h"
@@ -79,7 +79,7 @@ private:
 	// Renderer
 	//===========================================//
 
-	Object3dCommon* object3dCommon_ = nullptr;
+	Object3dPipeline* object3dPipeline_ = nullptr;
 
 	//===========================================//
 	// SpriteCommon

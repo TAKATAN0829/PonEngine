@@ -2,7 +2,8 @@
 
 // 自作
 #include "IScene.h"
-#include "Scene.h"
+#include "ModelCollection.h"
+#include "ModelRenderer.h"
 #include "Input.h"
 
 class SceneManager {
@@ -41,14 +42,20 @@ public:
 private:
 
 	//===========================================//
-	// 現在のScene
+	// 現在のModelCollection
 	//===========================================//
 
 	IScene* currentScene_;
 
 	//===========================================//
-	// シーンデータ
+	// モデル一覧
 	//===========================================//
 
-	Scene scene_;
+	ModelCollection modelCollection_;
+
+	//===========================================//
+	// モデル描画
+	//===========================================//
+
+	ModelRenderer modelRenderer_;
 };

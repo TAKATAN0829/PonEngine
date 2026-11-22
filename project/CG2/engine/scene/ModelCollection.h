@@ -1,47 +1,42 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
 #include "EngineStructs.h"
-#include "Object3d.h"
 
+// ModelIdはuint64_t型として扱う
 using ModelId = uint64_t;
 
-// モデル1個のデータと描画用Object3dを所有する。
+// 一つのModelが持つ情報
+// モデル1個のデータを持つ。
 struct SceneModel {
 	ModelId id;
 	std::string name;
+
+	// 使用するファイル
+	std::string modelFile;
+	std::string textureFile;
+
 	TransformData transform;
 	Vector4 color;
 	bool enableLighting;
 	float shininess;
 	bool useRootNodeMatrix;
-	std::unique_ptr<Object3d> object;
 };
 
-class Scene {
+/// <summary>
+/// シーンに存在するModel一覧
+/// </summary>
+class ModelCollection {
 public:
 
 	//===========================================//
 	// 初期化処理
 	//===========================================//
 
-	void Initialize(Object3dCommon* object3dCommon);
-
-	//===========================================//
-	// 更新処理
-	//===========================================//
-
-	void Update(const Matrix4x4& viewProjectionMatrix);
-
-	//===========================================//
-	// 描画処理
-	//===========================================//
-
-	void Draw();
+	void Initialize();
 
 	//===========================================//
 	// 終了処理
@@ -68,12 +63,6 @@ public:
 	const std::vector<SceneModel>& GetModels() const;
 
 private:
-
-	//===========================================//
-	// 描画機能
-	//===========================================//
-
-	Object3dCommon* object3dCommon_;
 
 	//===========================================//
 	// モデル一覧
