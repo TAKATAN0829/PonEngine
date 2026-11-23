@@ -20,8 +20,42 @@ void HierarchyPanel::Draw(ModelCollection* models, EditorSelection& selection) {
 		}
 		ImGui::Separator();
 
-		// モデル一覧
 		if (models != nullptr) {
+
+			// モデル追加
+			if (ImGui::Button("Add Plane")) {
+				const ModelId id = models->AddModel(
+					"Plane",
+					"plane.gltf",
+					"resources/uvChecker.png"
+				);
+				selection.Select(id);
+			}
+			
+			// モデル追加
+			if (ImGui::Button("Add Axis")) {
+				const ModelId id = models->AddModel(
+					"Axis",
+					"axis.obj",
+					""
+				);
+				selection.Select(id);
+			}
+
+			// 選択モデル削除
+			const ModelId selectedId = selection.Get();
+			SceneModel* selectedModel = models->FindModel(selectedId);
+
+			ImGui::BeginDisabled(selectedModel == nullptr);
+			if (ImGui::Button("Delete Selected")) {
+				models->RemoveModel(selectedId);
+				selection.Clear();
+			}
+			ImGui::EndDisabled();
+
+			ImGui::Separator();
+
+			// モデル一覧
 			for (const SceneModel& model : models->GetModels()) {
 				if (model.id == 0) {
 					continue;

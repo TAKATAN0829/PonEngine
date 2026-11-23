@@ -70,3 +70,30 @@ SceneModel* ModelCollection::FindModel(ModelId id) {
 const std::vector<SceneModel>& ModelCollection::GetModels() const {
 	return models_;
 }
+
+//=================================================================================================//
+// モデル一覧を置き換え
+
+void ModelCollection::ReplaceModels(std::vector<SceneModel> models) {
+	// modelsの中身をmodels_に移す
+	models_ = std::move(models);
+	nextId_ = 1;
+
+	for (const SceneModel& model : models_) {
+		if (model.id >= nextId_) {
+			nextId_ = model.id + 1;
+		}
+	}
+}
+
+//=================================================================================================//
+// モデル削除
+
+void ModelCollection::RemoveModel(ModelId id) {
+	for (auto model = models_.begin(); model != models_.end(); ++model) {
+		if (model->id == id) {
+			models_.erase(model);
+			return;
+		}
+	}
+}

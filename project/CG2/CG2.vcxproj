@@ -340,7 +340,6 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     <ClInclude Include="editor\EditorSelection.h" />
     <ClInclude Include="editor\panels\HierarchyPanel.h" />
     <ClInclude Include="editor\panels\InspectorPanel.h" />
-    <ClInclude Include="engine\scene\IEditableScene.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\scene\SceneFile.cpp" />

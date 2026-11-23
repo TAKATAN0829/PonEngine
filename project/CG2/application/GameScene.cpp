@@ -255,6 +255,9 @@ void GameScene::UpdateObject() {
 	// モデル更新
 	//===========================================//
 
+	// ModelCollectionに合わせて描画物を更新する
+	modelRenderer_->Refresh(*modelCollection_);
+
 	// ライト設定
 	SceneModel* player = modelCollection_->FindModel(playerId_);
 	Object3d* playerObject = modelRenderer_->FindObject(playerId_);

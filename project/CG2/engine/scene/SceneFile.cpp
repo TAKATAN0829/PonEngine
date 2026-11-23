@@ -1,170 +1,175 @@
 #include "SceneFile.h"
 
-
-// 外部
-#include <algorithm>
 #include <fstream>
-#include <sstream>
+#include <iomanip>
+#include <limits>
+#include <utility>
+#include <vector>
 
-void SceneFile::Save(const std::string& fileName, const std::string& sceneName, const std::string& modelName, const TransformData& transform, std::string& error) {
+//=================================================================================================//
+// シーン保存
+
+void SceneFile::Save(const std::string& fileName, const std::string& sceneName, ModelCollection& models, std::string& error) {
 	error.clear();
 
 	std::ofstream file(fileName);
 
 	if (!file.is_open()) {
-		error = "ファイルが開けねえ";
-
+		error = "ファイルが開けなかったよ";
 		return;
 	}
-	
-	file << "シーン名：" << sceneName << '\n';
-	WriteModel(file, modelName, transform);
+
+	// ファイル形式、版番号、シーン名、モデル数を書く
+	file << "PON_SCENE 1\n";
+	file << std::quoted(sceneName) << '\n';
+	file << models.GetModels().size() << '\n';
+
+	// 小数を読み戻したときの誤差を抑える
+	file << std::setprecision(std::numeric_limits<float>::max_digits10);
+
+	// モデル一覧を順番に書く
+	for (const SceneModel& model : models.GetModels()) {
+		WriteModel(file, model);
+	}
 
 	file.close();
 
 	if (!file) {
-		error = "ファイルに書き込めねえ";
+		error = "ファイルに書き込めなかったよ";
 	}
-
 }
 
-void SceneFile::Load(const std::string& fileName, const std::string& sceneName, const std::string& modelName, TransformData& transform, std::string& error) {
+//=================================================================================================//
+// シーン読み込み
+
+void SceneFile::Load(const std::string& fileName, const std::string& sceneName, ModelCollection& models, std::string& error) {
 	error.clear();
 
 	std::ifstream file(fileName);
 
 	if (!file.is_open()) {
-		error = "ファイルが開けねえ";
-
+		error = "ファイルを開けません";
 		return;
 	}
 
-	std::string line;
+	// ファイル形式と版番号を確認する
+	std::string format;
+	int version = 0;
+
+	if (!(file >> format >> version) || format != "PON_SCENE" || version != 1) {
+		error = "ファイル形式が違うよ";
+		return;
+	}
 
 	// シーン名を確認する
-	std::getline(file, line);
+	std::string loadedSceneName;
 
-	if (line != "シーン名：" + sceneName) {
-		error = "シーン名が違え";
-
+	if (!(file >> std::quoted(loadedSceneName)) || loadedSceneName != sceneName) {
+		error = "シーン名が違うよ";
 		return;
 	}
 
-	// モデル名を確認する
-	std::getline(file, line);
+	// モデル数を読み込む
+	size_t modelCount = 0;
 
-	if (line != "モデル名：" + modelName) {
-		error = "モデル名が違え";
-
+	if (!(file >> modelCount)) {
+		error = "モデル数を読み取れなかったよ";
 		return;
 	}
 
-	//===========================================//
-	// TransformDataを読み込む
-	//===========================================//
+	// すべて読み終わるまで、現在のCollectionは変更しない
+	std::vector<SceneModel> loadedModels;
+	std::vector<ModelId> loadedIds;
+	loadedModels.reserve(modelCount);
+	loadedIds.reserve(modelCount);
 
-	TransformData loaded = transform;
+	for (size_t i = 0; i < modelCount; ++i) {
+		SceneModel model{};
 
-	//==================
-	// 位置
+		// ID、名前、モデルファイル、テクスチャファイルを読む
+		if (!(file >> model.id
+			>> std::quoted(model.name)
+			>> std::quoted(model.modelFile)
+			>> std::quoted(model.textureFile))) {
+			error = "モデル情報を読み取れなかったよ";
+			return;
+		}
 
-	std::getline(file, line); // 位置
+		// IDの0と、すでに使われているIDを確認する
+		bool duplicateId = false;
+		for (ModelId loadedId : loadedIds) {
+			if (loadedId == model.id) {
+				duplicateId = true;
+				break;
+			}
+		}
 
-	const std::string positionPrefix = "位置：（";
+		if (model.id == 0 || model.id == std::numeric_limits<ModelId>::max() || duplicateId) {
+			error = "モデルIDが不正だ";
+			return;
+		}
+		loadedIds.push_back(model.id);
 
-	if (line.find(positionPrefix) != 0) {
-		error = "位置の見出しが違え";
+		// 位置、回転、拡縮を読む
+		if (!(file >> model.transform.translate.x
+			>> model.transform.translate.y
+			>> model.transform.translate.z
+			>> model.transform.rotate.x
+			>> model.transform.rotate.y
+			>> model.transform.rotate.z
+			>> model.transform.scale.x
+			>> model.transform.scale.y
+			>> model.transform.scale.z)) {
+			error = "Transformを読み取れなかったよ";
+			return;
+		}
 
-		return;
+		// 色、ライティング、光沢、ルート変換設定を読む
+		if (!(file >> model.color.x
+			>> model.color.y
+			>> model.color.z
+			>> model.color.w
+			>> model.enableLighting
+			>> model.shininess
+			>> model.useRootNodeMatrix)) {
+			error = "モデル設定を読み取れなかったよ";
+			return;
+		}
+
+		loadedModels.push_back(std::move(model));
 	}
 
-	// 位置 : (　を消す
-	line.erase(0, positionPrefix.size());
-
-	// ","を"空白"に置き換える
-	std::replace(line.begin(), line.end(), ',', ' ');
-
-	std::istringstream position(line);
-
-	if (!(position >> loaded.translate.x >> loaded.translate.y >> loaded.translate.z)) {
-		error = "位置を読み取れねえ";
-
-		return;
-	}
-
-	//==================
-	// 回転
-
-	std::getline(file, line); // 回転
-
-	const std::string rotationPrefix = "回転：（";
-
-	if (line.find(rotationPrefix) != 0) {
-		error = "回転の見出しが違え";
-
-		return;
-	}
-
-	// 回転 : ( を消す
-	line.erase(0, rotationPrefix.size());
-
-	// ","を"空白"に置き換える
-	std::replace(line.begin(), line.end(), ',', ' ');
-
-	std::istringstream rotation(line);
-
-	if (!(rotation >> loaded.rotate.x >> loaded.rotate.y >> loaded.rotate.z)) {
-		error = "回転を読み取れねえ";
-
-		return;
-	}
-
-	//==================
-	// 拡縮
-
-	std::getline(file, line); // 拡縮
-
-	const std::string scalePrefix = "拡縮：（";
-
-	if (line.find(scalePrefix) != 0) {
-		error = "拡縮の見出しが違え";
-
-		return;
-	}
-
-	// 拡縮 : ( を消す
-	line.erase(0, scalePrefix.size());
-
-	// ","を"空白"に置き換える
-	std::replace(line.begin(), line.end(), ',', ' ');
-
-	std::istringstream scale(line);
-
-	if (!(scale >> loaded.scale.x >> loaded.scale.y >> loaded.scale.z)) {
-		error = "拡縮を読み取れねえ";
-
-		return;
-	}
-
-	// Transformに入れる
-	transform = loaded;
+	// 全モデルを読み込めたので、Collectionを置き換える
+	models.ReplaceModels(std::move(loadedModels));
 }
 
-void SceneFile::WriteModel(std::ostream& file, const std::string& modelName, const TransformData& transform) {
-	file << "モデル名：" << modelName << '\n';
+//=================================================================================================//
+// モデル書き込み
 
-	file << "位置：（"
-		<< transform.translate.x << ", "
-		<< transform.translate.y << ", "
-		<< transform.translate.z << "）\n";
+void SceneFile::WriteModel(std::ostream& file, const SceneModel& model) {
+	// ID、名前、モデルファイル、テクスチャファイルを書く
+	file << model.id << ' '
+		<< std::quoted(model.name) << ' '
+		<< std::quoted(model.modelFile) << ' '
+		<< std::quoted(model.textureFile) << '\n';
 
-	file << "回転：（"
-		<< transform.rotate.x << ", "
-		<< transform.rotate.y << ", "
-		<< transform.rotate.z << "）\n";
+	// 位置、回転、拡縮を書く
+	file << model.transform.translate.x << ' '
+		<< model.transform.translate.y << ' '
+		<< model.transform.translate.z << ' '
+		<< model.transform.rotate.x << ' '
+		<< model.transform.rotate.y << ' '
+		<< model.transform.rotate.z << ' '
+		<< model.transform.scale.x << ' '
+		<< model.transform.scale.y << ' '
+		<< model.transform.scale.z << '\n';
 
-	file << "拡縮：（"
-		<< transform.scale.x << ", "
-		<< transform.scale.y << ", "
-		<< transform.scale.z << "）\n";
+	// 色、ライティング、光沢、ルート変換設定を書く
+	file << model.color.x << ' '
+		<< model.color.y << ' '
+		<< model.color.z << ' '
+		<< model.color.w << ' '
+		<< model.enableLighting << ' '
+		<< model.shininess << ' '
+		<< model.useRootNodeMatrix << '\n';
 }

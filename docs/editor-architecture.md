@@ -1,58 +1,39 @@
-# Editorの最初の実装
-
-Debug / Development で起動し、Hierarchy の Sphere を選択すると、Inspector で位置・回転・拡縮・色・ライティング・光沢を編集できる。Clear Selection で選択を解除する。パネルは既存のDockSpaceにドッキングできる。
+# Editorの構成
 
 ## 依存と責務
 
 ```text
 Engine → Editor → HierarchyPanel / InspectorPanel → ImGui
-            ↓
-       IEditableScene ← GameScene
-Engine → SceneManager → IScene
+  ↓
+SceneManager → ModelCollection ← GameScene
+                   ↑                 ↓
+                SceneFile       ModelRenderer
 ```
 
-- ImGuiSystem: ImGuiの初期化、フレーム開始、DX12への描画、終了。
-- Editor: 選択状態とパネル呼び出しの調整。Engineが値として所有する。
-- HierarchyPanel: 編集対象一覧の表示と選択。
-- InspectorPanel: 渡されたデータの表示と編集。
-- IEditableScene: ImGuiを含まない編集対象の列挙契約。
-- GameScene: モデルと編集する値を所有し、契約を通して公開する。
+- `ModelCollection`: シーン内のモデル一覧と、モデルごとの編集対象データを持つ。
+- `Editor`: `ModelCollection`を受け取り、選択状態、一覧表示、Inspectorでの編集、シーンの保存・読み込みを扱う。
+- `HierarchyPanel`: モデル一覧を表示して選択する。
+- `InspectorPanel`: 選択中のモデルのTransformや描画設定を編集する。
+- `SceneFile`: `ModelCollection`の保存と読み込みを行う。EditorやImGuiには依存しない。
+- `ModelRenderer`: `ModelCollection`のモデルIDと使用ファイルに合わせて描画用`Object3d`を管理する。
+- `GameScene`: シーン更新時にRendererをCollectionへ同期し、モデルの値を描画へ反映する。
 
-GameSceneはEditorの具体クラスを知らない。EditorもGameSceneを知らず、IEditableSceneを受け取る。この引数渡しが依存性の注入に当たる。最初は複雑なイベント機構や汎用リフレクションを導入せず、小さなインターフェースで境界を設けている。
+Editorは`GameScene`を直接参照せず、Engineから渡された`ModelCollection`を編集する。モデルの選択状態はIDで保持し、各フレームでCollectionから選択中のモデルを検索する。
 
-## 所有権と更新順
+## モデルと描画物の更新
 
-EditableObjectView内のポインタは借用であり、Editor側から破棄しない。取得したフレーム内だけ利用し、保持しない。選択にはオブジェクトIDを保持し、毎フレーム検索して対象が存在しなければ解除する。IDはシーン内で一意かつ有効期間中は不変とし、削除後に別の対象へ再利用しない。
+`ModelCollection`がモデル一覧を所有する。`ModelRenderer`はIDを使って対応する描画物を管理する。Collectionに追加されたモデルは描画物を作成し、削除されたモデルは描画物も削除する。同じIDのモデルでモデルファイルまたはテクスチャファイルが変わった場合は、描画物を作り直す。
 
-ImGuiフレーム開始 → Editorで値を編集 → GameSceneの更新 → シーン描画 → ImGui描画、の順に処理し、モデルへの反映が翌フレームへ遅れないようにしている。
+`GameScene::UpdateObject()`では、モデル値を描画へ反映する前に`ModelRenderer::Refresh()`を呼ぶ。このため、SceneFileの読み込みでモデル一覧が置き換わった場合も、次の更新で描画物が一覧に揃う。
 
-## 現在の範囲と次の課題
+## シーンの保存・読み込み
 
-編集対象は現在のSphere一体。ライト、パーティクル、カメラの既存デバッグUIはそのまま使える。Undo/Redo、追加・削除、Sceneビューはまだ実装していない。
+EditorのSceneパネルからファイル名を指定し、Save SceneまたはLoad Sceneを実行する。初期ファイル名は`scene.txt`。SceneFileにはシーン名`GameScene`と`ModelCollection`を渡す。
 
-シーン切替はまだ存在しないため、現在はシーンインターフェースのアドレス変更で選択を解除する。シーンの再生成・切替を導入する際は、同じアドレスが再利用されても識別できるシーン世代番号や明示的な切替通知を追加する。
+ファイル形式は`PON_SCENE 1`。シーン名、モデル数、各モデルのID・名前・モデルファイル・テクスチャファイル、Transform、色、ライティング設定、光沢、`useRootNodeMatrix`を保存する。空白を含む文字列は`std::quoted`で扱い、浮動小数点数は`float`で読み戻せる精度で書き込む。
 
-Undo/Redoを導入する際は、直接編集を「対象ID・変更前・変更後」を持つCommandへ移す。ドラッグ開始から終了までを一つの操作にまとめる。再生・停止では編集データと実行時データの分離も必要になる。
+読み込みではモデルを一時的な一覧へ読み込み、IDが0、IDが重複、または途中で読み込みに失敗した場合はエラーを返す。全モデルを読み込めた場合だけ`ModelCollection::ReplaceModels()`を呼ぶため、途中の失敗では現在の一覧を置き換えない。
 
-## シーンの保存・読込
+## 現在の範囲
 
-SceneパネルのSave Sceneで `project/CG2/resources/scenes/GameScene.ponscene` に保存し、Load Sceneで復元する。実行時のパスは作業ディレクトリ基準の `resources/scenes/GameScene.ponscene`。既存のテクスチャと同様、作業ディレクトリは `project/CG2` とする。
-
-保存済みファイルがあればGameSceneの初期化時に自動読込する。Releaseでも読込できる。ファイルがない場合は既定値で開始し、壊れたファイルは値を反映せずログにエラーを出す。保存はボタンを押したときのみ行う。
-
-SceneFileはEditorに依存せず、IEditableSceneを引数に受け取る。バージョン付きのテキスト形式 `PON_SCENE 1` で、オブジェクトID、存在するプロパティのビットマスク、Transform・色・光沢・ライティングを記録する。浮動小数点は往復可能な桁数を使う。
-
-読込ではバージョン、件数、IDの一致・重複、プロパティの一致、有限値、光沢の範囲、末尾の余分なデータを確認してから一括反映する。保存は隣接する一時ファイルに書き終えてからWindowsのファイル置換APIで置き換える。
-
-現段階では既存オブジェクトの値の復元を扱い、オブジェクトの新規生成や削除、モデル・テクスチャの変更は扱わない。ライト、パーティクル、カメラのデバッグUIの値は保存対象外。
-
-### 検証
-
-Visual StudioのDeveloper PowerShellでリポジトリのルートから実行する。
-
-```powershell
-MSBuild tests/SceneFileTests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m:1 /nr:false
-./generated/scene-file-tests/bin/SceneFileTests.exe
-```
-
-複数オブジェクトの保存・復元、既存ファイルの置換、不正バージョン、途中で切れたファイル、重複ID、未知ID、余分な末尾データ、ファイル未存在、保存失敗時の既存ファイル保持を検証する。
+保存・読み込みはモデル一覧と各モデルの値を対象にする。ライト、パーティクル、カメラの値は保存しない。Undo/Redoやシーン切り替えは未実装。

@@ -44,23 +44,15 @@ void Editor::Draw(ModelCollection* models) {
 	if (ImGui::Begin("Scene")) {
 		ImGui::InputText("File Name", fileName_, sizeof(fileName_));
 
-		// 保存対象の取得
-		SceneModel* firstModel = nullptr;
-		if (models != nullptr) {
-			if (!models->GetModels().empty()) {
-				const ModelId id = models->GetModels().front().id;
-				firstModel = models->FindModel(id);
-			}
-		}
-
-		ImGui::BeginDisabled(firstModel == nullptr);
+		// モデルがないときは保存・読み込みを無効にする
+		ImGui::BeginDisabled(models == nullptr || models->GetModels().empty());
 
 		// シーンを保存する処理
 		if (ImGui::Button("Save Scene")) {
-			if (firstModel != nullptr) {
+			if (models != nullptr) {
 				SceneFile sceneFile;
 				std::string error;
-				sceneFile.Save(fileName_, "GameScene", firstModel->name, firstModel->transform, error);
+				sceneFile.Save(fileName_, "GameScene", *models, error);
 
 				if (error.empty()) {
 					fileStatus_ = "Saved.";
@@ -70,12 +62,17 @@ void Editor::Draw(ModelCollection* models) {
 			}
 		}
 
+		ImGui::EndDisabled();
+
+		// ModelCollectionがないときは読み込みを無効にする
+		ImGui::BeginDisabled(models == nullptr);
+
 		// シーンを読み込む処理
 		if (ImGui::Button("Load Scene")) {
-			if (firstModel != nullptr) {
+			if (models != nullptr) {
 				SceneFile sceneFile;
 				std::string error;
-				sceneFile.Load(fileName_, "GameScene", firstModel->name, firstModel->transform, error);
+				sceneFile.Load(fileName_, "GameScene", *models, error);
 
 				if (error.empty()) {
 					fileStatus_ = "Loaded.";

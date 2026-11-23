@@ -38,20 +38,23 @@ void ModelRenderer::AddModel(const SceneModel& model) {
 	// 生成
 	std::unique_ptr<Object3d> object = std::make_unique<Object3d>();
 	object->Initialize(object3dPipeline_);
-	object->SetModel(
-		ModelManager::GetInstance()->FindModel(model.modelFile)
-	);
+	object->SetModel(ModelManager::GetInstance()->FindModel(model.modelFile));
 
 	// テクスチャ設定
 	if (!model.textureFile.empty()) {
 		object->SetTexture(model.textureFile);
 	}
+	
+	RenderObject renderObject;
+	renderObject.modelFile = model.modelFile;
+	renderObject.textureFile = model.textureFile;
+	renderObject.object = std::move(object);
 
 	//===========================================//
 	// 一覧への登録
 	//===========================================//
 
-	objects_.emplace(model.id, std::move(object));
+	objects_.emplace(model.id, std::move(renderObject));
 }
 
 //=================================================================================================//
@@ -64,16 +67,13 @@ Object3d* ModelRenderer::FindObject(ModelId id) {
 		return nullptr;
 	}
 
-	return found->second.get();
+	return found->second.object.get();
 }
 
 //=================================================================================================//
 // 更新処理
 
-void ModelRenderer::Update(
-	const ModelCollection& models,
-	const Matrix4x4& viewProjectionMatrix
-) {
+void ModelRenderer::Update(const ModelCollection& models, const Matrix4x4& viewProjectionMatrix) {
 	for (const SceneModel& model : models.GetModels()) {
 
 		// 描画対象の取得
@@ -116,4 +116,44 @@ void ModelRenderer::Draw(const ModelCollection& models) {
 void ModelRenderer::Finalize() {
 	objects_.clear();
 	object3dPipeline_ = nullptr;
+}
+
+//=================================================================================================//
+// ModelCollectionとの同期処理
+
+void ModelRenderer::Refresh(const ModelCollection& models) {
+	// Collectionから削除されたモデルの描画物を消す
+	for (auto object = objects_.begin(); object != objects_.end();) {
+		bool modelExists = false;
+
+		for (const SceneModel& model : models.GetModels()) {
+			if (model.id == object->first) {
+				modelExists = true;
+				break;
+			}
+		}
+
+		if (modelExists) {
+			++object;
+		} else {
+			object = objects_.erase(object);
+		}
+	}
+
+	// 新しいモデルを登録し、使用ファイルが変わった描画物を作り直す
+	for (const SceneModel& model : models.GetModels()) {
+		auto object = objects_.find(model.id);
+
+		if (object != objects_.end()) {
+
+			if (object->second.modelFile == model.modelFile &&
+				object->second.textureFile == model.textureFile) {
+				continue;
+			}
+
+			objects_.erase(object);
+		}
+
+		AddModel(model);
+	}
 }

@@ -322,9 +322,6 @@
     <ClInclude Include="editor\panels\InspectorPanel.h">
       <Filter>editor\panels</Filter>
     </ClInclude>
-    <ClInclude Include="engine\scene\IEditableScene.h">
-      <Filter>engine\scene</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\scene\SceneFile.cpp">

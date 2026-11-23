@@ -1,5 +1,9 @@
-シーン名：GameScene
-モデル名：Model
-位置：（6.5, 0, -5.56）
-回転：（0, 6.28319, 0）
-拡縮：（5, 2.53, 5）
+PON_SCENE 1
+"GameScene"
+2
+1 "Player" "plane.gltf" "resources/uvChecker.png"
+0 0 0 0 0 0 5 5 5
+0 0 0 1 1 40 1
+2 "Axis" "axis.obj" ""
+3 0 0 0 0 0 1 1 1
+1 1 1 1 1 40 1
