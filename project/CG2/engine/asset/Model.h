@@ -8,9 +8,9 @@
 // 自作
 #include "EngineStructs.h"
 #include "Mesh.h"
-#include "Material.h"
 
 class ModelCommon;
+class Material;
 struct aiNode;
 
 class Model {
@@ -48,13 +48,13 @@ public:
 	// 描画処理
 	//===========================================//
 
-	void Draw ();
+	void Draw(Material& material);
 
 	//===========================================//
 	// Getter
 	//===========================================//
 
-	Material* GetMaterial () const { return material_.get (); }
+	uint32_t GetTextureIndex() const;
 
 	const Node& GetRootNode () const { return modelData_.rootNode; }
 
@@ -91,10 +91,4 @@ private:
 	//===========================================//
 
 	std::unique_ptr<Mesh> mesh_;
-
-	//===========================================//
-	// Material
-	//===========================================//
-
-	std::unique_ptr<Material> material_;
 };

@@ -21,6 +21,12 @@ void Object3d::Initialize (Object3dPipeline* object3dPipeline) {
 
 	object3dPipeline_ = object3dPipeline;
 
+	//===========================================//
+	// 個体ごとのマテリアル初期化
+	//===========================================//
+
+	material_.Initialize(object3dPipeline_->GetDxCommon(), object3dPipeline_->GetSrvManager());
+
 	CreateTransformationMatrixData ();
 
 	CreateDirectionalLightData ();
@@ -170,9 +176,34 @@ void Object3d::Draw () {
 	// Model描画
 	//===========================================//
 
-	model_->Draw ();
+	model_->Draw(material_);
 }
 
+
+//=================================================================================================//
+// Model設定
+
+void Object3d::SetModel(Model* model) {
+	assert(model != nullptr);
+	model_ = model;
+
+	// ファイル由来のテクスチャ番号を、個体のマテリアルへ設定する。
+	material_.SetTextureIndex(model_->GetTextureIndex());
+}
+
+//=================================================================================================//
+// マテリアル取得
+
+const Material& Object3d::GetMaterial() const {
+	return material_;
+}
+
+//=================================================================================================//
+// 光沢度設定
+
+void Object3d::SetShininess(float shininess) {
+	material_.SetShininess(shininess);
+}
 
 //=================================================================================================//
 // Transform設定
@@ -197,7 +228,7 @@ TransformData Object3d::GetTransform () {
 
 void Object3d::SetColor (const Vector4& color) {
 
-	model_->GetMaterial ()->SetColor (color);
+	material_.SetColor (color);
 }
 
 
@@ -206,7 +237,7 @@ void Object3d::SetColor (const Vector4& color) {
 
 void Object3d::SetEnableLighting (bool enableLighting) {
 
-	model_->GetMaterial ()->SetEnableLighting (enableLighting);
+	material_.SetEnableLighting (enableLighting);
 }
 
 
@@ -215,7 +246,7 @@ void Object3d::SetEnableLighting (bool enableLighting) {
 
 void Object3d::SetUVTransform (const Matrix4x4& uvTransform) {
 
-	model_->GetMaterial ()->SetUVTransform (uvTransform);
+	material_.SetUVTransform (uvTransform);
 }
 
 
@@ -237,7 +268,7 @@ void Object3d::SetDirectionalLight (const Vector4& color, const Vector3& directi
 
 void Object3d::SetTextureIndex (uint32_t textureIndex) {
 
-	model_->GetMaterial ()->SetTextureIndex (textureIndex);
+	material_.SetTextureIndex (textureIndex);
 }
 
 

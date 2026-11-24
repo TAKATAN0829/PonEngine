@@ -10,6 +10,7 @@
 
 // 自作
 #include "ModelCommon.h"
+#include "Material.h"
 #include "TextureManager.h"
 
 //=================================================================================================//
@@ -36,14 +37,6 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 	mesh_->Initialize(modelCommon_->GetDxCommon(), modelData_.vertices);
 
 	//===========================================//
-	// マテリアルの初期化
-	//===========================================//
-
-	material_ = std::make_unique<Material>();
-
-	material_->Initialize(modelCommon_->GetDxCommon(), modelCommon_->GetSrvManager());
-
-	//===========================================//
 	// テクスチャ読み込み
 	//===========================================//
 
@@ -52,25 +45,31 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string& directoryPat
 		modelData_.material.textureIndex = TextureManager::GetInstance()->Load(modelData_.material.textureFilePath);
 	}
 
-	material_->SetTextureIndex(modelData_.material.textureIndex);
 }
 
 //=================================================================================================//
 // 描画処理
 
-void Model::Draw() {
+void Model::Draw(Material& material) {
 
 	//===========================================//
 	// Material・Texture設定
 	//===========================================//
 
-	material_->Bind();
+	material.Bind();
 
 	//===========================================//
 	// VBV設定・DrawCall
 	//===========================================//
 
 	mesh_->Draw();
+}
+
+//=================================================================================================//
+// テクスチャ番号取得
+
+uint32_t Model::GetTextureIndex() const {
+	return modelData_.material.textureIndex;
 }
 
 //=================================================================================================//

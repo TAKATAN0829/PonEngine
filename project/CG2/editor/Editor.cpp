@@ -44,8 +44,8 @@ void Editor::Draw(ModelCollection* models) {
 	if (ImGui::Begin("Scene")) {
 		ImGui::InputText("File Name", fileName_, sizeof(fileName_));
 
-		// モデルがないときは保存・読み込みを無効にする
-		ImGui::BeginDisabled(models == nullptr || models->GetModels().empty());
+		// ModelCollectionがないときだけ保存を無効にする
+		ImGui::BeginDisabled(models == nullptr);
 
 		// シーンを保存する処理
 		if (ImGui::Button("Save Scene")) {

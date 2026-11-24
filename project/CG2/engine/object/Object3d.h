@@ -13,6 +13,7 @@
 #include "EngineStructs.h"
 #include "LightStructs.h"
 #include "Model.h"
+#include "Material.h"
 #include "Camera.h"
 #include "Transform.h"
 #include "BlendMode.h"
@@ -44,7 +45,13 @@ public:
 	// Model設定
 	//===========================================//
 
-	void SetModel (Model* model) { model_ = model; }
+	void SetModel (Model* model);
+
+	//===========================================//
+	// マテリアル取得
+	//===========================================//
+
+	const Material& GetMaterial() const;
 
 	//===========================================//
 	// Transform設定
@@ -90,7 +97,7 @@ public:
 	// 光沢度設定
 	//===========================================//
 
-	void SetShininess (float shininess) { model_->GetMaterial ()->SetShininess (shininess); }
+	void SetShininess (float shininess);
 
 	//===========================================//
 	// RootNode行列の適用設定
@@ -173,6 +180,12 @@ private:
 	//===========================================//
 
 	Model* model_ = nullptr;
+
+	//===========================================//
+	// 個体ごとのマテリアル
+	//===========================================//
+
+	Material material_;
 
 	//===========================================//
 	// Transform
